@@ -1,14 +1,15 @@
 #!/bin/bash
-# combine-digest.sh — Print the prompt to synthesize all segment files into DIGEST.md
-# Run after all segments are complete to trigger Phase 7 (synthesis)
+# combine-digest.sh — Print the prompt to synthesize segments into DIGEST.md
+# Supports both baseline (full synthesis) and delta (materialization) modes.
 # Usage: ./scripts/combine-digest.sh [date]
 #        ./scripts/combine-digest.sh                (uses today's date)
-#        ./scripts/combine-digest.sh 2026-04-05     (specific date)
+#        ./scripts/combine-digest.sh 2026-04-06     (specific date)
 
 set -e
 
 DATE=${1:-$(date +%Y-%m-%d)}
 OUTPUT_DIR="outputs/daily/$DATE"
+META_FILE="$OUTPUT_DIR/_meta.json"
 DIGEST_FILE="$OUTPUT_DIR/DIGEST.md"
 
 echo ""
@@ -21,6 +22,27 @@ if [ ! -d "$OUTPUT_DIR" ]; then
   exit 1
 fi
 
+# ── Detect run type from _meta.json ──────────────────────────────────────────
+RUN_TYPE="baseline"  # default for legacy folders
+BASELINE_DATE=""
+if [ -f "$META_FILE" ]; then
+  RUN_TYPE=$(python3 -c "import json; d=json.load(open('$META_FILE')); print(d.get('type','baseline'))" 2>/dev/null || echo "baseline")
+  BASELINE_DATE=$(python3 -c "import json; d=json.load(open('$META_FILE')); print(d.get('baseline',''))" 2>/dev/null || echo "")
+fi
+
+echo "Run type: $RUN_TYPE"
+echo ""
+
+# ── DELTA MODE: print materialization prompt ──────────────────────────────────
+if [ "$RUN_TYPE" = "delta" ]; then
+  echo "ℹ️  Delta mode detected — running materialize prompt."
+  echo "   (Use ./scripts/materialize.sh for more detail)"
+  echo ""
+  exec ./scripts/materialize.sh "$DATE"
+  exit 0
+fi
+
+# ── BASELINE MODE: full synthesis prompt ─────────────────────────────────────
 # Count non-empty segment files
 TOTAL=$(find "$OUTPUT_DIR" -name "*.md" 2>/dev/null | wc -l | tr -d ' ')
 COMPLETE=$(find "$OUTPUT_DIR" -name "*.md" -not -empty 2>/dev/null | wc -l | tr -d ' ')
@@ -47,7 +69,7 @@ echo "---"
 echo "Synthesize all segment analyses into the master DIGEST.md for $DATE."
 echo ""
 echo "Segment files to read and synthesize:"
-for SEG in macro bonds commodities forex crypto international equities alt-data institutional; do
+for SEG in macro bonds commodities forex crypto international us-equities alt-data institutional; do
   F="$OUTPUT_DIR/$SEG.md"
   if [ -f "$F" ] && [ -s "$F" ]; then
     echo "  ✅ $OUTPUT_DIR/$SEG.md"

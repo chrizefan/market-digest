@@ -1,6 +1,7 @@
 #!/bin/bash
-# weekly-rollup.sh — Generate a weekly summary from daily digest files
+# weekly-rollup.sh — Generate a weekly summary from baseline + daily delta files
 # Run at end of week (Friday or weekend)
+# v3: Understands three-tier cadence (baseline + deltas)
 
 set -e
 
@@ -10,51 +11,104 @@ WEEK=$(date +%V)
 WEEK_LABEL="${YEAR}-W${WEEK}"
 OUTPUT_FILE="outputs/weekly/${WEEK_LABEL}.md"
 
-# Find this week's daily DIGEST.md files (v2 folder structure + legacy flat files)
-DAILY_FILES=$(find outputs/daily/ -name "DIGEST.md" -path "*/$YEAR-*/*" 2>/dev/null | sort)
-# Fallback: legacy flat .md files
-if [ -z "$DAILY_FILES" ]; then
-  DAILY_FILES=$(find outputs/daily/ -maxdepth 1 -name "${YEAR}*.md" 2>/dev/null | sort | tail -7)
-fi
-
 echo ""
 echo "📅 Weekly Rollup — $WEEK_LABEL"
 echo "================================"
 
-if [ -z "$DAILY_FILES" ]; then
-  echo "⚠️  No daily files found for this week."
+# ── Find this week's baseline ─────────────────────────────────────────────────
+BASELINE_DATE=""
+BASELINE_FILE=""
+for dir in $(find outputs/daily -mindepth 1 -maxdepth 1 -type d -name "${YEAR}-*" | sort); do
+  META="$dir/_meta.json"
+  if [ -f "$META" ]; then
+    META_TYPE=$(python3 -c "import json; d=json.load(open('$META')); print(d.get('type',''))" 2>/dev/null || echo "")
+    META_WEEK=$(python3 -c "import json; d=json.load(open('$META')); print(d.get('week',''))" 2>/dev/null || echo "")
+    if [ "$META_TYPE" = "baseline" ] && [ "$META_WEEK" = "$WEEK_LABEL" ]; then
+      BASELINE_DATE=$(basename "$dir")
+      BASELINE_FILE="$dir/DIGEST.md"
+    fi
+  fi
+done
+
+# ── Find this week's daily deltas ─────────────────────────────────────────────
+DELTA_FILES=""
+DELTA_DATES=""
+DELTA_COUNT=0
+for dir in $(find outputs/daily -mindepth 1 -maxdepth 1 -type d -name "${YEAR}-*" | sort); do
+  META="$dir/_meta.json"
+  if [ -f "$META" ]; then
+    META_TYPE=$(python3 -c "import json; d=json.load(open('$META')); print(d.get('type',''))" 2>/dev/null || echo "")
+    META_WEEK=$(python3 -c "import json; d=json.load(open('$META')); print(d.get('week',''))" 2>/dev/null || echo "")
+    if [ "$META_TYPE" = "delta" ] && [ "$META_WEEK" = "$WEEK_LABEL" ]; then
+      DELTA_DATE=$(basename "$dir")
+      if [ -f "$dir/DIGEST-DELTA.md" ]; then
+        DELTA_FILES="$DELTA_FILES $dir/DIGEST-DELTA.md"
+        DELTA_DATES="$DELTA_DATES $DELTA_DATE"
+        DELTA_COUNT=$((DELTA_COUNT + 1))
+      fi
+    fi
+  fi
+done
+
+# ── Fallback: legacy flat DIGEST.md files (v1/v2 structure) ──────────────────
+if [ -z "$BASELINE_DATE" ] && [ "$DELTA_COUNT" -eq 0 ]; then
+  LEGACY_FILES=$(find outputs/daily/ -name "DIGEST.md" -path "*/$YEAR-*/*" 2>/dev/null | sort | tail -7)
+  if [ -n "$LEGACY_FILES" ]; then
+    echo "ℹ️  No three-tier cadence files found — falling back to legacy DIGEST.md files."
+    BASELINE_FILE=$(echo "$LEGACY_FILES" | head -1)
+    BASELINE_DATE=$(echo "$BASELINE_FILE" | grep -oE "[0-9]{4}-[0-9]{2}-[0-9]{2}")
+  fi
+fi
+
+# ── Status report ─────────────────────────────────────────────────────────────
+if [ -n "$BASELINE_DATE" ]; then
+  echo "  Baseline:  $BASELINE_DATE ($BASELINE_FILE)"
+else
+  echo "  ⚠️  No baseline found for $WEEK_LABEL"
+fi
+echo "  Deltas:    $DELTA_COUNT found (${DELTA_DATES:-none})"
+echo ""
+
+if [ -z "$BASELINE_DATE" ] && [ "$DELTA_COUNT" -eq 0 ]; then
+  echo "❌ No digest files found for $WEEK_LABEL."
+  echo "   Ensure at least a baseline has been run this week."
   exit 1
 fi
 
-echo "Daily files found:"
-echo "$DAILY_FILES"
-echo ""
-
-# Create the weekly output file from template
+# ── Create the weekly file from template ─────────────────────────────────────
+mkdir -p "outputs/weekly"
 cp "templates/weekly-digest.md" "$OUTPUT_FILE"
-sed -i "s/{{WEEK_LABEL}}/$WEEK_LABEL/g" "$OUTPUT_FILE"
-sed -i "s/{{WEEK}}/$WEEK/g" "$OUTPUT_FILE"
-sed -i "s/{{YEAR}}/$YEAR/g" "$OUTPUT_FILE"
-sed -i "s/{{TIMESTAMP}}/$(date '+%Y-%m-%d %H:%M %Z')/g" "$OUTPUT_FILE"
+sed -i "" "s/{{WEEK_LABEL}}/$WEEK_LABEL/g" "$OUTPUT_FILE"
+sed -i "" "s/{{WEEK}}/$WEEK/g" "$OUTPUT_FILE"
+sed -i "" "s/{{YEAR}}/$YEAR/g" "$OUTPUT_FILE"
+sed -i "" "s/{{TIMESTAMP}}/$(date '+%Y-%m-%d %H:%M %Z')/g" "$OUTPUT_FILE"
 
-# Build the daily files list
-DAILY_LIST=""
-for f in $DAILY_FILES; do
-  FDATE=$(basename "$f" .md)
-  DAILY_LIST="$DAILY_LIST [$FDATE]($f)"
-done
-
-FIRST=$(echo "$DAILY_FILES" | sort | head -1 | xargs basename .md 2>/dev/null || echo "")
-LAST=$(echo "$DAILY_FILES" | sort | tail -1 | xargs basename .md 2>/dev/null || echo "")
-sed -i "s/{{DATE_RANGE}}/$FIRST to $LAST/g" "$OUTPUT_FILE"
-sed -i "s/{{DAILY_FILE_LIST}}/$DAILY_LIST/g" "$OUTPUT_FILE"
+DATE_RANGE="$BASELINE_DATE to $(echo $DELTA_DATES | tr ' ' '\n' | tail -1 | tr -d '\n')"
+[ -z "$DELTA_DATES" ] && DATE_RANGE="$BASELINE_DATE (baseline only)"
+sed -i "" "s/{{DATE_RANGE}}/$DATE_RANGE/g" "$OUTPUT_FILE"
 
 echo "✅ Created: $OUTPUT_FILE"
 echo ""
 echo "📋 PASTE THIS INTO CLAUDE to generate the weekly synthesis:"
 echo "==========================================================="
 echo "Generate a weekly market synthesis for $WEEK_LABEL."
-echo "Read outputs/weekly/$WEEK_LABEL.md and all linked daily digest files."
-echo "Fill in the Weekly Bias Summary table and write the synthesis sections."
+echo ""
+if [ -n "$BASELINE_FILE" ]; then
+  echo "Read the weekly baseline:"
+  echo "  $BASELINE_FILE"
+  echo ""
+fi
+if [ -n "$DELTA_FILES" ]; then
+  echo "Read delta files in order:"
+  for f in $DELTA_FILES; do
+    echo "  $f"
+  done
+  echo ""
+fi
+echo "Output template: $OUTPUT_FILE"
+echo ""
+echo "Fill in all sections of the weekly template."
+echo "Add a 'Week Evolution' table showing how bias shifted day by day (see template)."
+echo "Reference outputs/weekly/$WEEK_LABEL.md for structure."
 echo "==========================================================="
 echo ""

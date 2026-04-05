@@ -1,6 +1,6 @@
 # 📆 Monthly Market Digest — {{MONTH_LABEL}}
 
-> Generated: {{TIMESTAMP}} | Synthesized from {{WEEK_COUNT}} weekly digests
+> Generated: {{TIMESTAMP}} | Synthesized from {{WEEK_COUNT}} weekly baselines + daily deltas
 
 ---
 
@@ -18,6 +18,36 @@
 | Inflation | | | |
 | Policy | | | |
 | Risk Appetite | | | |
+
+---
+
+## 📊 Cumulative Regime Shifts
+
+| Factor | Month Start | Month End | # Shifts | Net Direction |
+|--------|------------|-----------|----------|---------------|
+| Growth | | | | |
+| Inflation | | | | |
+| Policy | | | | |
+| Risk Appetite | | | | |
+
+**Critical inflection dates**:
+- [Date]: [Catalyst] → [What shifted]
+- [Date]: [Catalyst] → [What shifted]
+
+**Regime stability**: [Was this a high-drift month with frequent regime changes, or a trend month where the regime held?]
+
+---
+
+## ⚡ Delta Efficiency Summary
+
+| Metric | Value |
+|--------|-------|
+| Weekly baselines this month | |
+| Delta days this month | |
+| Avg segments changed per delta | |
+| High-activity days (5+ changes) | |
+| "Quiet" days (≤2 changes) | |
+| Estimated token savings vs all-full runs | ~% |
 
 ---
 

@@ -15,19 +15,27 @@ MEMORY_DIR = ROOT / "memory"
 BENCHMARKS = ["SPY", "QQQ", "TLT", "GLD"]
 
 def get_digest_files():
-    """Find all daily digest markdown files, handling both flat and nested folder structures."""
+    """Find all daily digest markdown files, handling flat, v2 nested, and v3 three-tier cadence.
+
+    For v3 folders (with _meta.json):
+      - Baseline folders: use DIGEST.md directly (it IS the materialized file)
+      - Delta folders: use DIGEST.md (the materialized file produced by the agent)
+    Both cases produce the same result since the agent always materializes DIGEST.md.
+    Legacy flat .md files and v2 nested folders without _meta.json are also supported.
+    """
     files = []
     if not DAILY_DIR.exists():
         return files
-        
+
     for item in DAILY_DIR.iterdir():
         if item.is_file() and item.suffix == ".md" and re.match(r"\d{4}-\d{2}-\d{2}", item.stem):
+            # Legacy flat file
             files.append(item)
         elif item.is_dir():
             digest = item / "DIGEST.md"
-            if digest.exists():
+            if digest.exists() and digest.stat().st_size > 0:
                 files.append(digest)
-    
+
     # Sort chronologically by date in filename/foldername
     def extract_date(p):
         m = re.search(r"(\d{4}-\d{2}-\d{2})", str(p))
@@ -261,7 +269,7 @@ def simulate_portfolio(digests):
     return portfolio_history, active_positions, b_hist, active_digest
 
 def load_all_markdowns(root):
-    """Scan outputs and memory for Library."""
+    """Scan outputs and memory for Library. Includes delta files tagged as 'Daily Delta'."""
     docs = []
     
     subdirs = [
@@ -300,39 +308,73 @@ def load_all_markdowns(root):
             title += suffix.replace('-',' ').title() if suffix else stem
             
             final_date = date_str if m else fallback_date
-            
             docs.append({
-                "id":       f"{folder.replace('/', '_')}__{stem}",
-                "type":     label,
-                "folder":   folder,
-                "filename": md_file.name,
-                "date":     final_date,
-                "title":    title,
-                "content":  content,
+                "title": title,
+                "type": label,
+                "date": final_date,
+                "path": str(md_file.relative_to(root)),
+                "content": content,
             })
-            
-        # Recursive search for things like outputs/daily/2026-04-05/DIGEST.md
-        for subdir in path.iterdir():
-            if subdir.is_dir() and re.match(r"\d{4}-\d{2}-\d{2}", subdir.name):
-                for submd in subdir.glob("*.md"):
-                    if submd.name == "DIGEST.md" or submd.name == subdir.name + ".md":
-                        try:
-                            content = submd.read_text(encoding="utf-8")
-                        except:
-                            continue
-                        
-                        docs.append({
-                            "id": f"{folder.replace('/', '_')}__{subdir.name}",
-                            "type": label,
-                            "folder": folder,
-                            "filename": f"{subdir.name}/{submd.name}",
-                            "date": subdir.name,
-                            "title": f"{subdir.name} — Digest",
-                            "content": content
-                        })
 
-    # Sort newest-first
-    docs.sort(key=lambda d: d["date"], reverse=True)
+    # Also scan daily output subfolders for delta files (DIGEST-DELTA.md + deltas/*.delta.md)
+    daily_path = root / "outputs" / "daily"
+    if daily_path.exists():
+        for day_dir in sorted(daily_path.iterdir()):
+            if not day_dir.is_dir():
+                continue
+            day_date = day_dir.name
+            if not re.match(r"\d{4}-\d{2}-\d{2}", day_date):
+                continue
+
+            # DIGEST-DELTA.md
+            delta_digest = day_dir / "DIGEST-DELTA.md"
+            if delta_digest.exists() and delta_digest.stat().st_size > 0:
+                try:
+                    content = delta_digest.read_text(encoding="utf-8")
+                except Exception:
+                    content = "_(Error reading file)_"
+                docs.append({
+                    "title": f"{day_date} — Digest Delta",
+                    "type": "Daily Delta",
+                    "date": day_date,
+                    "path": str(delta_digest.relative_to(root)),
+                    "content": content,
+                })
+
+            # deltas/*.delta.md
+            deltas_dir = day_dir / "deltas"
+            if deltas_dir.exists():
+                for delta_file in sorted(deltas_dir.glob("*.delta.md")):
+                    try:
+                        content = delta_file.read_text(encoding="utf-8")
+                    except Exception:
+                        content = "_(Error reading file)_"
+                    segment = delta_file.stem.replace(".delta", "")
+                    docs.append({
+                        "title": f"{day_date} — {segment.replace('-', ' ').title()} Delta",
+                        "type": "Daily Delta",
+                        "date": day_date,
+                        "path": str(delta_file.relative_to(root)),
+                        "content": content,
+                    })
+
+            # sectors/*.delta.md (sector-level deltas)
+            sectors_dir = day_dir / "sectors"
+            if sectors_dir.exists():
+                for delta_file in sorted(sectors_dir.glob("*.delta.md")):
+                    try:
+                        content = delta_file.read_text(encoding="utf-8")
+                    except Exception:
+                        content = "_(Error reading file)_"
+                    segment = delta_file.stem.replace(".delta", "")
+                    docs.append({
+                        "title": f"{day_date} — {segment.replace('-', ' ').title()} Sector Delta",
+                        "type": "Daily Delta",
+                        "date": day_date,
+                        "path": str(delta_file.relative_to(root)),
+                        "content": content,
+                    })
+
     return docs
 
 def main():

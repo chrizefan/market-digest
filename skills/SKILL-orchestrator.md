@@ -9,7 +9,36 @@ description: >
 
 # Market Digest — Master Orchestrator
 
-This is the primary entry point for every comprehensive daily digest session. Follow all 8 phases sequentially. Do not skip phases. Each phase is a dedicated research task with its own output file.
+This is the primary entry point for every comprehensive daily digest session.
+
+---
+
+## Run Mode Detection
+
+Before doing anything else, check today's `_meta.json` to determine the run type:
+
+```bash
+cat outputs/daily/$(date +%Y-%m-%d)/_meta.json
+```
+
+| `_meta.json` type | Action |
+|-------------------|--------|
+| `"baseline"` | Continue below — run the full 9-phase pipeline (this skill) |
+| `"delta"` | **Stop. Switch to `skills/SKILL-daily-delta.md` instead.** |
+| File missing | Check day of week: Sunday → continue below. Mon–Sat → run `./scripts/new-day.sh` first |
+
+**On Sundays** (or when `_meta.json` says baseline): Use `skills/SKILL-weekly-baseline.md` for the
+enhanced baseline run that adds the Week Setup preamble and Week Ahead Calendar.
+
+**On Mon–Sat** (when `_meta.json` says delta): Use `skills/SKILL-daily-delta.md` for the lightweight
+delta run. Do NOT run this full orchestrator — that wastes ~70% of tokens unnecessarily.
+
+---
+
+## Full Pipeline (Baseline Mode)
+
+This is the complete 9-phase pipeline. Only run when confirmed in baseline mode.
+Follow all 9 phases sequentially. Do not skip phases. Each phase is a dedicated research task with its own output file.
 
 ---
 

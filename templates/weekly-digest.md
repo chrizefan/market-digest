@@ -1,7 +1,8 @@
 # 📅 Weekly Market Digest — {{WEEK_LABEL}}
 
 > Week {{WEEK}} of {{YEAR}} | Generated: {{TIMESTAMP}}
-> Synthesized from daily digests: {{DATE_RANGE}}
+> Synthesized from: {{DATE_RANGE}}
+> Source files: 1 weekly baseline + {{DELTA_COUNT}} delta days
 
 ---
 
@@ -11,10 +12,30 @@
 
 ---
 
+## 📈 Week Evolution — Daily Bias Shifts
+
+> Trace how market bias evolved from the Sunday baseline through each delta day.
+> Use "→" to show direction of change, "—" for unchanged.
+
+| Day | Date | Macro | Equities | Crypto | Bonds | Key Catalyst |
+|-----|------|-------|----------|--------|-------|-------------|
+| Sun (Baseline) | | | | | | Week-open baseline |
+| Mon | | | | | | |
+| Tue | | | | | | |
+| Wed | | | | | | |
+| Thu | | | | | | |
+| Fri | | | | | | |
+
+**Net week shift**: [From baseline to Friday — what changed, what held]
+**Mid-week inflection** (if any): [Date and catalyst for the biggest single-day shift]
+**Regime held / broken**: [Did the baseline's macro regime classification hold all week?]
+
+---
+
 ## 🌡️ Weekly Regime Summary
 
-| Factor | Monday | Friday | Weekly Shift |
-|--------|--------|--------|--------------|
+| Factor | Baseline (Sun) | Friday Close | Weekly Shift |
+|--------|---------------|-------------|--------------|
 | Growth | | | Improving / Deteriorating / Stable |
 | Inflation | | | Hotter / Cooler / Stable |
 | Policy | | | More hawkish / More dovish / Unchanged |
