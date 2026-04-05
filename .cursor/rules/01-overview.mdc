@@ -1,0 +1,37 @@
+---
+description: Market Digest system overview, architecture, and behavioral rules
+alwaysApply: true
+---
+
+# Market Digest — System Overview
+
+## Purpose
+A daily market intelligence system producing structured research across equities, macro, crypto, bonds, commodities, forex, and international markets. Uses a 7-phase pipeline where each phase builds on the previous.
+
+## 7-Phase Pipeline
+| Phase | Name | Skill File | Reads From |
+|-------|------|-----------|------------|
+| 1 | Alternative Data | `SKILL-premarket-pulse.md` + alt-data skills | External feeds |
+| 2 | Institutional Intel | `skills/institutional/` | Phase 1 outputs |
+| 3 | Macro Regime | `SKILL-macro.md` | Phases 1-2 + memory |
+| 4 | Asset Classes | bonds/commodities/forex/crypto/intl skills | Phase 3 macro |
+| 5 | Equities + Sectors | `SKILL-equity.md` + 11 sector skills | Phases 3-4 |
+| 6 | Earnings & Events | `SKILL-earnings.md` | Phases 3-5 |
+| 7 | Synthesis | `SKILL-digest.md` | All phases |
+
+## Critical Files
+- `skills/SKILL-orchestrator.md` — read this FIRST for any full session
+- `config/watchlist.md` — tracked assets
+- `config/preferences.md` — trading style + active theses
+- `memory/BIAS-TRACKER.md` — daily cross-asset bias (14-column table)
+- `AGENTS.md` — cross-platform behavioral rules
+
+## Behavioral Rules
+- **Always** read `config/` files at session start
+- **Always** read corresponding `memory/*/ROLLING.md` before writing research
+- **Never** delete or rewrite memory file history
+- **Never** edit `outputs/daily/` files manually
+- Output paths: `outputs/daily/{{DATE}}/` — use `{{DATE}}` placeholder
+
+## macOS Critical
+Use `sed -i ""` not `sed -i` — macOS BSD sed requires the extension argument.

@@ -1,14 +1,16 @@
 ---
 name: market-forex
-description: Run forex and currency analysis as part of the daily digest. Covers DXY, major pairs, carry trades, and FX as a risk sentiment signal.
+description: Run forex and currency analysis as part of the daily digest. Covers DXY, major pairs, EM currencies, carry trades, and FX as a risk sentiment signal. In the orchestrator, run as Phase 4C — output (DXY direction) feeds into international, commodities, and materials analysis.
 ---
 
-# Forex Analysis Skill
+# Forex Analysis Skill — v2
 
 ## Inputs
 - `config/watchlist.md` (forex section)
 - `config/preferences.md`
 - `memory/forex/ROLLING.md`
+- Macro regime output
+- Bonds output (rate differentials drive FX)
 
 ## Research Steps
 
@@ -37,9 +39,21 @@ For each pair in watchlist:
 - Is the yen carry trade under stress? (rapid USD/JPY moves can cause cross-asset liquidation)
 - Any sudden JPY strengthening that could ripple into equities/crypto?
 
-### 5. Canadian Dollar (if relevant)
+### 5. EM FX Stress Monitor
+- **DXY and EM currencies**: strong DXY → EM capital outflows → EM currency weakness
+- Key EM FX pairs: USD/BRL, USD/TRY, USD/ZAR, USD/MXN — any stress?
+- EM FX Volatility Index (EMVX) if available
+- Any country-specific EM currency crisis risk?
+- USD/CNH (offshore yuan): PBOC fixing vs market rate — any significant divergence indicating stress?
+
+### 6. Real Effective Exchange Rates (REER)
+- USD REER: Is the dollar overvalued or undervalued on a trade-weighted, inflation-adjusted basis?
+- Overvalued USD REER = headwind for US multinational earnings (currency effect on overseas revenues)
+- EUR REER, JPY REER: any currency that is dramatically mis-valued creating regime risk?
+
+### 7. Canadian Dollar (if relevant)
 - USD/CAD level
-- Oil correlation holding?
+- Oil correlation holding? (At $112 WTI, CAD should be strong)
 - Any Bank of Canada signals or Canada-specific macro events?
 
 ## Output Format
@@ -54,16 +68,20 @@ For each pair in watchlist:
 - GBP/USD: X.XXXX (±X%) | [driver]
 - USD/CAD: X.XXXX (±X%) | [oil/BoC driver]
 
+**EM FX Stress**: [Any EM currency crisis signal | USD/CNH fixing vs market]
+
 **FX Risk Signal**: [Risk-on / Risk-off / Mixed — rationale]
 
 **Carry Watch**: [Yen carry stable/stressed | implication for risk assets]
+
+**USD REER**: [Over/undervalued — implication for US multinational earnings]
 
 **Watch**: [Key FX event or level to monitor]
 ```
 
 ## Memory Update
-After completing analysis, produce 3-4 bullets for `memory/forex/ROLLING.md`:
-- One on DXY trend and implications
-- One on the key FX risk sentiment signal
-- One on any notable pair move or central bank divergence
-- One on carry trade / yen stability
+After completing analysis, produce 4 bullets for `memory/forex/ROLLING.md`:
+- One on DXY trend and implications for commodities and international
+- One on the key FX risk sentiment signal (AUD/USD carry, safe-haven JPY/CHF)
+- One on EM FX stress or notable EM currency development
+- One on carry trade / yen stability and cross-asset risk implication

@@ -1,14 +1,16 @@
 ---
 name: market-crypto
-description: Run crypto market analysis as part of the daily digest. Covers BTC, ETH, major alts, on-chain signals, sentiment, and key levels.
+description: Run crypto market analysis as part of the daily digest. Covers BTC, ETH, major alts, on-chain signals, sentiment, and key levels. In the orchestrator, run as Phase 4D — reads macro regime and institutional ETF flow data from BTC spot ETFs (IBIT/FBTC).
 ---
 
-# Crypto Analysis Skill
+# Crypto Analysis Skill — v2
 
 ## Inputs
 - `config/watchlist.md` (crypto section)
 - `config/preferences.md`
 - `memory/crypto/ROLLING.md`
+- Macro regime output (risk-on/off affects crypto)
+- Institutional flows output (IBIT/FBTC daily flow data)
 
 ## Research Steps
 
@@ -37,14 +39,29 @@ For each alt in watchlist:
 - Exchange inflows/outflows if notable
 - Social sentiment / trending narratives
 
-### 5. Macro-Crypto Correlation
-- Is crypto moving with or against equities / risk assets today?
-- Any macro triggers driving crypto (Fed, dollar, risk-off)?
-- ETF flows (BTC spot ETF) if data available
+### 5. BTC Spot ETF Institutional Flows (Critical)
+- **IBIT** (BlackRock): daily creation/redemption flow — largest institutional BTC vehicle
+- **FBTC** (Fidelity): daily flow
+- Combined daily BTC ETF flow: net positive = institutional accumulation; net negative = institutional distribution
+- Cumulative flows since inception: context for structural demand
+- IBIT options: any notable institutional hedging or speculation?
+- Is institutional Bitcoin adoption accelerating or stalling based on flow trend?
 
-### 6. Key Narratives
-- What are the dominant crypto narratives right now? (e.g., ETF flows, regulatory, L2s, AI tokens, RWA, etc.)
+### 6. Stablecoin Market Signal
+- Total stablecoin market cap direction: growing = dry powder accumulating; shrinking = deployed or exiting
+- USDT, USDC supply trends
+- Stablecoin dominance: rising = capital waiting on sidelines (cautious); falling = deploying into risk
+
+### 7. Macro-Crypto Correlation
+- Is crypto moving with or against equities / risk assets today?
+- BTC/NASDAQ 90-day rolling correlation: near 1.0 = correlated risk asset; near 0 = decorrelated store of value
+- Any macro triggers driving crypto (Fed, dollar, risk-off)?
+- Does crypto's correlation today reinforce or break the recent trend?
+
+### 8. Key Narratives
+- What are the dominant crypto narratives right now? (e.g., BTC ETF institutional flows, ETH staking yields, Solana ecosystem, L2s, AI tokens, RWA, etc.)
 - Any breaking news in crypto space?
+- Any regulatory development (SEC, CFTC, global regulation)?
 
 ## Output Format
 
@@ -63,14 +80,20 @@ For each alt in watchlist:
 
 **Macro Correlation**: [Correlated / Decorrelated + implication]
 
+**BTC ETF Flows**: IBIT: ±$Xm | FBTC: ±$Xm | Net: [accumulation/distribution]
+
+**Stablecoin Signal**: Total supply $X | [Growing/Shrinking] → [dry powder / deployed]
+
+**BTC/NASDAQ Correlation**: X.XX (90d) — [Correlated risk asset / Decorrelated SoV]
+
 **Active Narratives**: [Top 1-2 themes]
 
 **Watch**: [Key level or event to track]
 ```
 
 ## Memory Update
-After completing analysis, produce 3-4 bullets for `memory/crypto/ROLLING.md`:
-- One on BTC structure and trend
-- One on sentiment/positioning
-- One on dominant narrative
-- One on any alt-specific development
+After completing analysis, produce 4 bullets for `memory/crypto/ROLLING.md`:
+- One on BTC structure, trend, and key level
+- One on institutional ETF flow direction (IBIT/FBTC — accumulation or distribution?)
+- One on sentiment/positioning (Fear & Greed + funding rates)
+- One on dominant narrative or alt-market development

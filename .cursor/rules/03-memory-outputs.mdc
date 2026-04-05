@@ -1,0 +1,80 @@
+---
+description: Memory file and output file conventions — append-only rules, naming, format
+globs: memory/**/*.md,outputs/**/*.md
+alwaysApply: false
+---
+
+# Memory & Output Conventions
+
+## Memory Files Are Append-Only
+Files matching `memory/**/ROLLING.md`:
+- **Never** delete existing entries
+- **Never** reorder existing entries
+- **Always** add new content at the END of the file
+- One header per day: `## YYYY-MM-DD`
+- 3-5 bullet points under each header: `- [observation]`
+
+## Memory Directory Structure
+```
+memory/
+  BIAS-TRACKER.md              ← 14-column daily table (special format)
+  THESES.md                    ← Active portfolio theses
+  macro/ROLLING.md
+  bonds/ROLLING.md
+  commodities/ROLLING.md
+  forex/ROLLING.md
+  crypto/ROLLING.md
+  equity/ROLLING.md
+  sectors/technology/ROLLING.md
+  sectors/healthcare/ROLLING.md
+  sectors/energy/ROLLING.md
+  ... (11 sector subdirs)
+  alternative-data/sentiment/ROLLING.md
+  alternative-data/cta/ROLLING.md
+  alternative-data/options/ROLLING.md
+  alternative-data/politician/ROLLING.md
+  institutional/flows/ROLLING.md
+  institutional/hedge-fund/ROLLING.md
+  international/ROLLING.md
+```
+
+## Memory Traversal
+To search all memory files from shell scripts:
+```bash
+find memory/ -name "ROLLING.md"  # correct: finds all levels
+memory/*/ROLLING.md              # WRONG: misses subdirectory levels
+```
+
+## BIAS-TRACKER.md Format
+The daily bias table has 14 columns: Date, Macro, Bonds, USD, Gold, Oil, Crypto, Equities, Asia, Europe, EM, Sentiment, CTA, Conviction. Append a new row for each session — never edit past rows.
+
+## Output Files Are Agent-Generated
+`outputs/daily/YYYY-MM-DD/` files:
+- Do NOT manually edit these files
+- Do NOT commit partial/empty output files
+- Structure per day:
+  ```
+  DIGEST.md           ← Master synthesis (Phase 7)
+  macro.md            ← Phase 3
+  bonds.md            ← Phase 4A
+  commodities.md      ← Phase 4B
+  forex.md            ← Phase 4C
+  crypto.md           ← Phase 4D
+  international.md    ← Phase 4E
+  equities.md         ← Phase 5A
+  alt-data.md         ← Phase 1
+  institutional.md    ← Phase 2
+  earnings.md         ← Phase 6
+  sectors/
+    technology.md
+    healthcare.md
+    energy.md
+    financials.md
+    consumer-staples.md
+    consumer-discretionary.md
+    industrials.md
+    materials.md
+    utilities.md
+    real-estate.md
+    communication.md
+  ```

@@ -1,14 +1,15 @@
 ---
 name: market-bonds
-description: Run bond market and interest rates analysis as part of the daily digest. Covers Treasury yields, yield curve, credit spreads, Fed expectations, and bond ETFs.
+description: Run bond market and interest rates analysis as part of the daily digest. Covers Treasury yields, yield curve, inflation breakevens, TIPS real yields, credit spreads, Fed expectations, and bond ETFs. Run as Phase 4A — output feeds into commodities, forex, REITs, and utilities analysis.
 ---
 
-# Bonds & Rates Analysis Skill
+# Bonds & Rates Analysis Skill — v2
 
 ## Inputs
 - `config/watchlist.md` (bonds section)
 - `config/preferences.md`
 - `memory/bonds/ROLLING.md`
+- Macro regime output (rate path context)
 
 ## Research Steps
 
@@ -36,11 +37,27 @@ description: Run bond market and interest rates analysis as part of the daily di
 - HY OAS (option-adjusted spread) — tightening or widening?
 - Spread direction implies: risk-on (tightening) or risk-off (widening)
 
-### 5. Inflation Expectations
-- TIP ETF direction
-- 5Y5Y breakeven inflation rate (if available)
-- 10Y real yield (nominal minus breakeven)
-- Any recent inflation data or upcoming prints
+### 5. Inflation Expectations & Real Yields (Expanded)
+- **TIPS** (iShares TIPS Bond ETF): price and direction
+- **5Y breakeven inflation rate**: current level vs prior week — is market pricing more or less inflation?
+- **10Y breakeven**: direction — critical for gold and commodity thesis validation
+- **10Y TIPS real yield**: nominal 10Y minus 10Y breakeven
+  - Positive real yield: headwind for gold and growth stocks
+  - Negative real yield: tailwind for gold, commodities, and inflation hedges
+  - Current level and direction vs last 30 days
+- **5Y5Y forward inflation swap**: where does the market expect inflation 5-10 years out?
+
+### 5B. Credit Quality Migration
+- IG credit: any notable downgrades from investment grade to high yield (fallen angels)?
+- HY credit: any upgrades from HY to IG (rising stars)?
+- Leveraged loan market: CLO formation pace, default rates
+- Distressed debt ratio: % of HY bonds at spread >1000bps
+
+### 5C. Sovereign Spread Monitor
+- Italy/Greece (peripheral Eurozone) spreads vs German Bund: widening = EU stress
+- UK Gilts vs German Bund: any UK fiscal credibility risk?
+- EM sovereign spreads (EMBI spread): reference EMB output from international analysis
+- Japan JGB 10Y: any BOJ yield control adjustment?
 
 ### 6. Watched ETFs
 - TLT, IEF: price action and trend
@@ -59,16 +76,23 @@ description: Run bond market and interest rates analysis as part of the daily di
 
 **Credit**: [HY spreads: tightening/widening | Signal: risk-on/off]
 
-**Inflation**: [Real yield: X% | Breakevens: direction]
+**Inflation / Real Yields**:
+- 10Y Breakeven: X.XX% | Direction: [rising/falling]
+- 10Y TIPS Real Yield: X.XX% | [Positive = headwind / Negative = tailwind for gold+commodities]
+- 5Y Breakeven: X.XX%
+
+**Credit**: HY spreads [tightening/widening at Xbps] | IG: [Xbps] | Signal: [risk-on/off]
+
+**Sovereign Stress**: [Italy/periphery spread | EM sovereign | Any stress flag]
 
 **TLT / IEF**: [Price, trend, key level]
 
-**Watch**: [Upcoming data release or Fed speak that could move rates]
+**Watch**: [Upcoming Treasury auction, Fed speak, or inflation print that could move rates]
 ```
 
 ## Memory Update
-After completing analysis, produce 3-4 bullets for `memory/bonds/ROLLING.md`:
-- One on yield direction and trend
-- One on curve shape evolution
-- One on Fed expectations vs. prior session
-- One on credit spread direction (risk signal)
+After completing analysis, produce 4 bullets for `memory/bonds/ROLLING.md`:
+- One on yield direction, trend, and key level
+- One on inflation breakevens and real yield direction (critical for commodity/gold thesis)
+- One on Fed expectations change vs. prior session
+- One on credit spread direction and any sovereign stress signal

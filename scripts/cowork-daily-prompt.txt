@@ -1,22 +1,95 @@
-Run the daily market digest.
+Run the full daily market digest for {current_date}.
 
-Today's date is {current_date}.
+Follow skills/SKILL-orchestrator.md exactly. This is the 8-phase pipeline:
 
-Follow skills/SKILL-digest.md exactly. Steps:
+PHASE 1 — ALTERNATIVE DATA (load this FIRST before any price analysis):
+Read skills/alternative-data/SKILL-sentiment-news.md
+Read skills/alternative-data/SKILL-cta-positioning.md
+Read skills/alternative-data/SKILL-options-derivatives.md
+Read skills/alternative-data/SKILL-politician-signals.md
+Save output to: outputs/daily/{current_date}/alt-data.md
 
-1. Read config/watchlist.md and config/preferences.md
-2. Read all memory/*/ROLLING.md files (macro, equity, crypto, bonds, commodities, forex)
-3. Run each segment analysis using web search for live data:
-   - Macro (SKILL-macro.md) — run first, sets the regime
-   - Equities (SKILL-equity.md)
-   - Crypto (SKILL-crypto.md)
-   - Bonds & Rates (SKILL-bonds.md)
-   - Commodities (SKILL-commodities.md)
-   - Forex (SKILL-forex.md)
-4. After each segment, prepare a memory update (3-4 bullets)
-5. Append each memory update to the corresponding memory/*/ROLLING.md file
-6. Compile the full master digest using templates/master-digest.md
-7. Save the complete digest to outputs/daily/{current_date}.md
-8. Confirm: list all memory files updated and confirm the output file path
+PHASE 2 — INSTITUTIONAL INTELLIGENCE:
+Read skills/institutional/SKILL-institutional-flows.md
+Read skills/institutional/SKILL-hedge-fund-intel.md
+Save output to: outputs/daily/{current_date}/institutional.md
 
-Do not skip the memory updates. Do not use training data for prices or news — search for everything.
+PHASE 3 — MACRO ANALYSIS:
+Read skills/SKILL-macro.md (v2)
+Informed by Phase 1 and Phase 2 signals.
+Save output to: outputs/daily/{current_date}/macro.md
+
+PHASE 4 — ASSET CLASSES:
+Read skills/SKILL-bonds.md → save to outputs/daily/{current_date}/bonds.md
+Read skills/SKILL-commodities.md → save to outputs/daily/{current_date}/commodities.md
+Read skills/SKILL-forex.md → save to outputs/daily/{current_date}/forex.md
+Read skills/SKILL-crypto.md → save to outputs/daily/{current_date}/crypto.md
+Read skills/SKILL-international.md → save to outputs/daily/{current_date}/international.md
+
+PHASE 5 — US EQUITIES:
+Read skills/SKILL-equity.md → save to outputs/daily/{current_date}/equities.md
+Then run all 11 sector sub-agents:
+  skills/sectors/SKILL-sector-technology.md → sectors/technology.md
+  skills/sectors/SKILL-sector-healthcare.md → sectors/healthcare.md
+  skills/sectors/SKILL-sector-energy.md → sectors/energy.md
+  skills/sectors/SKILL-sector-financials.md → sectors/financials.md
+  skills/sectors/SKILL-sector-consumer-staples.md → sectors/consumer-staples.md
+  skills/sectors/SKILL-sector-consumer-disc.md → sectors/consumer-disc.md
+  skills/sectors/SKILL-sector-industrials.md → sectors/industrials.md
+  skills/sectors/SKILL-sector-utilities.md → sectors/utilities.md
+  skills/sectors/SKILL-sector-materials.md → sectors/materials.md
+  skills/sectors/SKILL-sector-real-estate.md → sectors/real-estate.md
+  skills/sectors/SKILL-sector-comms.md → sectors/comms.md
+
+PHASE 6 — MEMORY & BIAS TRACKER:
+Update ALL of the following rolling memory files:
+  memory/macro/ROLLING.md
+  memory/equity/ROLLING.md
+  memory/crypto/ROLLING.md
+  memory/bonds/ROLLING.md
+  memory/commodities/ROLLING.md
+  memory/forex/ROLLING.md
+  memory/international/ROLLING.md
+  memory/alternative-data/sentiment/ROLLING.md
+  memory/alternative-data/cta-positioning/ROLLING.md
+  memory/alternative-data/options/ROLLING.md
+  memory/alternative-data/politician/ROLLING.md
+  memory/institutional/flows/ROLLING.md
+  memory/institutional/hedge-funds/ROLLING.md
+  memory/sectors/technology/ROLLING.md
+  memory/sectors/healthcare/ROLLING.md
+  memory/sectors/energy/ROLLING.md
+  memory/sectors/financials/ROLLING.md
+  memory/sectors/consumer/ROLLING.md
+  memory/sectors/industrials/ROLLING.md
+  memory/sectors/utilities/ROLLING.md
+  memory/sectors/materials/ROLLING.md
+  memory/sectors/real-estate/ROLLING.md
+  memory/sectors/comms/ROLLING.md
+Update memory/BIAS-TRACKER.md with today's date row.
+
+PHASE 7 — SYNTHESIS:
+Using templates/master-digest.md, compile DIGEST.md.
+Save to: outputs/daily/{current_date}/DIGEST.md
+
+PHASE 8 — DASHBOARD REGENERATION:
+Execute the backend parser to feed the web dashboard frontend:
+`python3 scripts/update-tearsheet.py`
+
+BOOT — Read these config and memory files BEFORE starting Phase 1:
+  config/watchlist.md
+  config/preferences.md
+  config/hedge-funds.md
+  config/data-sources.md
+  memory/macro/ROLLING.md (last 3 entries)
+  memory/equity/ROLLING.md (last 3 entries)
+  memory/crypto/ROLLING.md (last 3 entries)
+  memory/bonds/ROLLING.md (last 3 entries)
+  memory/commodities/ROLLING.md (last 3 entries)
+  memory/forex/ROLLING.md (last 3 entries)
+  memory/BIAS-TRACKER.md (last 5 rows)
+  memory/THESES.md
+
+Do not use training data for prices, news, or market data. Search for everything live.
+Do not skip memory updates. All 23 memory files must be updated.
+Output file: outputs/daily/{current_date}/DIGEST.md

@@ -1,93 +1,142 @@
-# 📊 Daily Market Digest System
+# Market Digest
 
-A structured research system for generating daily market intelligence across all asset classes — equities, crypto, bonds, commodities, forex, and macro. All outputs are versioned, and rolling memory files track the evolution of research over time.
+A daily market intelligence system with a 7-phase AI-orchestrated pipeline. Produces structured research across all asset classes: equities, macro, crypto, bonds, commodities, forex, international markets, and all 11 S&P sectors. Outputs are version-controlled and 24 append-only rolling memory files compound research across sessions.
 
----
+## Quick Start
 
-## 🗂️ Project Structure
+```bash
+./scripts/new-day.sh        # Create today's folder + print full digest prompt
+./scripts/status.sh         # Project health check
+./scripts/git-commit.sh     # Commit all outputs
+```
+
+Paste the output of `new-day.sh` into Claude Code, Claude.ai, Cursor, or any AI platform.
+
+## 7-Phase Pipeline
+
+| Phase | Description | Output |
+|-------|-------------|--------|
+| 1 | Alternative Data (sentiment, CTA, options flow, politician trades) | `alt-data.md` |
+| 2 | Institutional Intel (dark pools, hedge fund moves, 13F) | `institutional.md` |
+| 3 | Macro Regime (rates, dollar, risk-on/off) | `macro.md` |
+| 4 | Asset Classes (bonds, commodities, forex, crypto, international) | 5 segment files |
+| 5 | Equities + 11 Sectors (each as independent sub-agent) | `equities.md` + 11 sector files |
+| 6 | Earnings & Events | `earnings.md` |
+| 7 | Synthesis | `DIGEST.md` |
+
+## Project Structure
 
 ```
 market-digest/
-├── README.md                    ← This file
+├── CLAUDE.md                    ← Claude Code entry point (auto-read)
+├── AGENTS.md                    ← Cross-platform agent entry point
+│
 ├── config/
-│   ├── watchlist.md             ← Your tracked tickers, sectors, assets
-│   └── preferences.md           ← Your trading style, biases, risk profile
+│   ├── watchlist.md             ← Tracked tickers, sectors, assets
+│   ├── preferences.md           ← Trading style, risk profile, active theses
+│   ├── hedge-funds.md           ← Tracked institutional players
+│   ├── data-sources.md          ← Data and research feed catalog
+│   └── email-research.md        ← Newsletter + research sources
+│
 ├── skills/
-│   ├── SKILL-equity.md          ← How Claude runs equity analysis
-│   ├── SKILL-crypto.md          ← How Claude runs crypto analysis
-│   ├── SKILL-bonds.md           ← How Claude runs bond/rates analysis
-│   ├── SKILL-commodities.md     ← How Claude runs commodities analysis
-│   ├── SKILL-macro.md           ← How Claude runs macro/global analysis
-│   ├── SKILL-forex.md           ← How Claude runs FX analysis
-│   └── SKILL-digest.md          ← How Claude assembles the master digest
-├── templates/
-│   ├── segment-report.md        ← Template for each market segment
-│   └── master-digest.md         ← Template for the daily digest
+│   ├── SKILL-orchestrator.md    ← Master 7-phase pipeline driver
+│   ├── SKILL-macro.md           ← Phase 3
+│   ├── SKILL-equity.md          ← Phase 5A
+│   ├── SKILL-bonds.md           ← Phase 4A
+│   ├── SKILL-commodities.md     ← Phase 4B
+│   ├── SKILL-forex.md           ← Phase 4C
+│   ├── SKILL-crypto.md          ← Phase 4D
+│   ├── SKILL-international.md   ← Phase 4E
+│   ├── SKILL-earnings.md        ← Phase 6
+│   ├── SKILL-digest.md          ← Phase 7
+│   ├── SKILL-premarket-pulse.md ← Phase 1 premarket
+│   ├── SKILL-deep-dive.md       ← Ad-hoc ticker research
+│   ├── SKILL-thesis.md          ← Thesis builder
+│   ├── SKILL-thesis-tracker.md  ← Thesis review
+│   ├── SKILL-sector-rotation.md ← Rotation analysis
+│   ├── SKILL-sector-heatmap.md  ← Sector heatmap
+│   ├── sectors/                 ← 11 sector sub-agent skills
+│   ├── alternative-data/        ← 4 alt-data skills (Phase 1)
+│   └── institutional/           ← 2 institutional skills (Phase 2)
+│
 ├── memory/
-│   ├── equity/ROLLING.md        ← Evolving equity research memory
-│   ├── crypto/ROLLING.md        ← Evolving crypto research memory
-│   ├── bonds/ROLLING.md         ← Evolving bonds/rates memory
-│   ├── commodities/ROLLING.md   ← Evolving commodities memory
-│   ├── macro/ROLLING.md         ← Evolving macro memory
-│   └── forex/ROLLING.md         ← Evolving FX memory
-├── outputs/
-│   ├── daily/YYYY-MM-DD.md      ← One file per day
-│   ├── weekly/YYYY-Wnn.md       ← Weekly rollup
-│   └── monthly/YYYY-MM.md       ← Monthly rollup
-├── scripts/
-│   ├── new-day.sh               ← Start a new analysis day
-│   ├── archive.sh               ← Archive old outputs
-│   ├── weekly-rollup.sh         ← Generate weekly summary
-│   └── git-commit.sh            ← Auto-commit all outputs
-└── archive/                     ← Compressed older outputs
+│   ├── BIAS-TRACKER.md          ← 14-column daily cross-asset bias table
+│   ├── THESES.md                ← Active portfolio theses
+│   ├── macro/ROLLING.md
+│   ├── bonds/ROLLING.md
+│   ├── commodities/ROLLING.md
+│   ├── forex/ROLLING.md
+│   ├── crypto/ROLLING.md
+│   ├── equity/ROLLING.md
+│   ├── sectors/{11 dirs}/ROLLING.md
+│   ├── alternative-data/{4 dirs}/ROLLING.md
+│   ├── institutional/{2 dirs}/ROLLING.md
+│   └── international/ROLLING.md
+│
+├── templates/                   ← Output templates with {{PLACEHOLDER}} syntax
+├── agents/                      ← Named agent role definitions
+├── docs/agentic/                ← Full agentic documentation suite
+├── scripts/                     ← Bash utility scripts
+└── outputs/
+    ├── daily/YYYY-MM-DD/        ← 22 files per day
+    ├── weekly/                  ← Weekly syntheses
+    ├── monthly/                 ← Monthly rollups
+    └── deep-dives/              ← Ad-hoc ticker research
 ```
 
----
+## AI Platform Setup
 
-## 🚀 Daily Workflow
+| Platform | Config File | Auto-read? |
+|----------|------------|-----------|
+| Claude Code | `CLAUDE.md` | Yes — run `claude` from repo root |
+| Claude.ai Projects | `CLAUDE_PROJECT_INSTRUCTIONS.md` | Paste into Project Instructions |
+| GitHub Copilot | `.github/copilot-instructions.md` | Yes |
+| Cursor | `.cursor/rules/` (v2) or `.cursorrules` | Yes |
+| Windsurf | `.windsurfrules` | Yes |
+| OpenHands / Devin | `AGENTS.md` | Provide as context |
 
-### 1. Start your session
-```bash
-./scripts/new-day.sh
-```
-This creates today's output file from the template and prints the prompt to paste into Claude.
+Full setup guide: `docs/agentic/PLATFORMS.md`
 
-### 2. Paste the prompt into Claude (this Project)
-Claude will:
-- Search for latest news and market data for each segment
-- Update each segment's ROLLING.md memory file
-- Produce individual segment reports
-- Combine into a single master digest
+## Setup Checklist
 
-### 3. Commit the outputs
-```bash
-./scripts/git-commit.sh
-```
-
-### 4. End of week
-```bash
-./scripts/weekly-rollup.sh
-```
-
----
-
-## 📋 Setup Checklist
-
-- [ ] Edit `config/watchlist.md` with your tickers, sectors, crypto, etc.
+- [ ] Edit `config/watchlist.md` with your tickers, sectors, and crypto
 - [ ] Edit `config/preferences.md` with your trading style and risk profile
-- [ ] Run `git init` and push to a private GitHub repo
-- [ ] Run `./scripts/new-day.sh` each morning to begin
+- [ ] Edit `config/hedge-funds.md` with institutions you track
+- [ ] Push to a private GitHub repo
+- [ ] Run `./scripts/new-day.sh` to begin your first session
 
----
+## Memory System
 
-## 🔁 Memory System
+24 append-only `ROLLING.md` files track evolving research across sessions. Each is read before its corresponding analysis runs, then appended with new findings. This creates compounding intelligence — each session builds on all prior sessions.
 
-Each market segment has a `ROLLING.md` file in `memory/`. This file is **appended to daily** with key findings, evolving themes, and directional biases. When Claude runs the next day's analysis, it reads these files first to maintain continuity — tracking thesis evolution, trend confirmation, and when narratives break.
+Memory files are **never rewritten** — only appended. The git history is a timeline of your research evolution.
 
-The rolling memory is what separates this from a one-off daily brief. Over weeks, it becomes a living research document.
+See `docs/agentic/MEMORY-SYSTEM.md` for the complete 24-file inventory.
 
----
+## Documentation
 
-## ⚙️ Git Strategy
+| File | Contents |
+|------|----------|
+| `CLAUDE.md` | Claude Code reference |
+| `AGENTS.md` | Cross-platform behavioral rules |
+| `docs/agentic/README.md` | Agentic docs entry point |
+| `docs/agentic/ARCHITECTURE.md` | System design + data flows |
+| `docs/agentic/PLATFORMS.md` | Per-platform setup guide |
+| `docs/agentic/WORKFLOWS.md` | Daily/weekly/monthly workflows |
+| `docs/agentic/MEMORY-SYSTEM.md` | Memory file reference |
+| `docs/agentic/SKILLS-CATALOG.md` | All 33+ skills indexed |
+| `docs/agentic/PROMPTS.md` | Copy-paste prompt patterns |
 
-All outputs are committed with date-stamped messages. The git log becomes a timeline of your market views and research evolution. Weekly and monthly rollups are generated from the daily files.
+## Scripts
+
+```bash
+./scripts/new-day.sh              # Create daily folder + print digest prompt
+./scripts/status.sh               # Project health check
+./scripts/run-segment.sh {name}   # Print single segment prompt
+./scripts/combine-digest.sh       # Print Phase 7 synthesis prompt
+./scripts/git-commit.sh           # Commit outputs + memory
+./scripts/weekly-rollup.sh        # Weekly synthesis prompt
+./scripts/memory-search.sh "BTC"  # Search all 24 rolling memory files
+./scripts/thesis.sh add "name"    # Add new thesis
+./scripts/thesis.sh review        # Review active theses
+```

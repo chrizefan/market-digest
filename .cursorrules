@@ -1,0 +1,51 @@
+# Market Digest — Cursor Rules
+
+## What This Project Is
+A daily market intelligence repo using a 7-phase AI-orchestrated pipeline. Skill files (`skills/*.md`) are step-by-step instruction sets for AI agents. Memory files (`memory/*/ROLLING.md`) are append-only research logs.
+
+## Core Architecture
+- `skills/SKILL-orchestrator.md` — master pipeline (read this first for context)
+- `config/watchlist.md` + `config/preferences.md` — user configuration (read at session start)
+- `memory/BIAS-TRACKER.md` — daily cross-asset bias log (14 columns)
+- `outputs/daily/YYYY-MM-DD/` — one folder per day, 22 output files
+
+## Skill File Rules
+When editing `skills/*.md` files:
+- YAML frontmatter `name:` and `description:` are sacred — do NOT rename without updating `CLAUDE_PROJECT_INSTRUCTIONS.md`
+- Always preserve `## Memory Update` heading and its content
+- Output paths use `{{DATE}}` placeholder — never hardcode dates
+- Keep numbered Steps format: `### 1. Step Name` throughout
+
+## Memory File Rules
+Files in `memory/*/ROLLING.md` are APPEND-ONLY:
+- Never delete, rewrite, or reorder existing entries
+- Add new entries at the END of the file
+- Format: `## YYYY-MM-DD` header followed by 3-5 bullet points
+
+## Script Rules
+- All scripts: `#!/bin/bash` + `set -e` at top
+- macOS sed: use `sed -i ""` NOT `sed -i` (critical — macOS incompatibility otherwise)
+- All paths are relative to repo root
+- Search memory subdirs with `find memory/ -name "ROLLING.md"` not `memory/*/ROLLING.md`
+
+## Output Rules
+- outputs/daily/ is AGENT-GENERATED — do not manually edit these files
+- New day folder: `outputs/daily/YYYY-MM-DD/` with `sectors/` subfolder
+- Master output: `outputs/daily/YYYY-MM-DD/DIGEST.md`
+
+## Markdown Standards
+- Headings: `#` then `##` then `###` — never skip levels
+- Tables: always include `|---|---|` separator row
+- Templates use `{{PLACEHOLDER}}` syntax for runtime substitution
+
+## Forbidden Actions
+- Do NOT delete memory file content
+- Do NOT modify `.github/workflows/deploy.yml` or `weekly-check.yml` without understanding CI/CD
+- Do NOT change skill frontmatter `name:` fields without cascading updates
+
+## Documentation Index
+- `CLAUDE.md` — Claude Code reference
+- `AGENTS.md` — Cross-platform agent reference
+- `docs/agentic/` — Full documentation suite
+- `docs/agentic/ARCHITECTURE.md` — System design
+- `docs/agentic/SKILLS-CATALOG.md` — All 35+ skills indexed

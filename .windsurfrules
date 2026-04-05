@@ -1,0 +1,71 @@
+# Market Digest — Windsurf Rules
+
+## Project Purpose
+Daily market intelligence system using a 7-phase AI-orchestrated pipeline. Produces structured research across all asset classes. Skill files (`skills/*.md`) are step-by-step instruction sets for AI agents.
+
+## Architecture at a Glance
+```
+skills/               ← 35+ skill files (AI instruction sets)
+config/               ← watchlist.md, preferences.md, hedge-funds.md
+memory/               ← 23 append-only ROLLING.md files + BIAS-TRACKER.md
+templates/            ← Output templates with {{PLACEHOLDER}} syntax
+outputs/daily/        ← Agent-generated, YYYY-MM-DD/ folders
+scripts/              ← Bash utility scripts
+docs/agentic/         ← Full documentation suite
+agents/               ← Named agent role definitions
+```
+
+## Session Start Protocol
+When starting a session:
+1. Read `skills/SKILL-orchestrator.md` for pipeline context
+2. Read `config/watchlist.md` + `config/preferences.md`
+3. Read relevant `memory/*/ROLLING.md` files for prior context
+
+## Critical Conventions
+
+### Skill Files (skills/*.md)
+- YAML frontmatter `name:` + `description:` are routing keys — do NOT change without cascading updates
+- Preserve `## Memory Update` sections — they drive the memory system
+- Use `{{DATE}}` in output paths, never hardcode
+- Step format: `### 1. Step Name` (numbered, consistent)
+
+### Memory Files (memory/**/ROLLING.md)
+- **APPEND-ONLY** — never delete, never reorder existing entries
+- New entry format: `## YYYY-MM-DD` header + 3-5 bullets
+- Always add at the END of file
+- Use `find memory/ -name "ROLLING.md"` in scripts (NOT `memory/*/ROLLING.md`)
+
+### Scripts (scripts/*.sh)
+- Header: `#!/bin/bash` + `set -e`
+- macOS sed: MUST use `sed -i ""` not `sed -i` (GNU vs BSD incompatibility)
+- All paths relative to repo root
+
+### Output Files (outputs/daily/)
+- Do NOT manually edit — these are agent-generated
+- Structure: `outputs/daily/YYYY-MM-DD/` with `sectors/` subfolder
+
+### Markdown Standards
+- Never skip heading levels (# → ## → ### only)
+- Tables require `|---|---|` separator row
+- Templates: `{{PLACEHOLDER}}` syntax for runtime substitution
+
+## 7-Phase Pipeline Summary
+1. Alt Data + Premarket (positioning, sentiment, options flow)
+2. Institutional Intel (dark pools, hedge fund moves, 13F updates)
+3. Macro Regime (rates, dollar, risk-on/off determination)
+4. Asset Classes (bonds, commodities, forex, crypto, international)
+5. Equities + 11 Sectors (each sector as a sub-agent)
+6. Earnings & Events
+7. Synthesis → DIGEST.md
+
+## What NOT To Do
+- Do NOT modify `outputs/daily/` files — agent-generated
+- Do NOT rewrite `memory/*/ROLLING.md` history — append only
+- Do NOT change skill frontmatter `name:` without updating all references
+- Do NOT modify `.github/workflows/deploy.yml` or `weekly-check.yml`
+- Do NOT use `sed -i` without the `""` extension on macOS
+
+## Documentation
+- `CLAUDE.md` — Claude Code reference (comprehensive)
+- `AGENTS.md` — Cross-platform agent behavioral rules
+- `docs/agentic/` — Full documentation suite

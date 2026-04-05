@@ -10,9 +10,12 @@ WEEK=$(date +%V)
 WEEK_LABEL="${YEAR}-W${WEEK}"
 OUTPUT_FILE="outputs/weekly/${WEEK_LABEL}.md"
 
-# Find this week's daily files (Mon-Fri)
-DAILY_FILES=$(find outputs/daily/ -name "*.md" -newer outputs/weekly/.gitkeep 2>/dev/null | sort || \
-              find outputs/daily/ -name "$(date +%Y)*" | sort | tail -7)
+# Find this week's daily DIGEST.md files (v2 folder structure + legacy flat files)
+DAILY_FILES=$(find outputs/daily/ -name "DIGEST.md" -path "*/$YEAR-*/*" 2>/dev/null | sort)
+# Fallback: legacy flat .md files
+if [ -z "$DAILY_FILES" ]; then
+  DAILY_FILES=$(find outputs/daily/ -maxdepth 1 -name "${YEAR}*.md" 2>/dev/null | sort | tail -7)
+fi
 
 echo ""
 echo "📅 Weekly Rollup — $WEEK_LABEL"

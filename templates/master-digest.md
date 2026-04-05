@@ -110,15 +110,108 @@
 | USD/CAD | | | |
 
 **FX Risk Signal**: [Risk-on / Risk-off / Mixed]
+**EM FX Stress**: [Any EM currency under pressure?]
 **Carry Watch**: [Yen carry status]
+
+---
+
+## 🌐 International Markets
+
+**Bias**: [Bullish / Bearish / Neutral per region]
+
+| Region | ETF | Price | 1-Day% | Driver |
+|--------|-----|-------|--------|--------|
+| Developed Mkts | EFA | $X | ±X% | |
+| China | MCHI | $X | ±X% | PBOC / PMI |
+| Japan | EWJ | $X | ±X% | BOJ / Yen |
+| EM Broad | EEM | $X | ±X% | DXY / spread |
+
+**Key Regional Read**: [China policy, Japan rate vol, EM capital flows]
+
+---
+
+## 🔀 Alternative Data Dashboard
+
+**Sentiment Composite**: [Risk-on/Risk-off/Mixed]
+- CNN Fear & Greed: X/100 | Crypto F&G: X/100 | AAII Bull: X%
+- KOL consensus: [Bullish/Bearish/Divided — 1 sentence]
+- Polymarket highlights: [Fed cut X% | Recession X% | Iran X%]
+
+**CTA / Systematic Positioning**:
+- Direction: [Long risk / Short risk / Hedged]
+- Crowding risk: [Most crowded: ASSET at EXTREME — squeeze risk HIGH/LOW]
+
+**Options Flow**:
+- VIX: X.XX | GEX: [±$Xbn — dampening/amplifying]
+- Derivatives signal: [Calm/Hedging demand elevated/Tail risk concern]
+
+**Politician & Policy Signals**:
+- STOCK Act: [Notable trade or "No significant disclosures"]
+- Fed/Policy: [Hawkish/Dovish/Neutral — key quote if available]
+- Geopolitical official: [Any escalation/de-escalation signal]
+
+**Alt Data Signal**: 🟢 Risk-on / 🔴 Risk-off / 🟡 Mixed — [1-sentence synthesis]
+
+---
+
+## 🏛️ Institutional Intelligence
+
+**Smart Money Signal**: Accumulation / Distribution / Rotation / No Clear Signal
+
+**ETF Flows**:
+- BTC ETFs: IBIT ±$Xm + FBTC ±$Xm = Net [±$Xm] → [Institutional BTC thesis: intact/stalling]
+- US Equities: [Key ETF flow — SPY/QQQ/sector bias]
+- Safe Haven: [GLD/TLT flows — any notable defensive demand?]
+
+**Hedge Fund Intel**:
+- HF Consensus: [Bullish/Bearish/Mixed/No Signal]
+- Notable: [Any 13D/filing/commentary from tracked funds]
+
+**Dark Pool / Short Interest**:
+- [Any notable block prints or short interest spike in relevant names]
+
+---
+
+## 🗺️ Sector Scorecard
+
+| Sector | ETF | Bias | Key Driver | Portfolio Note |
+|--------|-----|------|-----------|---------------|
+| Technology | XLK | 🟢/🔴/🟡 | | |
+| Healthcare | XLV | 🟢/🔴/🟡 | | ★ Active |
+| Energy | XLE | 🟢/🔴/🟡 | WTI $X | ★ Active |
+| Financials | XLF | 🟢/🔴/🟡 | | |
+| Con. Staples | XLP | 🟢/🔴/🟡 | | ★ Active |
+| Con. Disc. | XLY | 🟢/🔴/🟡 | | |
+| Industrials | XLI | 🟢/🔴/🟡 | | |
+| Utilities | XLU | 🟢/🔴/🟡 | | |
+| Materials | XLB | 🟢/🔴/🟡 | | |
+| Real Estate | XLRE | 🟢/🔴/🟡 | | |
+| Comm. Svcs | XLC | 🟢/🔴/🟡 | | |
+
+**Sector Rotation Theme**: [Which sectors lead? Which lag? What does rotation imply about regime?]
 
 ---
 
 ## 🎯 Thesis Tracker
 
-| Thesis | Status | Notes |
-|--------|--------|-------|
-| [Thesis from preferences.md] | ✅ Confirmed / ⚠️ Conflicted / ❌ Challenged / ⏳ No signal | [brief note] |
+| Thesis | Invalidation Trigger | Status | Notes |
+|--------|---------------------|--------|-------|
+| [Thesis from preferences.md] | [Specific price/event] | ✅ Confirmed / ⚠️ Conflicted / ❌ Challenged / ⏳ No signal | [brief note] |
+
+---
+
+## 📐 Portfolio Positioning Recommendations
+
+| Position | Current | Action | Rationale | Trigger |
+|----------|---------|--------|-----------|---------|
+| [IAU] | X% | Hold / Add / Trim / Exit | [reason] | [price/event] |
+| [XLE] | X% | Hold / Add / Trim / Exit | [reason] | [price/event] |
+| [XLV] | X% | Hold / Add / Trim / Exit | [reason] | [price/event] |
+| [XLP] | X% | Hold / Add / Trim / Exit | [reason] | [price/event] |
+| [BIL/SHY] | X% | Hold / Add / Trim / Exit | [reason] | [price/event] |
+
+**Overall Portfolio Posture**: Defensive / Neutral / Offensive
+**Cash Allocation**: X% — [Reasons to stay high/deploy]
 
 ---
 
@@ -144,5 +237,6 @@
 
 ---
 
-*Memory files updated: equity ✓ | crypto ✓ | bonds ✓ | commodities ✓ | macro ✓ | forex ✓*
-*Output saved: `outputs/daily/{{DATE}}.md`*
+*Segment files: macro ✓ | bonds ✓ | commodities ✓ | forex ✓ | crypto ✓ | international ✓ | 11 sectors ✓ | alt-data ✓ | institutional ✓*
+*Memory updated: 24 ROLLING.md files ✓*
+*Output saved: `outputs/daily/{{DATE}}/DIGEST.md`*

@@ -1,14 +1,16 @@
 ---
 name: market-commodities
-description: Run commodities analysis as part of the daily digest. Covers energy, metals, agriculture, and their cross-asset implications.
+description: Run commodities analysis as part of the daily digest. Covers energy, metals, agriculture, and their cross-asset implications. In the orchestrator, run as Phase 4B — reads macro regime and bonds/real yield output. Feeds into energy sector sub-agent.
 ---
 
-# Commodities Analysis Skill
+# Commodities Analysis Skill — v2
 
 ## Inputs
 - `config/watchlist.md` (commodities section)
 - `config/preferences.md`
 - `memory/commodities/ROLLING.md`
+- Macro regime output
+- Bonds output (real yields — key driver for gold)
 
 ## Research Steps
 
@@ -30,14 +32,32 @@ description: Run commodities analysis as part of the daily digest. Covers energy
 - Dr. Copper as a growth indicator — what is it saying?
 - Any China demand signals from industrial metals?
 
-### 4. Agriculture (if relevant)
+### 4. Oil Supply/Demand Balance
+- EIA weekly inventory data (published Wednesdays): crude draw or build?
+- OPEC+ production compliance: are members cheating on quotas?
+- US shale production trend: rig count direction and efficiency gains
+- Refinery utilization rates: product inventory levels
+- Demand signals: Chinese import data, air travel demand, industrial activity
+- DBO roll yield: futures curve in backwardation (positive) or contango (negative)? At $112 WTI, backwardation typically confirms the supply squeeze.
+
+### 5. Gold Drivers Deep Analysis
+- **Real yield correlation**: gold moves inversely to real yields — reference bonds output
+- **Central bank buying**: major central bank gold purchases (China, India, Turkey, others)
+- **Dollar (DXY) effect**: weaker dollar = gold tailwind (though at current geopolitical stress, gold can rise with DXY)
+- **Safe haven premium**: how much of current gold price reflects war premium vs inflation premium?
+- At $4,686: is gold in price discovery (no historical resistance) or approaching exhaustion?
+- Gold/Silver ratio: a rising ratio favors gold (safety demand); falling ratio = silver catches up (industrial + monetary demand)
+
+### 6. Agriculture (if relevant)
 - Wheat, corn, soybeans if any major move or relevant news
 - Flag only if materially moving or relevant to inflation narrative
+- Food inflation: any supply disruption via weather events or conflict?
 
-### 5. Commodity-Macro Cross
+### 7. Commodity-Macro Cross
 - DXY direction and its effect on commodity pricing (inverse relationship)
 - Is commodity movement driven by supply or demand factors?
 - Do commodities confirm or contradict the macro regime?
+- CTA speculative positioning in commodities (from Phase 1B): is speculative long stretched?
 
 ## Output Format
 
@@ -50,14 +70,19 @@ description: Run commodities analysis as part of the daily digest. Covers energy
 **Silver**: [$X | Gold/Silver ratio: X]
 **Copper**: [$X (±X%) | Growth signal: ...]
 
-**Dollar Effect**: [DXY impact on commodities today]
+**Oil Supply/Demand**: [EIA inventory + OPEC compliance + US shale signal]
+**Gold Real Yield Link**: Real yield X% → [tailwind/headwind for gold at ATH]
+**Gold/Silver Ratio**: X — [Safety bid dominant / Silver catching up]
+**CTA Positioning**: [Are speculative longs stretched in oil or gold?]
 
-**Watch**: [Key upcoming data or event — e.g. EIA inventory Wednesday]
+**Dollar Effect**: [DXY impact on commodities]
+
+**Watch**: [Key upcoming data: EIA Wednesday, OPEC meeting, gold central bank data]
 ```
 
 ## Memory Update
-After completing analysis, produce 3-4 bullets for `memory/commodities/ROLLING.md`:
-- One on energy trend and key driver
-- One on gold signal and what it implies
-- One on copper/industrial metals growth signal
-- One on any notable divergence from expected patterns
+After completing analysis, produce 4 bullets for `memory/commodities/ROLLING.md`:
+- One on energy trend, key driver, and WTI level vs invalidation triggers
+- One on gold signal including real yield linkage and central bank demand
+- One on copper/industrial metals growth signal and China demand context
+- One on CTA positioning extreme or oil supply/inventory development

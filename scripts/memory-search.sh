@@ -20,8 +20,8 @@ echo "🔍 Memory Search: \"$QUERY\""
 echo "================================="
 echo ""
 
-for FILE in memory/*/ROLLING.md; do
-  SEGMENT=$(echo "$FILE" | cut -d'/' -f2)
+for FILE in $(find memory/ -name "ROLLING.md" | sort); do
+  SEGMENT=$(echo "$FILE" | sed 's|memory/||' | sed 's|/ROLLING.md||')
   MATCHES=$(grep -in "$QUERY" "$FILE" 2>/dev/null || true)
   
   if [ -n "$MATCHES" ]; then
