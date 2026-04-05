@@ -11,3 +11,12 @@
 - **Fed**: Funds rate 4.25-4.50%. All 2026 rate cuts priced out. Some hike risk briefly priced. NFP beat (+178K) reinforces no-cut base case. Cooling wages (3.5% y/y) prevents hike. Net: Fed on hold indefinitely. Next FOMC: May 2026.
 - **Regime**: Bearish bonds. Short duration (BIL, SHY) is the correct positioning. Earn 4%+ risk-free. Avoid TLT until rate cut cycle is credibly signaled.
 - **Key watch**: 10Y at 4.50% = danger level for risk assets. Monday NFP reaction will test this.
+
+## 2026-04-05 (Full Pipeline Run)
+- **CORRECTION**: Fed funds rate 3.50-3.75% (not 4.25-4.50%). This is the accurate post-2025-cut rate.
+- **10Y Treasury**: 4.31% close Apr 2; jumped +3bps to 4.35% on NFP beat (Good Friday abbreviated session). Key resistance: 4.50%.
+- **2Y**: 3.79%. **30Y**: 4.88%. Curve positively sloped at +52bps (2s10s).
+- **Bond regime**: Bearish long duration (TLT $86.79 = avoid). Bullish short duration (BIL/SHY at 4%+ yield, zero rate risk).
+- **HYG OAS**: 3.16% — credit NOT panicking. Constructive signal — equities overselling vs. fundamentals per credit read.
+- **CME FedWatch**: 89.2% hold at June meeting. September: 45% cut probability. One cut by year-end per Fed dot plot.
+- **T-002 status**: ACTIVE CONFIRMED. No invalidation conditions present.

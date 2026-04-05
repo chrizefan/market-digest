@@ -44,7 +44,7 @@ function App() {
         {activeTab === 'performance' && <Performance data={data} />}
         {activeTab === 'strategy' && <Strategy data={data} />}
         {activeTab === 'library' && <Library docs={data.docs} />}
-        {activeTab === 'architecture' && <Architecture />}
+        {activeTab === 'architecture' && <Architecture data={data} />}
       </Layout>
     </div>
   );

@@ -1,7 +1,14 @@
-import React from 'react';
-import { Network, Database, BrainCircuit, Activity, LineChart, Cpu, FileText, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Network, Database, BrainCircuit, Activity, LineChart, Cpu, FileText, CheckCircle2, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 
-export default function Architecture() {
+export default function Architecture({ data }) {
+  const evolution = data?.evolution || {};
+  const [expandedSection, setExpandedSection] = useState(null);
+
+  const toggleSection = (key) => {
+    setExpandedSection(expandedSection === key ? null : key);
+  };
+
   const phases = [
     {
       title: 'Phase 1: Alternative Data & Signals',
@@ -44,6 +51,18 @@ export default function Architecture() {
       icon: <FileText color="var(--accent-green)" />,
       desc: 'Synthesizes all 21 raw segment files into a coherent, actionable brief and portfolio target allocation.',
       subtext: 'Output: DIGEST.md'
+    },
+    {
+      title: 'Phase 8: Dashboard Regeneration',
+      icon: <LineChart color="var(--accent-amber)" />,
+      desc: 'Runs the Python backend parser to recalculate portfolio NAV, performance metrics, and feed the web dashboard.',
+      subtext: 'Script: update-tearsheet.py → dashboard-data.json'
+    },
+    {
+      title: 'Phase 9: Post-Mortem & Evolution',
+      icon: <Sparkles color="#f472b6" />,
+      desc: 'Self-improvement loop. Rates data sources, checks prediction accuracy, files max 2 improvement proposals per session.',
+      subtext: 'Guardrailed: proposals only, never direct edits'
     }
   ];
 
@@ -54,13 +73,45 @@ export default function Architecture() {
     { name: "US Equities", count: 12, skills: ["Broad Market", "Technology", "Healthcare ★", "Energy ★", "Financials", "Staples ★", "Discretionary", "Industrials", "Utilities", "Materials", "Real Estate", "Comms"] },
   ];
 
+  const evolutionSections = [
+    { key: 'changelog', title: 'Evolution Changelog', desc: 'All approved and applied pipeline improvements', icon: '📋' },
+    { key: 'proposals', title: 'Pending Proposals', desc: 'Improvement proposals awaiting review', icon: '💡' },
+    { key: 'quality_log', title: 'Quality Post-Mortems', desc: 'Daily self-assessment and prediction tracking', icon: '🔍' },
+    { key: 'sources', title: 'Source Scorecard', desc: 'Data source reliability ratings', icon: '🌐' },
+  ];
+
+  // Simple markdown renderer — renders headings, lists, tables, and paragraphs
+  const renderMarkdown = (md) => {
+    if (!md) return <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No data yet — will populate after the first digest run.</p>;
+    
+    // Strip the file header (first heading + description lines) for cleaner display
+    const lines = md.split('\n');
+    return (
+      <pre style={{ 
+        whiteSpace: 'pre-wrap', 
+        wordBreak: 'break-word', 
+        fontFamily: "'Outfit', monospace", 
+        fontSize: '0.85rem', 
+        color: '#d4d4d8', 
+        lineHeight: 1.7,
+        maxHeight: '400px',
+        overflowY: 'auto',
+        padding: '16px',
+        background: 'rgba(0,0,0,0.2)',
+        borderRadius: '8px',
+        border: '1px solid rgba(255,255,255,0.05)'
+      }}>
+        {md}
+      </pre>
+    );
+  };
+
   return (
     <div>
       <div style={{ marginBottom: '32px' }}>
         <h2 className="text-h2">Pipeline Architecture & Agent Swarm</h2>
         <p style={{ color: 'var(--text-secondary)', marginTop: '8px', lineHeight: 1.6 }}>
-          This page documents the 7-phase automated pipeline and AI architecture powering the Market Digest.
-          To ensure complete transparency, every step from raw data ingestion to final portfolio weights is mapped below.
+          This page documents the 9-phase automated pipeline, AI architecture, and self-improving evolution system powering the Market Digest.
         </p>
       </div>
 
@@ -69,7 +120,7 @@ export default function Architecture() {
         {/* Left Column: Timeline */}
         <div className="glass-card" style={{ padding: '32px 24px' }}>
           <h3 className="text-h3" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Network color="var(--accent-blue)" /> The 7-Phase Orchestrator
+            <Network color="var(--accent-blue)" /> The 9-Phase Orchestrator
           </h3>
           
           <div className="timeline-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative' }}>
@@ -80,7 +131,8 @@ export default function Architecture() {
               <div key={index} style={{ display: 'flex', gap: '20px', position: 'relative', zIndex: 1 }}>
                 <div style={{ 
                   width: '48px', height: '48px', borderRadius: '50%', background: 'var(--bg-card)', 
-                  border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 
+                  border: index === 8 ? '1px solid rgba(244,114,182,0.4)' : '1px solid var(--border-subtle)', 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 
                 }}>
                   {phase.icon}
                 </div>
@@ -91,7 +143,13 @@ export default function Architecture() {
                   <p style={{ fontSize: '0.95rem', color: '#a1a1aa', lineHeight: 1.5, marginBottom: '6px' }}>
                     {phase.desc}
                   </p>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--accent-blue)', fontFamily: 'monospace', background: 'rgba(59,130,246,0.1)', padding: '4px 8px', borderRadius: '4px', display: 'inline-block' }}>
+                  <div style={{ 
+                    fontSize: '0.8rem', 
+                    color: index === 8 ? '#f472b6' : 'var(--accent-blue)', 
+                    fontFamily: 'monospace', 
+                    background: index === 8 ? 'rgba(244,114,182,0.1)' : 'rgba(59,130,246,0.1)', 
+                    padding: '4px 8px', borderRadius: '4px', display: 'inline-block' 
+                  }}>
                     {phase.subtext}
                   </div>
                 </div>
@@ -151,6 +209,60 @@ export default function Architecture() {
             </div>
           </div>
 
+        </div>
+      </div>
+
+      {/* Evolution Section — Full Width Below */}
+      <div style={{ marginTop: '32px' }}>
+        <div style={{ marginBottom: '24px' }}>
+          <h2 className="text-h2" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Sparkles color="#f472b6" size={24} /> Pipeline Evolution
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '8px', lineHeight: 1.6 }}>
+            The digest pipeline is self-improving. After every run, Phase 9 performs a post-mortem — rating data sources, checking 
+            prediction accuracy, and filing improvement proposals. All changes require explicit user approval before being applied.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {evolutionSections.map((section) => {
+            const isOpen = expandedSection === section.key;
+            const content = evolution[section.key];
+            return (
+              <div key={section.key} className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div 
+                  onClick={() => toggleSection(section.key)}
+                  style={{ 
+                    padding: '20px 24px', 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    background: isOpen ? 'rgba(255,255,255,0.02)' : 'transparent',
+                    transition: 'background 0.2s ease'
+                  }}
+                  className="hover-row"
+                >
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span>{section.icon}</span> {section.title}
+                    </h3>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>{section.desc}</p>
+                  </div>
+                  <div style={{ color: 'var(--text-muted)' }}>
+                    {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                  </div>
+                </div>
+                {isOpen && (
+                  <div style={{ padding: '0 24px 24px 24px', borderTop: '1px solid var(--border-subtle)' }}>
+                    <div style={{ marginTop: '16px' }}>
+                      {renderMarkdown(content)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

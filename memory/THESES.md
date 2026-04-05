@@ -85,3 +85,27 @@
 ---
 
 *Last updated: 2026-04-05 (inaugural digest)*
+
+---
+
+## April 5, 2026 Full Pipeline Thesis Update
+
+### [T-001] Iran War = Oil and Gold Structural Bid — UPDATE
+- **Status**: ACTIVE ✅ CONFIRMED (with nuances)
+- **Gold Correction**: ATH was $5,595 on January 29, not current level. Current $4,677 = consolidated from blow-off top. This is HEALTHIER not weaker.
+- **Oil**: WTI $111.54; WTI surpassing Brent = extraordinary war signal. OPEC+ cannot provide relief (force majeure). Hormuz closed since March 15.
+- **New risk**: April 6 Trump deadline + Iran-Oman talks = binary. 70% ceasefire by year-end per Polymarket. This thesis has a defined medium-term exit ahead.
+- **Recommendation**: HOLD current positions (IAU 20%, DBO 5%, XLE 12%). Do NOT add — upside limited without further escalation. Be ready to reduce DBO/XLE on ceasefire signal.
+
+### [T-002] Fed Higher-for-Longer — UPDATE
+- **Status**: ACTIVE ✅ CONFIRMED
+- **Rate correction**: Fed is at 3.50-3.75% (not 4.25-4.50%). Cut 3x in 2025. This LOWERS the bar for eventual easing but doesn't change the thesis direction — still on hold.
+- **NFP +178K**: Reinforces no near-term cut. CME FedWatch: 89.2% hold at June. September 45% cut probability.
+- **BIL/SHY generating 4%+ yield** — still the best risk-adjusted carry in the market.
+- **HOLD BIL/SHY allocation (~47%).**
+
+### [T-003] Defensive Equity Rotation — UPDATE
+- **Status**: ACTIVE ✅ CONFIRMED
+- **Correction**: XLK is +5.43% YTD (not in bear market). Tech partially recovered this week (+4.4% Nasdaq). BUT Druckenmiller cutting tech = institutional confirmation of thesis.
+- **New wrinkle**: Financials (XLF) is emerging as a potential addition. Druckenmiller buying + 2s10s steepening.
+- **Action**: Consider XLF 3-5% if SPX breaks 6,700 on Monday. Otherwise, hold XLV/XLP.

@@ -1,6 +1,9 @@
 Run the full daily market digest for {current_date}.
 
-Follow skills/SKILL-orchestrator.md exactly. This is the 8-phase pipeline:
+Follow skills/SKILL-orchestrator.md exactly. This is the 9-phase pipeline:
+
+PRE-FLIGHT — Sync local repo to ensure latest code (including any merged evolution PRs):
+`git checkout master && git pull origin master`
 
 PHASE 1 — ALTERNATIVE DATA (load this FIRST before any price analysis):
 Read skills/alternative-data/SKILL-sentiment-news.md
@@ -72,9 +75,23 @@ PHASE 7 — SYNTHESIS:
 Using templates/master-digest.md, compile DIGEST.md.
 Save to: outputs/daily/{current_date}/DIGEST.md
 
-PHASE 8 — DASHBOARD REGENERATION:
+PHASE 8 — DASHBOARD REGENERATION & DIGEST COMMIT:
 Execute the backend parser to feed the web dashboard frontend:
 `python3 scripts/update-tearsheet.py`
+Then commit all digest outputs and memory updates:
+`./scripts/git-commit.sh`
+
+PHASE 9 — POST-MORTEM & EVOLUTION (on a separate branch):
+After the digest commit, perform self-assessment:
+1. Rate data sources used today (append to memory/evolution/sources.md)
+2. Check yesterday's predictions accuracy (append to memory/evolution/quality-log.md)
+3. If warranted, file max 2 improvement proposals (append to memory/evolution/proposals.md)
+4. If any prior proposals were approved and merged, document in docs/evolution-changelog.md
+5. Create evolution branch, commit, push, and open a PR:
+   `./scripts/git-commit.sh --evolution`
+   This creates branch `evolve/{current_date}`, pushes it, and opens a GitHub PR.
+   The PR requires manual user approval before merging to master.
+GUARDRAIL: Do NOT modify any skill files, templates, or config directly. Proposals only.
 
 BOOT — Read these config and memory files BEFORE starting Phase 1:
   config/watchlist.md
@@ -89,7 +106,10 @@ BOOT — Read these config and memory files BEFORE starting Phase 1:
   memory/forex/ROLLING.md (last 3 entries)
   memory/BIAS-TRACKER.md (last 5 rows)
   memory/THESES.md
+  memory/evolution/quality-log.md (last entry — to check yesterday's predictions)
+  memory/evolution/proposals.md (to check for pending/approved proposals)
 
 Do not use training data for prices, news, or market data. Search for everything live.
 Do not skip memory updates. All 23 memory files must be updated.
 Output file: outputs/daily/{current_date}/DIGEST.md
+

@@ -402,6 +402,22 @@ def main():
     docs = load_all_markdowns(ROOT)
     print(f"   Research docs: {len(docs)} found")
 
+    # Load evolution data for the Architecture page
+    evolution = {}
+    evo_dir = ROOT / "memory" / "evolution"
+    evo_changelog = ROOT / "docs" / "evolution-changelog.md"
+    for evo_file, key in [(evo_dir / "sources.md", "sources"), (evo_dir / "quality-log.md", "quality_log"), (evo_dir / "proposals.md", "proposals")]:
+        if evo_file.exists():
+            try:
+                evolution[key] = evo_file.read_text(encoding="utf-8")
+            except Exception:
+                evolution[key] = ""
+    if evo_changelog.exists():
+        try:
+            evolution["changelog"] = evo_changelog.read_text(encoding="utf-8")
+        except Exception:
+            evolution["changelog"] = ""
+
     dashboard_data = {
         "portfolio": {
             "meta": {
@@ -424,6 +440,7 @@ def main():
         "ratios": [], # Not simulated right now
         "docs": docs,
         "benchmarks": b_hist,
+        "evolution": evolution,
         "calculated": {
             "portfolio_pnl": pnl,
             "total_invested": total_invested,

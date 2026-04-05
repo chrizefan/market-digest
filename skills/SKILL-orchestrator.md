@@ -15,7 +15,14 @@ This is the primary entry point for every comprehensive daily digest session. Fo
 
 ## Pre-Flight: Session Context Boot
 
-Before starting any phase, load the following. Do NOT summarize to the user — just internalize:
+Before starting any phase, **sync the local repository** to ensure you have the latest code (including any merged evolution PRs):
+
+```
+git checkout master
+git pull origin master
+```
+
+Then load the following. Do NOT summarize to the user — just internalize:
 
 1. `config/watchlist.md` — full asset universe
 2. `config/preferences.md` — trading style, risk profile, active theses
@@ -54,7 +61,7 @@ Before starting any phase, load the following. Do NOT summarize to the user — 
 - Any developing narratives from rolling memory
 - Macro regime from the last digest (to compare with today)
 
-Announce to user: "Context loaded. Starting Phase 1 of 8."
+Announce to user: "Context loaded. Starting Phase 1 of 9."
 
 ---
 
@@ -294,6 +301,69 @@ Run the following command exactly in your environment to parse the directories a
 
 Wait for it to confirm the update to `dashboard-data.json`.
 
+After the dashboard update succeeds, commit all digest outputs and memory updates:
+`./scripts/git-commit.sh`
+
+This creates the **first commit** — the daily digest outputs.
+
+---
+
+## Phase 9 — Post-Mortem & Evolution
+
+> Self-improvement loop. The pipeline gets smarter every day by recording what worked,
+> what didn't, and proposing refinements. This phase has **strict guardrails** to prevent
+> uncontrolled drift.
+
+### 9A: Source Scorecard Update
+Append a new dated section to `memory/evolution/sources.md`:
+- **Sources Used Today**: Rate every data source accessed (1-5 stars for quality/freshness)
+- **Sources That Failed**: Log any that were unavailable, paywalled, stale, or returned errors
+- **New Sources Discovered**: Record any new X accounts, URLs, or data providers found during research
+- **GUARDRAIL**: Do NOT modify `config/data-sources.md` — only record observations here
+
+### 9B: Quality Post-Mortem
+Append a new dated section to `memory/evolution/quality-log.md`:
+- **Signal Accuracy**: Check yesterday's actionable items and predictions — were they correct? Mark ✅/❌/⏳
+- **Coverage Gaps**: Note data you wanted but couldn't find (missing indicators, sectors with thin analysis)
+- **Data Freshness Issues**: Flag any data that was stale or delayed
+- **Quality Score**: Self-assess today's digest on these 5 dimensions (1-5 scale each):
+  - Data completeness | Signal clarity | Actionability | Continuity with prior | Positioning quality
+
+### 9C: Improvement Proposals
+Review today's observations and, if warranted, append a new proposal to `memory/evolution/proposals.md`.
+
+**STRICT RULES FOR PROPOSALS:**
+1. You may ONLY propose changes — **never execute them directly**
+2. Maximum **2 proposals per session** to prevent drift
+3. Each proposal must specify: target file, exact change, rationale with data
+4. Categories: `Source Addition` | `Skill Refinement` | `Template Update` | `Efficiency`
+5. **LOCKED — you may NOT propose changes to:**
+   - Output schema/structure (`templates/master-digest.md` sections are immutable)
+   - Risk profile or position sizing (`config/preferences.md` §Risk Profile)
+   - Memory file format (append-only structure)
+   - These guardrails themselves
+6. Before filing, read existing proposals to avoid duplicates
+
+### 9D: Document Applied Improvements
+If any previously pending proposals have been approved and applied during this session, document them in `docs/evolution-changelog.md` with:
+- Date applied, proposal ID, category
+- Target file(s) and exact change made
+- Rationale (reference quality-log or sources.md evidence)
+- Expected measurable impact
+- Commit hash
+
+### 9E: Evolution Branch & PR
+After completing the post-mortem, commit evolution artifacts to a **dedicated branch** and open a PR:
+`./scripts/git-commit.sh --evolution`
+
+This script will:
+1. Create a branch named `evolve/YYYY-MM-DD`
+2. Commit only the evolution files (`memory/evolution/`, `docs/evolution-changelog.md`)
+3. Push the branch and create a GitHub Pull Request
+4. Switch back to `master` so the repo is clean for the next daily run
+
+**The PR requires manual user approval before merging into master.** This ensures no pipeline changes are applied without explicit review. Approved proposals will only take effect once the PR is merged and the next session pulls the latest master.
+
 ---
 
 ## Session Completion Checklist
@@ -307,11 +377,12 @@ Confirm all of the following before ending the session:
 - [ ] Phase 5: `us-equities.md` + 11 sector files in `sectors/` created
 - [ ] Phase 6: All 24 memory files updated; `BIAS-TRACKER.md` new row added
 - [ ] Phase 7: `DIGEST.md` created
-- [ ] Phase 8: `update-tearsheet.py` executed successfully
+- [ ] Phase 8: `update-tearsheet.py` executed successfully; digest commit created
+- [ ] Phase 9: Post-mortem completed; source scorecard, quality log updated; evolution commit created
 
-**Total output files per day: ~21 segment files + DIGEST.md = 22 files**
+**Total output files per day: ~21 segment files + DIGEST.md + 3 evolution files = 25 files**
 
-Print to user: "✅ Digest complete. Output: `outputs/daily/{{DATE}}/DIGEST.md`. Run `./scripts/git-commit.sh` to commit."
+Print to user: "✅ Digest complete. Two commits created: digest outputs + pipeline evolution."
 
 ---
 
