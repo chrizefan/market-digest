@@ -1,0 +1,26 @@
+name: Weekly Rollup Reminder
+
+on:
+  schedule:
+    # Runs every Friday at 4pm UTC (adjust to your timezone)
+    - cron: '0 16 * * 5'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  weekly-reminder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Check for weekly output
+        run: |
+          WEEK=$(date +%V)
+          YEAR=$(date +%Y)
+          WEEK_FILE="outputs/weekly/${YEAR}-W${WEEK}.md"
+          if [ ! -f "$WEEK_FILE" ]; then
+            echo "⚠️  Weekly rollup not yet generated for W${WEEK}"
+            echo "Run: ./scripts/weekly-rollup.sh"
+          else
+            echo "✅ Weekly rollup exists: $WEEK_FILE"
+          fi
