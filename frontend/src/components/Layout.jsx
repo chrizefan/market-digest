@@ -2,9 +2,11 @@ import { Clock } from 'lucide-react';
 
 export default function Layout({ activeTab, meta, children }) {
   const titles = {
-    dashboard: 'Portfolio Dashboard',
+    portfolio: 'Asset Allocation',
+    performance: 'Performance',
     strategy: 'Strategy & Thesis',
     library: 'Research Library',
+    architecture: 'Architecture',
   };
 
   return (

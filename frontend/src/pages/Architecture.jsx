@@ -246,7 +246,8 @@ export default function Architecture({ data }) {
                       background: isEvo ? 'rgba(244,114,182,0.08)' : `${phase.color}12`,
                       border: `1px solid ${isEvo ? 'rgba(244,114,182,0.2)' : `${phase.color}25`}`,
                       padding: '3px 8px', borderRadius: '4px', display: 'inline-block',
-                      maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis',
+                      wordBreak: 'break-word', whiteSpace: 'normal',
                     }}>
                       {phase.outputs}
                     </div>
@@ -325,7 +326,7 @@ export default function Architecture({ data }) {
             <h3 className="text-h3" style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Database size={18} color="var(--text-secondary)" /> Memory System
             </h3>
-            <div className="grid-2" style={{ gap: '10px' }}>
+            <div className="grid-2 grid-2-keep" style={{ gap: '10px' }}>
               {[
                 { label: 'ROLLING.md files', value: '23', color: 'var(--accent-blue)' },
                 { label: 'Tracked sectors', value: '11', color: 'var(--accent-green)' },
