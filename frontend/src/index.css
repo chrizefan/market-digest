@@ -53,6 +53,7 @@ body {
 .sidebar {
   width: 260px;
   background: var(--bg-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
   backdrop-filter: var(--blur-glass);
   border-right: 1px solid var(--border-subtle);
   padding: 24px 0;
@@ -108,6 +109,7 @@ body {
   padding: 24px 40px;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
   backdrop-filter: var(--blur-glass);
   position: sticky;
   top: 0;
@@ -138,6 +140,7 @@ body {
 /* Glass Card */
 .glass-card {
   background: var(--bg-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
   backdrop-filter: var(--blur-glass);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
@@ -329,4 +332,159 @@ body {
   color: var(--text-secondary);
   font-size: 1.25rem;
   letter-spacing: -0.02em;
+}
+
+/* ========== Hamburger Button ========== */
+.hamburger-btn {
+  display: none;
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 1001;
+  background: var(--bg-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  backdrop-filter: var(--blur-glass);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  padding: 8px;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
+/* ========== Responsive: Tablet (<=1024px) ========== */
+@media (max-width: 1024px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .library-layout { grid-template-columns: 240px 1fr; }
+  .page-container { padding: 24px; }
+  .top-bar { padding: 20px 24px; }
+  .stat-value { font-size: 1.75rem; }
+}
+
+/* ========== Responsive: Mobile (<=768px) ========== */
+@media (max-width: 768px) {
+  .hamburger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 999;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    width: 260px;
+  }
+
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+
+  .app-container {
+    flex-direction: column;
+  }
+
+  .main-content {
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 16px;
+    padding-left: 56px;
+    position: sticky;
+    top: 0;
+  }
+
+  .top-bar-title {
+    font-size: 1.15rem;
+  }
+
+  .top-bar-meta {
+    font-size: 0.75rem;
+  }
+
+  .page-container {
+    padding: 16px;
+  }
+
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr; }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+
+  .stat-value {
+    font-size: 1.5rem;
+  }
+
+  .glass-card {
+    padding: 16px;
+  }
+
+  /* Library: stack sidebar above content */
+  .library-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .library-sidebar {
+    max-height: 300px;
+  }
+
+  /* Architecture phase timeline: tighter */
+  .grid-2 > .glass-card {
+    overflow-x: auto;
+  }
+
+  /* Tables: horizontal scroll */
+  .modern-table {
+    min-width: 500px;
+  }
+}
+
+/* ========== Responsive: Small Mobile (<=480px) ========== */
+@media (max-width: 480px) {
+  .grid-4 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr; }
+
+  .stat-value {
+    font-size: 1.25rem;
+  }
+
+  .top-bar {
+    padding: 12px;
+    padding-left: 52px;
+  }
+
+  .top-bar-title {
+    font-size: 1rem;
+  }
+
+  .page-container {
+    padding: 12px;
+  }
+
+  .glass-card {
+    padding: 12px;
+    border-radius: var(--radius-md);
+  }
 }

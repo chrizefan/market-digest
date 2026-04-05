@@ -56,6 +56,7 @@ function useStarfield() {
 
 function App() {
   const [activeTab, setActiveTab] = useState('portfolio');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -87,7 +88,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
       <Layout activeTab={activeTab} meta={data.portfolio.meta}>
         {activeTab === 'portfolio' && <Portfolio data={data} />}
         {activeTab === 'performance' && <Performance data={data} />}

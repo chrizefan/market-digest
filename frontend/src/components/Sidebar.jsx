@@ -1,6 +1,6 @@
-import { BarChart3, Target, BookOpen, Database, TrendingUp, PieChart } from 'lucide-react';
+import { Target, BookOpen, Database, TrendingUp, PieChart, Menu, X } from 'lucide-react';
 
-export default function Sidebar({ activeTab, setActiveTab }) {
+export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) {
   const navItems = [
     { id: 'portfolio', label: 'Asset Allocation', icon: <PieChart size={20} /> },
     { id: 'performance', label: 'Performance Tracking', icon: <TrendingUp size={20} /> },
@@ -10,25 +10,32 @@ export default function Sidebar({ activeTab, setActiveTab }) {
   ];
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-brand">
-        digiquant-atlas
-      </div>
-      <nav>
-        {navItems.map((item) => (
-          <a
-            key={item.id}
-            className={`nav-link ${activeTab === item.id ? 'active' : ''}`}
-            onClick={(e) => {
-              e.preventDefault();
-              setActiveTab(item.id);
-            }}
-          >
-            {item.icon}
-            {item.label}
-          </a>
-        ))}
-      </nav>
-    </aside>
+    <>
+      <button className="hamburger-btn" onClick={() => setIsOpen(!isOpen)} aria-label="Toggle menu">
+        {isOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+      {isOpen && <div className="sidebar-overlay" onClick={() => setIsOpen(false)} />}
+      <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
+        <div className="sidebar-brand">
+          digiquant-atlas
+        </div>
+        <nav>
+          {navItems.map((item) => (
+            <a
+              key={item.id}
+              className={`nav-link ${activeTab === item.id ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveTab(item.id);
+                setIsOpen(false);
+              }}
+            >
+              {item.icon}
+              {item.label}
+            </a>
+          ))}
+        </nav>
+      </aside>
+    </>
   );
 }
