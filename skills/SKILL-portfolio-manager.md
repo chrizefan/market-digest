@@ -34,6 +34,7 @@ Load the following (already in session context if running after Phase 7 of orche
 2. `memory/THESES.md` — full thesis register (active + closed)
 3. `config/preferences.md` — risk profile, constraints, trading style
 4. `outputs/daily/{{DATE}}/DIGEST.md` (if completed) — for cross-asset synthesis
+5. **Research library** — `docs/research/LIBRARY.md`. Load before Phase B. Apply the Black-Litterman conviction-weight table (Section 4.2) for position sizing. Run the Ilmanen 4-quadrant regime check (Section 5.4) before constructing the clean-slate portfolio. Use Kelly ceiling check (Section 4.3) to validate no position exceeds conservative fraction.
 
 **Do NOT load `config/portfolio.json` yet.** Portfolio blindness is maintained through Phase B.
 

@@ -34,6 +34,7 @@ manager (Phase B/C of SKILL-portfolio-manager.md) handles the comparison — not
    - **Broad US equity** (SPY, QQQ, IWM): `outputs/daily/{{DATE}}/us-equities.md` + `macro.md`
 3. **Active theses** — from `memory/THESES.md`. Note which thesis IDs are relevant to this asset.
 4. **Macro regime** — from `outputs/daily/{{DATE}}/macro.md` (already loaded earlier in session)
+5. **Research library** — `docs/research/LIBRARY.md`. Load once per session before forming bull/bear arguments. Cite at least one paper per argument. Use the Quick Reference tables (bottom) for per-asset signal rules. For macro regime framing, apply the Ilmanen 4-quadrant model (Section 5.4).
 
 ---
 
