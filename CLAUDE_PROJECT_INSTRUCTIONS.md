@@ -1,5 +1,4 @@
-# CLAUDE PROJECT INSTRUCTIONS
-# market-digest — Daily Market Intelligence System
+# Market Digest — Project Instructions
 
 > This file is the master instruction set for this Claude Project.
 > It tells Claude exactly how to behave in every session.
