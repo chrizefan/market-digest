@@ -7,7 +7,7 @@ description: >
   each phase is a dedicated sub-agent research task before synthesizing all findings into DIGEST.md and regenerating the web app.
 ---
 
-# Market Digest — Master Orchestrator
+# digiquant-atlas — Master Orchestrator
 
 This is the primary entry point for every comprehensive daily digest session.
 
@@ -57,7 +57,9 @@ Then load the following. Do NOT summarize to the user — just internalize:
 2. `config/preferences.md` — trading style, risk profile, active theses
 3. `config/hedge-funds.md` — tracked fund reference
 4. `config/data-sources.md` — tracked signal sources, KOL accounts, Polymarket topics
-5. All rolling memory files (read in order):
+5. Rolling memory files — **read the last 14 days of entries only** (grep for `## 202` headers,
+   take the most recent 14 dated blocks). Exception: `memory/THESES.md` — always read in full.
+   Read in this order:
    - `memory/macro/ROLLING.md`
    - `memory/equity/ROLLING.md`
    - `memory/crypto/ROLLING.md`
@@ -69,7 +71,8 @@ Then load the following. Do NOT summarize to the user — just internalize:
    - `memory/sectors/healthcare/ROLLING.md`
    - `memory/sectors/energy/ROLLING.md`
    - `memory/sectors/financials/ROLLING.md`
-   - `memory/sectors/consumer/ROLLING.md`
+   - `memory/sectors/consumer-staples/ROLLING.md`
+   - `memory/sectors/consumer-disc/ROLLING.md`
    - `memory/sectors/industrials/ROLLING.md`
    - `memory/sectors/utilities/ROLLING.md`
    - `memory/sectors/materials/ROLLING.md`
@@ -81,8 +84,9 @@ Then load the following. Do NOT summarize to the user — just internalize:
    - `memory/alternative-data/politician/ROLLING.md`
    - `memory/institutional/flows/ROLLING.md`
    - `memory/institutional/hedge-funds/ROLLING.md`
-   - `memory/THESES.md`
-   - `memory/BIAS-TRACKER.md`
+   - `memory/portfolio/ROLLING.md`
+   - `memory/THESES.md` (full)
+   - `memory/BIAS-TRACKER.md` (last 14 rows)
 6. Yesterday's `DIGEST.md` if it exists (for continuity)
 
 **After loading**, internally note:
@@ -260,7 +264,8 @@ Verify the following memory files have been appended in this session:
 - `memory/sectors/healthcare/ROLLING.md` ✓
 - `memory/sectors/energy/ROLLING.md` ✓
 - `memory/sectors/financials/ROLLING.md` ✓
-- `memory/sectors/consumer/ROLLING.md` ✓
+- `memory/sectors/consumer-staples/ROLLING.md` ✓
+- `memory/sectors/consumer-disc/ROLLING.md` ✓
 - `memory/sectors/industrials/ROLLING.md` ✓
 - `memory/sectors/utilities/ROLLING.md` ✓
 - `memory/sectors/materials/ROLLING.md` ✓
@@ -272,6 +277,7 @@ Verify the following memory files have been appended in this session:
 - `memory/alternative-data/politician/ROLLING.md` ✓
 - `memory/institutional/flows/ROLLING.md` ✓
 - `memory/institutional/hedge-funds/ROLLING.md` ✓
+- `memory/portfolio/ROLLING.md` ✓
 - `memory/BIAS-TRACKER.md` ✓
 
 ---
@@ -318,6 +324,46 @@ Using `templates/master-digest.md`, compile `outputs/daily/{{DATE}}/DIGEST.md`:
 - Every section ends with a portfolio implication, not just description.
 
 Save to: `outputs/daily/{{DATE}}/DIGEST.md`
+
+---
+
+## Phase 7C — Asset Analyst Pass
+
+> Translate research into per-asset conviction scores. Analysts are blinded to current portfolio
+> weights — each forms an independent view from Phase 1–5 session outputs only.
+
+Follow `skills/SKILL-portfolio-manager.md` **Phase A** completely:
+
+1. Read `config/portfolio.json` — extract the **ticker list only** (do NOT read weight_pct values)
+2. Identify 1–2 new opportunity candidates from this session's digest research
+3. For each ticker in the roster, follow `skills/SKILL-asset-analyst.md` completely
+4. Each analyst reads only Phase 1–5 output files — no new web searches
+5. Save each analyst output to: `outputs/daily/{{DATE}}/positions/{{TICKER}}.md`
+
+Announce to user after completing: "Analysts complete. [N] reports in outputs/daily/{{DATE}}/positions/"
+
+---
+
+## Phase 7D — Portfolio Manager Review
+
+> Clean-slate portfolio construction followed by comparison vs current positions.
+> This phase produces the rebalance decision — the most actionable output of the full pipeline.
+
+Follow `skills/SKILL-portfolio-manager.md` **Phases B and C** completely:
+
+**Phase B (Clean-Slate — still blinded to weights):**
+1. Read all analyst outputs from `outputs/daily/{{DATE}}/positions/`
+2. Apply theme caps and weight constraints from `config/preferences.md`
+3. Build ideal target portfolio
+4. Save to: `outputs/daily/{{DATE}}/portfolio-recommended.md`
+
+**Phase C (Comparison — NOW load current weights):**
+1. Load `config/portfolio.json` positions with weights
+2. Diff recommended vs current; apply ≥5% threshold
+3. Produce rebalance table with actions (Hold/Add/Trim/Exit/New)
+4. Save to: `outputs/daily/{{DATE}}/rebalance-decision.md`
+5. Update `config/portfolio.json` → `proposed_positions[]`
+6. Append to `memory/portfolio/ROLLING.md`
 
 ---
 
@@ -404,12 +450,14 @@ Confirm all of the following before ending the session:
 - [ ] Phase 3: `macro.md` created
 - [ ] Phase 4: `bonds.md`, `commodities.md`, `forex.md`, `crypto.md`, `international.md` created
 - [ ] Phase 5: `us-equities.md` + 11 sector files in `sectors/` created
-- [ ] Phase 6: All 24 memory files updated; `BIAS-TRACKER.md` new row added
+- [ ] Phase 6: All 25 memory files updated; `BIAS-TRACKER.md` new row added
 - [ ] Phase 7: `DIGEST.md` created
+- [ ] Phase 7C: Analyst reports created in `outputs/daily/{{DATE}}/positions/`
+- [ ] Phase 7D: `portfolio-recommended.md` + `rebalance-decision.md` created; `portfolio.json` proposed_positions updated
 - [ ] Phase 8: `update-tearsheet.py` executed successfully; digest commit created
 - [ ] Phase 9: Post-mortem completed; source scorecard, quality log updated; evolution commit created
 
-**Total output files per day: ~21 segment files + DIGEST.md + 3 evolution files = 25 files**
+**Total output files per day: ~21 segment files + DIGEST.md + analyst positions/ + portfolio-recommended.md + rebalance-decision.md + 3 evolution files = 28 files**
 
 Print to user: "✅ Digest complete. Two commits created: digest outputs + pipeline evolution."
 

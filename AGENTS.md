@@ -1,4 +1,4 @@
-# Market Digest — Agent Instructions
+# digiquant-atlas — Agent Instructions
 
 > Universal entry point for AI agents (OpenHands, Devin, Cline, generic LLM agents).
 > This file describes the repository, its conventions, and how an agent should operate within it.
@@ -7,7 +7,7 @@
 
 ## Repository Purpose
 
-**market-digest** is a structured daily market intelligence system. It uses a **three-tier cadence**:
+**digiquant-atlas** is a structured daily market intelligence system. It uses a **three-tier cadence**:
 
 | Tier | When | What | Token Cost |
 |------|------|------|------------|

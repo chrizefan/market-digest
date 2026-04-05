@@ -1,8 +1,8 @@
 # docs/agentic/ — Agentic Development Documentation
 
-This folder is the central reference for running the Market Digest pipeline on any AI platform. Start here.
+This folder is the central reference for running the digiquant-atlas pipeline on any AI platform. Start here.
 
-## What Is Market Digest?
+## What Is digiquant-atlas?
 
 A daily market intelligence system that orchestrates a 7-phase pipeline of AI research agents. Each phase builds on the previous: alternative data flows into institutional analysis, which informs macro regime determination, which drives asset-class and sector research, all synthesized into a single daily digest.
 

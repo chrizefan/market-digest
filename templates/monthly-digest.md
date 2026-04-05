@@ -1,4 +1,4 @@
-# 📆 Monthly Market Digest — {{MONTH_LABEL}}
+# 📆 Monthly digiquant-atlas Digest — {{MONTH_LABEL}}
 
 > Generated: {{TIMESTAMP}} | Synthesized from {{WEEK_COUNT}} weekly baselines + daily deltas
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# status.sh — Show the health and status of the market-digest project at a glance
+# status.sh — Show the health and status of the digiquant-atlas project at a glance
 # v3: Understands three-tier cadence (baseline + deltas)
 
 set -e
@@ -10,7 +10,7 @@ YEAR=$(date +%Y)
 WEEK_LABEL="${YEAR}-W${WEEK}"
 
 echo ""
-echo "📊 Market Digest — Project Status"
+echo "📊 digiquant-atlas — Project Status"
 echo "===================================="
 echo "Date: $DATE | Week: ${WEEK_LABEL}"
 echo ""

@@ -7,7 +7,7 @@ description: >
   and sets the analytical frame for the upcoming week.
 ---
 
-# Market Digest — Weekly Baseline Skill
+# digiquant-atlas — Weekly Baseline Skill
 
 This is the Sunday full-run skill. It executes the complete 9-phase pipeline with two additions:
 1. **Week Setup Preamble** — reviews last week's evolution before any analysis
@@ -24,12 +24,15 @@ Read these files (in order) and internalize without summarizing to the user:
 - `outputs/weekly/[last week label].md` — if it exists
 - `memory/BIAS-TRACKER.md` — the last 5–7 rows (last week's daily readings)
 - `memory/THESES.md` — full thesis register
+- `config/portfolio.json` — current positions and last proposed_positions (note tickers only for now; actual weights reviewed in Phase 7D)
+- `memory/portfolio/ROLLING.md` — last 3 entries (recent rebalance history)
 
 After reading, note internally:
 - **Bias trajectory**: Was last week mostly bullish/bearish? Any mid-week regime flips?
 - **Thesis hits/misses**: Which theses were confirmed, challenged, or neutralized?
 - **Persistent signals**: Any alt-data or institutional signals that were consistent all week?
 - **Surprises**: What did the market do that wasn't anticipated in the prior baseline?
+- **Portfolio health**: Any pending rebalance actions from last week that went unexecuted? Any positions held longer than their thesis time horizon without a confirmation signal?
 
 ### Step 2: Week Ahead Calendar
 Scan `config/data-sources.md` and live web sources for this week's high-impact events:
@@ -110,8 +113,10 @@ After completing Phase 9C (Improvement Proposals), append a retrospective review
 
 All items from the standard Session Completion Checklist (`skills/SKILL-orchestrator.md`), plus:
 
-- [ ] Prior week review complete (BIAS-TRACKER last 5-7 rows read)
+- [ ] Prior week review complete (BIAS-TRACKER last 5-7 rows read; portfolio.json loaded)
 - [ ] Week Ahead Calendar scanned (high-impact events identified)
 - [ ] `_meta.json` in output folder confirms `"type": "baseline"`
 - [ ] Week Ahead Setup section added to `DIGEST.md`
+- [ ] Phase 7C: All analyst reports in `outputs/daily/{{DATE}}/positions/`
+- [ ] Phase 7D: Rebalance decision + baseline anchor weights in `rebalance-decision.md`
 - [ ] Weekly Retrospective appended to `memory/evolution/quality-log.md`

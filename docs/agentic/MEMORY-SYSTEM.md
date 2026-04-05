@@ -1,6 +1,6 @@
 # Memory System Reference
 
-Market Digest uses 23 append-only rolling memory files plus two special-format files. Together they form the system's long-term research memory.
+digiquant-atlas uses 23 append-only rolling memory files plus two special-format files. Together they form the system's long-term research memory.
 
 ## Design Principles
 

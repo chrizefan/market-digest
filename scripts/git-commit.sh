@@ -78,11 +78,11 @@ This PR contains post-mortem observations and improvement proposals from today's
 > ⚠️ **No skill files, templates, or config have been modified.** This PR only contains observations and proposals. Approved proposals will be applied in a future session." \
       2>/dev/null || {
         echo "   ⚠️  PR creation failed — you may need to run: gh auth login"
-        echo "   Branch is pushed. Create PR manually at: https://github.com/chrizefan/market-digest/compare/${BRANCH}"
+        echo "   Branch is pushed. Create PR manually at: https://github.com/chrizefan/digiquant-atlas/compare/${BRANCH}"
       }
   else
     echo "   ℹ️  GitHub CLI (gh) not found. Create PR manually at:"
-    echo "   https://github.com/chrizefan/market-digest/compare/${BRANCH}"
+    echo "   https://github.com/chrizefan/digiquant-atlas/compare/${BRANCH}"
   fi
 
   # Switch back to master for the next run
@@ -94,7 +94,7 @@ This PR contains post-mortem observations and improvement proposals from today's
 
 else
   echo ""
-  echo "📦 Committing market digest outputs — $DATE"
+  echo "📦 Committing digiquant-atlas outputs — $DATE"
   echo "============================================"
 
   # Stage digest outputs and memory (excluding evolution)

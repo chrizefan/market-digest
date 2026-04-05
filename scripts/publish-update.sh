@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -e
 
-# Market Digest - Automatic Publish Script
+# digiquant-atlas - Automatic Publish Script
 # Use this script after a new digest is output to automatically parse, 
 # build the latest data, and push it to GitHub for GitHub Pages deployment.
 
-echo "📊 Updating Market Digest Data..."
+echo "📊 Updating digiquant-atlas data..."
 python3 scripts/update-tearsheet.py
 
 # Optionally wait or check if new files are generated (update-tearsheet.py writes the JSON)

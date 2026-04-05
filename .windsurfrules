@@ -1,4 +1,4 @@
-# Market Digest — Windsurf Rules
+# digiquant-atlas — Windsurf Rules
 
 ## Project Purpose
 Daily market intelligence system using a 7-phase AI-orchestrated pipeline. Produces structured research across all asset classes. Skill files (`skills/*.md`) are step-by-step instruction sets for AI agents.

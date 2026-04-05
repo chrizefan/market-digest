@@ -12,7 +12,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        Market Digest
+        digiquant-atlas
       </div>
       <nav>
         {navItems.map((item) => (

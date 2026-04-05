@@ -1,4 +1,4 @@
-# Market Digest — Claude Code Instructions
+# digiquant-atlas — Claude Code Instructions
 
 > This file is read automatically by Claude Code (`claude` CLI) when invoked in this repo.
 > For Claude.ai Projects, see `CLAUDE_PROJECT_INSTRUCTIONS.md` instead.
@@ -33,7 +33,7 @@ python scripts/update-tearsheet.py  # Rebuild HTML portfolio tearsheet
 ## Repository Architecture
 
 ```
-market-digest/
+digiquant-atlas/
 ├── CLAUDE.md                         ← This file (Claude Code entry point)
 ├── CLAUDE_PROJECT_INSTRUCTIONS.md    ← Claude.ai Projects entry point
 ├── AGENTS.md                         ← Cross-platform agent entry point

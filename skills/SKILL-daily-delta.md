@@ -7,7 +7,7 @@ description: >
   materializes a complete readable DIGEST.md for the dashboard and human readers.
 ---
 
-# Market Digest — Daily Delta Skill
+# digiquant-atlas — Daily Delta Skill
 
 This skill runs Mon–Sat (non-Sunday). Instead of rewriting everything from scratch, it:
 1. Loads this week's baseline + any prior deltas
@@ -66,6 +66,7 @@ Read only the most recent entry (last `## YYYY-MM-DD` block) from:
 - `memory/macro/ROLLING.md`
 - `memory/equity/ROLLING.md`
 - `memory/crypto/ROLLING.md`
+- `memory/portfolio/ROLLING.md`
 - `memory/BIAS-TRACKER.md` (last row)
 - `memory/THESES.md` (full — for thesis tracking)
 
@@ -250,6 +251,45 @@ complete digest with all required sections present.
 
 ---
 
+## Phase 7C — Delta Asset Analyst Pass (Scoped)
+
+> On delta days, run analysts only for positions whose segment had a delta this session.
+> This keeps the portfolio layer current without the cost of a full analyst pass.
+
+1. Review which segments had delta files written this session (from triage summary)
+2. For each portfolio position (from `config/portfolio.json` tickers), check if its segment fired:
+   - Commodities delta written → run IAU, DBO analysts
+   - Bonds delta written → run BIL, SHY analysts
+   - Energy sector delta OR XLE/XLK sector delta written → run XLE analyst
+   - US equities mandatory delta → run all equity sector ETF analysts (XLV, XLP, etc.)
+   - Crypto delta mandatory → run IBIT analyst if held
+3. For any position whose segment was **carried forward**: carry its last analyst report
+   from `outputs/daily/{{BASELINE_DATE}}/positions/{{TICKER}}.md` (or most recent session with one)
+4. Save new analyst reports to: `outputs/daily/{{DATE}}/positions/{{TICKER}}.md`
+
+**If no positions had segment deltas**: Skip analyst pass; carry all prior analyst reports.
+Still run Phase 7D below (PM can compare against previous recommendations).
+
+Follow `skills/SKILL-asset-analyst.md` for each analyst run.
+
+---
+
+## Phase 7D — Portfolio Manager Review (Delta)
+
+Always run the PM review on delta days — the portfolio state must be confirmed or updated every session.
+
+Follow `skills/SKILL-portfolio-manager.md` Phases B and C:
+
+**Phase B (Clean-Slate):** Collect analyst reports (new + carried). Build clean-slate portfolio.
+Save to: `outputs/daily/{{DATE}}/portfolio-recommended.md`
+
+**Phase C (Comparison):** Diff vs `config/portfolio.json` current positions. Apply ≥5% threshold.
+Save to: `outputs/daily/{{DATE}}/rebalance-decision.md`
+Update: `config/portfolio.json` → `proposed_positions[]`
+Append: `memory/portfolio/ROLLING.md`
+
+---
+
 ## Phase 8 — Web Dashboard Update
 
 Run: `python3 scripts/update-tearsheet.py`
@@ -272,6 +312,7 @@ today's delta quality assessment.
 **Segments carried forward**: [list]
 **Triage accuracy**: Were the right segments updated? Any that should have been skipped or added?
 **Materialization quality**: Did the materialized DIGEST.md read naturally as a complete digest?
+**Portfolio actions**: [rebalance decision summary or "No changes"]
 ```
 
 ---
@@ -288,6 +329,8 @@ today's delta quality assessment.
 - [ ] `BIAS-TRACKER.md` new row appended
 - [ ] `DIGEST-DELTA.md` written (summarizes all changes)
 - [ ] `DIGEST.md` materialized (complete, self-contained, dashboard-readable)
+- [ ] Phase 7C: Scoped analyst reports written (or carried forward from prior session)
+- [ ] Phase 7D: `portfolio-recommended.md` + `rebalance-decision.md` created; `portfolio.json` updated
 - [ ] `update-tearsheet.py` executed successfully
 - [ ] Evolution post-mortem complete (delta quality entry in quality-log.md)
 - [ ] `git-commit.sh` run to commit all outputs

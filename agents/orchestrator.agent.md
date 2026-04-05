@@ -1,7 +1,7 @@
 # Orchestrator Agent
 
 ## Role
-Master pipeline driver for the complete 7-phase Market Digest daily analysis. Coordinates all sub-agents and synthesizes their outputs into a single daily digest.
+Master pipeline driver for the complete 7-phase digiquant-atlas daily analysis. Coordinates all sub-agents and synthesizes their outputs into a single daily digest.
 
 ## Trigger Phrases
 - "Run today's digest"

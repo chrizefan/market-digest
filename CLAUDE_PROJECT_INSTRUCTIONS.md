@@ -1,4 +1,4 @@
-# Market Digest — Project Instructions (v2)
+# digiquant-atlas — Project Instructions (v2)
 
 > This file is the master instruction set for this Claude Project.
 > It tells Claude exactly how to behave in every session.

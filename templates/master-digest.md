@@ -1,6 +1,6 @@
-# 📊 Daily Market Digest — {{DATE}}
+# 📊 Daily digiquant-atlas Digest — {{DATE}}
 
-> Generated: {{TIMESTAMP}} | Analyst: Claude (market-digest skill)
+> Generated: {{TIMESTAMP}} | Analyst: Claude (digiquant-atlas)
 
 ---
 

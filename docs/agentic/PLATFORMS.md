@@ -1,6 +1,6 @@
 # Platform Setup Guide
 
-How to configure each AI platform to work with Market Digest.
+How to configure each AI platform to work with digiquant-atlas.
 
 ## GitHub Copilot (VS Code)
 
@@ -31,7 +31,7 @@ applyTo: "**"
 Claude Code auto-discovers `CLAUDE.md` in the current directory when you run `claude` from the repo root. No setup required — just run:
 
 ```bash
-cd /path/to/market-digest
+cd /path/to/digiquant-atlas
 claude
 ```
 

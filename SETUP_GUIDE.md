@@ -1,4 +1,4 @@
-# Setup Guide — Market Digest System
+# Setup Guide — digiquant-atlas
 
 > Complete this guide once. After that, your daily workflow is just two commands and a paste.
 
@@ -9,18 +9,18 @@
 ### 1.1 Extract and enter the project
 
 ```bash
-tar -xzf market-digest-project.tar.gz
-cd market-digest
+tar -xzf digiquant-atlas.tar.gz
+cd digiquant-atlas
 ```
 
 ### 1.2 Create a private GitHub repo
 
-Go to github.com → New repository → **Private** → name it `market-digest`
+Go to github.com → New repository → **Private** → name it `digiquant-atlas`
 
 Then connect your local repo:
 
 ```bash
-git remote add origin https://github.com/YOUR_USERNAME/market-digest.git
+git remote add origin https://github.com/YOUR_USERNAME/digiquant-atlas.git
 git branch -m master main
 git push -u origin main
 ```
@@ -64,7 +64,7 @@ The preferences file is what makes the digest *yours* rather than generic market
 
 ### 3.1 Create a new Project in Claude
 
-In Claude.ai: **New Project** → name it `Market Digest` (or similar)
+In Claude.ai: **New Project** → name it `digiquant-atlas` (or similar)
 
 ### 3.2 Set the Project Instructions
 
@@ -106,7 +106,7 @@ This takes ~2 minutes once you have the habit.
 
 This prints a ready-made prompt to paste into Claude.
 
-### 4.2 Paste the prompt into your Market Digest Claude Project
+### 4.2 Paste the prompt into your digiquant-atlas Claude Project
 
 Claude will:
 1. Read all your config and memory files

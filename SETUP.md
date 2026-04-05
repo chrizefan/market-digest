@@ -1,4 +1,4 @@
-# Setup Guide — Market Digest System
+# Setup Guide — digiquant-atlas
 
 Complete setup walkthrough. Should take 15-20 minutes.
 
@@ -17,12 +17,12 @@ Complete setup walkthrough. Should take 15-20 minutes.
 
 ```bash
 # Extract the downloaded archive
-tar -xzf market-digest-project.tar.gz
+tar -xzf digiquant-atlas.tar.gz
 
 # Move to wherever you keep projects
-mv market-digest ~/projects/market-digest   # or wherever you prefer
+mv digiquant-atlas ~/projects/digiquant-atlas   # or wherever you prefer
 
-cd ~/projects/market-digest
+cd ~/projects/digiquant-atlas
 ```
 
 ---
@@ -72,7 +72,7 @@ Fill in:
 ## Step 4: Create a Private GitHub Repo
 
 1. Go to [github.com/new](https://github.com/new)
-2. Name it `market-digest` (or anything you want)
+2. Name it `digiquant-atlas` (or anything you want)
 3. Set it to **Private** ← important, this is your research
 4. Do NOT initialize with a README (we already have one)
 5. Click "Create repository"
@@ -80,7 +80,7 @@ Fill in:
 Then connect your local repo:
 ```bash
 # Replace YOUR_USERNAME with your GitHub username
-git remote add origin https://github.com/YOUR_USERNAME/market-digest.git
+git remote add origin https://github.com/YOUR_USERNAME/digiquant-atlas.git
 git branch -M main
 git push -u origin main
 ```
@@ -88,7 +88,7 @@ git push -u origin main
 Verify:
 ```bash
 git remote -v
-# Should show: origin https://github.com/YOUR_USERNAME/market-digest.git
+# Should show: origin https://github.com/YOUR_USERNAME/digiquant-atlas.git
 ```
 
 ---

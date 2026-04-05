@@ -1,5 +1,5 @@
 ---
-name: market-digest
+name: digiquant-atlas
 description: >
   Run this skill to produce the full daily market digest. Triggers when the user says "run today's digest",
   "daily analysis", "market update", "morning brief", or pastes the new-day prompt. UPGRADED: This skill
@@ -7,7 +7,7 @@ description: >
   each sector, asset class, and alternative data source. Always use this skill for any full market analysis session.
 ---
 
-# Market Digest — Pointer to Orchestrator (v2)
+# digiquant-atlas — Pointer to Orchestrator (v2)
 
 > **This skill has been superseded by the full orchestrator pipeline.**
 > Follow the instructions below to run the upgraded 7-phase system.

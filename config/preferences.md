@@ -126,11 +126,8 @@ Recurring pairs of interest:
 
 ## 📌 Active Macro Theses
 
-> Claude will cross-reference these during each digest and flag confirmations or contradictions.
-> Update this section after major regime changes or thesis shifts.
+> The live thesis register is maintained in `memory/THESES.md`.
+> Read that file for current thesis IDs, status, invalidation triggers, and evidence.
+> Do NOT rely on this section for thesis content — it will lag THESES.md.
 
-- [Add your current macro views here]
-- [e.g., "USD weakness supports EM and gold rotation"]
-- [e.g., "Recession risk rising — overweight defensives (XLU, XLP, TLT)"]
-- [e.g., "Gold structural bid on central bank buying and de-dollarization"]
-- [e.g., "Energy transition trade — XLE underweight vs. prior cycle"]
+See: `memory/THESES.md`

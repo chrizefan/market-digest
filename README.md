@@ -1,4 +1,4 @@
-# Market Digest
+# digiquant-atlas
 
 A daily market intelligence system with a 7-phase AI-orchestrated pipeline. Produces structured research across all asset classes: equities, macro, crypto, bonds, commodities, forex, international markets, and all 11 S&P sectors. Outputs are version-controlled and 24 append-only rolling memory files compound research across sessions.
 
@@ -27,7 +27,7 @@ Paste the output of `new-day.sh` into Claude Code, Claude.ai, Cursor, or any AI 
 ## Project Structure
 
 ```
-market-digest/
+digiquant-atlas/
 ├── CLAUDE.md                    ← Claude Code entry point (auto-read)
 ├── AGENTS.md                    ← Cross-platform agent entry point
 │

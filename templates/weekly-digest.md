@@ -1,4 +1,4 @@
-# 📅 Weekly Market Digest — {{WEEK_LABEL}}
+# 📅 Weekly digiquant-atlas Digest — {{WEEK_LABEL}}
 
 > Week {{WEEK}} of {{YEAR}} | Generated: {{TIMESTAMP}}
 > Synthesized from: {{DATE_RANGE}}

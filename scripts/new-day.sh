@@ -2,7 +2,7 @@
 # new-day.sh — Start a new market analysis day (v3 — three-tier cadence)
 # Sunday = Weekly Baseline (full 9-phase run)
 # Mon–Sat = Daily Delta (lightweight, ~70% fewer tokens)
-# Run from the root of the market-digest repo each morning.
+# Run from the root of the digiquant-atlas repo each morning.
 
 set -e
 
@@ -14,7 +14,7 @@ OUTPUT_DIR="outputs/daily/$DATE"
 SECTORS="technology healthcare energy financials consumer-staples consumer-disc industrials utilities materials real-estate comms"
 
 echo ""
-echo "📊 Market Digest — $DATE"
+echo "📊 digiquant-atlas — $DATE"
 echo "================================"
 
 # Check if today's output already exists
@@ -62,7 +62,7 @@ EOF
   echo "✅ Created BASELINE directory: $OUTPUT_DIR"
   echo "   Files: DIGEST.md + 10 segment files + 11 sector files + _meta.json"
   echo ""
-  echo "📋 PASTE THIS INTO CLAUDE (market-digest project):"
+  echo "📋 PASTE THIS INTO CLAUDE (digiquant-atlas project):"
   echo "=================================================="
   echo "Run the WEEKLY BASELINE digest for $DATE (${WEEK_LABEL})."
   echo ""
@@ -149,7 +149,7 @@ EOF
   echo "   Delta #:      ${DELTA_NUM} this week (${WEEK_LABEL})"
   echo "   Baseline:     ${BASELINE_DATE}"
   echo ""
-  echo "📋 PASTE THIS INTO CLAUDE (market-digest project):"
+  echo "📋 PASTE THIS INTO CLAUDE (digiquant-atlas project):"
   echo "=================================================="
   echo "Run the DAILY DELTA digest for $DATE (${WEEK_LABEL}, Delta #${DELTA_NUM})."
   echo ""

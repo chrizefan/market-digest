@@ -1,4 +1,4 @@
-# Market Digest — Cursor Rules
+# digiquant-atlas — Cursor Rules
 
 ## What This Project Is
 A daily market intelligence repo using a 7-phase AI-orchestrated pipeline. Skill files (`skills/*.md`) are step-by-step instruction sets for AI agents. Memory files (`memory/*/ROLLING.md`) are append-only research logs.

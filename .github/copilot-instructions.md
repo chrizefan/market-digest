@@ -2,7 +2,7 @@
 applyTo: "**"
 ---
 
-# Market Digest — GitHub Copilot Instructions
+# digiquant-atlas — GitHub Copilot Instructions
 
 This repository is a **daily market intelligence system** with a 7-phase AI-orchestrated pipeline. It produces structured financial research across all asset classes.
 
