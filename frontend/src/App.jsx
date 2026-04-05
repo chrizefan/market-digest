@@ -29,7 +29,8 @@ function useStarfield() {
     init();
 
     const draw = () => {
-      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(0, 0, width, height);
       for (const s of stars) {
         s.ph += 0.01 + s.d * 0.015;
         const tw = 0.6 + 0.4 * Math.sin(s.ph);
