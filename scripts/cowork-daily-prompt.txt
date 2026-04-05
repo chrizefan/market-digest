@@ -1,0 +1,22 @@
+Run the daily market digest.
+
+Today's date is {current_date}.
+
+Follow skills/SKILL-digest.md exactly. Steps:
+
+1. Read config/watchlist.md and config/preferences.md
+2. Read all memory/*/ROLLING.md files (macro, equity, crypto, bonds, commodities, forex)
+3. Run each segment analysis using web search for live data:
+   - Macro (SKILL-macro.md) — run first, sets the regime
+   - Equities (SKILL-equity.md)
+   - Crypto (SKILL-crypto.md)
+   - Bonds & Rates (SKILL-bonds.md)
+   - Commodities (SKILL-commodities.md)
+   - Forex (SKILL-forex.md)
+4. After each segment, prepare a memory update (3-4 bullets)
+5. Append each memory update to the corresponding memory/*/ROLLING.md file
+6. Compile the full master digest using templates/master-digest.md
+7. Save the complete digest to outputs/daily/{current_date}.md
+8. Confirm: list all memory files updated and confirm the output file path
+
+Do not skip the memory updates. Do not use training data for prices or news — search for everything.
