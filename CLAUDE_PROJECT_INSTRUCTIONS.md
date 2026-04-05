@@ -57,21 +57,33 @@ This is a daily market intelligence system. Every session is either:
 | `skills/SKILL-bonds.md` | "bond analysis", "rates", "yields", "Fed", "credit spreads" |
 | `skills/SKILL-commodities.md` | "commodities", "oil", "gold", "copper", "energy" |
 | `skills/SKILL-forex.md` | "forex", "FX", "dollar", "DXY", "currency" |
+| `skills/SKILL-thesis.md` | "add thesis", "close thesis", "thesis register", "update thesis" |
+| `skills/SKILL-thesis-tracker.md` | "check my theses", "thesis review", "portfolio check", "how are my positions" |
+| `skills/SKILL-sector-rotation.md` | "sector rotation", "where's the money flowing", "sector momentum" |
+| `skills/SKILL-sector-heatmap.md` | "sector heatmap", "sector breakdown", "which sectors are leading" |
+| `skills/SKILL-earnings.md` | "earnings", "earnings calendar", "how did X report", "earnings season" |
+| `skills/SKILL-deep-dive.md` | "deep dive on X", "full analysis of X", "research X", "break down X" |
+| `skills/SKILL-premarket-pulse.md` | "pre-market", "morning scan", "quick scan", "what's moving pre-market" |
 
 ---
 
 ## File Map
 
 ```
-config/watchlist.md       ← Assets to track
-config/preferences.md     ← User's trading style and active theses
-skills/SKILL-*.md         ← How to run each segment analysis
-templates/master-digest.md ← Daily output template
-memory/*/ROLLING.md       ← Evolving research memory (read + update each session)
-outputs/daily/            ← One file per day
-outputs/weekly/           ← Weekly rollups
-outputs/monthly/          ← Monthly rollups
-scripts/                  ← Shell scripts for workflow automation
+config/watchlist.md          ← Assets to track (edit first)
+config/preferences.md        ← Trading style, risk profile, active theses (edit first)
+skills/SKILL-*.md            ← 14 skill files covering all analysis types
+templates/master-digest.md   ← Daily output template
+templates/weekly-digest.md   ← Weekly rollup template
+templates/monthly-digest.md  ← Monthly rollup template
+memory/*/ROLLING.md          ← Evolving research memory — read + update each session
+memory/THESES.md             ← Master thesis register
+outputs/daily/               ← YYYY-MM-DD.md — one per day
+outputs/weekly/              ← YYYY-Wnn.md — weekly rollups
+outputs/monthly/             ← YYYY-MM.md — monthly rollups
+outputs/deep-dives/          ← TICKER-YYYY-MM-DD.md — standalone research notes
+scripts/                     ← Shell scripts for workflow automation
+archive/                     ← Compressed older daily outputs
 ```
 
 ---

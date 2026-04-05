@@ -27,58 +27,24 @@ echo "Daily files found:"
 echo "$DAILY_FILES"
 echo ""
 
-# Create the weekly output file
-cat > "$OUTPUT_FILE" << EOF
-# Weekly Market Digest — $WEEK_LABEL
+# Create the weekly output file from template
+cp "templates/weekly-digest.md" "$OUTPUT_FILE"
+sed -i "s/{{WEEK_LABEL}}/$WEEK_LABEL/g" "$OUTPUT_FILE"
+sed -i "s/{{WEEK}}/$WEEK/g" "$OUTPUT_FILE"
+sed -i "s/{{YEAR}}/$YEAR/g" "$OUTPUT_FILE"
+sed -i "s/{{TIMESTAMP}}/$(date '+%Y-%m-%d %H:%M %Z')/g" "$OUTPUT_FILE"
 
-> Auto-generated rollup of daily digests for week $WEEK, $YEAR.
-
----
-
-## Week in Review
-
-[To be filled by Claude — paste the daily digests below and ask for a weekly synthesis]
-
----
-
-## Daily Digest Links
-EOF
-
+# Build the daily files list
+DAILY_LIST=""
 for f in $DAILY_FILES; do
   FDATE=$(basename "$f" .md)
-  echo "- [$FDATE]($f)" >> "$OUTPUT_FILE"
+  DAILY_LIST="$DAILY_LIST [$FDATE]($f)"
 done
 
-cat >> "$OUTPUT_FILE" << EOF
-
----
-
-## Weekly Bias Summary
-
-| Segment | Mon | Tue | Wed | Thu | Fri | Weekly Trend |
-|---------|-----|-----|-----|-----|-----|--------------|
-| Macro   |     |     |     |     |     |              |
-| Equities |    |     |     |     |     |              |
-| Crypto  |     |     |     |     |     |              |
-| Bonds   |     |     |     |     |     |              |
-| Commodities |  |    |     |     |     |              |
-| Forex   |     |     |     |     |     |              |
-
----
-
-## Key Themes This Week
--
--
--
-
-## Thesis Changes
--
--
-
-## Next Week Setup
-[What to watch heading into next week]
-
-EOF
+FIRST=$(echo "$DAILY_FILES" | sort | head -1 | xargs basename .md 2>/dev/null || echo "")
+LAST=$(echo "$DAILY_FILES" | sort | tail -1 | xargs basename .md 2>/dev/null || echo "")
+sed -i "s/{{DATE_RANGE}}/$FIRST to $LAST/g" "$OUTPUT_FILE"
+sed -i "s/{{DAILY_FILE_LIST}}/$DAILY_LIST/g" "$OUTPUT_FILE"
 
 echo "✅ Created: $OUTPUT_FILE"
 echo ""
