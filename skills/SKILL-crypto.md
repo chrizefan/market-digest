@@ -11,6 +11,19 @@ description: Run crypto market analysis as part of the daily digest. Covers BTC,
 - Macro regime output (risk-on/off affects crypto)
 - Institutional flows output (IBIT/FBTC daily flow data)
 
+## Data Layer
+
+> Read `outputs/daily/{{DATE}}/data/macro-summary.md` for pre-fetched BTC and ETH prices.
+
+For richer crypto data use MCP tools:
+- **Fear & Greed Index**: `mcp_crypto-feargr_get_current_fng_tool` (current value) · `mcp_crypto-feargr_analyze_fng_trend` (trend over N days) · `mcp_crypto-feargr_get_historical_fng_tool` (historical values)
+- **Market data / altcoins / DeFi**: `mcp_coingecko_execute` — call CoinGecko API:
+  - Prices: `GET /simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`
+  - Market overview: `GET /coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20`
+  - Trending: `GET /search/trending`
+
+---
+
 ## Research Steps
 
 ### 1. BTC & ETH Core Read

@@ -10,6 +10,19 @@ description: Run bond market and interest rates analysis as part of the daily di
 - `config/preferences.md`
 - Macro regime output (rate path context)
 
+## Data Layer
+
+> Read `outputs/daily/{{DATE}}/data/macro-summary.md` first — it contains pre-fetched yield curve levels (2Y, 5Y, 10Y, 30Y), 2s10s/3m10y spreads, and credit proxy ETF moves.
+
+Supplement with `mcp_fred_*` tools for data not in the fetch files:
+- **TIPS breakevens**: `mcp_fred_fred_series_observations` with `T10YIE` (10Y), `T5YIE` (5Y)
+- **Real yields**: series `DFII10` (10Y TIPS real yield)
+- **Credit spreads**: `BAMLH0A0HYM2` (HY OAS), `BAMLC0A0CM` (IG OAS)
+- **Fed Funds**: `DFF` for current effective rate
+- **5Y5Y forward**: `T5YIFR`
+
+---
+
 ## Research Steps
 
 ### 1. Treasury Yields

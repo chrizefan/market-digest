@@ -53,14 +53,14 @@ Search for recent posts from tracked accounts and hashtags:
 - Contrarian signal: if X/Twitter is uniformly bearish, be alert for reversal
 
 ### 3. Polymarket Prediction Markets
-Search for current Polymarket odds on:
-- **Fed interest rate path**: probability of next cut/hike at nearest FOMC meeting
+Use `mcp_polymarket_trending_markets` to see today's most active markets, then `mcp_polymarket_search_markets` for specific topics:
+- **Fed interest rate path**: search "Fed rate cut" — probability of next cut/hike at nearest FOMC meeting
 - **US recession probability in next 12 months**
-- **Iran War escalation**: any relevant market (Strait of Hormuz closure probability? IRGC attack probability?)
-- **2026 US election** related markets if material
-- **Geopolitical events**: any markets on North Korea, Taiwan, Russia/Ukraine relevant to assets
+- **Iran War escalation**: search "Iran", "Strait of Hormuz" — any relevant market
+- **Geopolitical events**: search "North Korea", "Taiwan", "Russia Ukraine" if relevant to holdings
 - **Bitcoin above $X by [date]**: crypto community positioning signal
 - **Inflation above X%**: forward inflation expectation
+- Use `mcp_polymarket_market_summary` to get full probability + volume for any specific market
 - Note: Polymarket odds represent real-money crowd forecasting — weight accordingly
 
 ### 4. Reddit Community Sentiment

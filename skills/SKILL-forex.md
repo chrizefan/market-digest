@@ -11,6 +11,17 @@ description: Run forex and currency analysis as part of the daily digest. Covers
 - Macro regime output
 - Bonds output (rate differentials drive FX)
 
+## Data Layer
+
+> Read `outputs/daily/{{DATE}}/data/macro-summary.md` first — it contains pre-fetched FX levels for EUR/USD, USD/JPY, GBP/USD, USD/CAD, and DXY.
+
+For live rates, cross-currency calculations, and historical comparisons use the `mcp_frankfurter-f_*` tools:
+- `mcp_frankfurter-f_get_latest_exchange_rates` — live rates for any base currency (e.g. base=USD for all pairs)
+- `mcp_frankfurter-f_get_historical_exchange_rates` — rates over a date range for trend analysis
+- `mcp_frankfurter-f_convert_currency_latest` — convert a specific amount between two currencies
+
+---
+
 ## Research Steps
 
 ### 1. US Dollar (DXY)

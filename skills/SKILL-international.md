@@ -13,6 +13,19 @@ description: Deep-dive analysis of international and emerging markets. Covers De
 
 ---
 
+## Data Layer
+
+For structured country-level macro data use `mcp_world-bank_get_indicator_for_country` with:
+- `NY.GDP.MKTP.KD.ZG` — GDP growth rate (annual %)
+- `FP.CPI.TOTL.ZG` — CPI inflation (annual %)
+- `GC.DOD.TOTL.GD.ZS` — central government debt as % of GDP
+- `NE.TRD.GNFS.ZS` — trade (% of GDP)
+- `BN.CAB.XOKA.GD.ZS` — current account balance (% of GDP)
+
+Useful country codes: `CN` (China), `JP` (Japan), `DE` (Germany), `GB` (UK), `BR` (Brazil), `IN` (India), `KR` (South Korea), `MX` (Mexico), `TR` (Turkey).
+
+---
+
 ## Research Steps
 
 ### 1. Developed Markets Overview
