@@ -17,33 +17,29 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
       {isOpen && <div className="sidebar-overlay" onClick={() => setIsOpen(false)} />}
       <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-brand">
-          <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{flexShrink: 0}}>
+          <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{flexShrink: 0}}>
             <defs>
               <clipPath id="atlas-globe-clip">
-                <circle cx="20" cy="20" r="14.5"/>
+                <circle cx="20" cy="20" r="14"/>
               </clipPath>
             </defs>
-            {/* Globe outline */}
-            <circle cx="20" cy="20" r="14.5" stroke="#f59e0b" strokeWidth="1.5"/>
-            {/* Center meridian */}
-            <ellipse cx="20" cy="20" rx="6.5" ry="14.5" stroke="#f59e0b" strokeWidth="0.9" opacity="0.45"/>
+            {/* Globe */}
+            <circle cx="20" cy="20" r="14" stroke="white" strokeWidth="1.5"/>
+            {/* Meridian */}
+            <ellipse cx="20" cy="20" rx="6" ry="14" stroke="white" strokeWidth="1" opacity="0.35"/>
             {/* Equator */}
-            <line x1="5.5" y1="20" x2="34.5" y2="20" stroke="#f59e0b" strokeWidth="0.9" opacity="0.45"/>
-            {/* Upper latitude */}
-            <ellipse cx="20" cy="13.5" rx="12" ry="2.4" stroke="#f59e0b" strokeWidth="0.7" opacity="0.3"/>
-            {/* Lower latitude */}
-            <ellipse cx="20" cy="26.5" rx="12" ry="2.4" stroke="#f59e0b" strokeWidth="0.7" opacity="0.3"/>
-            {/* Chart trend line — clipped to globe */}
+            <line x1="6" y1="20" x2="34" y2="20" stroke="white" strokeWidth="1" opacity="0.35"/>
+            {/* Trend line */}
             <polyline
-              points="8,29 13,22 18,25 23,16 32,19"
-              stroke="#e6e6e6"
+              points="9,27 15,20 20,23 27,13"
+              stroke="white"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
               clipPath="url(#atlas-globe-clip)"
             />
-            {/* Peak marker */}
-            <circle cx="23" cy="16" r="2.2" fill="#f59e0b"/>
+            {/* Peak dot */}
+            <circle cx="27" cy="13" r="2" fill="white" clipPath="url(#atlas-globe-clip)"/>
           </svg>
           <span>digiquant-atlas</span>
         </div>
