@@ -12,6 +12,30 @@ description: Run global macro analysis as part of the daily digest. Covers econo
 - CTA positioning output (Phase 1B) — are systematics aligned?
 - Politician/Fed signals output (Phase 1D) — any policy pivot signal?
 
+## Data Layer
+
+> **Read before analysis** — these files contain systematic, source-of-truth numbers fetched via
+> free public APIs before the pipeline started. Use them for all numerical lookups.
+
+1. Read `outputs/daily/{{DATE}}/data/macro-summary.md` for:
+   - **Yield curve** (1M–30Y): use these as the live rates — do NOT web-browse for TNX/2Y/30Y levels
+   - **Key spreads** (2s10s, 3m10y): inversion flags are pre-computed
+   - **VIX + SKEW**: use these levels directly
+   - **Commodities**: WTI, Brent, Gold, Silver, Natural Gas, Copper prices
+   - **FX**: USD/CAD, EUR/USD, USD/JPY, GBP/USD, DXY
+   - **Credit proxies**: HYG, LQD, JNK, TLT 1D% changes
+   - **Crypto**: BTC, ETH prices and 1D%
+
+2. **Web search for** (not in the data files):
+   - News catalysts explaining *why* things moved
+   - Economic calendar: scheduled releases, consensus vs actual
+   - Fed/ECB/BOJ speeches, statements, minutes
+   - PMI, CPI, NFP, GDP prints and market reactions
+   - Geopolitical events and escalation risk
+   - Inflation breakevens (TIPS) and real yields — search FRED or Bloomberg
+
+> If `outputs/daily/{{DATE}}/data/` is missing, run `./scripts/fetch-market-data.sh` first.
+
 ## Research Steps
 
 ### 1. Overnight & Pre-Market Summary

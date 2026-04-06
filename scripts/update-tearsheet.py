@@ -6,6 +6,12 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 
+try:
+    import pandas_ta as ta  # optional but recommended — pip install pandas-ta
+    _HAS_PANDAS_TA = True
+except ImportError:
+    _HAS_PANDAS_TA = False
+
 ROOT = Path(__file__).parent.parent
 OUTPUT_JSON = ROOT / "frontend" / "public" / "dashboard-data.json"
 DAILY_DIR = ROOT / "outputs" / "daily"
@@ -208,6 +214,96 @@ def fetch_prices(tickers, start_date):
         print(f"  Warning: benchmark fetch failed — {e}")
         return pd.DataFrame()
 
+def compute_technicals_for_tickers(tickers: list) -> dict:
+    """Compute RSI, MACD signal, SMA50/200 position, ATR for a list of tickers.
+
+    Returns dict: ticker → technicals dict.
+    Silently skips if pandas-ta is not installed.
+    """
+    if not _HAS_PANDAS_TA or not tickers:
+        return {}
+
+    result = {}
+    try:
+        raw = yf.download(tickers, period="6mo", progress=False, threads=True)["Close"]
+        if raw is None or (hasattr(raw, "empty") and raw.empty):
+            return {}
+        if len(tickers) == 1:
+            raw = raw.to_frame(name=tickers[0])
+    except Exception as e:
+        print(f"   Warning: technicals download failed — {e}")
+        return {}
+
+    for ticker in tickers:
+        try:
+            if ticker not in raw.columns:
+                continue
+            series = raw[ticker].dropna()
+            if len(series) < 20:
+                continue
+            # Reconstruct minimal OHLCV (only Close needed for these indicators)
+            df = pd.DataFrame({"close": series})
+            df.ta.rsi(length=14, append=True)
+            df.ta.macd(fast=12, slow=26, signal=9, append=True)
+            df.ta.sma(length=50, append=True)
+            df.ta.sma(length=200, append=True)
+            df.ta.atr(length=14, append=True)  # needs OHLC — will be None/NaN without it
+
+            row = df.iloc[-1]
+            prev = df.iloc[-2] if len(df) >= 2 else row
+
+            def sf(val, d=2):
+                try:
+                    f = float(val)
+                    return round(f, d) if pd.notna(f) and np.isfinite(f) else None
+                except (TypeError, ValueError):
+                    return None
+
+            price = sf(series.iloc[-1])
+            sma50 = sf(row.get("SMA_50"))
+            sma200 = sf(row.get("SMA_200"))
+            rsi = sf(row.get("RSI_14"))
+            macd_hist = sf(row.get("MACDh_12_26_9"))
+            prev_macd_hist = sf(prev.get("MACDh_12_26_9"))
+
+            if macd_hist is not None and prev_macd_hist is not None:
+                if macd_hist > 0 and prev_macd_hist <= 0:
+                    macd_signal = "BULLISH_CROSS"
+                elif macd_hist < 0 and prev_macd_hist >= 0:
+                    macd_signal = "BEARISH_CROSS"
+                elif macd_hist > 0:
+                    macd_signal = "BULLISH"
+                else:
+                    macd_signal = "BEARISH"
+            else:
+                macd_signal = None
+
+            if price and sma50 and sma200:
+                if price > sma50 > sma200:
+                    trend = "UPTREND"
+                elif price < sma50 < sma200:
+                    trend = "DOWNTREND"
+                else:
+                    trend = "NEUTRAL"
+            else:
+                trend = None
+
+            result[ticker] = {
+                "rsi14": rsi,
+                "macd_signal": macd_signal,
+                "macd_hist": macd_hist,
+                "sma50": sma50,
+                "sma200": sma200,
+                "above_sma50": bool(price > sma50) if price and sma50 else None,
+                "above_sma200": bool(price > sma200) if price and sma200 else None,
+                "trend": trend,
+            }
+        except Exception as e:
+            pass  # silently skip individual ticker failures
+
+    return result
+
+
 def simulate_portfolio(digests):
     """
     Simulate portfolio NAV and cash over time based on daily digests.
@@ -303,6 +399,13 @@ def simulate_portfolio(digests):
     active_positions = []
     if active_digest:
         last_date = dates[-1]
+
+        # Collect tickers for bulk technicals fetch
+        position_tickers = [p["ticker"] for p in active_digest["positions"] if p["ticker"] != "CASH"]
+        technicals_map = compute_technicals_for_tickers(position_tickers)
+        if technicals_map:
+            print(f"   Technicals computed for {len(technicals_map)} positions via pandas-ta")
+
         for p in active_digest["positions"]:
             t = p["ticker"]
             if t == "CASH": continue
@@ -326,6 +429,10 @@ def simulate_portfolio(digests):
                 }
             except Exception:
                 pass
+
+            # Merge pandas-ta technicals into the stats dict
+            tech = technicals_map.get(t, {})
+            ti_data.update(tech)
 
             active_positions.append({
                 "ticker": t,

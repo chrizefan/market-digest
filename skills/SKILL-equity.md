@@ -13,6 +13,33 @@ description: Run US equity market overview analysis. In the orchestrator pipelin
 - Institutional flows output (ETF in/outflows)
 - Options output (GEX, VIX level, P/C ratio)
 
+## Data Layer
+
+> **Read before analysis** — these files contain systematic technicals for all ~60 watchlist tickers.
+> Use them as the authoritative price and technical source. Web-search only for qualitative context.
+
+1. Read `outputs/daily/{{DATE}}/data/quotes-summary.md` for:
+   - **Current prices and 1D%** for every watchlist ticker — do NOT web-browse individual prices
+   - **Trend** (UPTREND / DOWNTREND / NEUTRAL) — pre-classified from SMA50/200 relationship
+   - **RSI(14)** — overbought (≥70 ⚠️) / oversold (≤35 🟡) flags already shown
+   - **MACD signal** — BULLISH_CROSS / BEARISH_CROSS / BULLISH / BEARISH
+   - **vs SMA50 / vs SMA200** — ✅/❌ flags already computed
+   - **Volume ratio** — >1.3× = elevated volume; useful for confirming moves
+   - **ATR(14)** — dollar volatility measure for position sizing context
+   - **Overview Buckets** at the top — immediate UPTREND / MIXED / DOWNTREND count
+
+2. In the **Technicals** step, quote numbers directly from the data file.
+   No need to search for SPY/QQQ/IWM levels — they are in the table.
+
+3. **Web search for** (not in the data files):
+   - Earnings reactions, guidance, analyst actions
+   - News catalysts behind notable movers
+   - Market breadth indicators (A/D line, 52W H/L, % above 200DMA) — check Finviz/Barchart
+   - McClellan Oscillator, breadth divergences
+   - Sector ETF flows (not price — ETF.com for flow data)
+
+> If `outputs/daily/{{DATE}}/data/` is missing, run `./scripts/fetch-market-data.sh` first.
+
 ## Research Steps
 
 ### 1. Index Overview

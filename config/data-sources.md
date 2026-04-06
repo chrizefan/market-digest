@@ -147,3 +147,92 @@ Monitor these scheduled releases:
 - **Quarterly**: GDP advance/preliminary/final estimates; FOMC meetings and minutes
 
 Use https://tradingeconomics.com/calendar or https://forexfactory.com for the calendar view.
+
+---
+
+## Programmatic Data Sources (Auto-Fetched — No API Keys)
+
+These sources are pulled automatically via `./scripts/fetch-market-data.sh` before every daily pipeline run.
+The scripts write structured JSON + human-readable Markdown to `outputs/daily/YYYY-MM-DD/data/`.
+Downstream skills read these files **first**; web browsing is reserved for narrative/qualitative context only.
+
+### Quotes & Technicals
+| Source | Library | Data | Output |
+|--------|---------|------|--------|
+| Yahoo Finance | `yfinance` | OHLCV (3-month) for all ~60 watchlist tickers, ~15min delayed | `data/quotes.json` |
+| pandas-ta | `pandas_ta` | RSI(14), MACD(12/26/9), SMA20/50/200, ATR(14), Bollinger Bands | computed from OHLCV |
+| Yahoo Finance | `yfinance` | 52W high/low, volume ratio, SMA50/200 cross flags | `data/quotes-summary.md` |
+
+Script: `scripts/fetch-quotes.py`
+
+### Macro Series
+| Source | Library | Data | Output |
+|--------|---------|------|--------|
+| US Treasury XML API | `requests` | Full yield curve 1M–30Y (no auth, prior business day) | `data/macro.json` |
+| Yahoo Finance | `yfinance` | VIX (`^VIX`), SKEW (`^SKEW`) | `data/macro.json` |
+| Yahoo Finance | `yfinance` | WTI (`CL=F`), Brent (`BZ=F`), Gold (`GC=F`), Silver (`SI=F`), NatGas (`NG=F`), Copper (`HG=F`) | `data/macro.json` |
+| Yahoo Finance | `yfinance` | BTC-USD, ETH-USD | `data/macro.json` |
+| Yahoo Finance | `yfinance` | USD/CAD, EUR/USD, USD/JPY, GBP/USD, DXY (`DX-Y.NYB`) | `data/macro.json` |
+| Yahoo Finance | `yfinance` | HYG, LQD, JNK, TLT, BIL (credit/rate proxies) | `data/macro.json` |
+| Computed locally | Python | 2s10s, 3m10y, 5s30s, 2s30s spreads + inversion flags | `data/macro.json` |
+
+Script: `scripts/fetch-macro.py`
+
+### Treasury Yield Curve URL
+```
+https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml?data=daily_treasury_yield_curve&field_tdr_date_value=YYYYMM
+```
+No API key. Returns XML with daily yield curve for the requested month. Script tries current month, falls back to prior month if no data yet published.
+
+### Installation
+```bash
+pip install -r requirements.txt
+# yfinance>=0.2.40, pandas>=2.0.0, numpy>=1.24.0, pandas-ta>=0.3.14b, requests>=2.28.0
+```
+
+---
+
+## MCP Servers (Agent-Accessible via VS Code Copilot)
+
+Configured in `.vscode/mcp.json`. MCP servers extend the AI agent's capabilities — they are called
+directly by the agent during pipeline execution instead of running shell scripts. They complement
+(not replace) the existing `fetch-*.py` scripts.
+
+### Tier 1 — No API Key Required
+
+| Server | Package | What It Provides | Pipeline Phase |
+|--------|---------|-----------------|----------------|
+| `sec-edgar` | `stefanoamorelli/sec-edgar-mcp` (Docker) | 10-K/10-Q/8-K filings, XBRL financials, Form 3/4/5 insider trades | Phase 2 (Institutional) |
+| `crypto-feargreed` | `crypto-feargreed-mcp` (uvx) | Crypto Fear & Greed Index — current + N-day historical + trend | Phase 1 (Alt Data) |
+| `crypto-sentiment` | `crypto-sentiment-mcp` (uvx) | Aggregated crypto market sentiment signals | Phase 1 (Alt Data) |
+| `crypto-indicators` | `crypto-indicators-mcp` (uvx) | RSI, MACD, Bollinger Bands for crypto assets | Phase 4D (Crypto) |
+| `polymarket` | `polymarket-mcp` (uvx) | Prediction market probabilities: rate cuts, geopolitical events | Phase 1 (Alt Data) |
+| `frankfurter-fx` | `frankfurtermcp` (uvx) | Live + historical FX rates across 30+ currency pairs | Phase 4C (Forex) |
+| `world-bank` | `world-bank-mcp-server` (uvx) | GDP, inflation, debt, trade data by country | Phase 4E (International) |
+| `defi-rates` | `defi-rates-mcp` (uvx) | Live DeFi borrow/supply rates (Aave, Morpho, Compound, etc.) | Phase 4D (Crypto) |
+| `coingecko` | `@coingecko/mcp-server` (npx) | 200+ chains, 8M+ tokens, DeFi TVL, exchange volumes — free public tier | Phase 4D (Crypto) |
+
+> **SEC EDGAR setup**: Only requires a User-Agent string (your name + email) — not a real API key.
+> Docker must be running. Image: `stefanoamorelli/sec-edgar-mcp:latest`
+
+### Tier 2 — Free API Key Required
+
+| Server | Package | Key Source | What It Provides | Pipeline Phase |
+|--------|---------|-----------|-----------------|----------------|
+| `fred` | `fred-mcp-server` (npx) | [fred.stlouisfed.org](https://fred.stlouisfed.org/docs/api/api_key.html) | 800K+ series: GDP, CPI, UNRATE, PCE, DGS10, DFF, yield curve, credit spreads | Phase 3 (Macro) + Phase 4A (Bonds) |
+| `nasdaq-data-link` | `nasdaq-data-link-mcp-os` (uvx) | [data.nasdaq.com](https://data.nasdaq.com) | RTAT retail activity, World Bank, OECD, fund flows, 100+ databases | Phase 1 (Alt Data) + Phase 4E (Intl) |
+| `twelve-data` | `twelvedata-mcp` (uvx) | [twelvedata.com](https://twelvedata.com) — 800 credits/day | Real-time stocks/forex/ETFs/crypto + TA indicators | Phases 4A–4C |
+| `alpha-vantage` | `alpha-vantage-mcp` (uvx) | [alphavantage.co](https://www.alphavantage.co) — 25 req/day | Fundamentals, earnings calendar, news sentiment | Phase 5 (Equities) |
+
+### Prerequisites
+
+```bash
+# Docker (for sec-edgar)
+docker pull stefanoamorelli/sec-edgar-mcp:latest
+
+# uv (for uvx-based servers)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Node.js (for npx-based servers — fred, coingecko)
+node --version  # v18+ required
+```

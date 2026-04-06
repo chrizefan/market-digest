@@ -150,6 +150,56 @@ Cline respects `CLAUDE.md` and `.clinerules` (if present). The current `CLAUDE.m
 
 ---
 
+## MCP Servers (VS Code Copilot Agent Mode)
+
+**Config file**: `.vscode/mcp.json`
+
+MCP (Model Context Protocol) servers extend GitHub Copilot's agent mode with live data tools. They are invoked directly by the agent during pipeline execution — no manual script running needed.
+
+### Enabling MCP in VS Code
+
+1. Open VS Code Settings → search for `chat.mcp.enabled` → enable it
+2. Open the Command Palette → **MCP: List Servers** to verify servers are loaded
+3. In Copilot Chat (agent mode), tools from configured MCP servers appear automatically
+
+### Configured Servers
+
+| Server ID | Data Source | Key Required | Pipeline Phase |
+|-----------|------------|-------------|----------------|
+| `sec-edgar` | SEC EDGAR filings + XBRL financials | No (User-Agent only) | Phase 2 (Institutional) |
+| `fred` | FRED — 800K+ macro series | Yes — [free](https://fred.stlouisfed.org/docs/api/api_key.html) | Phase 3 (Macro) + Phase 4A (Bonds) |
+| `nasdaq-data-link` | Nasdaq Data Link — RTAT, World Bank, OECD | Yes — [free](https://data.nasdaq.com) | Phase 1 (Alt Data) |
+| `crypto-feargreed` | Crypto Fear & Greed Index | No | Phase 1 (Alt Data) |
+| `crypto-sentiment` | Crypto sentiment signals | No | Phase 1 (Alt Data) |
+| `crypto-indicators` | Crypto TA (RSI/MACD/BB) | No | Phase 4D (Crypto) |
+| `polymarket` | Prediction market event probabilities | No | Phase 1 (Alt Data) |
+| `frankfurter-fx` | Live FX rates, 30+ pairs | No | Phase 4C (Forex) |
+| `world-bank` | World Bank global indicators | No | Phase 4E (International) |
+| `coingecko` | 200+ chains, DeFi TVL, volumes | Optional — free tier works w/o key | Phase 4D (Crypto) |
+| `twelve-data` | Real-time stocks/forex/ETFs + TA | Yes — [free, 800 credits/day](https://twelvedata.com) | Phases 4A–4C |
+| `alpha-vantage` | Fundamentals, earnings, news sentiment | Yes — [free, 25 req/day](https://alphavantage.co) | Phase 5 (Equities) |
+| `defi-rates` | DeFi borrow/supply rates (Aave, Morpho…) | No | Phase 4D (Crypto) |
+
+### Setup Notes
+
+```bash
+# Docker required for sec-edgar
+docker pull stefanoamorelli/sec-edgar-mcp:latest
+
+# uv/uvx required for Python-based servers
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Node.js v18+ required for fred and coingecko (npx)
+node --version
+```
+
+API keys are stored securely via VS Code's `inputs` prompt mechanism — never hardcoded. On first
+use of a key-required server, VS Code will prompt once and cache the value for the session.
+
+Full server details and prerequisites: `config/data-sources.md` → "MCP Servers" section.
+
+---
+
 ## Platform Comparison
 
 | Feature | Claude Code | GitHub Copilot | Cursor | Windsurf |

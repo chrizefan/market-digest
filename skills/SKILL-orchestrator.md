@@ -64,6 +64,16 @@ Then load the following. Do NOT summarize to the user — just internalize:
 - Active theses and their current status
 - Macro regime from the last digest (to compare with today)
 
+### Data Layer Check
+Verify that `outputs/daily/{{DATE}}/data/quotes.json` and `outputs/daily/{{DATE}}/data/macro.json` exist.
+- If present: announce their presence to user so they know numerical grounding is available.
+- If missing: **stop**. Run `./scripts/fetch-market-data.sh` (or `python3 scripts/fetch-quotes.py && python3 scripts/fetch-macro.py`) before any analysis. This provides accurate prices, technicals, and yield curve data for all downstream phases.
+
+Skills that consume the data layer:
+- `SKILL-macro.md` (Phase 3) — reads `macro-summary.md` for yield curve and VIX
+- `SKILL-equity.md` (Phase 5A) — reads `quotes-summary.md` for all position technicals
+- `SKILL-opportunity-screener.md` (Phase 7B) — reads `quotes-summary.md` for Technical Score
+
 Announce to user: "Context loaded. Starting Phase 1 of 9."
 
 ### Checkpoint: Pre-Flight

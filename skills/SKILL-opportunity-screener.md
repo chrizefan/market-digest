@@ -32,6 +32,7 @@ Load all of the following (already in session context after Phase 7):
 1. **`config/watchlist.md`** — Full ETF universe with categories (~60 tickers)
 2. **`outputs/daily/{{DATE}}/DIGEST.md`** — Today's synthesized research
 3. **`outputs/daily/{{DATE}}/macro.md`** — Regime classification (the primary filter)
+4. **`outputs/daily/{{DATE}}/data/quotes-summary.md`** — Systematic technicals for all tickers (RSI, MACD, SMA, trend)
 5. **`config/portfolio.json`** — Current holdings (ticker list only — NOT weights)
 6. **Segment files** already produced this session:
    - `institutional.md` or `institutional-flows.md` — ETF flow signals
@@ -88,11 +89,25 @@ Score each signal found:
 
 > **Crowding note**: A CTA crowding flag doesn't necessarily mean exit the position — it means the *risk/reward of adding* is worse, and an unwind would be faster and sharper than a normal drawdown. Flag it prominently in the screener output so the PM can size accordingly.
 
-Sum the signal scores for each ticker. Combined with the regime score, compute:
+Sum the signal scores for each ticker. Combined with the regime score and technical score, compute:
 
 ```
-Total Score = Regime Score + Signal Score
+Total Score = Regime Score + Signal Score + Technical Score
 ```
+
+## Step 2B: Technical Score (from data layer)
+
+For each ticker, look up its row in `outputs/daily/{{DATE}}/data/quotes-summary.md` and assign a
+**Technical Score (±1)**:
+
+| Condition | Score |
+|-----------|-------|
+| `above_sma50 = ✅` AND `RSI` between 40–65 AND `MACD` is BULLISH or BULLISH_CROSS | **+1** |
+| `above_sma200 = ❌` AND (`RSI < 35` OR `RSI > 72`) AND `MACD` is BEARISH or BEARISH_CROSS | **-1** |
+| Mixed or no data file | **0** |
+
+Note: BULLISH_CROSS and BEARISH_CROSS (histogram crossed zero today) carry the strongest weight.
+A BULLISH_CROSS alone on a ticker with regime score ≥ +1 is a notable entry signal.
 
 ---
 
@@ -101,7 +116,7 @@ Total Score = Regime Score + Signal Score
 ### 3a: Score the Full Universe
 Build a table with all watchlist tickers scored:
 
-| Ticker | Category | Regime Score | Signal Score | Total | Held? | Notes |
+| Ticker | Category | Regime Score | Signal Score | Tech Score | Total | Held? | Notes |
 |--------|----------|-------------|-------------|-------|-------|-------|
 | XLE | equity_sector | +2 | +3 | +5 | Yes | T-001, sector OW |
 | IAU | commodity_gold | +2 | +2 | +4 | Yes | T-001, ATH |

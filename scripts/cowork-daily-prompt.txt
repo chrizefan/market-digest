@@ -1,5 +1,13 @@
 Run today's market digest.
 
+Step 0: Fetch systematic market data.
+  Run: ./scripts/fetch-market-data.sh
+  (Or individually: python3 scripts/fetch-quotes.py && python3 scripts/fetch-macro.py)
+  Wait for completion before proceeding — outputs/daily/$(date +%Y-%m-%d)/data/ must exist.
+  This fetches live quotes + technicals (RSI, MACD, SMA, ATR) for all ~60 watchlist tickers
+  and the full yield curve (1M-30Y) + VIX + commodities + FX. All downstream phases read
+  from these files instead of web-browsing for individual prices.
+
 Step 1: Read `outputs/daily/$(date +%Y-%m-%d)/_meta.json` to detect run mode.
   - If missing: run `./scripts/new-day.sh` first, then re-read.
   - If type = "baseline": read `skills/SKILL-weekly-baseline.md` → follow full 9-phase pipeline.
