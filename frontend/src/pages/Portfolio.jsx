@@ -40,10 +40,22 @@ export default function Portfolio({ data }) {
     }
   };
 
-  const formatStat = (val, isPct = false) => {
-    if (val === null || val === undefined) return '—';
-    if (isPct) return `${(val * 100).toFixed(2)}%`;
-    return typeof val === 'number' ? val.toFixed(2) : val;
+  const formatCategory = (cat) => {
+    const map = {
+      commodity_gold: 'Commodity — Gold',
+      commodity_oil: 'Commodity — Oil',
+      commodity_silver: 'Commodity — Silver',
+      equity_sector: 'Equity Sector ETF',
+      equity_broad: 'Broad Equity',
+      fixed_income_cash: 'Fixed Income — Cash',
+      fixed_income_short: 'Fixed Income — Short Duration',
+      fixed_income_long: 'Fixed Income — Long Duration',
+      fixed_income_tips: 'Fixed Income — TIPS',
+      crypto: 'Crypto',
+      international: 'International Equity',
+      alternative: 'Alternative',
+    };
+    return map[cat] || (cat ? cat.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '—');
   };
 
   return (
@@ -58,7 +70,7 @@ export default function Portfolio({ data }) {
       <div className="glass-card" style={{ padding: '0', overflow: 'hidden' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)' }}>
           <h3 className="text-h3" style={{ margin: 0 }}>Active Positions & Thesis</h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>Click a row to expand for details and technical specs</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>Click a row to expand the thesis rationale and PM notes</p>
         </div>
         <div style={{ overflowX: 'auto' }}>
           <table className="modern-table" style={{ borderSpacing: 0, width: '100%' }}>
@@ -110,37 +122,31 @@ export default function Portfolio({ data }) {
                               </p>
                             </div>
                             <div style={{ flex: '1 1 300px' }}>
-                              <h4 style={{ color: 'var(--text-primary)', marginBottom: '12px', fontSize: '1.1rem' }}>Technical Specifications</h4>
-                              <div className="grid-2" style={{ gap: '12px' }}>
+                              <h4 style={{ color: 'var(--text-primary)', marginBottom: '12px', fontSize: '1.1rem' }}>Position Details</h4>
+                              <div className="grid-2" style={{ gap: '12px', marginBottom: '16px' }}>
                                 <div className="stat-box">
-                                  <span className="text-label">Sector</span>
-                                  <span className="stat-value-small">{p.stats?.sector || '—'}</span>
+                                  <span className="text-label">Asset Class</span>
+                                  <span className="stat-value-small">{formatCategory(p.category)}</span>
                                 </div>
                                 <div className="stat-box">
-                                  <span className="text-label">Industry</span>
-                                  <span className="stat-value-small">{p.stats?.industry || '—'}</span>
-                                </div>
-                                <div className="stat-box">
-                                  <span className="text-label">Beta</span>
-                                  <span className="stat-value-small">{formatStat(p.stats?.beta)}</span>
-                                </div>
-                                <div className="stat-box">
-                                  <span className="text-label">Trailing P/E</span>
-                                  <span className="stat-value-small">{formatStat(p.stats?.trailingPE)}</span>
-                                </div>
-                                <div className="stat-box">
-                                  <span className="text-label">Dividend Yield</span>
-                                  <span className="stat-value-small">{formatStat(p.stats?.dividendYield, true)}</span>
-                                </div>
-                                <div className="stat-box">
-                                  <span className="text-label">52-Week Range</span>
+                                  <span className="text-label">Linked Theses</span>
                                   <span className="stat-value-small">
-                                    {(p.stats?.fiftyTwoWeekLow && p.stats?.fiftyTwoWeekHigh) 
-                                      ? `$${p.stats?.fiftyTwoWeekLow.toFixed(2)} - $${p.stats?.fiftyTwoWeekHigh.toFixed(2)}` 
+                                    {p.thesis_ids && p.thesis_ids.length > 0
+                                      ? p.thesis_ids.map((id, idx) => (
+                                          <span key={idx} className="badge badge-blue" style={{ marginRight: '4px', fontSize: '0.75rem' }}>{id}</span>
+                                        ))
                                       : '—'}
                                   </span>
                                 </div>
                               </div>
+                              {p.pm_notes && (
+                                <div>
+                                  <span className="text-label" style={{ display: 'block', marginBottom: '6px' }}>PM Notes</span>
+                                  <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: 0, fontSize: '0.9rem' }}>
+                                    {p.pm_notes}
+                                  </p>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </td>
