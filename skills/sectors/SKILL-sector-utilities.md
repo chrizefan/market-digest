@@ -8,7 +8,6 @@ description: Deep-dive analysis of the Utilities sector (XLU). Covers regulated 
 ## Inputs
 - `config/watchlist.md` (XLU and related)
 - `config/preferences.md`
-- `memory/sectors/utilities/ROLLING.md`
 - Bonds output from current session (10Y yield is the primary driver)
 - Macro regime output from `macro.md`
 
@@ -91,9 +90,3 @@ description: Deep-dive analysis of the Utilities sector (XLU). Covers regulated 
 ```
 
 ---
-
-## Memory Update
-After analysis, append 3 bullets to `memory/sectors/utilities/ROLLING.md`:
-- One on XLU dividend yield spread vs 10Y treasury (the key valuation anchor)
-- One on AI/data center power demand theme development
-- One on rate sensitivity and whether utilities are overbought/oversold vs rate backdrop

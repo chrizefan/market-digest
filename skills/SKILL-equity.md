@@ -8,7 +8,6 @@ description: Run US equity market overview analysis. In the orchestrator pipelin
 ## Inputs
 - `config/watchlist.md` (equity section)
 - `config/preferences.md`
-- `memory/equity/ROLLING.md`
 - Macro regime output (anchors all analysis)
 - CTA positioning output (systematic equity direction)
 - Institutional flows output (ETF in/outflows)
@@ -25,7 +24,7 @@ Search for current levels and % change for:
 Check performance of all 11 S&P sectors (XLK, XLF, XLE, XLV, XLI, XLRE, XLU, XLY, XLP, XLB, XLC).
 - Which sectors are leading and lagging TODAY?
 - What does sector rotation imply about risk appetite? (e.g., XLU/XLP leading = defensive rotation)
-- Is this consistent with recent rotation from ROLLING.md or a change?
+- Is this consistent with recent rotation from prior outputs or a change?
 
 ### 3. Watchlist Movers
 For each equity in the user's watchlist:
@@ -87,10 +86,3 @@ For each equity in the user's watchlist:
 
 **Note**: Full sector-by-sector analysis in sector sub-agent outputs. International in international.md.
 ```
-
-## Memory Update
-After completing analysis, produce 4 bullets for `memory/equity/ROLLING.md`:
-- One on overall market direction/trend and key index level
-- One on market breadth quality (wide vs narrow leadership)
-- One on factor rotation theme (value vs growth, small vs large)
-- One on any key portfolio ETF watchlist development or thesis evolution

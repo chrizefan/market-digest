@@ -10,7 +10,6 @@ CTAs (Commodity Trading Advisors) and systematic funds move markets mechanically
 
 ## Inputs
 - `config/data-sources.md` (CFTC, Finviz futures positioning, Sentimentrader)
-- `memory/alternative-data/cta-positioning/ROLLING.md`
 - Previous session's CTA output for week-over-week comparison
 
 ---
@@ -77,7 +76,6 @@ For each major position:
 - VIX spike scenario: if VIX goes to 30+, estimate additional equity selling from vol-targeting funds
 
 ### 6. Week-Over-Week Change Analysis
-Compare to `memory/alternative-data/cta-positioning/ROLLING.md`:
 - Which positions changed the most?
 - Is positioning heading toward extremes (increasing risk) or unwinding (reducing risk)?
 - Any reversal signals forming?
@@ -118,9 +116,3 @@ Compare to `memory/alternative-data/cta-positioning/ROLLING.md`:
 ```
 
 ---
-
-## Memory Update
-After analysis, append 3 bullets to `memory/alternative-data/cta-positioning/ROLLING.md`:
-- One on the most significant CTA net position and whether it's at an extreme
-- One on the crowding risk assessment (where is the explosion risk if a trend breaks?)
-- One on any week-over-week positioning shift that signals a regime change in systematic flows

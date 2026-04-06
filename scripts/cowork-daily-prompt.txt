@@ -1,115 +1,33 @@
-Run the full daily market digest for {current_date}.
+Run today's market digest.
 
-Follow skills/SKILL-orchestrator.md exactly. This is the 9-phase pipeline:
+Step 1: Read `outputs/daily/$(date +%Y-%m-%d)/_meta.json` to detect run mode.
+  - If missing: run `./scripts/new-day.sh` first, then re-read.
+  - If type = "baseline": read `skills/SKILL-weekly-baseline.md` → follow full 9-phase pipeline.
+  - If type = "delta": read `skills/SKILL-daily-delta.md` → follow delta pipeline.
 
-PRE-FLIGHT — Sync local repo to ensure latest code (including any merged evolution PRs):
-`git checkout master && git pull origin master`
+Step 2: Execute the pipeline from the skill file exactly. Every phase, every output file, every checkpoint.
+  - Run `./scripts/validate-phase.sh [phase]` after each phase before proceeding to the next.
+  - Do not skip phases or continue past a failed checkpoint.
 
-PHASE 1 — ALTERNATIVE DATA (load this FIRST before any price analysis):
-Read skills/alternative-data/SKILL-sentiment-news.md
-Read skills/alternative-data/SKILL-cta-positioning.md
-Read skills/alternative-data/SKILL-options-derivatives.md
-Read skills/alternative-data/SKILL-politician-signals.md
-Save output to: outputs/daily/{current_date}/alt-data.md
+Step 3: After DIGEST.md is complete (Phase 7), run the portfolio layer:
+  - Read `skills/SKILL-opportunity-screener.md` — scan full watchlist against digest, produce ranked shortlist → `opportunity-screen.md`
+  - Baseline days: Read `skills/SKILL-deliberation.md` — full multi-round deliberation (analysts present → PM challenges → analysts defend/revise → PM decides). Then `skills/SKILL-portfolio-manager.md` Phase B (clean-slate build) and Phase C (rebalance diff).
+  - Delta days: Follow Phase 7C in `skills/SKILL-daily-delta.md` — threshold monitor first. If triggers fire → scoped screener + deliberation → Phase B/C.
+  - Save: positions/{TICKER}.md, deliberation.md, portfolio-recommended.md, rebalance-decision.md
+  - Update: config/portfolio.json → proposed_positions[] (when rebalance triggered)
 
-PHASE 2 — INSTITUTIONAL INTELLIGENCE:
-Read skills/institutional/SKILL-institutional-flows.md
-Read skills/institutional/SKILL-hedge-fund-intel.md
-Save output to: outputs/daily/{current_date}/institutional.md
+Step 4: Run `python3 scripts/update-tearsheet.py` to regenerate the dashboard.
 
-PHASE 3 — MACRO ANALYSIS:
-Read skills/SKILL-macro.md (v2)
-Informed by Phase 1 and Phase 2 signals.
-Save output to: outputs/daily/{current_date}/macro.md
+Step 5: Run `./scripts/git-commit.sh` to commit outputs.
 
-PHASE 4 — ASSET CLASSES:
-Read skills/SKILL-bonds.md → save to outputs/daily/{current_date}/bonds.md
-Read skills/SKILL-commodities.md → save to outputs/daily/{current_date}/commodities.md
-Read skills/SKILL-forex.md → save to outputs/daily/{current_date}/forex.md
-Read skills/SKILL-crypto.md → save to outputs/daily/{current_date}/crypto.md
-Read skills/SKILL-international.md → save to outputs/daily/{current_date}/international.md
+Step 6: Run Phase 9 post-mortem (source scorecard, quality log, improvement proposals → evolution branch + PR via `./scripts/git-commit.sh --evolution`).
 
-PHASE 5 — US EQUITIES:
-Read skills/SKILL-equity.md → save to outputs/daily/{current_date}/equities.md
-Then run all 11 sector sub-agents:
-  skills/sectors/SKILL-sector-technology.md → sectors/technology.md
-  skills/sectors/SKILL-sector-healthcare.md → sectors/healthcare.md
-  skills/sectors/SKILL-sector-energy.md → sectors/energy.md
-  skills/sectors/SKILL-sector-financials.md → sectors/financials.md
-  skills/sectors/SKILL-sector-consumer-staples.md → sectors/consumer-staples.md
-  skills/sectors/SKILL-sector-consumer-disc.md → sectors/consumer-disc.md
-  skills/sectors/SKILL-sector-industrials.md → sectors/industrials.md
-  skills/sectors/SKILL-sector-utilities.md → sectors/utilities.md
-  skills/sectors/SKILL-sector-materials.md → sectors/materials.md
-  skills/sectors/SKILL-sector-real-estate.md → sectors/real-estate.md
-  skills/sectors/SKILL-sector-comms.md → sectors/comms.md
+Step 7: Run `./scripts/validate-phase.sh --all` as final validation. All phases must pass.
 
-PHASE 6 — MEMORY & BIAS TRACKER:
-Update ALL of the following rolling memory files:
-  memory/macro/ROLLING.md
-  memory/equity/ROLLING.md
-  memory/crypto/ROLLING.md
-  memory/bonds/ROLLING.md
-  memory/commodities/ROLLING.md
-  memory/forex/ROLLING.md
-  memory/international/ROLLING.md
-  memory/alternative-data/sentiment/ROLLING.md
-  memory/alternative-data/cta-positioning/ROLLING.md
-  memory/alternative-data/options/ROLLING.md
-  memory/alternative-data/politician/ROLLING.md
-  memory/institutional/flows/ROLLING.md
-  memory/institutional/hedge-funds/ROLLING.md
-  memory/sectors/technology/ROLLING.md
-  memory/sectors/healthcare/ROLLING.md
-  memory/sectors/energy/ROLLING.md
-  memory/sectors/financials/ROLLING.md
-  memory/sectors/consumer/ROLLING.md
-  memory/sectors/industrials/ROLLING.md
-  memory/sectors/utilities/ROLLING.md
-  memory/sectors/materials/ROLLING.md
-  memory/sectors/real-estate/ROLLING.md
-  memory/sectors/comms/ROLLING.md
-Update memory/BIAS-TRACKER.md with today's date row.
-
-PHASE 7 — SYNTHESIS:
-Using templates/master-digest.md, compile DIGEST.md.
-Save to: outputs/daily/{current_date}/DIGEST.md
-
-PHASE 8 — DASHBOARD REGENERATION & DIGEST COMMIT:
-Execute the backend parser to feed the web dashboard frontend:
-`python3 scripts/update-tearsheet.py`
-Then commit all digest outputs and memory updates:
-`./scripts/git-commit.sh`
-
-PHASE 9 — POST-MORTEM & EVOLUTION (on a separate branch):
-After the digest commit, perform self-assessment:
-1. Rate data sources used today (append to memory/evolution/sources.md)
-2. Check yesterday's predictions accuracy (append to memory/evolution/quality-log.md)
-3. If warranted, file max 2 improvement proposals (append to memory/evolution/proposals.md)
-4. If any prior proposals were approved and merged, document in docs/evolution-changelog.md
-5. Create evolution branch, commit, push, and open a PR:
-   `./scripts/git-commit.sh --evolution`
-   This creates branch `evolve/{current_date}`, pushes it, and opens a GitHub PR.
-   The PR requires manual user approval before merging to master.
-GUARDRAIL: Do NOT modify any skill files, templates, or config directly. Proposals only.
-
-BOOT — Read these config and memory files BEFORE starting Phase 1:
-  config/watchlist.md
-  config/preferences.md
-  config/hedge-funds.md
-  config/data-sources.md
-  memory/macro/ROLLING.md (last 3 entries)
-  memory/equity/ROLLING.md (last 3 entries)
-  memory/crypto/ROLLING.md (last 3 entries)
-  memory/bonds/ROLLING.md (last 3 entries)
-  memory/commodities/ROLLING.md (last 3 entries)
-  memory/forex/ROLLING.md (last 3 entries)
-  memory/BIAS-TRACKER.md (last 5 rows)
-  memory/THESES.md
-  memory/evolution/quality-log.md (last entry — to check yesterday's predictions)
-  memory/evolution/proposals.md (to check for pending/approved proposals)
-
-Do not use training data for prices, news, or market data. Search for everything live.
-Do not skip memory updates. All 23 memory files must be updated.
-Output file: outputs/daily/{current_date}/DIGEST.md
+Rules:
+- Search live for ALL prices, yields, and news. Never use training data.
+- Read config/watchlist.md, config/preferences.md, and config/investment-profile.md before any analysis.
+- Read yesterday's DIGEST.md (or this week's baseline) for continuity — prior outputs ARE the memory.
+- Do not skip the portfolio layer — baseline days always run full PM; delta days run threshold monitor.
+- Be direct and opinionated. State biases clearly.
 

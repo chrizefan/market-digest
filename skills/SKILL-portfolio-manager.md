@@ -31,55 +31,35 @@ rationalizations for the status quo rather than genuine independent analysis.
 Load the following (already in session context if running after Phase 7 of orchestrator):
 
 1. `outputs/daily/{{DATE}}/macro.md` — 4-factor regime classification
-2. `memory/THESES.md` — full thesis register (active + closed)
-3. `config/preferences.md` — risk profile, constraints, trading style
-4. `outputs/daily/{{DATE}}/DIGEST.md` (if completed) — for cross-asset synthesis
-5. **Research library** — `docs/research/LIBRARY.md`. Load before Phase B. Apply the Black-Litterman conviction-weight table (Section 4.2) for position sizing. Run the Ilmanen 4-quadrant regime check (Section 5.4) before constructing the clean-slate portfolio. Use Kelly ceiling check (Section 4.3) to validate no position exceeds conservative fraction.
+3. `config/preferences.md` — trading style, digest format preferences
+4. `config/investment-profile.md` — risk tolerance (§4), asset preferences (§5), regime playbook (§6), benchmarks (§8)
+5. `outputs/daily/{{DATE}}/DIGEST.md` (if completed) — for cross-asset synthesis
+6. **Research library** — `docs/research/LIBRARY.md`. Load before Phase B. Apply the Black-Litterman conviction-weight table (Section 4.2) for position sizing. Run the Ilmanen 4-quadrant regime check (Section 5.4) before constructing the clean-slate portfolio. Use Kelly ceiling check (Section 4.3) to validate no position exceeds conservative fraction.
 
 **Do NOT load `config/portfolio.json` yet.** Portfolio blindness is maintained through Phase B.
 
 ---
 
-## Phase A — Analyst Pass (Blinded)
+## Phase A — Analyst-PM Deliberation (Blinded)
 
-### Step A1: Determine Analyst Roster
-Read `config/portfolio.json` **for ticker names only** — extract the list of tickers in
-`positions[]`. Do NOT read `weight_pct` values. Close the file immediately.
+> Phase A now uses the multi-round deliberation protocol for higher-conviction outputs.
+> Analysts present → PM challenges weak positions → Analysts defend/revise → PM decides.
 
-```
-Analyst roster = [IAU, XLE, DBO, XLV, XLP, BIL, SHY]  ← example
-```
+Follow `skills/SKILL-deliberation.md` completely. This skill handles:
+- **Step A1**: Load analyst roster from `outputs/daily/{{DATE}}/opportunity-screen.md` (produced by Phase 7B screener: current holdings + opportunity candidates)
+- **Step A2**: Run all analysts (Round 1 presentations)
+- **PM Review**: Challenge identification (7 trigger types)
+- **Round 2**: Analyst defense/revision for challenged positions
+- **PM Decision**: Accept, override, or escalate each position
 
-### Step A2: Identify Opportunity Candidates
-From the current session's digest research, identify 1-2 assets NOT in the current portfolio
-that the regime and analyst signals suggest are worth evaluating. Use these sources:
-- Sector scorecard from Phase 5M: any sector ETF with Bias=OW and Confidence=High that isn't held?
-- Institutional flows from Phase 2: any ETF with unusual inflow that supports the thesis?
-- THESES.md: any thesis with an ETF that isn't currently in the portfolio?
+The deliberation produces:
+- Individual analyst reports in `outputs/daily/{{DATE}}/positions/{{TICKER}}.md`
+- Deliberation transcript in `outputs/daily/{{DATE}}/deliberation.md`
+- A **resolved summary table** with final weights and biases
 
-Add these candidates to the analyst roster. Maximum 2 new candidates per session.
+The resolved summary table is the authoritative input to Phase B below.
 
-### Step A3: Run Asset Analysts
-For each ticker in the analyst roster, follow `skills/SKILL-asset-analyst.md` completely.
-
-Each analyst:
-- Reads only session segment files (no new web searches)
-- Is blinded to current portfolio weights
-- Produces `outputs/daily/{{DATE}}/positions/{{TICKER}}.md`
-
-Run analysts sequentially. Announce each one: "Running analyst: [TICKER]"
-
-### Step A4: Collect Analyst Results
-Read all analyst output files from `outputs/daily/{{DATE}}/positions/`.
-Build an internal summary table:
-
-```
-ANALYST RESULTS — {{DATE}}
-| Ticker | Bias | Thesis | Conviction | Recommended% | Theme |
-| IAU    | Bullish | T-001 ✅ | H | 20% | commodity_safe-haven |
-| XLE    | Bullish | T-001 ✅ | H | 10% | commodity_energy |
-...
-```
+Announce after completing: "Deliberation complete. [N] positions resolved, [M] challenged, [K] revised."
 
 ---
 
@@ -100,8 +80,8 @@ From `config/preferences.md` constraints:
 - Total must sum to 100% — allocate remaining to BIL (cash proxy) after all positions assigned
 
 ### Step B3: Opportunity Candidates
-Review the 1-2 candidates from Step A2. If their analyst report recommends >0% weight AND
-macro regime supports the theme AND there is thesis linkage → include in the portfolio.
+Review the screener-selected candidates from `opportunity-screen.md`. If their analyst report
+recommends >0% weight AND the deliberation resolved them favorably → include in the portfolio.
 If adding them breaches a theme cap, trim the lowest-conviction existing position first.
 
 ### Step B4: Build Clean-Slate Portfolio Table
@@ -147,7 +127,15 @@ Include:
 3. Proposed portfolio (post-rebalance target weights)
 4. Invalidation Watch table — any positions within 10% of their exit trigger
 
-### Step C4: Update config/portfolio.json
+### Step C4: Validate Proposed Portfolio
+Run the portfolio validator against the proposed positions to ensure they respect all
+constraints from `config/investment-profile.md`:
+```bash
+./scripts/validate-portfolio.sh --proposed
+```
+If any checks fail, adjust the proposed weights before proceeding.
+
+### Step C5: Update config/portfolio.json
 Write the clean-slate recommended weights to the `proposed_positions` array in `config/portfolio.json`.
 **Do NOT modify `positions[]`** — that array reflects actual executed trades and is user-maintained.
 
@@ -160,8 +148,7 @@ Write the clean-slate recommended weights to the `proposed_positions` array in `
 
 Also update `"last_updated_date"` and `"last_updated_by": "agent"`.
 
-### Step C5: Update Memory
-Append to `memory/portfolio/ROLLING.md`:
+### Step C6: Update Memory
 ```markdown
 ## {{DATE}}
 - Actions: [list each non-Hold action, or "No changes — all within threshold"]
@@ -174,15 +161,14 @@ Append to `memory/portfolio/ROLLING.md`:
 
 ## Session Completion Checklist (Phase 7C/7D)
 
-- [ ] Analyst roster determined from config/portfolio.json (tickers only, not weights)
-- [ ] 1-2 opportunity candidates identified from session research
+- [ ] Analyst roster loaded from `opportunity-screen.md` (current holdings + screener candidates)
+- [ ] Opportunity candidates identified and scored by screener
 - [ ] All analysts run; `outputs/daily/{{DATE}}/positions/*.md` files created
-- [ ] Clean-slate portfolio constructed; constraint checks passed (100% sum, no >20% single, no >40% theme)
+- [ ] Clean-slate portfolio constructed; constraint checks passed (validated via `./scripts/validate-portfolio.sh --proposed`)
 - [ ] `outputs/daily/{{DATE}}/portfolio-recommended.md` saved
 - [ ] Rebalance comparison run; delta table produced
 - [ ] `outputs/daily/{{DATE}}/rebalance-decision.md` saved
 - [ ] `config/portfolio.json` → `proposed_positions[]` updated
-- [ ] `memory/portfolio/ROLLING.md` appended
 
 ---
 

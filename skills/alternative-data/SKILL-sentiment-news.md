@@ -10,7 +10,6 @@ Run this skill **before** macro and segment analysis. Its output colors how down
 
 ## Inputs
 - `config/data-sources.md` — full list of tracked accounts and signal sources
-- `memory/alternative-data/sentiment/ROLLING.md`
 - Previous day's `DIGEST.md` (for narrative continuity)
 
 ---
@@ -134,9 +133,3 @@ contrarian signal against the consensus bearish read — watch for technical bou
 ```
 
 ---
-
-## Memory Update
-After analysis, append 3 bullets to `memory/alternative-data/sentiment/ROLLING.md`:
-- One on overall sentiment trend and extreme reading level
-- One on Polymarket odds change (which market moved most and why)
-- One on any notable KOL view shift or narrative momentum change

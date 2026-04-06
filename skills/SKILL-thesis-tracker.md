@@ -23,7 +23,6 @@ List each thesis explicitly before proceeding.
 
 ## Step 2: Load Recent Memory Context
 
-Read all `memory/*/ROLLING.md` files.
 Focus on the last 3-5 entries in each file.
 Note any recent confirmations, contradictions, or shifts that are relevant to the active theses.
 

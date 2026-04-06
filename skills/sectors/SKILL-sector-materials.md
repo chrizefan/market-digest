@@ -8,7 +8,6 @@ description: Deep-dive analysis of the Materials sector (XLB). Covers chemicals,
 ## Inputs
 - `config/watchlist.md` (XLB and commodity-linked ETFs)
 - `config/preferences.md`
-- `memory/sectors/materials/ROLLING.md`
 - Commodities output (copper, gold from current session)
 - Macro regime + international/China output
 
@@ -94,9 +93,3 @@ description: Deep-dive analysis of the Materials sector (XLB). Covers chemicals,
 ```
 
 ---
-
-## Memory Update
-After analysis, append 3 bullets to `memory/sectors/materials/ROLLING.md`:
-- One on copper's growth signal and China demand
-- One on gold miners vs bullion divergence (or convergence)
-- One on any critical mineral or China supply chain development

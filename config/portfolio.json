@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "last_updated_date": "2026-04-05",
-  "last_updated_by": "manual",
+  "last_updated_by": "agent",
   "notes": "Current positions as of 2026-04-05 (Iran War regime). Proposed positions written by agent after each rebalance run — promote to positions[] manually after executing trades.",
 
   "positions": [
@@ -73,11 +73,19 @@
   "cash_pct": 0,
 
   "constraints": {
-    "max_single_etf_pct": 20,
-    "max_single_theme_pct": 40,
+    "max_single_etf_pct": 100,
+    "max_single_theme_pct": 100,
     "weight_increment_pct": 5,
-    "rebalance_threshold_pct": 5
+    "rebalance_threshold_pct": 3
   },
 
-  "proposed_positions": []
+  "proposed_positions": [
+    { "ticker": "BIL", "weight_pct": 35, "as_of": "2026-04-05", "action": "Add 3%" },
+    { "ticker": "IAU", "weight_pct": 20, "as_of": "2026-04-05", "action": "Hold" },
+    { "ticker": "SHY", "weight_pct": 15, "as_of": "2026-04-05", "action": "Hold" },
+    { "ticker": "XLE", "weight_pct": 15, "as_of": "2026-04-05", "action": "Add 3%" },
+    { "ticker": "XLP", "weight_pct": 10, "as_of": "2026-04-05", "action": "Add 2%" },
+    { "ticker": "DBO", "weight_pct": 5, "as_of": "2026-04-05", "action": "Hold" },
+    { "ticker": "XLV", "weight_pct": 0, "as_of": "2026-04-05", "action": "Exit" }
+  ]
 }

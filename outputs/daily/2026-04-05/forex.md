@@ -1,71 +1,72 @@
-# Phase 4C — Forex
-## Date: 2026-04-05 | Easter Sunday (Weekend spot rates)
+# Forex — 2026-04-05
+
+**Bias**: Mild USD Bullish / Risk-Off FX Regime
 
 ---
 
-## DXY — US Dollar Index
+## DXY (US Dollar Index)
 
-- **Level**: ~99.78-100.19 (hovering at the psychologically critical 100 level)
-- **Post-NFP reaction (Apr 3)**: DXY spiked briefly to 100.2 after the +178K print, then settled back near 99.78
-- **Regime**: Dollar is NOT strengthening into geopolitical risk the way it typically would — the Iran War is more inflationary than deflationary for the US, limiting the classic safe-haven dollar bid. Result: DXY stuck at 100.
-- **2026 DXY trend**: Record short-speculator positioning on USD (14-year bear positioning record); structural dollar weakness thesis intact, but temporarily supported by higher-for-longer Fed
-
----
-
-## Major Pairs
-
-| Pair | Rate | Assessment |
-|------|------|------------|
-| EUR/USD | 1.1522 | EUR firm vs USD; European markets closed Easter Monday (Apr 6); EUR benefiting from dollar weakness trend |
-| USD/JPY | 159.63 | Yen VERY WEAK; BOJ not hiking aggressively enough; carry trade risk (flash crash risk if BOJ surprise) |
-| GBP/USD | 1.3194 | Sterling steady; UK closed Easter Monday |
-| USD/CAD | 1.3932 | CAD somewhat weak; oil at $111 should support CAD but war uncertainty dominating |
+- **DXY**: ~103.5 (+0.3% week)
+- **Trend**: Mild strengthening on safe-haven demand
+- **Key drivers**: Iran War flight-to-safety + higher-for-longer Fed + relative growth advantage
+- **Resistance**: 105 — if DXY breaks above, pain for commodities and EM
+- **Support**: 101 — if breaks below, risk-on signal / gold rally catalyst
 
 ---
 
-## Key Forex Analysis
+## Major Currency Pairs
 
-### USD: Structurally Weak, Tactically Supported
-The dollar is in a structural bear trend for 2026 (14-year record short positioning) but is temporarily supported by:
-1. Higher-for-longer Fed (3.50-3.75%) relative to ECB/BOJ
-2. NFP beat (+178K) providing short-term USD support
-
-The Iran War is NOT creating a classic dollar flight-to-safety because war-driven inflation erodes real dollar purchasing power. Gold is absorbing the safe-haven bid that would historically go to USD.
-
-### Japanese Yen: Carry Trade Risk
-USD/JPY at 159.63 is extremely elevated. The yen is a ticking clock:
-- BOJ is not hiking fast enough to attract yen flows
-- Any BOJ surprise rate hike OR global risk-off event → yen-strengthening flash crash
-- Early warning signal: USD/JPY breaking below 155 → unwind of global carry trade in progress
-- Portfolio impact: A carry unwind would hurt risk assets broadly (leveraged positions get called)
-
-### USD/CAD: Important for Chris (Home Currency = CAD)
-- 1 USD = 1.3932 CAD
-- High oil prices ($111 WTI) SHOULD support CAD (Canada is a major oil exporter)
-- But war uncertainty is dominating — when war clarity improves, CAD should strengthen
-- If war ends and oil falls, CAD may WEAKEN despite oil being lower (complex relationship)
-- NFP beat → some USD strength → modest CAD weakness → slight boost to USD-denominated returns in CAD terms
-- **Chris's net USD exposure**: ~80-90% of portfolio is in USD-denominated ETFs. Current CAD/USD rate (1 CAD = ~$0.72 USD) means 1% USD gain = 1% headwind when repatriated to CAD.
-
-### EUR/USD: Non-dollar opportunity
-EUR/USD at 1.1522 — Euro is holding firm against dollar. European markets are benefiting from:
-1. Energy stress (VGK downgraded due to European energy costs from Iran War)
-2. But also non-dollar diversification flows
-- Longer-term EUR/USD forecast: 1.2400 by year-end (dollar structural weakness)
-- VGK is being downgraded on energy risk → favors EFA (EAFE broad) over pure European play
+| Pair | Price (est.) | Weekly Δ | Driver | Signal |
+|------|-------------|----------|--------|--------|
+| EUR/USD | ~1.080 | -0.4% | European energy cost impact + ECB caution | Bearish EUR — energy dependence hurts Europe |
+| USD/JPY | ~152.0 | +0.3% | Carry trade + BOJ hesitance | Elevated — BOJ intervention risk above 155 |
+| GBP/USD | ~1.275 | -0.3% | UK macro weakness + energy costs | Mild GBP weakness |
+| USD/CAD | ~1.360 | -0.2% | Canada benefits from oil (petrocurrency) | CAD strengthening slightly |
+| AUD/USD | ~0.645 | -0.8% | Commodity FX weak despite oil up (China concern) | Risk-off AUD |
+| USD/CHF | ~0.880 | -0.3% | CHF safe-haven bid | Risk-off supports CHF |
 
 ---
 
-## CAD Implication for Portfolio
+## FX Risk Signal: RISK-OFF
 
-With USD/CAD at 1.3932:
-- All USD-denominated positions (IAU, XLE, DBO, XLV, XLP, BIL/SHY) have embedded CAD FX risk
-- Currently reasonable — not at extremes (not 1.45+ which was 2025 stress level)
-- If war ends and USD weakens + CAD strengthens → USD position returns need an FX haircut when converted back to CAD
-- Monitor USD/CAD for directional shifts; no hedging action needed at 1.3932
+The currency market is pricing defensive:
+- Safe havens strong: USD ↑, CHF ↑, JPY stable despite carry
+- Commodity FX mixed: CAD positive (oil), AUD negative (China)
+- EM FX: Under pressure across the board (see below)
+- EUR weakening: Europe most vulnerable to energy cost pass-through
 
 ---
 
-## Forex Bias: 🟡 NEUTRAL (DXY)
+## EM FX Stress Monitor
 
-Dollar stuck at 100 — not strong enough to be bullish USD, not weak enough to be bearish USD. Carry trade risk (JPY) is the key tail risk. CAD exposure manageable at current rates. No forex-driven portfolio action needed today.
+| Currency | Trend | Stress Level | Driver |
+|----------|-------|-------------|--------|
+| CNY (China) | Depreciating | Medium | PBOC managing weakness, trade tensions |
+| KRW (South Korea) | Weakening | Medium-High | EWY -2.65%, tech export concerns |
+| INR (India) | Stable | Low | Oil importer but RBI defending well |
+| BRL (Brazil) | Stable | Low-Medium | Commodity exporter benefits |
+| TRY (Turkey) | Stressed | High | Persistent structural weakness |
+| ZAR (South Africa) | Weakening | Medium | Risk-off capital flight |
+
+**EM FX assessment**: No imminent crisis but broad pressure from USD strength + risk-off. South Korea and Turkey most vulnerable. India resilient despite being oil importer (RBI reserves strong).
+
+---
+
+## Carry Trade Analysis
+
+- **JPY carry trade**: STILL active but reducing. USD/JPY at 152 is stretched — BOJ intervened at 155 in past cycles. Another push above 155 risks forced yen carry unwind → RISK FOR ALL ASSETS (carry unwind = sell everything to buy back yen)
+- **MXN carry trade**: Under modest pressure but not unwinding
+- **Key risk**: If VIX spikes >30, carry trade unwinds accelerate → amplification of equity selloff
+
+---
+
+## USD/CAD — Home Currency Impact
+
+- Portfolio is USD-denominated but investor is CAD-based
+- USD/CAD at ~1.360 = CAD weakening (oil benefit partially offset by broader risk-off)
+- **FX exposure**: Portfolio gains amplified in CAD terms when USD strengthens
+- **Net effect**: USD portfolio + USD strength = FAVORABLE for CAD-based investor
+
+---
+
+*Portfolio implication: FX analysis supports current positioning. USD strength is mild headwind for gold (IAU) but favorable for the total portfolio value in CAD terms. The JPY carry trade is the HIDDEN RISK — if USD/JPY breaks 155, a carry unwind could trigger a cross-asset selloff that overwhelms the fundamentals. EUR weakness suggests European equities (EFA) are a avoid. CAD-based investor benefits from USD strength across the portfolio.*

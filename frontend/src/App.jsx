@@ -4,7 +4,7 @@ import Layout from './components/Layout';
 import Portfolio from './pages/Portfolio';
 import Performance from './pages/Performance';
 import Strategy from './pages/Strategy';
-import Library from './pages/Library';
+import DigestTimeline from './pages/DigestTimeline';
 import Architecture from './pages/Architecture';
 
 // Starfield canvas — mirrors digithings.ai background animation
@@ -93,7 +93,7 @@ function App() {
         {activeTab === 'portfolio' && <Portfolio data={data} />}
         {activeTab === 'performance' && <Performance data={data} />}
         {activeTab === 'strategy' && <Strategy data={data} />}
-        {activeTab === 'library' && <Library docs={data.docs} />}
+        {activeTab === 'library' && <DigestTimeline docs={data.docs} />}
         {activeTab === 'architecture' && <Architecture data={data} />}
       </Layout>
     </div>

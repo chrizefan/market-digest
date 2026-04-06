@@ -10,7 +10,6 @@ Politicians and regulators move markets — both through what they buy/sell pers
 
 ## Inputs
 - `config/data-sources.md` (Quiver Quantitative, Capitol Trades, EDGAR, public statements)
-- `memory/alternative-data/politician/ROLLING.md`
 
 ---
 
@@ -128,9 +127,3 @@ premium stable but not expanding further."]
 ```
 
 ---
-
-## Memory Update
-After analysis, append 3 bullets to `memory/alternative-data/politician/ROLLING.md`:
-- One on notable STOCK Act disclosures and what sectors are being bought by insiders with policy access
-- One on key Fed/Treasury/Executive signal (dovish/hawkish/stability signal)
-- One on geopolitical official statement (Iran/trade/sanctions) with portfolio implication

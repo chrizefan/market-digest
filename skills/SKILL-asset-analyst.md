@@ -32,7 +32,7 @@ manager (Phase B/C of SKILL-portfolio-manager.md) handles the comparison — not
    - **Crypto** (IBIT, ETHA): `outputs/daily/{{DATE}}/crypto.md` + `institutional-flows.md`
    - **International** (EFA, EEM, EWJ): `outputs/daily/{{DATE}}/international.md` + `forex.md`
    - **Broad US equity** (SPY, QQQ, IWM): `outputs/daily/{{DATE}}/us-equities.md` + `macro.md`
-3. **Active theses** — from `memory/THESES.md`. Note which thesis IDs are relevant to this asset.
+3. **Active theses** Note which thesis IDs are relevant to this asset.
 4. **Macro regime** — from `outputs/daily/{{DATE}}/macro.md` (already loaded earlier in session)
 5. **Research library** — `docs/research/LIBRARY.md`. Load once per session before forming bull/bear arguments. Cite at least one paper per argument. Use the Quick Reference tables (bottom) for per-asset signal rules. For macro regime framing, apply the Ilmanen 4-quadrant model (Section 5.4).
 
@@ -92,6 +92,29 @@ Create the `positions/` subdirectory if it doesn't exist.
 
 ---
 
+## Round 2 — PM Challenge Response (If Called Back)
+
+If the PM challenges this analyst's position during deliberation (see `SKILL-deliberation.md`),
+append a response section to the existing `positions/{{TICKER}}.md` file:
+
+```markdown
+---
+
+## Round 2 — PM Challenge Response
+
+**Challenge**: [PM's specific question]
+**Response**: Defend / Revise / Concede
+**Argument**: [2-3 sentences — new evidence if defending, revised logic if revising, acknowledgment if conceding]
+**Updated Recommendation**: [same or changed weight]% — [same or changed bias]
+```
+
+Response rules:
+- **Defend**: Must cite a specific data point from session outputs NOT used in Round 1. If no new evidence exists, cannot Defend — must Revise or Concede.
+- **Revise**: Adjust weight, bias, or thesis status. Explain what the PM's challenge exposed.
+- **Concede**: Agree the position lacks support. Reduce weight to 0% or next lower tier.
+
+---
+
 ## Token Efficiency Note
 
 This skill deliberately pulls from already-gathered phase outputs rather than re-searching the web.
@@ -112,3 +135,4 @@ Key fields per output:
 - Recommended Weight (quantized: 0/5/10/15/20%)
 - Theme Bucket (for PM aggregation)
 - Entry/exit conditions
+- Round 2 PM Challenge Response (if deliberation is active)

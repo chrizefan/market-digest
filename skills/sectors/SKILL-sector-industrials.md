@@ -8,7 +8,6 @@ description: Deep-dive analysis of the Industrials sector (XLI, ITA). Covers aer
 ## Inputs
 - `config/watchlist.md` (XLI, ITA and related ETFs)
 - `config/preferences.md`
-- `memory/sectors/industrials/ROLLING.md`
 - Macro regime output from `macro.md`
 
 ---
@@ -91,9 +90,3 @@ description: Deep-dive analysis of the Industrials sector (XLI, ITA). Covers aer
 ```
 
 ---
-
-## Memory Update
-After analysis, append 3 bullets to `memory/sectors/industrials/ROLLING.md`:
-- One on PMI / manufacturing activity signal
-- One on A&D geopolitical tailwind status (ITA thesis)
-- One on transportation fuel cost headwind or freight volume signal

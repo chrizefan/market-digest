@@ -3,8 +3,9 @@ name: market-orchestrator
 description: >
   Master orchestrator for the comprehensive daily market analysis pipeline. Triggers when the user says
   "run today's digest", "daily analysis", "morning brief", "market update", or pastes the new-day prompt.
-  Replaces SKILL-digest.md as the primary pipeline driver. Runs an 8-phase sequential deep-dive where
-  each phase is a dedicated sub-agent research task before synthesizing all findings into DIGEST.md and regenerating the web app.
+  Replaces SKILL-digest.md as the primary pipeline driver. Runs a 9-phase sequential deep-dive (plus
+  portfolio phases 7C/7D) where each phase is a dedicated sub-agent research task before synthesizing
+  all findings into DIGEST.md, running the portfolio layer, and regenerating the web dashboard.
 ---
 
 # digiquant-atlas — Master Orchestrator
@@ -55,46 +56,20 @@ Then load the following. Do NOT summarize to the user — just internalize:
 
 1. `config/watchlist.md` — full asset universe
 2. `config/preferences.md` — trading style, risk profile, active theses
-3. `config/hedge-funds.md` — tracked fund reference
-4. `config/data-sources.md` — tracked signal sources, KOL accounts, Polymarket topics
-5. Rolling memory files — **read the last 14 days of entries only** (grep for `## 202` headers,
-   take the most recent 14 dated blocks). Exception: `memory/THESES.md` — always read in full.
-   Read in this order:
-   - `memory/macro/ROLLING.md`
-   - `memory/equity/ROLLING.md`
-   - `memory/crypto/ROLLING.md`
-   - `memory/bonds/ROLLING.md`
-   - `memory/commodities/ROLLING.md`
-   - `memory/forex/ROLLING.md`
-   - `memory/international/ROLLING.md`
-   - `memory/sectors/technology/ROLLING.md`
-   - `memory/sectors/healthcare/ROLLING.md`
-   - `memory/sectors/energy/ROLLING.md`
-   - `memory/sectors/financials/ROLLING.md`
-   - `memory/sectors/consumer-staples/ROLLING.md`
-   - `memory/sectors/consumer-disc/ROLLING.md`
-   - `memory/sectors/industrials/ROLLING.md`
-   - `memory/sectors/utilities/ROLLING.md`
-   - `memory/sectors/materials/ROLLING.md`
-   - `memory/sectors/real-estate/ROLLING.md`
-   - `memory/sectors/comms/ROLLING.md`
-   - `memory/alternative-data/sentiment/ROLLING.md`
-   - `memory/alternative-data/cta-positioning/ROLLING.md`
-   - `memory/alternative-data/options/ROLLING.md`
-   - `memory/alternative-data/politician/ROLLING.md`
-   - `memory/institutional/flows/ROLLING.md`
-   - `memory/institutional/hedge-funds/ROLLING.md`
-   - `memory/portfolio/ROLLING.md`
-   - `memory/THESES.md` (full)
-   - `memory/BIAS-TRACKER.md` (last 14 rows)
+3. `config/investment-profile.md` — investor identity, horizon, risk tolerance, asset preferences, regime playbook
+4. `config/hedge-funds.md` — tracked fund reference
+5. `config/data-sources.md` — tracked signal sources, KOL accounts, Polymarket topics
 6. Yesterday's `DIGEST.md` if it exists (for continuity)
 
 **After loading**, internally note:
 - Active theses and their current status
-- Any developing narratives from rolling memory
 - Macro regime from the last digest (to compare with today)
 
 Announce to user: "Context loaded. Starting Phase 1 of 9."
+
+### Checkpoint: Pre-Flight
+Run: `./scripts/validate-phase.sh preflight`
+All checks must pass before proceeding. If any check fails, fix the issue (e.g., run `./scripts/new-day.sh`, create missing config) and re-run until clean.
 
 ---
 
@@ -105,22 +80,22 @@ Announce to user: "Context loaded. Starting Phase 1 of 9."
 ### 1A: Sentiment & News Intelligence
 Follow `skills/alternative-data/SKILL-sentiment-news.md` completely.
 Save output to: `outputs/daily/{{DATE}}/sentiment-news.md`
-Update: `memory/alternative-data/sentiment/ROLLING.md`
 
 ### 1B: CTA & Systematic Positioning
 Follow `skills/alternative-data/SKILL-cta-positioning.md` completely.
 Save output to: `outputs/daily/{{DATE}}/cta-positioning.md`
-Update: `memory/alternative-data/cta-positioning/ROLLING.md`
 
 ### 1C: Options & Derivatives Intelligence
 Follow `skills/alternative-data/SKILL-options-derivatives.md` completely.
 Save output to: `outputs/daily/{{DATE}}/options-derivatives.md`
-Update: `memory/alternative-data/options/ROLLING.md`
 
 ### 1D: Politician & Official Signals
 Follow `skills/alternative-data/SKILL-politician-signals.md` completely.
 Save output to: `outputs/daily/{{DATE}}/politician-signals.md`
-Update: `memory/alternative-data/politician/ROLLING.md`
+
+### Checkpoint: Phase 1
+Run: `./scripts/validate-phase.sh 1`
+Verifies all 4 alt-data files exist and have substantive content. **Do not proceed to Phase 2 until all checks pass.**
 
 ---
 
@@ -131,12 +106,14 @@ Update: `memory/alternative-data/politician/ROLLING.md`
 ### 2A: Institutional Flows
 Follow `skills/institutional/SKILL-institutional-flows.md` completely.
 Save output to: `outputs/daily/{{DATE}}/institutional-flows.md`
-Update: `memory/institutional/flows/ROLLING.md`
 
 ### 2B: Hedge Fund Intelligence
 Follow `skills/institutional/SKILL-hedge-fund-intel.md` completely.
 Save output to: `outputs/daily/{{DATE}}/hedge-fund-intel.md`
-Update: `memory/institutional/hedge-funds/ROLLING.md`
+
+### Checkpoint: Phase 2
+Run: `./scripts/validate-phase.sh 2`
+Verifies both institutional files exist with content. **Do not proceed to Phase 3 until all checks pass.**
 
 ---
 
@@ -157,7 +134,10 @@ Classify the 4-factor macro regime:
 
 This regime classification anchors all subsequent analysis. Save explicitly.
 Save output to: `outputs/daily/{{DATE}}/macro.md`
-Update: `memory/macro/ROLLING.md`
+
+### Checkpoint: Phase 3
+Run: `./scripts/validate-phase.sh 3`
+Verifies macro.md exists with regime classification. The macro regime anchors all Phase 4–5 analysis — **do not proceed until validated.**
 
 ---
 
@@ -168,27 +148,26 @@ Update: `memory/macro/ROLLING.md`
 ### 4A: Bonds & Rates
 Follow `skills/SKILL-bonds.md` — reference today's macro regime.
 Save output to: `outputs/daily/{{DATE}}/bonds.md`
-Update: `memory/bonds/ROLLING.md`
 
 ### 4B: Commodities
 Follow `skills/SKILL-commodities.md` — reference macro regime + bonds/yield output.
 Save output to: `outputs/daily/{{DATE}}/commodities.md`
-Update: `memory/commodities/ROLLING.md`
 
 ### 4C: Forex
 Follow `skills/SKILL-forex.md` — reference macro regime + bonds.
 Save output to: `outputs/daily/{{DATE}}/forex.md`
-Update: `memory/forex/ROLLING.md`
 
 ### 4D: Crypto & Digital Assets
 Follow `skills/SKILL-crypto.md` — reference macro regime + institutional flow data (IBIT/BTC ETF flows).
 Save output to: `outputs/daily/{{DATE}}/crypto.md`
-Update: `memory/crypto/ROLLING.md`
 
 ### 4E: International & Emerging Markets
 Follow `skills/SKILL-international.md` — reference macro regime + DXY from forex output.
 Save output to: `outputs/daily/{{DATE}}/international.md`
-Update: `memory/international/ROLLING.md`
+
+### Checkpoint: Phase 4
+Run: `./scripts/validate-phase.sh 4`
+Verifies all 5 asset-class files (bonds, commodities, forex, crypto, international) exist with content. **Do not proceed to Phase 5 until all checks pass.**
 
 ---
 
@@ -203,7 +182,6 @@ Follow `skills/SKILL-equity.md` with these additions:
 - Note the overall market technical trend
 - Do NOT do full sector analysis here — that's done in 5B through 5L
 Save output to: `outputs/daily/{{DATE}}/us-equities.md`
-Update: `memory/equity/ROLLING.md`
 
 ### 5B–5L: Sector Sub-Agents (All 11 GICS Sectors)
 Run each sector skill sequentially. Each reads the macro regime output and references Phase 5A.
@@ -223,7 +201,6 @@ Run each sector skill sequentially. Each reads the macro regime output and refer
 | 5L | `skills/sectors/SKILL-sector-comms.md` | `sectors/comms.md` |
 
 All sector outputs saved under `outputs/daily/{{DATE}}/sectors/`
-Each sector updates its memory: `memory/sectors/[sector]/ROLLING.md`
 
 ### 5M: Sector Synthesis
 After all 11 sectors, produce a sector scorecard:
@@ -238,47 +215,9 @@ SECTOR SCORECARD — {{DATE}}
 ```
 Aggregate into: Net Equity Bias (Bullish / Bearish / Neutral / Conflicted) with rationale.
 
----
-
-## Phase 6 — Memory Updates & Expanded Bias Tracker
-
-> After all phases are complete, write the consolidated memory updates and update the Bias Tracker.
-
-### 6A: Bias Tracker Update
-Append a new row to `memory/BIAS-TRACKER.md` with ALL columns:
-
-```
-| {{DATE}} | [Macro Regime] | [Equity Bias] | [Crypto Bias] | [Bond Bias] | [Commodity Bias] | [Forex/DXX] | [VIX] | [Inst. Flow] | [Options Sent.] | [CTA Dir.] | [HF Consensus] | [Poly. Fed Odds] | [Notes] |
-```
-
-### 6B: Confirm All Memory Files Updated
-Verify the following memory files have been appended in this session:
-- `memory/macro/ROLLING.md` ✓
-- `memory/equity/ROLLING.md` ✓
-- `memory/crypto/ROLLING.md` ✓
-- `memory/bonds/ROLLING.md` ✓
-- `memory/commodities/ROLLING.md` ✓
-- `memory/forex/ROLLING.md` ✓
-- `memory/international/ROLLING.md` ✓
-- `memory/sectors/technology/ROLLING.md` ✓
-- `memory/sectors/healthcare/ROLLING.md` ✓
-- `memory/sectors/energy/ROLLING.md` ✓
-- `memory/sectors/financials/ROLLING.md` ✓
-- `memory/sectors/consumer-staples/ROLLING.md` ✓
-- `memory/sectors/consumer-disc/ROLLING.md` ✓
-- `memory/sectors/industrials/ROLLING.md` ✓
-- `memory/sectors/utilities/ROLLING.md` ✓
-- `memory/sectors/materials/ROLLING.md` ✓
-- `memory/sectors/real-estate/ROLLING.md` ✓
-- `memory/sectors/comms/ROLLING.md` ✓
-- `memory/alternative-data/sentiment/ROLLING.md` ✓
-- `memory/alternative-data/cta-positioning/ROLLING.md` ✓
-- `memory/alternative-data/options/ROLLING.md` ✓
-- `memory/alternative-data/politician/ROLLING.md` ✓
-- `memory/institutional/flows/ROLLING.md` ✓
-- `memory/institutional/hedge-funds/ROLLING.md` ✓
-- `memory/portfolio/ROLLING.md` ✓
-- `memory/BIAS-TRACKER.md` ✓
+### Checkpoint: Phase 5
+Run: `./scripts/validate-phase.sh 5`
+Verifies us-equities.md + all 11 sector files exist with content (≥10 lines each). **Do not proceed to Phase 7 until all checks pass.**
 
 ---
 
@@ -302,7 +241,6 @@ Using `templates/master-digest.md`, compile `outputs/daily/{{DATE}}/DIGEST.md`:
 
 6. **US Equities** — Overview + Sector Scorecard (all 11, with OW/UW/N + key driver)
 
-7. **Thesis Tracker** — For EACH active thesis in `config/preferences.md` and `memory/THESES.md`:
    - Flag: ✅ Confirmed / ⚠️ Conflicted / ❌ Challenged / ⏳ No signal today
    - Briefly note which signals confirm or challenge
    - Note if any thesis is approaching its **invalidation trigger**
@@ -325,22 +263,56 @@ Using `templates/master-digest.md`, compile `outputs/daily/{{DATE}}/DIGEST.md`:
 
 Save to: `outputs/daily/{{DATE}}/DIGEST.md`
 
+### Checkpoint: Phase 7
+Run: `./scripts/validate-phase.sh 7`
+Verifies DIGEST.md exists with ≥50 lines and contains required sections (Market Regime, Thesis Tracker, Actionable Summary, Risk Radar). **Do not proceed to Phase 7B until validated.**
+
 ---
 
-## Phase 7C — Asset Analyst Pass
+## Phase 7B — Opportunity Screen
 
-> Translate research into per-asset conviction scores. Analysts are blinded to current portfolio
-> weights — each forms an independent view from Phase 1–5 session outputs only.
+> Systematic scan of the full ETF watchlist against today's research. Translates digest
+> findings into a ranked list of tickers worth analyst coverage — both current holdings
+> (mandatory) and new opportunity candidates (screener-selected).
 
-Follow `skills/SKILL-portfolio-manager.md` **Phase A** completely:
+Follow `skills/SKILL-opportunity-screener.md` completely:
 
-1. Read `config/portfolio.json` — extract the **ticker list only** (do NOT read weight_pct values)
-2. Identify 1–2 new opportunity candidates from this session's digest research
-3. For each ticker in the roster, follow `skills/SKILL-asset-analyst.md` completely
-4. Each analyst reads only Phase 1–5 output files — no new web searches
-5. Save each analyst output to: `outputs/daily/{{DATE}}/positions/{{TICKER}}.md`
+1. Load `config/watchlist.md` (full ~60 ticker universe) + today's segment outputs + macro regime
+2. Score every ticker: regime alignment + signal scan (flows, options, CTA, thesis, sector bias)
+3. Rank and filter: current holdings are mandatory; top 3-5 non-held tickers with Total ≥ +2 become opportunity candidates
+4. Save to: `outputs/daily/{{DATE}}/opportunity-screen.md`
 
-Announce to user after completing: "Analysts complete. [N] reports in outputs/daily/{{DATE}}/positions/"
+The screener output defines the **analyst roster** for Phase 7C deliberation.
+
+Announce: "Screen complete. [N] tickers scanned, [M] opportunities identified. Analyst roster: [list]"
+
+### Checkpoint: Phase 7B
+Run: `./scripts/validate-phase.sh 7b`
+Verifies opportunity-screen.md exists. **Do not proceed to Phase 7C until validated.**
+
+---
+
+## Phase 7C — Analyst-PM Deliberation
+
+> Multi-round deliberation: analysts present thesis-driven recommendations, PM challenges
+> weak or conflicting positions, analysts defend or revise. Produces higher-conviction
+> portfolio inputs through structured debate.
+
+Follow `skills/SKILL-portfolio-manager.md` **Phase A** completely. Phase A now routes to
+`skills/SKILL-deliberation.md` which runs the full deliberation protocol:
+
+1. Read `outputs/daily/{{DATE}}/opportunity-screen.md` for the analyst roster (current holdings + screener-selected candidates)
+2. **Round 1**: Each analyst presents per `skills/SKILL-asset-analyst.md` → `positions/{{TICKER}}.md`
+4. **PM Review**: Identify challenges (conflicted bias, damaged thesis, regime contradiction, etc.)
+5. **Round 2**: Challenged analysts defend, revise, or concede
+6. **PM Decision**: Accept / Override / Escalate for each position
+7. Save deliberation transcript to: `outputs/daily/{{DATE}}/deliberation.md`
+
+Announce after completing: "Deliberation complete. [N] resolved, [M] challenged, [K] revised."
+
+### Checkpoint: Phase 7C
+Run: `./scripts/validate-phase.sh 7c`
+Verifies deliberation.md transcript and analyst position files in `positions/`. **Do not proceed to Phase 7D until validated.**
 
 ---
 
@@ -363,7 +335,10 @@ Follow `skills/SKILL-portfolio-manager.md` **Phases B and C** completely:
 3. Produce rebalance table with actions (Hold/Add/Trim/Exit/New)
 4. Save to: `outputs/daily/{{DATE}}/rebalance-decision.md`
 5. Update `config/portfolio.json` → `proposed_positions[]`
-6. Append to `memory/portfolio/ROLLING.md`
+
+### Checkpoint: Phase 7D
+Run: `./scripts/validate-phase.sh 7d`
+Verifies portfolio-recommended.md, rebalance-decision.md, and portfolio.json proposed_positions. **Do not proceed to Phase 8 until validated.**
 
 ---
 
@@ -381,6 +356,10 @@ After the dashboard update succeeds, commit all digest outputs and memory update
 
 This creates the **first commit** — the daily digest outputs.
 
+### Checkpoint: Phase 8
+Run: `./scripts/validate-phase.sh 8`
+Verifies dashboard-data.json exists, is valid JSON, and was recently updated. **Do not proceed to Phase 9 until validated.**
+
 ---
 
 ## Phase 9 — Post-Mortem & Evolution
@@ -390,14 +369,12 @@ This creates the **first commit** — the daily digest outputs.
 > uncontrolled drift.
 
 ### 9A: Source Scorecard Update
-Append a new dated section to `memory/evolution/sources.md`:
 - **Sources Used Today**: Rate every data source accessed (1-5 stars for quality/freshness)
 - **Sources That Failed**: Log any that were unavailable, paywalled, stale, or returned errors
 - **New Sources Discovered**: Record any new X accounts, URLs, or data providers found during research
 - **GUARDRAIL**: Do NOT modify `config/data-sources.md` — only record observations here
 
 ### 9B: Quality Post-Mortem
-Append a new dated section to `memory/evolution/quality-log.md`:
 - **Signal Accuracy**: Check yesterday's actionable items and predictions — were they correct? Mark ✅/❌/⏳
 - **Coverage Gaps**: Note data you wanted but couldn't find (missing indicators, sectors with thin analysis)
 - **Data Freshness Issues**: Flag any data that was stale or delayed
@@ -405,7 +382,6 @@ Append a new dated section to `memory/evolution/quality-log.md`:
   - Data completeness | Signal clarity | Actionability | Continuity with prior | Positioning quality
 
 ### 9C: Improvement Proposals
-Review today's observations and, if warranted, append a new proposal to `memory/evolution/proposals.md`.
 
 **STRICT RULES FOR PROPOSALS:**
 1. You may ONLY propose changes — **never execute them directly**
@@ -433,11 +409,24 @@ After completing the post-mortem, commit evolution artifacts to a **dedicated br
 
 This script will:
 1. Create a branch named `evolve/YYYY-MM-DD`
-2. Commit only the evolution files (`memory/evolution/`, `docs/evolution-changelog.md`)
 3. Push the branch and create a GitHub Pull Request
 4. Switch back to `master` so the repo is clean for the next daily run
 
 **The PR requires manual user approval before merging into master.** This ensures no pipeline changes are applied without explicit review. Approved proposals will only take effect once the PR is merged and the next session pulls the latest master.
+
+### Checkpoint: Phase 9
+Run: `./scripts/validate-phase.sh 9`
+Verifies evolution files (source scorecard, quality log) were updated for today.
+
+---
+
+## Final Validation
+
+Run the full pipeline validation:
+```bash
+./scripts/validate-phase.sh --all
+```
+This runs every phase check in sequence and reports a consolidated pass/fail. All phases must pass before announcing session complete. If any phase fails, go back and fix the missing output, then re-run `--all`.
 
 ---
 
@@ -450,14 +439,14 @@ Confirm all of the following before ending the session:
 - [ ] Phase 3: `macro.md` created
 - [ ] Phase 4: `bonds.md`, `commodities.md`, `forex.md`, `crypto.md`, `international.md` created
 - [ ] Phase 5: `us-equities.md` + 11 sector files in `sectors/` created
-- [ ] Phase 6: All 25 memory files updated; `BIAS-TRACKER.md` new row added
 - [ ] Phase 7: `DIGEST.md` created
-- [ ] Phase 7C: Analyst reports created in `outputs/daily/{{DATE}}/positions/`
+- [ ] Phase 7B: Opportunity screen complete; `outputs/daily/{{DATE}}/opportunity-screen.md` saved; analyst roster determined
+- [ ] Phase 7C: Deliberation complete; transcript in `outputs/daily/{{DATE}}/deliberation.md`; analyst reports in `positions/`
 - [ ] Phase 7D: `portfolio-recommended.md` + `rebalance-decision.md` created; `portfolio.json` proposed_positions updated
 - [ ] Phase 8: `update-tearsheet.py` executed successfully; digest commit created
 - [ ] Phase 9: Post-mortem completed; source scorecard, quality log updated; evolution commit created
 
-**Total output files per day: ~21 segment files + DIGEST.md + analyst positions/ + portfolio-recommended.md + rebalance-decision.md + 3 evolution files = 28 files**
+**Total output files per day: ~21 segment files + DIGEST.md + deliberation.md + analyst positions/ + portfolio-recommended.md + rebalance-decision.md + 3 evolution files = 29 files**
 
 Print to user: "✅ Digest complete. Two commits created: digest outputs + pipeline evolution."
 
@@ -466,7 +455,7 @@ Print to user: "✅ Digest complete. Two commits created: digest outputs + pipel
 ## Quality Principles (Always Apply)
 
 1. **Search for everything.** Never rely on training data for prices, yields, levels, or news.
-2. **Maintain continuity.** Every analysis explicitly references prior context from ROLLING.md files. This is NOT a fresh-start diary — it's a living research thread.
+2. **Maintain continuity.** Every analysis explicitly references prior context from previous day's outputs. This is NOT a fresh-start diary — it's a living research thread.
 3. **Be opinionated.** The user is an experienced investor. They need a clear directional read, not a "on the one hand / on the other hand" recitation.
 4. **Thesis-driven.** Every position has an explicit thesis. Flag when reality contradicts it.
 5. **Macro-first filtering.** The Phase 3 regime anchors everything. If a sector conflicts with the macro regime, say so explicitly.

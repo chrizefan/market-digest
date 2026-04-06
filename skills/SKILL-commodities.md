@@ -8,7 +8,6 @@ description: Run commodities analysis as part of the daily digest. Covers energy
 ## Inputs
 - `config/watchlist.md` (commodities section)
 - `config/preferences.md`
-- `memory/commodities/ROLLING.md`
 - Macro regime output
 - Bonds output (real yields — key driver for gold)
 
@@ -79,10 +78,3 @@ description: Run commodities analysis as part of the daily digest. Covers energy
 
 **Watch**: [Key upcoming data: EIA Wednesday, OPEC meeting, gold central bank data]
 ```
-
-## Memory Update
-After completing analysis, produce 4 bullets for `memory/commodities/ROLLING.md`:
-- One on energy trend, key driver, and WTI level vs invalidation triggers
-- One on gold signal including real yield linkage and central bank demand
-- One on copper/industrial metals growth signal and China demand context
-- One on CTA positioning extreme or oil supply/inventory development

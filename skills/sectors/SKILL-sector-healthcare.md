@@ -8,7 +8,6 @@ description: Deep-dive analysis of the Healthcare sector (XLV, IBB, XBI). Covers
 ## Inputs
 - `config/watchlist.md` (healthcare ETFs)
 - `config/preferences.md` (XLV is a current portfolio holding)
-- `memory/sectors/healthcare/ROLLING.md`
 - Macro regime output from `macro.md`
 
 ---
@@ -89,9 +88,3 @@ description: Deep-dive analysis of the Healthcare sector (XLV, IBB, XBI). Covers
 ```
 
 ---
-
-## Memory Update
-After analysis, append 3 bullets to `memory/sectors/healthcare/ROLLING.md`:
-- One on defensive bid strength (is XLV holding its outperformance vs SPY?)
-- One on biotech risk appetite or specific catalyst
-- One on any regulatory/policy development affecting the thesis

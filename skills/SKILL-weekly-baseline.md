@@ -22,10 +22,7 @@ Before the standard Pre-Flight, complete the following steps:
 ### Step 1: Prior Week Review
 Read these files (in order) and internalize without summarizing to the user:
 - `outputs/weekly/[last week label].md` — if it exists
-- `memory/BIAS-TRACKER.md` — the last 5–7 rows (last week's daily readings)
-- `memory/THESES.md` — full thesis register
 - `config/portfolio.json` — current positions and last proposed_positions (note tickers only for now; actual weights reviewed in Phase 7D)
-- `memory/portfolio/ROLLING.md` — last 3 entries (recent rebalance history)
 
 After reading, note internally:
 - **Bias trajectory**: Was last week mostly bullish/bearish? Any mid-week regime flips?
@@ -92,7 +89,6 @@ After completing Phase 7 (DIGEST.md synthesis), append the following section to 
 
 ## Phase 9 Addition: Prior Week Retrospective
 
-After completing Phase 9C (Improvement Proposals), append a retrospective review to `memory/evolution/quality-log.md` with the following structure:
 
 ```markdown
 ## {{DATE}} — Weekly Retrospective
@@ -119,4 +115,3 @@ All items from the standard Session Completion Checklist (`skills/SKILL-orchestr
 - [ ] Week Ahead Setup section added to `DIGEST.md`
 - [ ] Phase 7C: All analyst reports in `outputs/daily/{{DATE}}/positions/`
 - [ ] Phase 7D: Rebalance decision + baseline anchor weights in `rebalance-decision.md`
-- [ ] Weekly Retrospective appended to `memory/evolution/quality-log.md`

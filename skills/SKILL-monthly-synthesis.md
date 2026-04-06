@@ -19,12 +19,9 @@ comprehensive long-term view. Designed to run on the last trading day of each mo
 - **Weekly baselines**: `outputs/daily/{{YEAR}}-{{MONTH}}-*/` folders where `_meta.json` has `"type": "baseline"`
 - **Daily deltas**: All `outputs/daily/{{YEAR}}-{{MONTH}}-*/DIGEST-DELTA.md` files
 - **Weekly rollups**: `outputs/weekly/{{YEAR}}-W*.md` files from this month's weeks
-- **Bias tracker**: `memory/BIAS-TRACKER.md` — all rows for this month (typically 20–23 rows)
 
 ### Step 2: Load Core Context
 - `config/preferences.md` — active portfolio and theses
-- `memory/THESES.md` — full thesis register (for performance review)
-- `memory/BIAS-TRACKER.md` — full month of daily readings
 
 Announce: "Monthly synthesis context loaded. Found [N] weekly baselines, [N] delta days. Starting Phase 1."
 
@@ -121,7 +118,6 @@ For each asset class, synthesize across baselines and deltas:
 
 ## Phase 5 — Thesis Performance Review
 
-For each thesis in `memory/THESES.md` that was active during this month:
 
 | Field | What to Assess |
 |-------|---------------|
@@ -177,26 +173,7 @@ Add a **Delta Efficiency Summary**:
 
 ---
 
-## Phase 7 — Memory Updates
-
-Update these memory files with a monthly summary entry:
-
-For each of the 23 ROLLING.md files, **if the last entry is earlier than this month**, append:
-```markdown
-## {{YEAR}}-{{MONTH}} (Monthly Synthesis)
-- [Month's net direction and key development]
-- [Any structural shift vs prior months]
-- [Thesis implication]
-```
-
-Also update `memory/BIAS-TRACKER.md` with a summary row:
-```
-| {{YEAR}}-{{MONTH}} SUMMARY | [Net macro] | [Net equity] | [Net crypto] | ... | Monthly wrap |
-```
-
----
-
-## Phase 8 — Dashboard Update
+## Phase 7 — Dashboard Update
 
 Run: `python3 scripts/update-tearsheet.py`
 

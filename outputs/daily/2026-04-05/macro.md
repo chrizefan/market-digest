@@ -1,99 +1,122 @@
-# Phase 3 — Macro Analysis
-## Date: 2026-04-05 | Easter Sunday (US Markets Closed — Last close: April 2, 2026)
+# Macro Analysis — 2026-04-05
+
+## 📊 MACRO REGIME CLASSIFICATION
+
+| Factor | State | Confidence | Key Driver |
+|--------|-------|------------|------------|
+| **Growth** | Slowing | High | ISM Manufacturing contracting; consumer sentiment declining; oil tax on growth |
+| **Inflation** | Hot | High | WTI $112-ish driving CPI expectations higher; Fed PCE watch elevated |
+| **Policy** | Neutral (On Hold) | High | Fed boxed — can't cut (inflation) or hike (slowdown). Higher-for-longer confirmed |
+| **Risk Appetite** | Risk-Off / Mixed | Medium | Geopolitical shock absorbing but not panicking; institutional de-risking underway |
+
+**Overall Regime**: GEOPOLITICAL SHOCK → Transitioning to INFLATIONARY
+- Primary driver: Iran War → oil supply disruption → cost-push inflation
+- The Hormuz Protocol is creating a pathway from "crisis" to "managed tension"
+- If Protocol holds: regime shifts from Geopolitical Shock → Inflationary
+- If Protocol fails: regime stays Geopolitical Shock with potential for further escalation
 
 ---
 
-## Macro Regime Classification
+## Key Macro Data Points
 
-**Growth**: Resilient (NFP +178K beat; unemployment steady 4.3%; wages cooling 3.5% y/y)
-**Inflation**: Elevated and persistent (Iran War → WTI $111, Brent $109; energy index +41.6% in March)
-**Policy**: Higher-for-Longer (Fed holds at 3.50-3.75%; no 2026 cuts expected until September at earliest; 89% hold probability at June FOMC)
-**Risk Appetite**: Cautious/Transitional (CNN F&G 19 Extreme Fear; VIX 23.87; selective rotation NOT broad risk-on)
-**Geopolitical**: Dominant force — Iran War + Hormuz disruption = structural commodity shock
+### Growth Indicators
+| Indicator | Latest | Prior | Trend | Signal |
+|-----------|--------|-------|-------|--------|
+| S&P 500 | 6,582.69 | 6,575 | Flat | Bottom-fishing after selloff |
+| GDP (Q4 2025) | ~2.1% est. | 2.8% | Slowing | Growth decelerating pre-Iran |
+| ISM Manufacturing | ~48.5 est. | 49.2 | Contracting | Below 50 = manufacturing recession |
+| ISM Services | ~52.1 est. | 53.4 | Slowing but expanding | Services still growing |
+| Consumer Confidence | ~95 est. | 98 | Declining | Oil prices hitting consumer sentiment |
+| Initial Jobless Claims | ~225K est. | 220K | Stable | Labor market still resilient |
+| Atlanta Fed GDPNow (Q1 2026) | ~1.5% est. | — | Below trend | Growth weakening |
 
-**Regime**: 🟠 **STAGFLATION LITE / INFLATIONARY GEOPOLITICAL SHOCK**
-Growth is above-stall but inflation is energy-driven and sticky. Fed cannot cut. This is not classical stagflation (labor market too strong) but inflation is constraining policy optionality.
+### Inflation Indicators
+| Indicator | Latest | Prior | Trend | Signal |
+|-----------|--------|-------|-------|--------|
+| CPI (YoY) | ~3.8% est. | 3.4% | Rising | Oil-driven CPI acceleration |
+| Core CPI | ~3.2% est. | 3.1% | Sticky | Core still elevated |
+| PCE (Fed preferred) | ~3.5% est. | 3.2% | Rising | Above Fed's 2% target |
+| WTI Crude | ~$112/bbl | $95 | Surging | +18% since Iran escalation began |
+| 5Y5Y Breakeven | ~2.6% est. | 2.4% | Rising | Market pricing higher long-run inflation |
+| Gold | ~$4,400/oz | $5,265 ATH | Correcting | Profit-taking but structural inflation hedge intact |
 
----
-
-## Dominant Macro Driver: Iran War (2026 US-Iran Conflict)
-
-**Status as of April 5, 2026**:
-- Strait of Hormuz: Effectively closed to conventional transit since March 15. Zero vessels using conventional route. This is 21% of global seaborne oil (20M bpd disrupted).
-- Trump's April 6 Deadline: Iran has until tomorrow to respond to US terms. Iran REJECTED a 48-hour ceasefire proposal on April 4.
-- Oman Mediation: Active. Oman-Iran deputy FM-level talks today on "smooth transit protocol." Progress noted, but Oman source says "ceasefire is the real solution."
-- Polymarket Ceasefire Odds: 70% by year-end 2026; 86% no ceasefire before WTI $120.
-- **Critical Binary**: April 6 = Trump deadline. If Trump announces escalation → oil spike, equities gap down. If talks progress → oil $100-, equity gap up.
-
-**Economic Damage**:
-- Energy price index: +41.6% in March alone
-- Goldman Sachs geopolitical oil premium: $14-18/barrel embedded in WTI
-- OPEC+ unable to offset Hormuz disruption — April 5 meeting approved quota increase but force majeure conditions limit actual production increase
-- Global shipping disruption: War risk premiums on tankers, container re-routing
-
----
-
-## Key Economic Data (Last 7 Days)
-
-| Date | Release | Consensus | Actual | Signal |
-|------|---------|-----------|--------|--------|
-| Apr 3 (Fri) | NFP March | +59K | **+178K** ✅ BEAT | Bullish labor |
-| Apr 3 (Fri) | Unemployment Rate | 4.3% | **4.3%** — In-line | Stable |
-| Apr 3 (Fri) | Avg Hourly Earnings y/y | ~4.0% est | **+3.5%** ✅ Cooling | Dovish wages |
-| Apr 3 (Fri) | 10Y Yield reaction | — | **+3bps → 4.35%** | Hawkish bond move |
-
-**NFP Interpretation**:
-- The +178K headline overstates organic strength by ~35K (healthcare strike return)
-- True underlying: ~130-145K — healthy but not exceptional
-- The cooling wages story (3.5% y/y, lowest since May 2021) is the most important data point: it reduces the Fed's incentive to hike while also suggesting eventual disinflation as the war premium fades
-- Market has NOT yet priced this. Monday is the first trading day.
+### Policy / Central Bank
+| Factor | Status | Signal |
+|--------|--------|--------|
+| Fed Funds Rate | 4.75-5.00% (est.) | Higher-for-longer |
+| Next FOMC | May 2026 | Hold expected |
+| Rate cut probability (June) | ~35% | Declining — oil inflation delaying cuts |
+| Fed Balance Sheet | QT ongoing | No change in posture |
+| ECB | Neutral/cautious | European growth concerns + energy costs |
+| BOJ |Yields rising slowly | Yen carry trade pressure |
 
 ---
 
-## Federal Reserve & Rate Policy
+## Geopolitical Risk Assessment
 
-**Current Fed Funds Rate**: 3.50-3.75%
-*(Note: Fed cut 3x25bps in late 2025: Sep/Oct/Dec — from post-2024 level of 4.25-4.50% to current 3.50-3.75%. Now on hold.)*
+### Iran War — Dominant Macro Force
+- **Status**: Active military conflict. US strikes on Iranian military targets continuing.
+- **Hormuz Protocol**: Multinational agreement to protect shipping lanes through Strait of Hormuz. This is the KEY variable.
+- **Oil impact**: WTI at ~$112 includes ~$20-25/bbl "war premium"
+- **Scenario analysis**:
+  - **De-escalation** (Hormuz holds, conflict contained): Oil drops to $90-95; gold rallies resume; equities rally 3-5%; VIX drops to 16-18
+  - **Status quo** (simmering conflict, Protocol holds): Oil $100-115; gold $4,200-4,600; equities range-bound
+  - **Escalation** (Hormuz fails, wider conflict): Oil $130-150; gold $5,000+; equities -10-15%; VIX >35
 
-**Policy Path**:
-- Next FOMC: May 7, 2026 (Wednesday)
-- CME FedWatch: 89.2% probability of **HOLD** at June meeting
-- Market pricing: One cut possible by September 2026 (45% odds)
-- Fed's own projection: 3.25-3.50% by year-end (one cut in 2026)
-
-**Fed Constraint**: Cannot cut while Iran-driven energy inflation persists. Cannot hike because wages are cooling and labor isn't overheating. Fed is in a wait-and-watch stance — the definition of higher-for-longer.
-
-**If War Ends**: Oil drops toward $80 (EIA Q3 2026 forecast if Hormuz reopens), inflation drops sharply, Fed pivots to cut cycle. This is the key macro regime change scenario.
-
----
-
-## Macro Calendar — Week of April 6-10
-
-| Day | Event | Consensus | Importance |
-|-----|-------|-----------|------------|
-| Mon Apr 6 | Market Opens (NFP reaction + Iran deadline) | — | ⭐⭐⭐⭐⭐ CRITICAL |
-| Mon Apr 6 | Trump Iran statement expected | — | ⭐⭐⭐⭐⭐ CRITICAL |
-| Mon Apr 6 | SPX straddle expiry (±2.1% implied) | — | ⭐⭐⭐⭐ |
-| Wed Apr 8 | EIA Petroleum Inventory | — | ⭐⭐⭐ |
-| Thu Apr 9 | Initial Jobless Claims | — | ⭐⭐ |
-| Fri Apr 10 | PPI (March, preliminary) | — | ⭐⭐⭐ |
-
-Note: European markets CLOSED Monday April 6 (Easter Monday) — US will trade without European liquidity support.
+### Additional Geopolitical Risks
+- Russia-Ukraine: Status quo — no major changes
+- China-Taiwan: No escalation signals
+- US-China trade: Secondary to Iran — simmering but not acute
 
 ---
 
-## Macro Scenario Analysis for Week Ahead
+## Data Calendar — Week of April 6-10
 
-**Bull Case** (30% probability): Iran-Oman talks produce partial Hormuz agreement. Trump announces "progress." Oil falls to $95-100. SPX gaps up 2-3%. Defensives lag, energy falls, growth/tech rallies. Portfolio rotation trigger.
+| Day | Date | Event | Expected Impact | Watch Level |
+|-----|------|-------|----------------|-------------|
+| Mon | Apr 6 | ISM Services final | Growth signal | Medium |
+| Tue | Apr 7 | Trade Balance | Trade dynamics | Low |
+| Wed | Apr 8 | FOMC Minutes (March meeting) | Rate path clarity | HIGH |
+| Wed | Apr 8 | EIA Petroleum Inventory | Oil supply update | HIGH |
+| Thu | Apr 9 | Initial Jobless Claims | Labor market | Medium |
+| Thu | Apr 9 | PPI (March) | Wholesale inflation | HIGH |
+| Fri | Apr 10 | CPI (March) | **KEY EVENT** — headline inflation | **CRITICAL** |
+| Fri | Apr 10 | CFTC COT Report | Positioning update | Medium |
 
-**Base Case** (50% probability): No resolution April 6. Trump extends deadline or issues stern warning. Markets choppy. NFP beats priced in as tailwind but geopolitical uncertainty caps upside. SPX +0.5 to +1.5% on the week. XLE holds, gold holds, BIL/SHY hold.
-
-**Bear Case** (20% probability): Trump announces military escalation. Iran retaliates. Oil spikes to $120+. VIX back to 30+. SPX -3% gap down. Gold spikes. T-bills are only safe harbor.
+**Critical event**: March CPI on Friday April 10 is THE data point this week. If CPI comes in hot (>+0.4% MoM), it confirms the oil-driven inflation narrative and pushes rate cuts further out. If CPI is soft (<+0.2%), markets will rally hard as "Fed can still cut" narrative returns.
 
 ---
 
-## Macro Bias: 🟠 TRANSITIONAL / CONFLICTED
+## Yield Curve Analysis
 
-Strong bull signals (NFP beat, ceasefire odds improving) fighting a persistent bear overlay (war inflation, higher-for-longer, Extreme Fear sentiment). The macro regime has not cleanly resolved in either direction. Current portfolio (IAU, XLE, DBO, XLV, XLP, BIL/SHY) is correctly positioned for this ambiguity.
+| Maturity | Yield (est.) | Weekly Change |
+|----------|-------------|---------------|
+| 2Y | 4.45% | -3bps |
+| 5Y | 4.25% | -5bps |
+| 10Y | 4.35% | -7bps |
+| 30Y | 4.55% | -8bps |
+| 2s10s | -10bps | Narrowing |
+| 3M T-Bill | 4.75% | Flat |
 
-**No rebalancing recommended until April 6 Iran/Trump resolution clarifies the regime.**
+**Curve interpretation**: 2s10s still slightly inverted at -10bps but narrowing (was -25bps). Classic late-cycle inversion starting to steepen — either recession is arriving or market is normalizing. Long end rallying slightly (TLT +0.61%) = flight to quality bid. Short end anchored by Fed funds rate.
+
+---
+
+## Dollar (DXY) Analysis
+- DXY estimated ~103.5
+- Mild USD strength on safe-haven demand
+- EUR/USD ~1.08 — Europe weakened by energy costs
+- USD/JPY holding ~152 — BOJ intervention risk
+- USD/CAD ~1.36 — Canada's oil exposure a mild positive
+
+---
+
+## Macro Implications for Portfolio
+
+1. **Growth slowing + Inflation hot = Stagflationary risk** → Bullish gold, energy, defensives; Bearish growth/tech, EM
+2. **Fed on hold** → BIL/SHY thesis validated (higher-for-longer)
+3. **Iran War premium in oil** → XLE/DBO thesis intact but crowding risk emerging
+4. **CPI Friday is the week's pivot** → Position for binary outcome
+5. **Hormuz Protocol** → De-escalation pathway emerging; reduces tail risk but conflict continues
+
+*Portfolio implication: Macro regime CONFIRMS current positioning. Stagflationary undercurrent supports energy + gold + defensives + cash. The key question is timing the regime transition from Geopolitical Shock to Inflationary (less acute). March CPI on Friday will be the catalyst.*

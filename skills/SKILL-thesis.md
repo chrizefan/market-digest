@@ -4,7 +4,7 @@ description: >
   Manage, review, and evolve active market theses. Use this skill when the user says
   "review my theses", "update thesis", "add a new thesis", "close a thesis", "thesis tracker",
   "what are my current bets", or "how are my theses holding up". Also triggered at the end of
-  each weekly rollup. Reads and writes to memory/THESES.md — the master thesis register.
+  each weekly rollup. 
 ---
 
 # Thesis Management Skill
@@ -15,7 +15,6 @@ captured here with an entry date, rationale, supporting evidence, and eventual r
 ---
 
 ## Thesis Register Location
-`memory/THESES.md`
 
 ---
 
@@ -50,7 +49,6 @@ Each thesis has these fields:
 When the user says "add thesis" or a new view emerges from a digest:
 1. Assign ID: T-XXX (increment from last)
 2. Fill all fields — be specific about invalidation
-3. Append to `memory/THESES.md` under "## Active Theses"
 4. Add a one-liner to `config/preferences.md` under "Current Portfolio Themes"
 
 ### Updating a Thesis

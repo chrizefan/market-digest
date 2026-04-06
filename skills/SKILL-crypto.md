@@ -8,7 +8,6 @@ description: Run crypto market analysis as part of the daily digest. Covers BTC,
 ## Inputs
 - `config/watchlist.md` (crypto section)
 - `config/preferences.md`
-- `memory/crypto/ROLLING.md`
 - Macro regime output (risk-on/off affects crypto)
 - Institutional flows output (IBIT/FBTC daily flow data)
 
@@ -90,10 +89,3 @@ For each alt in watchlist:
 
 **Watch**: [Key level or event to track]
 ```
-
-## Memory Update
-After completing analysis, produce 4 bullets for `memory/crypto/ROLLING.md`:
-- One on BTC structure, trend, and key level
-- One on institutional ETF flow direction (IBIT/FBTC — accumulation or distribution?)
-- One on sentiment/positioning (Fear & Greed + funding rates)
-- One on dominant narrative or alt-market development

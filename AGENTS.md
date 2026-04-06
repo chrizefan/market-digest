@@ -24,7 +24,6 @@ The system is driven by **skill files** (`skills/*.md`) which are step-by-step i
 2. Read the appropriate skill file (`SKILL-weekly-baseline.md` or `SKILL-daily-delta.md`)
 3. Search live web data (never use training data for prices)
 4. Write outputs to the correct file paths
-5. Update rolling memory files after each session
 
 ---
 
@@ -78,6 +77,7 @@ Run: scripts/monthly-rollup.sh  (collects all baselines + deltas)
 config/
   watchlist.md        ← Assets to track (read at every session start)
   preferences.md      ← Trading style, risk profile, active theses (read at every session start)
+  investment-profile.md ← Investor identity, horizon, risk tolerance, asset preferences, regime playbook
   hedge-funds.md      ← 16 tracked hedge funds with CIK, X handles, style
   data-sources.md     ← 30+ X accounts, data URLs, economic calendars
   email-research.md   ← Dedicated Gmail setup + subscription list
@@ -100,14 +100,8 @@ skills/
   alternative-data/           ← 4 alt-data sub-agent skills
   institutional/              ← 2 institutional intelligence skills
 
-memory/                       ← 23 rolling append-only research logs
-  BIAS-TRACKER.md             ← Daily bias table (14 columns)
-  THESES.md                   ← Active thesis register
-  macro/ equity/ crypto/ bonds/ commodities/ forex/
-  international/
-  sectors/{10 sector dirs}/
-  alternative-data/{4 type dirs}/
-  institutional/{2 type dirs}/
+memory/                       ← Evolution files (source scorecard, quality log, proposals)
+  evolution/                    ← Post-mortem artifacts
 
 templates/
   master-digest.md            ← DIGEST.md template (baselines)
@@ -142,7 +136,6 @@ scripts/
   git-commit.sh               ← Commit outputs
   weekly-rollup.sh            ← Weekly synthesis (finds baseline + delta files)
   monthly-rollup.sh           ← Monthly synthesis (collects all baselines + deltas)
-  memory-search.sh            ← Search all ROLLING.md files
 
 agents/                       ← Named agent role definitions
 docs/agentic/                 ← Full agentic documentation suite
@@ -155,9 +148,8 @@ docs/agentic/                 ← Full agentic documentation suite
 ### Always:
 - **Check `_meta.json`** before any analysis — determines baseline vs delta mode
 - **Search the web** for current prices, yields, news. Never use training data cutoff values.
-- **Read config/** at session start (watchlist.md + preferences.md minimum)
-- **Read relevant memory ROLLING.md files** for continuity before running any analysis
-- **Update memory files** every day (even on delta days) — append, never delete
+- **Read config/** at session start (watchlist.md + preferences.md + investment-profile.md minimum)
+- **Read prior day's outputs** for continuity before running any analysis
 - **Save outputs** to the correct path (see Output File Naming below)
 - **State a bias** (Bullish/Bearish/Neutral/Conflicted) with rationale for every segment
 - **Materialize DIGEST.md** on delta days — the dashboard reads DIGEST.md, not DIGEST-DELTA.md
@@ -171,37 +163,9 @@ docs/agentic/                 ← Full agentic documentation suite
 
 ### Never:
 - Use training data cutoff prices or news as "current" values
-- Delete or overwrite existing memory file content — only append
-- Skip memory updates — they are the system's long-term intelligence layer
 - Skip materialization — `DIGEST.md` must always be a readable, complete file
 - Produce hedged, wishy-washy analysis — state the signal clearly
 - Provide specific buy/sell investment advice (analysis and bias are fine; specific financial advice is not)
-
----
-
-## Memory File Protocol
-
-Memory files are append-only logs. After completing each segment, append:
-
-```markdown
-## YYYY-MM-DD
-- [Most important observation with data point]
-- [Second key finding]
-- [Thesis evolution or regime implication]
-- [Portfolio-relevant signal if applicable]
-```
-
-**Complete list of memory files to update in a full digest session (23 files):**
-
-Core: `memory/macro/ROLLING.md`, `memory/equity/ROLLING.md`, `memory/crypto/ROLLING.md`, `memory/bonds/ROLLING.md`, `memory/commodities/ROLLING.md`, `memory/forex/ROLLING.md`, `memory/international/ROLLING.md`
-
-Sectors (10): `memory/sectors/{technology,healthcare,energy,financials,consumer,industrials,utilities,materials,real-estate,comms}/ROLLING.md`
-
-Alt Data (4): `memory/alternative-data/{sentiment,cta-positioning,options,politician}/ROLLING.md`
-
-Institutional (2): `memory/institutional/{flows,hedge-funds}/ROLLING.md`
-
-Also update: `memory/BIAS-TRACKER.md` (append one row)
 
 ---
 
@@ -217,10 +181,9 @@ Skill: `skills/SKILL-weekly-baseline.md` → `skills/SKILL-orchestrator.md`
 | 3 | Macro Analysis | `macro.md` |
 | 4A–E | Bonds, Commodities, Forex, Crypto, International | 5 files |
 | 5A–L | US Equities + 11 GICS Sector Sub-Agents | 12 files |
-| 6 | Memory + Bias Tracker Update | 23 ROLLING.md files |
 | 7 | DIGEST.md Synthesis + Week Ahead Setup | `DIGEST.md` |
 | 8 | Web Dashboard Update | `dashboard-data.json` |
-| 9 | Post-Mortem & Evolution | `memory/evolution/` |
+| 9 | Post-Mortem & Evolution | `evolution/` |
 
 ### Mon–Sat — Daily Delta (~70% token savings)
 Skill: `skills/SKILL-daily-delta.md`
@@ -230,7 +193,6 @@ Skill: `skills/SKILL-daily-delta.md`
 | Triage | Which segments changed vs baseline? | Internal decision |
 | 1–5 | Run only segments with material changes | `deltas/*.delta.md` |
 | Mandatory | Always: macro, us-equities, crypto | 3 delta files min |
-| 6 | Memory + Bias Tracker (always) | 23 ROLLING.md files |
 | 7 | DIGEST-DELTA.md + materialize DIGEST.md | Both files |
 | 8–9 | Dashboard + Evolution | Same as baseline |
 

@@ -8,7 +8,6 @@ description: Deep-dive analysis of the Communication Services sector (XLC). Cove
 ## Inputs
 - `config/watchlist.md` (XLC and related)
 - `config/preferences.md`
-- `memory/sectors/comms/ROLLING.md`
 - Macro regime output from `macro.md`
 
 ---
@@ -98,9 +97,3 @@ description: Deep-dive analysis of the Communication Services sector (XLC). Cove
 ```
 
 ---
-
-## Memory Update
-After analysis, append 3 bullets to `memory/sectors/comms/ROLLING.md`:
-- One on digital ad market health (leading macro indicator)
-- One on AI disruption risk to GOOGL's core search franchise
-- One on any regulatory or content platform development

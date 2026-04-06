@@ -8,7 +8,6 @@ description: Run forex and currency analysis as part of the daily digest. Covers
 ## Inputs
 - `config/watchlist.md` (forex section)
 - `config/preferences.md`
-- `memory/forex/ROLLING.md`
 - Macro regime output
 - Bonds output (rate differentials drive FX)
 
@@ -78,10 +77,3 @@ For each pair in watchlist:
 
 **Watch**: [Key FX event or level to monitor]
 ```
-
-## Memory Update
-After completing analysis, produce 4 bullets for `memory/forex/ROLLING.md`:
-- One on DXY trend and implications for commodities and international
-- One on the key FX risk sentiment signal (AUD/USD carry, safe-haven JPY/CHF)
-- One on EM FX stress or notable EM currency development
-- One on carry trade / yen stability and cross-asset risk implication

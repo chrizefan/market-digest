@@ -10,7 +10,6 @@ Follow the smart money. ETF flows reveal institutional sector rotation in real-t
 
 ## Inputs
 - `config/data-sources.md` (ETF.com flows, Unusual Whales, SEC EDGAR, Fintel, short interest sources)
-- `memory/institutional/flows/ROLLING.md`
 
 ---
 
@@ -136,9 +135,3 @@ Search for any published weekly fund flow data (ICI, EPFR Global):
 ```
 
 ---
-
-## Memory Update
-After analysis, append 3 bullets to `memory/institutional/flows/ROLLING.md`:
-- One on the dominant institutional flow direction (risk-on/off, sector rotation signal)
-- One on IBIT/crypto ETF flow (BTC institutional demand trend)
-- One on any notable 13D/13G filing, dark pool print, or short squeeze development

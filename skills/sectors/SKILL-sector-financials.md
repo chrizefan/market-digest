@@ -8,8 +8,6 @@ description: Deep-dive analysis of the Financials sector (XLF, KRE, KBE). Covers
 ## Inputs
 - `config/watchlist.md` (XLF and financial ETFs)
 - `config/preferences.md`
-- `memory/sectors/financials/ROLLING.md`
-- `memory/bonds/ROLLING.md`
 - Macro regime + bonds output from current session
 
 ---
@@ -94,9 +92,3 @@ description: Deep-dive analysis of the Financials sector (XLF, KRE, KBE). Covers
 ```
 
 ---
-
-## Memory Update
-After analysis, append 3 bullets to `memory/sectors/financials/ROLLING.md`:
-- One on NIM/yield curve implications for bank profitability
-- One on credit quality trend (particularly CRE and consumer)
-- One on capital markets or regulatory development

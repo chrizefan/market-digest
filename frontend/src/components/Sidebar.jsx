@@ -1,11 +1,11 @@
-import { Target, BookOpen, Database, TrendingUp, PieChart, Menu, X } from 'lucide-react';
+import { Target, Clock, Database, TrendingUp, PieChart, Menu, X } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) {
   const navItems = [
     { id: 'portfolio', label: 'Asset Allocation', icon: <PieChart size={20} /> },
     { id: 'performance', label: 'Performance Tracking', icon: <TrendingUp size={20} /> },
     { id: 'strategy', label: 'Strategy & Thesis', icon: <Target size={20} /> },
-    { id: 'library', label: 'Research Library', icon: <BookOpen size={20} /> },
+    { id: 'library', label: 'File Timeline', icon: <Clock size={20} /> },
     { id: 'architecture', label: 'Architecture', icon: <Database size={20} /> },
   ];
 

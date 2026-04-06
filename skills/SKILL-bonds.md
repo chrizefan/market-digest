@@ -8,7 +8,6 @@ description: Run bond market and interest rates analysis as part of the daily di
 ## Inputs
 - `config/watchlist.md` (bonds section)
 - `config/preferences.md`
-- `memory/bonds/ROLLING.md`
 - Macro regime output (rate path context)
 
 ## Research Steps
@@ -89,10 +88,3 @@ description: Run bond market and interest rates analysis as part of the daily di
 
 **Watch**: [Upcoming Treasury auction, Fed speak, or inflation print that could move rates]
 ```
-
-## Memory Update
-After completing analysis, produce 4 bullets for `memory/bonds/ROLLING.md`:
-- One on yield direction, trend, and key level
-- One on inflation breakevens and real yield direction (critical for commodity/gold thesis)
-- One on Fed expectations change vs. prior session
-- One on credit spread direction and any sovereign stress signal

@@ -21,7 +21,6 @@ Run these searches in parallel (4-5 searches max):
 2. "overnight market news [date]"
 3. "economic data released today [date]"
 4. "BTC ETH price pre-market [date]"
-5. Any breaking news or events flagged in the most recent `memory/macro/ROLLING.md` as upcoming
 
 ---
 

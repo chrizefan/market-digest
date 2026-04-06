@@ -8,7 +8,6 @@ description: Run global macro analysis as part of the daily digest. Covers econo
 ## Inputs
 - `config/watchlist.md` (macro section)
 - `config/preferences.md`
-- `memory/macro/ROLLING.md`
 - Sentiment output (Phase 1A) — does sentiment confirm or contradict macro?
 - CTA positioning output (Phase 1B) — are systematics aligned?
 - Politician/Fed signals output (Phase 1D) — any policy pivot signal?
@@ -93,11 +92,3 @@ This 4-factor framework + recession probability + stagflation risk shape every d
 
 **Macro Implication**: [How the current regime should bias positioning across asset classes]
 ```
-
-## Memory Update
-After completing analysis, produce 4-5 bullets for `memory/macro/ROLLING.md`:
-- One on the macro regime classification (all 4 factors + recession probability)
-- One on the most important data point or event
-- One on central bank trajectory and rate path pricing
-- One on inflation breakevens / real yield direction
-- One on any regime shift, geopolitical escalation, or new structural risk emerging

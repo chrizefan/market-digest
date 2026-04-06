@@ -1,101 +1,98 @@
-# Phase 4E — International / EM
-## Date: 2026-04-05 | Easter Sunday
+# International & Emerging Markets — 2026-04-05
+
+**Bias**: Bearish (Broad) / Selective (Oil exporters positive)
 
 ---
 
-## International Overview
+## Developed International Markets
 
-**Key Regime Fact**: Global stocks have been **OUTPERFORMING** US stocks YTD in 2026. This is a notable trend reversal from 2023-2024 US exceptionalism.
+| ETF | Region | Price | Change | Signal |
+|-----|--------|-------|--------|--------|
+| EFA (EAFE) | Developed ex-US | $98.00 | -0.62% | Weak — European energy costs + geopolitical risk |
+| VGK (Europe) | Europe | — | ~-0.5% | EUR weakness + energy cost pass-through |
+| EWJ (Japan) | Japan | — | ~-0.3% | Yen pressure, manufacturing weak |
+| EWG (Germany) | Germany | — | ~-0.8% | Most energy-dependent → worst positioning |
+| EWU (UK) | UK | — | ~-0.4% | Mild weakness |
+| CAC 40 | France | 7,962.39 | -0.24% | European weakness confirmed |
+| VXUS (Total Intl) | All ex-US | $77.48 | -0.68% | Broad international underperformance |
 
-**Easter Holiday Impact**: Most European and many EM markets closed Monday April 6 (Easter Monday). Limited liquidity in European names this week.
+### European Analysis
+- Europe is the WORST positioned region for the Iran War:
+  - Energy dependence: European industry needs imported oil/gas
+  - EUR weakness: Energy costs amplified by weak currency
+  - ECB boxed: Can't ease (inflation) or tighten (growth falling)
+  - Germany (EWG) most vulnerable — industrial base reliant on affordable energy
+- Signal: **AVOID European equities** until oil normalizes
+- One exception: UK energy companies (BP, Shell via EWU) could outperform within Europe
 
----
-
-## Developed Markets
-
-### Europe (VGK / EFA)
-
-| ETF | Assessment | Notes |
-|-----|------------|-------|
-| VGK (FTSE Europe) | ⬇️ DOWNGRADED to SELL | European energy risk elevated; Iran War = natural gas prices +59.4% in March; European industry energy cost shock |
-| EFA (MSCI EAFE) | 🟡 NEUTRAL | Broader than Europe; includes Japan/Australia buffer |
-| EWG (Germany) | ⚠️ CAUTION | German manufacturing = energy-intensive; Iran War cost shock |
-| EWU (UK) | 🟡 NEUTRAL | Less energy-exposed; closed Easter Monday |
-
-**Europe Headwinds**:
-- Iran War → European natural gas prices +59.4% in March (EU has less domestic energy than US)
-- War risk premium is worse for European industry than US industry
-- VGK P/E of 17.2 vs S&P 500 P/E of 31 = cheap but cheap for a reason in this regime
-
-### Japan (EWJ)
-
-- **Assessment**: 🟢 POSITIVE (relative)
-- Attractive valuations + lower political risk
-- BOJ normalization is on track (slowly)
-- RISK: USD/JPY at 159.63 — yen weakness hurts USD investor returns in EWJ
-- If USD/JPY reverses (BOJ hike or carry unwind), EWJ in USD terms could surge
-- **Druckenmiller is NOT specifically in EWJ** but his value thesis includes Japan-type exposures
-
-### Australia (EWA)
-
-- Commodity exporter — benefits from oil/gold/metals elevated prices
-- Less exposed to Hormuz directly (Pacific trade routes)
-- Not a priority in current watchlist
+### Japan Analysis
+- BOJ slowly normalizing but USD/JPY at 152 creates intervention risk
+- Japanese manufacturers (automakers, electronics) hurt by energy costs
+- Nikkei under pressure from yen uncertainty
+- Signal: **NEUTRAL-BEARISH** — no catalyst for Japanese outperformance
 
 ---
 
 ## Emerging Markets
 
-### Broad EM (EEM / VWO)
+| ETF | Region | Price | Change | Signal |
+|-----|--------|-------|--------|--------|
+| EEM (MSCI EM) | Broad EM | $56.59 | -1.12% | Risk-off EM selling |
+| VWO (Vanguard EM) | Broad EM | $53.82 | -0.72% | Confirms EM weakness |
+| MCHI (China) | China | $55.84 | -0.29% | China specifically weak |
+| KWEB (China Internet) | China Tech | $28.09 | -0.74% | Tech regulation + macro |
+| FXI (China Large Cap) | China | — | — | Following MCHI |
+| EWZ (Brazil) | Brazil | $38.35 | -0.05% | Mixed — commodity benefits offsetting risk-off |
+| EWT (Taiwan) | Taiwan | — | ~-0.5% | TSM -0.72%, semiconductor cycle concern |
+| EWY (South Korea) | S. Korea | $122.87 | -2.65% | **Worst performer** — KRW weak, export concerns |
+| INDA (India) | India | — | ~-0.3% | Resilient — large domestic market |
+| EMXC (EM ex-China) | EM ex-China | $78.43 | -1.38% | Even ex-China EM weak |
 
-- 🟡 NEUTRAL-TO-CAUTIOUS
-- DXY at 100 (not strongly bullish USD) = mild tailwind for EM (EM debt in USD is more manageable)
-- But Iran War geopolitical uncertainty hits risk appetite globally
-- EM is a "later cycle" trade — better when ceasefire materializes and dollar weakens
+### China Analysis
+- MCHI: $55.84 (-0.29%) — Chinese equities modestly weak
+- PBOC maintaining accommodative stance but not aggressively stimulating
+- US-China tensions secondary to Iran but simmering
+- China is a net OIL IMPORTER — high oil prices are negative for Chinese economy
+- Signal: **BEARISH CHINA** — no catalyst for outperformance
 
-### China (FXI / ASHR)
+### EM Winners vs. Losers in Iran War
 
-- 🟡 MIXED
-- China is neither directly in nor directly affected by US-Iran War
-- China is actually a BUYER of discounted Middle Eastern oil (Hormuz alternative routes via supertankers)
-- Beijing likely benefiting from cheap Gulf oil while US allies face supply crunch
-- FXI: Geopolitical discount remains (US-China tensions separately)
+**Winners (Oil Exporters)**:
+- Brazil (EWZ): Barely down (-0.05%). Petrobras benefits from high oil.
+- Saudi Arabia (not in ETF watchlist): Direct beneficiary
+- UAE: Regional integration via Hormuz Protocol helps
 
-### Brazil (EWZ)
+**Losers (Oil Importers)**:
+- South Korea (EWY): -2.65% — worst performing. Manufacturing economy hurt by energy costs
+- India (INDA): Largest oil importer in EM — government subsidizing but fiscal strain growing
+- Taiwan (EWT/TSM): Semiconductor export concerns + geopolitical proximity to China tension
 
-- 🟢 **INTERESTING** — Druckenmiller is adding EWZ
-- Brazil is an oil and commodity PRODUCER — Iran War benefits Brazil's export revenues
-- Low correlation to US equity risk
-- Valuation: Cheap vs. US
-- Risk: BRL volatility; EM political risk
-
-### South Korea / Taiwan (EWY / EWT)
-
-- 🔴 MIXED — Semiconductor exposure; geopolitical overhang from US-China tensions
-- Taiwan Strait risk remains separate from Iran War
-- These are high-beta risk trades; not appropriate in current environment
-
-### India (INDA)
-
-- 🟢 LONG-TERM POSITIVE
-- India has been a relative EM outperformer; domestic growth story
-- Iran War impact: India imports significant oil from Gulf; higher energy costs = headwind
-- Not an immediate priority
-
----
-
-## International Portfolio Considerations
-
-**Current active international exposure**: None explicitly in watchlist, but EEM/EFA are available options.
-
-**Near-term**: Wait for April 6 clarity before adding international.
-**Medium-term**: If war resolves + dollar weakens → EEM, EWZ (Brazil), and EWJ (Japan) become attractive rotation targets.
-**Current preference**: EWZ (Brazil) > EEM (broad EM) > EWJ (Japan) > EFA (EAFE) > VGK (Europe, avoid).
-
-**Signal**: Druckenmiller's Brazil bet is the strongest institutional signal in international space right now.
+### EM Flow Analysis
+- $2.1B outflows from EM funds this week — significant de-risking
+- USD strength (DXY ~103.5) directly hurts EM currencies and USD-denominated debt
+- EM sovereign spreads widening — not at crisis levels but deteriorating
 
 ---
 
-## International Bias: 🟡 NEUTRAL
+## International Macro Factors
 
-Outperforming US YTD but current war regime favors domestic US defensive + energy names over international exposure. The setup for international rotation improves materially if/when ceasefire materializes. No action today.
+| Factor | Status | Impact on International Equities |
+|--------|--------|-------------------------------|
+| DXY (USD) | Strong (~103.5) | Negative — USD strength hurts EM returns |
+| Oil Price ($112) | Elevated | Negative for oil importers, positive for exporters |
+| US-China Tensions | Simmering | Negative for China/Taiwan |
+| European Energy Costs | Rising | Negative for European industry |
+| BOJ Policy | Normalizing | Uncertainty for Japan |
+| Iran War | Active | Maximum uncertainty for all international |
+
+---
+
+## TSM / Semiconductor Supply Chain
+- TSM: $339.04 (-0.72%) — TSMC under modest pressure
+- Semiconductor cycle concerns: inventory buildup + demand normalization post-AI hype
+- Taiwan geopolitical risk: secondary to Iran but always a background factor
+- Signal: Semiconductor supply chain intact but not a buy here
+
+---
+
+*Portfolio implication: International equities remain a AVOID in the current regime. 0% international allocation is correct. EEM, EFA, and MCHI all declining. USD strength amplifies the underperformance for CAD-based investor. The only international bright spot is oil-exporting EMs (Brazil) but that's better expressed through XLE/DBO domestic exposure. Re-evaluate international when: (a) DXY breaks below 101, (b) Iran conflict de-escalates, (c) China announces aggressive stimulus.*

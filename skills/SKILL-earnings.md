@@ -97,7 +97,6 @@ Steps:
 2. Identify: Beat rate vs. historical average
 3. Identify: Guidance trends (raising / cutting)
 4. Identify: Which sectors are beating / missing
-5. Cross-reference with macro regime from `memory/macro/ROLLING.md`
 
 ---
 

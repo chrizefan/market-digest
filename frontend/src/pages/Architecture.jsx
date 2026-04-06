@@ -1,13 +1,7 @@
-import React, { useState } from 'react';
-import { Network, Database, BrainCircuit, Activity, LineChart, Cpu, FileText, CheckCircle2, Sparkles, ChevronDown, ChevronUp, Calendar, Zap, Clock } from 'lucide-react';
+import React from 'react';
+import { Network, Database, BrainCircuit, Activity, LineChart, Cpu, FileText, CheckCircle2, Calendar, Zap, Clock } from 'lucide-react';
 
 export default function Architecture({ data }) {
-  const evolution = data?.evolution || {};
-  const [expandedSection, setExpandedSection] = useState(null);
-
-  const toggleSection = (key) => {
-    setExpandedSection(expandedSection === key ? null : key);
-  };
 
   const cadenceTiers = [
     {
@@ -47,7 +41,6 @@ export default function Architecture({ data }) {
       desc: 'Runs FIRST. Positioning intelligence must color all downstream reads — never read macro before knowing what the crowd is actually doing.',
       subPhases: ['1A — Sentiment & News (AAII, Fear/Greed, social)', '1B — CTA Positioning (COT, futures OI, flow models)', '1C — Options & Derivatives (GEX, VIX structure, dealer pos.)', '1D — Politician Signals (STOCK Act filings)'],
       outputs: 'alt-data/sentiment-news.md, cta-positioning.md, options-derivatives.md, politician-signals.md',
-      memory: '4 alternative-data ROLLING.md',
     },
     {
       num: '2',
@@ -56,7 +49,6 @@ export default function Architecture({ data }) {
       desc: 'Smart money reads. ETF flows, dark pool prints, 16 tracked hedge fund signals.',
       subPhases: ['2A — Institutional Flows (ETF in/out, dark pools, 13D/13G/Form 4)', '2B — Hedge Fund Intel (13F filings, X posts, 16 tracked CIKs)'],
       outputs: 'institutional-flows.md, hedge-fund-intel.md',
-      memory: '2 institutional ROLLING.md',
     },
     {
       num: '3',
@@ -65,7 +57,6 @@ export default function Architecture({ data }) {
       desc: 'The analytical anchor. Every Phase 4–5 analysis must reference this regime output. Identifies the 4-factor regime.',
       subPhases: ['Growth factor — GDP trend, PMI, labor, earnings revisions', 'Inflation factor — CPI/PPI trajectory, commodity pressures, breakevens', 'Policy factor — Fed/ECB/BOJ stance, rate trajectory, QT pace', 'Risk Appetite — VIX structure, credit spreads, EM flows'],
       outputs: 'macro.md (regime label + portfolio implications)',
-      memory: 'macro/ROLLING.md',
     },
     {
       num: '4',
@@ -74,7 +65,6 @@ export default function Architecture({ data }) {
       desc: 'Five parallel asset-class agents, each checking alignment against the Phase 3 macro regime.',
       subPhases: ['4A — Bonds (yield curve, real rates, TIPS, IG/HY spreads)', '4B — Commodities (WTI, Gold, Copper, ag, OPEC+ signals)', '4C — Forex (DXY, EUR/USD, USD/JPY, carry trade)', '4D — Crypto (BTC, ETH, funding rates, on-chain)', '4E — International/EM (Asia, Europe, EM FX, geo-risk)'],
       outputs: 'bonds.md, commodities.md, forex.md, crypto.md, international.md',
-      memory: '5 asset-class ROLLING.md',
     },
     {
       num: '5',
@@ -83,16 +73,6 @@ export default function Architecture({ data }) {
       desc: 'Top-down breadth and factor analysis, then 11 specialized GICS sector sub-agents run sequentially.',
       subPhases: ['5A — Market Breadth (SPY/QQQ/IWM, A/D line, new highs/lows, factors)', '5B-5L — 11 GICS sector agents (XLK, XLV, XLE, XLF, XLP, XLY, XLI, XLU, XLB, XLRE, XLC)', '5M — Sector Scorecard synthesis (OW/UW/N × confidence × key driver)'],
       outputs: 'us-equities.md, sectors/{11 files}',
-      memory: 'equity/ROLLING.md + 11 sector ROLLING.md',
-    },
-    {
-      num: '6',
-      title: 'Memory Consolidation & Bias Tracker',
-      color: 'var(--text-primary)',
-      desc: 'System-wide memory commit after all research is complete. Append to all 25 files and update the master bias table.',
-      subPhases: ['6A — BIAS-TRACKER.md row: 14 columns incl. macro regime, each asset class bias, inst. flow, CTA, HF consensus', '6B — Confirm all 25 ROLLING.md files appended this session'],
-      outputs: 'memory/BIAS-TRACKER.md (new row)',
-      memory: 'All 25 memory files appended',
     },
     {
       num: '7',
@@ -101,7 +81,6 @@ export default function Architecture({ data }) {
       desc: 'Synthesis — not regurgitation. Pull the most important signals from all 20+ segments into one coherent, actionable brief.',
       subPhases: ['7 — Market regime snapshot + alt data + institutional + macro + asset classes + equities', '7 — Thesis tracker (✅ Confirmed / ⚠️ Conflicted / ❌ Challenged / ⏳ No signal)', '7C — Asset Analyst Pass: per-ticker conviction scores, blinded to portfolio weights', '7D — Portfolio Manager: clean-slate target → rebalance diff (Hold/Add/Trim/Exit/New)'],
       outputs: 'DIGEST.md, positions/{TICKER}.md, portfolio-recommended.md, rebalance-decision.md',
-      memory: 'portfolio/ROLLING.md',
     },
     {
       num: '8',
@@ -110,7 +89,6 @@ export default function Architecture({ data }) {
       desc: 'Python backend parses all DIGEST.md files, fetches Yahoo Finance closes, simulates NAV, writes dashboard-data.json.',
       subPhases: ['Run: python3 scripts/update-tearsheet.py', 'Extract Target Allocation tables via regex', 'Simulate daily NAV from first entry date', 'Commit: ./scripts/git-commit.sh (digest commit)'],
       outputs: 'frontend/public/dashboard-data.json → React app at digiquant.io',
-      memory: '—',
     },
     {
       num: '9',
@@ -118,8 +96,7 @@ export default function Architecture({ data }) {
       color: '#f472b6',
       desc: 'Self-improvement loop. Rate sources, check prediction accuracy, file max 2 proposals. Never auto-applies — requires PR approval.',
       subPhases: ['9A — Source Scorecard (1–5 stars per source, failures, discoveries)', '9B — Quality Post-Mortem (prediction accuracy ✅/❌, 5-dimension quality score)', '9C — Improvement Proposals (max 2/session; locked: schema, risk profile, guardrails)', '9D/9E — Document approved changes + evolution branch + PR'],
-      outputs: 'memory/evolution/sources.md, quality-log.md, proposals.md',
-      memory: 'evolution-changelog.md',
+      outputs: 'evolution/sources.md, quality-log.md, proposals.md',
     },
   ];
 
@@ -130,35 +107,6 @@ export default function Architecture({ data }) {
     { name: "US Equities", count: 12, skills: ["Broad Market", "Technology", "Healthcare", "Energy", "Financials", "Staples", "Discretionary", "Industrials", "Utilities", "Materials", "Real Estate", "Comms"] },
     { name: "Portfolio Layer", count: 2, skills: ["Asset Analyst (Phase 7C)", "Portfolio Manager (Phase 7D)"] },
   ];
-
-  const evolutionSections = [
-    { key: 'changelog', title: 'Evolution Changelog', desc: 'All approved and applied pipeline improvements', icon: '📋' },
-    { key: 'proposals', title: 'Pending Proposals', desc: 'Improvement proposals awaiting review', icon: '💡' },
-    { key: 'quality_log', title: 'Quality Post-Mortems', desc: 'Daily self-assessment and prediction tracking', icon: '🔍' },
-    { key: 'sources', title: 'Source Scorecard', desc: 'Data source reliability ratings', icon: '🌐' },
-  ];
-
-  const renderMarkdown = (md) => {
-    if (!md) return <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No data yet — will populate after the first digest run.</p>;
-    return (
-      <pre style={{
-        whiteSpace: 'pre-wrap',
-        wordBreak: 'break-word',
-        fontFamily: "'Space Mono', monospace",
-        fontSize: '0.8rem',
-        color: '#d4d4d8',
-        lineHeight: 1.7,
-        maxHeight: '400px',
-        overflowY: 'auto',
-        padding: '16px',
-        background: 'var(--bg-secondary)',
-        borderRadius: '8px',
-        border: '1px solid var(--border-subtle)'
-      }}>
-        {md}
-      </pre>
-    );
-  };
 
   return (
     <div>
@@ -292,7 +240,7 @@ export default function Architecture({ data }) {
               <Cpu size={18} color="var(--accent-amber)" /> Sub-Agent Swarm
             </h3>
             <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '16px', fontSize: '0.85rem' }}>
-              26 specialized sub-agent skill files. Each is isolated, reads its own rolling memory, and executes concentrated domain research.
+              26 specialized sub-agent skill files. Each executes concentrated domain research with its own output file.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -321,14 +269,14 @@ export default function Architecture({ data }) {
             </div>
           </div>
 
-          {/* Memory Stats */}
+          {/* Pipeline Stats */}
           <div className="glass-card" style={{ padding: '20px' }}>
             <h3 className="text-h3" style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Database size={18} color="var(--text-secondary)" /> Memory System
+              <Database size={18} color="var(--text-secondary)" /> Pipeline Stats
             </h3>
             <div className="grid-2 grid-2-keep" style={{ gap: '10px' }}>
               {[
-                { label: 'ROLLING.md files', value: '23', color: 'var(--accent-blue)' },
+                { label: 'Skill files', value: '26', color: 'var(--accent-blue)' },
                 { label: 'Tracked sectors', value: '11', color: 'var(--accent-green)' },
                 { label: 'Alt data streams', value: '4', color: 'var(--accent-amber)' },
                 { label: 'Outputs / baseline', value: '28+', color: 'var(--text-primary)' },
@@ -344,58 +292,6 @@ export default function Architecture({ data }) {
         </div>
       </div>
 
-      {/* Evolution Section */}
-      <div>
-        <div style={{ marginBottom: '20px' }}>
-          <h2 className="text-h2" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Sparkles size={22} color="#f472b6" /> Pipeline Evolution
-          </h2>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '6px', lineHeight: 1.6, fontSize: '0.9rem' }}>
-            Phase 9 runs a post-mortem after every session — rating sources, checking prediction accuracy, and filing max 2 improvement proposals.
-            All changes require explicit PR approval before merging to <code>master</code>.
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {evolutionSections.map((section) => {
-            const isOpen = expandedSection === section.key;
-            const content = evolution[section.key];
-            return (
-              <div key={section.key} className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
-                <div
-                  onClick={() => toggleSection(section.key)}
-                  style={{
-                    padding: '18px 22px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    background: isOpen ? 'rgba(255,255,255,0.02)' : 'transparent',
-                    transition: 'background 0.2s ease',
-                  }}
-                >
-                  <div>
-                    <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span>{section.icon}</span> {section.title}
-                    </h3>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>{section.desc}</p>
-                  </div>
-                  <div style={{ color: 'var(--text-muted)', flexShrink: 0, marginLeft: '16px' }}>
-                    {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                  </div>
-                </div>
-                {isOpen && (
-                  <div style={{ padding: '0 22px 22px 22px', borderTop: '1px solid var(--border-subtle)' }}>
-                    <div style={{ marginTop: '14px' }}>
-                      {renderMarkdown(content)}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }

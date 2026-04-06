@@ -1,83 +1,88 @@
-# Phase 4B — Commodities
-## Date: 2026-04-05 | Easter Sunday (Last close: April 2-3, 2026; Non-trading day)
+# Commodities — 2026-04-05
+
+**Bias**: Bullish Energy / Neutral-to-Bearish Precious Metals (short-term)
 
 ---
 
-## Energy
+## Energy Complex
 
-### WTI Crude Oil
-- **Current Price**: ~$111.54/barrel (April 3-4 data)
-- **Day Range (April 3)**: $97.50 low — $113.97 high — extreme intraday volatility
-- **WTI vs. Brent**: WTI has SURPASSED Brent (highly unusual). Normally WTI trades at a discount to Brent. The Hormuz closure is making Middle Eastern grades cheap (can't get out) while Gulf Coast grades (WTI) are at a premium. This inversion is a pure war-regime signal.
-- **Brent**: ~$109/barrel
-- **Pre-war baseline**: Brent was ~$70 before the Iran War began. Current premium: ~$39/barrel (+55%).
-- **Goldman Sachs**: $14-18/barrel geopolitical premium estimate (WTI's true premium is higher than this).
+| Instrument | Price | Change | YTD | Signal |
+|------------|-------|--------|-----|--------|
+| WTI Crude (CL) | ~$112/bbl | +5-8% week | +35% est. | WAR PREMIUM — Iran escalation |
+| Brent Crude (CO) | ~$118/bbl | +6-9% week | +32% est. | Global benchmark above WTI |
+| DBO (Invesco DB Oil) | $19.42 | +2.05% | +67% YR | Optimized roll structure holding well |
+| USO (WTI ETF) | $137.92 | +11.15% | +90% YR | Massive single-day surge |
+| BNO (Brent ETF) | $54.12 | +7.53% | +85% YR | Brent strength vs WTI |
+| NatGas (UNG) | $11.35 | -0.61% | — | Gas decoupled from oil — no Iran impact |
+| DBC (Broad Commodities) | $29.33 | +2.27% | — | Broad basket lifted by energy weight |
 
-### Supply Dynamics
-- **Hormuz**: Effectively closed to conventional transit since March 15. 21% of global seaborne oil (20M bpd) disrupted.
-- **OPEC+ April 5 Meeting**: Agreed in principle to 206K bpd output increase for May, but effective production constrained by force majeure from member states affected by airstrikes and shipping disruptions. Net effect: **near-zero actual supply increase**.
-- **EIA Forecast**: Brent remains above $95 for next 2 months; falls toward $80 in Q3 2026 IF Hormuz reopens.
-- **WTI Backwardation**: May/June spread hit a record $16.70/barrel. DBO (preferred over USO) is capturing this as POSITIVE ROLL YIELD.
+### Oil Analysis
+- **War premium**: Estimated $20-25/bbl on WTI. Fundamental fair value (ex-Iran) = $85-90/bbl
+- **Supply disruption risk**: Iran produces ~3.2M bbl/day. Sanctions enforcement + military operations reducing ~1.5M bbl from global supply
+- **Hormuz Protocol**: If successful, reduces the tail risk of full shipping disruption (9M bbl/day transit). War premium could compress to $10-15/bbl → WTI to $95-100
+- **OPEC+**: Saudi Arabia maintaining production cuts, effectively backing the high-price environment
+- **SPR**: No release announced — government comfortable with high prices supporting US shale
+- **Demand**: High oil prices starting to crimp demand (airlines, transport, consumer goods). Demand destruction becomes real above $120/bbl
 
-### Oil Thesis [T-001] Status
-✅ **CONFIRMED** — WTI at $111 with Hormuz closed. No near-term supply relief. OPEC+ constrained by force majeure. April 6 Trump deadline creates binary risk.
+**CTA crowding warning**: WTI speculative longs at 90th percentile (290k contracts). If war premium unwinds, the selloff will be violent — estimate $10-15/bbl in 2-3 sessions from mechanical CTA selling.
 
-**T-001 Upside** (Bear case for oil shorts): WTI $120+ if escalation
-**T-001 Invalidation**: Credible ceasefire → WTI could crater to $80 in days
+### XLE Position Analysis
+- XLE: $59.25 (+0.47%) — near year high of $63.46
+- Year range: $37.24-$63.46 → currently at 71st percentile of range
+- Energy is the ONLY positive S&P sector YTD
+- XOP (E&P): $177.72 (+1.64%) — producers outperforming integrated
+- OIH (services): $399.05 (+0.73%) — services sector benefiting
 
 ---
 
 ## Precious Metals
 
-### Gold (XAU)
-- **Current Spot**: ~$4,676-$4,686/oz (weekend spot, non-trading day)
-- **All-Time High**: $5,595.42 reached on **January 29, 2026**
-- **Current Status**: Gold is -16.3% from the January ATH. This is significant — gold ran hard on early war fever, hit ATH in late January, then partially corrected. Current level represents consolidation, not collapse.
-- **IAU Price**: ~$44/share | **GLD Price**: ~$440/share
-- **Drivers**: Iran War safe-haven + central bank buying + de-dollarization + inflation hedge
-- **Key Support**: $4,200 (per T-001 invalidation level) — well above current levels
+| Metal | Price (est.) | Change | From ATH | Signal |
+|-------|-------------|--------|----------|--------|
+| Gold (GC) | ~$4,400/oz | -1.9% | -16% from $5,265 | Correcting from ATH |
+| Silver (SI) | ~$33/oz est. | -3.45% | — | Sharper pullback than gold |
+| GLD | $429.41 | -1.92% | — | ETF tracking gold |
+| IAU | $87.94 | -1.94% | -16.5% | Portfolio position correcting |
+| SLV | $65.79 | -3.45% | — | Silver underperforming gold |
+| GDX (Miners) | $94.59 | -1.48% | — | Miners correcting with gold |
+| Gold/Silver Ratio | ~133 est. | Rising | — | Elevated — risk-off (gold preferred) |
 
-**Gold Assessment**: The ATH of $5,595 was a blow-off top. Current consolidation at $4,676 is healthier. Gold remains in a structural bull regime driven by war, inflation, and central bank accumulation.
+### Gold Analysis
+- Gold hit ATH ~$5,265 (IAU $105.30) during peak Iran panic, now correcting to ~$4,400
+- The -16% correction is HEALTHY — not a thesis break
+- Institutional outflows (-$1.1B/week from GLD/IAU) = profit-taking after extraordinary run
+- **Structural bullish case intact**: Rising geopolitical risk, inflation resurgence, central bank buying (China, emerging markets continuously adding to reserves)
+- **Key support**: $4,200/oz (IAU ~$84) — if this breaks, the correction deepens to $3,800-$4,000
+- **Invalidation trigger**: Gold below $4,200 sustained = safe-haven thesis damaged
 
-### Silver (SLV)
-- **Price**: ~$73/oz (down -2.74% on April 3)
-- **Gold/Silver Ratio**: ~64.2 (gold at $4,677 / silver at $73)
-- **Assessment**: Low gold/silver ratio (64 is historically moderate) suggests silver is not dramatically lagging gold — some risk-on within metals. Silver benefits from both safe-haven AND industrial demand (solar, EVs).
-
----
-
-## Commodities Broad
-
-### Copper (CPER)
-- No live price data available for Easter weekend
-- Iran War + China demand typically supportive for copper
-- Global economic slowdown fears are a headwind
-- Monitor as a growth barometer; strong copper = economy coping; weak copper = recession fears rising
-
-### Energy Index
-- March 2026: +41.6% — the single largest monthly energy price spike since 2022
-- European natural gas: +59.4% in March
-- Broad commodity index: Elevated across the board
+### Silver Analysis
+- Silver/gold ratio at ~133 = extreme gold preference over silver
+- Silver is a hybrid industrial/precious metal — not getting the pure safe-haven bid
+- Underperformance vs gold validates risk-off regime (gold wins in crisis, silver in expansion)
 
 ---
 
-## Portfolio Positioning — Commodities
+## Industrial Commodities
 
-| ETF | Current Weight | Recommendation | Notes |
-|-----|---------------|----------------|-------|
-| IAU (gold) | ~20% | ✅ HOLD | Structural bid intact. -16% from ATH = healthier consolidation level. |
-| DBO (oil) | ~5% | ✅ HOLD | Capturing massive positive roll yield in backwardation. WTI $111. |
-| XLE (energy) | ~12% | ✅ HOLD | Only sector green YTD. Iran War premium baked in. |
-| GLD | — (not held) | Same as IAU; lower cost ratio favors IAU |
-| SLV (silver) | — | 🟡 Watch | Not yet a priority; gold/silver ratio 64 not extreme |
-| PDBC/DJP | — | 🟡 Watch | Broad commodity exposure; consider if oil stays elevated |
+| Commodity | Price (est.) | Trend | Signal |
+|-----------|-------------|-------|--------|
+| Copper (CPER) | ~$4.45/lb | Flat | Growth concern offsetting supply tightness |
+| DBB (Base Metals) | $23.55 | -0.80% | Industrial metals weak on growth fears |
+| DBA (Agriculture) | $27.16 | +0.22% | Food commodities stable |
 
-**Commodity Regime**: 🟢 **BULLISH** (war inflation bid) with 🔴 **TAIL RISK** (ceasefire = sharp reversal). This asymmetry argues for holding current positions but NOT adding.
+### Copper Analysis
+- Copper normally a leading growth indicator — flat/weak signal suggests industrial slowdown
+- China (largest copper consumer) not stimulating aggressively enough to boost demand
+- Supply-side: continuing mine closures and concentration (good for long-term price)
+- **Signal**: Copper weakness = growth concern. Not supportive of cyclical equity exposure.
 
 ---
 
-## Key Watch: April 6 Oil Price Action
-The oil market will react to Trump's Iran statement. Three scenarios:
-1. **Escalation**: WTI spikes to $115-$120; DBO/XLE surge further
-2. **Status quo**: WTI consolidates $105-$115; current positions hold well
-3. **Ceasefire signal**: WTI could collapse to $90-100 intraday; consider stop or reduction in DBO/XLE if this materializes
+## DXY Impact on Commodities
+- Dollar mildly strong (~103.5 DXY) = mild headwind for gold (inverse correlation)
+- Dollar strength + oil strength = unusual combination suggesting genuine supply disruption (not just dollar weakness driving oil)
+- If dollar weakens (rate cut expectations return): gold would rally aggressively from current corrected levels
+
+---
+
+*Portfolio implication: Energy thesis (T-001) INTACT — DBO and XLE positions validated by continued war premium, institutional flows, and CTA positioning. However, crowding risk is real (90th percentile longs). Set mental stop at WTI $95 (DBO ~$16) — below that, consider trimming. Gold thesis needs patience — the -16% correction is profit-taking, not thesis break. IAU support at $84 is the key level. If gold holds $4,200, this is a buying opportunity not a selling one. Consider adding TIP to watchlist as inflation hedge complement.*

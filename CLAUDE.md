@@ -17,14 +17,18 @@ A daily market intelligence system that generates structured research across all
 
 ```bash
 ./scripts/new-day.sh              # Create today's output folder structure + print digest prompt
-./scripts/status.sh               # Project health — all 23 memory files + segment completion
+./scripts/status.sh               # Project health — segment completion
 ./scripts/run-segment.sh energy   # Print focused prompt for single segment
 ./scripts/combine-digest.sh       # Print synthesis prompt to combine all segments into DIGEST.md
 ./scripts/git-commit.sh           # Commit everything with date-stamped message
 ./scripts/weekly-rollup.sh        # Generate weekly synthesis (run Fridays)
 ./scripts/monthly-rollup.sh       # Generate monthly synthesis
-./scripts/memory-search.sh "BTC"  # Grep all 23 ROLLING.md files
 ./scripts/archive.sh              # Archive old daily outputs
+./scripts/validate-portfolio.sh    # Validate portfolio.json against investment-profile.md constraints
+./scripts/validate-portfolio.sh --proposed  # Validate proposed positions
+./scripts/validate-phase.sh 3     # Validate Phase 3 outputs before proceeding
+./scripts/validate-phase.sh --all # Validate all pipeline phases end-to-end
+./scripts/validate-phase.sh --summary  # Quick pass/fail for every phase
 python scripts/update-tearsheet.py  # Rebuild HTML portfolio tearsheet
 ```
 
@@ -41,6 +45,7 @@ digiquant-atlas/
 ├── config/
 │   ├── watchlist.md                  ← Tracked assets (edit to customize)
 │   ├── preferences.md                ← Trading style, risk profile, active theses
+│   ├── investment-profile.md         ← Investor identity, horizon, risk, asset preferences
 │   ├── hedge-funds.md                ← Tracked fund registry (16 funds, CIK, style)
 │   ├── data-sources.md               ← 30+ X accounts, data URLs, calendars
 │   └── email-research.md             ← Gmail setup guide + subscription list
@@ -55,6 +60,7 @@ digiquant-atlas/
 │   ├── SKILL-commodities.md          ← Commodities (v2)
 │   ├── SKILL-forex.md                ← Forex (v2)
 │   ├── SKILL-international.md        ← International/EM
+│   ├── SKILL-profile-setup.md        ← Interactive investment profile wizard
 │   ├── SKILL-[thesis/earnings/etc.]  ← 7 specialized tools
 │   ├── sectors/                      ← 11 GICS sector sub-agent skills
 │   ├── alternative-data/             ← 4 alternative data sub-agent skills
@@ -68,14 +74,8 @@ digiquant-atlas/
 │   ├── weekly-digest.md
 │   └── monthly-digest.md
 │
-├── memory/                           ← 23 rolling append-only research logs
-│   ├── BIAS-TRACKER.md               ← Daily cross-asset bias table (14 columns)
-│   ├── THESES.md                     ← Active investment thesis register
-│   ├── macro/ equity/ crypto/ bonds/ commodities/ forex/   ← Core segment memory
-│   ├── international/                ← International/EM memory
-│   ├── sectors/                      ← 10 sector memory files
-│   ├── alternative-data/             ← 4 alternative data memory files
-│   └── institutional/                ← 2 institutional memory files
+├── memory/                           ← Evolution files (source scorecard, quality log, proposals)
+│   └── evolution/                    ← Post-mortem artifacts
 │
 ├── outputs/
 │   ├── daily/YYYY-MM-DD/             ← One folder per day (v2)
@@ -115,32 +115,9 @@ description: >
 
 ## Output Format
 ...template snippets...
-
-## Memory Update
-...instructions for updating ROLLING.md
 ```
 
-**When editing skills**: maintain existing frontmatter, preserve the `## Memory Update` section, keep output format tables intact.
-
----
-
-## Memory System
-
-Memory files are **append-only logs** — never delete or rewrite history. Each daily entry follows this format:
-
-```markdown
-## YYYY-MM-DD
-- Key observation 1
-- Key observation 2
-- Evolving theme or thesis update
-```
-
-Files live in:
-- `memory/{segment}/ROLLING.md` — core segments (6 files)
-- `memory/sectors/{sector}/ROLLING.md` — sector tracking (10 files)
-- `memory/alternative-data/{type}/ROLLING.md` — alt data (4 files)
-- `memory/institutional/{type}/ROLLING.md` — institutional (2 files)
-- `memory/international/ROLLING.md` — international/EM (1 file)
+**When editing skills**: maintain existing frontmatter, keep output format tables intact.
 
 ---
 
@@ -159,6 +136,7 @@ Daily outputs live in `outputs/daily/YYYY-MM-DD/`:
 
 - `config/watchlist.md` — edit freely to add/remove tracked assets
 - `config/preferences.md` — edit to update trading style, risk profile, active theses
+- `config/investment-profile.md` — edit to customize investor identity, horizon, trade frequency, risk tolerance, asset/sector preferences, regime playbook, and benchmarks
 - `config/hedge-funds.md` — add/remove tracked funds from the CIK registry
 - `config/data-sources.md` — update URLs, add new X accounts or data sources
 
@@ -169,23 +147,20 @@ Daily outputs live in `outputs/daily/YYYY-MM-DD/`:
 ### When editing skill files:
 1. Read the existing file completely before editing
 2. Preserve YAML frontmatter exactly — changing `name:` breaks Claude's routing
-3. Preserve `## Memory Update` sections — they drive the 23-file memory system
-4. Keep output format templates — downstream skills parse specific headers
-5. Test by checking that the modified skill still references the correct output file paths
+3. Keep output format templates — downstream skills parse specific headers
+4. Test by checking that the modified skill still references the correct output file paths
 
 ### When adding a new sector or asset class:
 1. Create `skills/sectors/SKILL-sector-newname.md` using `templates/sector-report.md` as a base
-2. Create `memory/sectors/newname/ROLLING.md` with the standard header
-3. Add the sector to `skills/SKILL-orchestrator.md` Phase 5 list
-4. Add an empty output file path to `scripts/new-day.sh` SECTORS loop
-5. Add the sector to `scripts/run-segment.sh` case statement
-6. Update `CLAUDE_PROJECT_INSTRUCTIONS.md` skill table
+2. Add the sector to `skills/SKILL-orchestrator.md` Phase 5 list
+3. Add an empty output file path to `scripts/new-day.sh` SECTORS loop
+4. Add the sector to `scripts/run-segment.sh` case statement
+5. Update `CLAUDE_PROJECT_INSTRUCTIONS.md` skill table
 
 ### When modifying scripts:
 - Scripts use `#!/bin/bash` + `set -e` — keep this pattern
 - macOS `sed -i ""` (not `sed -i`) — critical on macOS
 - All scripts are run from the repo root — paths are relative to root
-- Use `find memory/ -name "ROLLING.md"` not `memory/*/ROLLING.md` (subdirectory depth)
 
 ### Git workflow:
 ```bash
@@ -206,7 +181,6 @@ git commit -m "research: YYYY-MM-DD — [brief summary]"
 | 4A-E | Asset Classes (bonds, commodities, forex, crypto, international) | 5 files |
 | 5A | US Equities Overview | `equities.md` |
 | 5B-L | 11 GICS Sector Sub-Agents | `sectors/*.md` |
-| 6 | Memory + Bias Tracker Update | 23 ROLLING.md files |
 | 7 | DIGEST.md Synthesis | `DIGEST.md` |
 
 Full instructions: `skills/SKILL-orchestrator.md`

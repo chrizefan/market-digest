@@ -4,7 +4,7 @@ description: >
   Track and analyze sector rotation signals. Use when the user asks about "sector rotation",
   "which sectors are leading", "defensive vs growth rotation", "sector heat map", or
   "what does sector performance say about the cycle". Also runs as a sub-component of
-  SKILL-equity.md. Maintains a rolling sector momentum table in memory/equity/SECTOR-ROTATION.md.
+  SKILL-equity.md.
 ---
 
 # Sector Rotation Skill
@@ -55,7 +55,7 @@ This skill tracks it systematically across the economic cycle.
 - Rates rising: XLF leads, XLRE/XLU suffer
 - Rates falling: XLRE/XLU recover, XLF pressure
 
-5. Compare to the prior week's rotation (from ROLLING.md) — is rotation consistent or shifting?
+5. Compare to the prior week's rotation — is rotation consistent or shifting?
 
 ---
 
@@ -95,5 +95,3 @@ Track 1-week and 4-week performance to see momentum:
 ---
 
 ## Memory File
-Updates go to `memory/equity/ROLLING.md` — one bullet on sector rotation each session.
-Weekly momentum table saved to `memory/equity/SECTOR-ROTATION.md` (created/updated weekly).

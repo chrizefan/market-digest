@@ -35,6 +35,7 @@ if [ "$DOW" -eq 7 ]; then
   echo ""
 
   mkdir -p "$OUTPUT_DIR/sectors"
+  mkdir -p "$OUTPUT_DIR/positions"
 
   # Write _meta.json
   cat > "$OUTPUT_DIR/_meta.json" << EOF
@@ -120,6 +121,7 @@ if d.get('type')=='delta' and d.get('week')=='$WEEK_LABEL':
 
   mkdir -p "$OUTPUT_DIR/deltas"
   mkdir -p "$OUTPUT_DIR/sectors"
+  mkdir -p "$OUTPUT_DIR/positions"
 
   # Write _meta.json
   cat > "$OUTPUT_DIR/_meta.json" << EOF

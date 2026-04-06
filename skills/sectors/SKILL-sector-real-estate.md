@@ -8,7 +8,6 @@ description: Deep-dive analysis of the Real Estate sector (XLRE, VNQ). Covers eq
 ## Inputs
 - `config/watchlist.md` (XLRE, VNQ and related)
 - `config/preferences.md`
-- `memory/sectors/real-estate/ROLLING.md`
 - Bonds output from current session (10Y yield is the primary pricing factor)
 - Macro regime output
 
@@ -112,9 +111,3 @@ description: Deep-dive analysis of the Real Estate sector (XLRE, VNQ). Covers eq
 ```
 
 ---
-
-## Memory Update
-After analysis, append 3 bullets to `memory/sectors/real-estate/ROLLING.md`:
-- One on the 10Y vs REIT yield spread (primary valuation anchor)
-- One on data center REIT demand vs AI buildout (key structural tailwind)
-- One on CRE stress or office vacancy signal

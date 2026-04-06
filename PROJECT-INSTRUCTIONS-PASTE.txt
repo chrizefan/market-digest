@@ -1,20 +1,44 @@
 MARKET DIGEST — PROJECT INSTRUCTIONS
 
-This project is a daily market intelligence system covering equities, crypto, bonds, commodities, forex, and macro. Every session produces structured analysis that compounds over time through rolling memory files.
+This project is a daily market intelligence system covering equities (11 GICS sectors), crypto, bonds, commodities, forex, international, macro, alternative data, and institutional intelligence. It uses a three-tier cadence — weekly baseline (Sunday), daily delta (Mon–Sat), and monthly synthesis — producing 29+ structured output files per baseline run.
+
+Continuity comes from referencing prior day/week outputs directly — there are no separate memory files.
+
+════════════════════════════════════════
+THREE-TIER CADENCE
+════════════════════════════════════════
+
+WEEKLY BASELINE (Sunday)
+  Full 9-phase pipeline — all 29+ output files from scratch
+  Skill: skills/SKILL-weekly-baseline.md → skills/SKILL-orchestrator.md
+  Token cost: 100% (full run)
+
+DAILY DELTA (Mon–Sat)
+  Lightweight run — only segments with material changes get .delta.md files
+  Skill: skills/SKILL-daily-delta.md
+  Mandatory deltas: macro, us-equities, crypto (always written)
+  Token savings: ~70% vs full run
+
+MONTHLY SYNTHESIS (end of month)
+  Review of all baselines + deltas for the month
+  Skill: skills/SKILL-monthly-synthesis.md
+
+Run type is determined by _meta.json in each day's output folder.
 
 ════════════════════════════════════════
 SESSION TYPES — identify at start of each session
 ════════════════════════════════════════
 
-1. FULL DAILY DIGEST
-   Triggers: "run digest", "daily analysis", "morning brief", "run today's digest", automated daily prompt
-   Skill: skills/SKILL-digest.md
-   Always runs all 6 segments + updates all memory files + saves output
+1. FULL DAILY DIGEST (baseline or delta)
+   Triggers: "run digest", "daily analysis", "morning brief", automated daily prompt
+   Baseline (Sunday): skills/SKILL-weekly-baseline.md → full 9-phase pipeline
+   Delta (Mon–Sat): skills/SKILL-daily-delta.md → triage + changed segments only
+   Both modes materialize a complete DIGEST.md
 
 2. PRE-MARKET PULSE
    Triggers: "pre-market", "morning scan", "quick scan", "what's moving"
    Skill: skills/SKILL-premarket-pulse.md
-   Fast scan only — does NOT update memory files
+   Fast scan only — under 300 words, no segment files
 
 3. THESIS REVIEW
    Triggers: "check my theses", "thesis review", "portfolio check", "how are my positions"
@@ -34,10 +58,37 @@ SESSION TYPES — identify at start of each session
 
 7. SEGMENT-ONLY ANALYSIS
    Triggers: "macro analysis", "crypto analysis", "bond analysis", etc.
-   Skills: SKILL-macro.md / SKILL-equity.md / SKILL-crypto.md / SKILL-bonds.md / SKILL-commodities.md / SKILL-forex.md
+   Skills: SKILL-macro.md / SKILL-equity.md / SKILL-crypto.md / SKILL-bonds.md / SKILL-commodities.md / SKILL-forex.md / SKILL-international.md
 
-8. WEEKLY / MONTHLY SYNTHESIS
-   Triggers: "weekly rollup", "weekly synthesis", "monthly summary"
+8. OPPORTUNITY SCREEN
+   Triggers: "screen opportunities", "what looks interesting", "scan the watchlist"
+   Skill: skills/SKILL-opportunity-screener.md
+
+9. PORTFOLIO DELIBERATION
+   Triggers: "run deliberation", "challenge positions", "rebalance check"
+   Skills: skills/SKILL-deliberation.md → skills/SKILL-portfolio-manager.md
+
+10. WEEKLY / MONTHLY SYNTHESIS
+    Triggers: "weekly rollup", "weekly synthesis", "monthly summary"
+
+════════════════════════════════════════
+9-PHASE PIPELINE (baseline mode)
+════════════════════════════════════════
+
+Phase 1  — Alternative Data (sentiment, CTA, options, politician signals)     → 4 files
+Phase 2  — Institutional Intelligence (ETF flows, hedge fund intel)           → 2 files
+Phase 3  — Macro Regime Classification (4-factor: growth/inflation/policy/risk) → macro.md
+Phase 4  — Asset Classes: bonds → commodities → forex → crypto → international → 5 files
+Phase 5  — US Equities overview + 11 GICS sector sub-agents                  → 12 files
+Phase 7  — DIGEST.md master synthesis                                        → DIGEST.md
+Phase 7B — Opportunity Screen (full watchlist scan → ranked shortlist)        → opportunity-screen.md
+Phase 7C — Analyst-PM Deliberation (multi-round debate → conviction filter)  → deliberation.md + positions/
+Phase 7D — Portfolio Manager (clean-slate build → rebalance diff)            → portfolio-recommended.md + rebalance-decision.md
+Phase 8  — Web Dashboard Update (update-tearsheet.py + git commit)
+Phase 9  — Post-Mortem & Evolution (source scorecard, quality log, proposals → evolution PR)
+
+Validate after each phase: ./scripts/validate-phase.sh [phase]
+Validate all at once: ./scripts/validate-phase.sh --all
 
 ════════════════════════════════════════
 RULES — apply to every session
@@ -45,35 +96,46 @@ RULES — apply to every session
 
 ALWAYS:
 - Search the web for current data. NEVER use training data for prices, yields, news, or economic releases.
-- Read config/watchlist.md and config/preferences.md before any analysis
-- Read relevant memory/*/ROLLING.md files for continuity with prior sessions
-- After any full daily digest: append entries to all 6 memory/*/ROLLING.md files
-- Save full digest output to outputs/daily/YYYY-MM-DD.md
+- Read config/watchlist.md, config/preferences.md, and config/investment-profile.md before any analysis
+- Read yesterday's DIGEST.md (or this week's baseline) for continuity with prior sessions
+- Check _meta.json before any analysis — it determines baseline vs delta mode
+- Run Phase 1 (alt data) BEFORE Phase 3 (macro) — positioning informs regime read
 - State a clear bias — Bullish / Bearish / Neutral / Conflicted — for every segment
 - Flag anything that contradicts the user's active theses (listed in config/preferences.md)
 - End every section with an implication or action — not just a description
+- On delta days: materialize a complete DIGEST.md (the dashboard reads DIGEST.md, not DIGEST-DELTA.md)
+- Run validate-phase.sh after each pipeline phase before proceeding
 
 NEVER:
 - Use training data for current prices, yields, rates, or news — always search
-- Skip the memory file updates after a full digest
+- Skip the portfolio layer — baseline days always run full PM; delta days run threshold monitor
 - Produce hedge-everything vague analysis — if evidence is mixed say "Conflicted" and explain both sides
 - Give explicit buy/sell recommendations — provide signals and let the user decide
+- Modify outputs/daily/ files directly — these are agent-generated
 
 ════════════════════════════════════════
 KEY FILES
 ════════════════════════════════════════
 
-config/watchlist.md          → all tracked tickers, sectors, crypto, bonds, FX
-config/preferences.md        → trading style, risk profile, active theses
-memory/macro/ROLLING.md      → macro regime evolution (append daily)
-memory/equity/ROLLING.md     → equity/sector trend evolution (append daily)
-memory/crypto/ROLLING.md     → crypto market evolution (append daily)
-memory/bonds/ROLLING.md      → rates/credit evolution (append daily)
-memory/commodities/ROLLING.md → commodities evolution (append daily)
-memory/forex/ROLLING.md      → FX evolution (append daily)
-memory/THESES.md             → master thesis register
-outputs/daily/               → YYYY-MM-DD.md — one file per day
-templates/master-digest.md   → daily digest template
+config/watchlist.md            → all tracked tickers (~60 ETFs), sectors, crypto, bonds, FX
+config/preferences.md          → trading style, risk profile, active theses
+config/investment-profile.md   → investor identity, horizon, risk tolerance, asset preferences, regime playbook
+config/hedge-funds.md          → 16 tracked hedge funds with CIK, X handles, style
+config/data-sources.md         → 30+ X accounts, data URLs, economic calendars
+config/portfolio.json          → current + proposed portfolio positions with weights
+
+templates/master-digest.md     → baseline DIGEST.md template
+templates/delta-digest.md      → delta DIGEST-DELTA.md template
+templates/sector-report.md     → sector sub-agent output template
+
+outputs/daily/YYYY-MM-DD/      → one folder per day (segment files + DIGEST.md)
+outputs/weekly/                 → weekly rollups
+outputs/monthly/                → monthly syntheses
+
+scripts/new-day.sh             → creates daily folder + detects baseline vs delta
+scripts/validate-phase.sh      → validates outputs after each pipeline phase
+scripts/update-tearsheet.py    → regenerates dashboard-data.json for the web frontend
+scripts/git-commit.sh          → commits outputs with date-stamped message
 
 ════════════════════════════════════════
 TONE & FORMAT
@@ -84,3 +146,4 @@ Shorthand: DXY, OAS, 2s10s, OI, bps, BMO, AMC, HY, IG, MA, RSI — all fine
 Format: scannable — headers, tables, bullets. No walls of prose.
 Bias labels always explicit: Bullish / Bearish / Neutral / Conflicted
 Every section closes with an implication or suggested action, not just a description
+Signal hierarchy: Fundamental regime change → Institutional flows → Sentiment → Technical levels

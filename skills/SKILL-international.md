@@ -8,7 +8,6 @@ description: Deep-dive analysis of international and emerging markets. Covers De
 ## Inputs
 - `config/watchlist.md` (international ETFs: EEM, MCHI, EWJ, EWG, EFA, EWZ, EWT, EMB)
 - `config/preferences.md`
-- `memory/international/ROLLING.md`
 - Macro regime output (regime context for risk appetite)
 - Forex output (DXY and EM FX context)
 
@@ -148,10 +147,3 @@ China constitutes ~25-30% of EEM — a dedicated China read:
 ```
 
 ---
-
-## Memory Update
-After analysis, append 3-4 bullets to `memory/international/ROLLING.md`:
-- One on China macro signal (PBOC + economic data)
-- One on EM broad risk appetite (DXY + flows)
-- One on DM catalyst (BOJ policy, European data, or UK-specific)
-- One on any geopolitical development with regional market impact

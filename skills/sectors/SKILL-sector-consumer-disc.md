@@ -8,7 +8,6 @@ description: Deep-dive analysis of the Consumer Discretionary sector (XLY). Cove
 ## Inputs
 - `config/watchlist.md` (XLY and related ETFs)
 - `config/preferences.md`
-- `memory/sectors/consumer/ROLLING.md` (shared with staples)
 - Macro regime output from `macro.md`
 
 ---
@@ -91,9 +90,3 @@ description: Deep-dive analysis of the Consumer Discretionary sector (XLY). Cove
 ```
 
 ---
-
-## Memory Update
-After analysis, append to `memory/sectors/consumer/ROLLING.md` (shared with staples):
-- One on XLY relative performance vs SPY
-- One on consumer spending trajectory signal
-- One on whether the XLY/XLP ratio indicates risk appetite shift

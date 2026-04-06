@@ -10,7 +10,6 @@ This repository is a **daily market intelligence system** with a 7-phase AI-orch
 
 - **Language**: Bash scripts + Markdown (skill files as instruction sets) + Python (tearsheet)
 - **Architecture**: Skill files (`skills/*.md`) are step-by-step instruction sets for AI agents
-- **Memory**: 23 append-only `ROLLING.md` files track evolving research across sessions
 - **Outputs**: `outputs/daily/YYYY-MM-DD/` folders (22 files per day)
 
 ## Key Files to Know
@@ -20,32 +19,24 @@ This repository is a **daily market intelligence system** with a 7-phase AI-orch
 | `skills/SKILL-orchestrator.md` | Master 7-phase pipeline driver — read this first |
 | `config/watchlist.md` | Tracked assets — edit to customize |
 | `config/preferences.md` | Trading style + active theses |
-| `memory/BIAS-TRACKER.md` | Daily cross-asset bias table |
+| `config/investment-profile.md` | Investor identity, horizon, risk, asset preferences |
+| `skills/SKILL-profile-setup.md` | Interactive wizard to configure investment-profile.md |
 | `templates/master-digest.md` | DIGEST.md output template |
 | `scripts/new-day.sh` | Creates daily folder structure |
+| `scripts/validate-phase.sh` | Validates outputs after each pipeline phase |
 
 ## Skill File Conventions
 
 When editing or creating skill files in `skills/`:
 - Keep YAML frontmatter intact: `name:` and `description:` fields are routing keys
-- Preserve `## Memory Update` sections — they drive the 23-file memory system
 - Match the output path format: `outputs/daily/{{DATE}}/{segment}.md`
 - Use `{{DATE}}` placeholder in output paths (replaced at runtime)
-- Each skill must end with a `## Memory Update` section specifying which ROLLING.md to update
-
-## Memory File Conventions
-
-Files in `memory/*/ROLLING.md` are **append-only**:
-- Never delete or reorder existing entries
-- Each daily entry: `## YYYY-MM-DD` header + 3-5 bullet points
-- bullets are plain Markdown: `- [observation]`
 
 ## Script Conventions
 
 - All scripts use `#!/bin/bash` + `set -e`
 - **macOS `sed`**: use `sed -i ""` not `sed -i` (macOS requires the extension argument)
 - All scripts run from repo root — paths are relative
-- Use `find memory/ -name "ROLLING.md"` to traverse nested memory directories
 
 ## Output Structure
 
@@ -75,7 +66,6 @@ outputs/daily/YYYY-MM-DD/
 ## What NOT to Do
 
 - Do not modify `outputs/daily/` files directly — these are agent-generated
-- Do not rewrite `memory/*/ROLLING.md` history — append only
 - Do not change the `name:` field in skill file frontmatter without updating CLAUDE_PROJECT_INSTRUCTIONS.md
 - Do not remove the `.github/workflows/` files — `deploy.yml` and `weekly-check.yml` are CI/CD
 

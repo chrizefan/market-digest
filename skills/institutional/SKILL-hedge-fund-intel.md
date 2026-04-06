@@ -10,7 +10,6 @@ The world's best investors — both fundamental and systematic — leave signal 
 
 ## Inputs
 - `config/hedge-funds.md` — master fund reference with sources and investment style
-- `memory/institutional/hedge-funds/ROLLING.md`
 
 ---
 
@@ -201,9 +200,3 @@ After gathering individual fund signals, identify:
 ```
 
 ---
-
-## Memory Update
-After analysis, append 3 bullets to `memory/institutional/hedge-funds/ROLLING.md`:
-- One on the most significant fund signal or view change in the period
-- One on cross-fund consensus theme (what smart money is collectively positioned for)
-- One on any notable position add or exit that is relevant to our portfolio thesis

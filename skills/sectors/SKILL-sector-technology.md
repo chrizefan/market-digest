@@ -8,7 +8,6 @@ description: Deep-dive analysis of the Technology sector (XLK, SOXX, QQQ). Cover
 ## Inputs
 - `config/watchlist.md` (tech ETFs and tickers)
 - `config/preferences.md`
-- `memory/sectors/technology/ROLLING.md`
 - Macro regime output from `macro.md` (read current session's macro output)
 - Institutional flows output (if already generated this session)
 
@@ -94,9 +93,3 @@ Search for performance within technology:
 ```
 
 ---
-
-## Memory Update
-After analysis, append 3 bullets to `memory/sectors/technology/ROLLING.md`:
-- One on sector trend and relative strength vs SPY
-- One on the AI/semiconductor cycle read
-- One on any valuation or rate-sensitivity development

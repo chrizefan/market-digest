@@ -10,7 +10,6 @@ Options markets reveal institutional hedging, speculative bets, and gamma dynami
 
 ## Inputs
 - `config/data-sources.md` (Unusual Whales, Fintel, CBOE data)
-- `memory/alternative-data/options/ROLLING.md`
 
 ---
 
@@ -126,9 +125,3 @@ This is not a safe environment to add naked risk."]
 ```
 
 ---
-
-## Memory Update
-After analysis, append 3 bullets to `memory/alternative-data/options/ROLLING.md`:
-- One on VIX level and term structure (stress vs complacency trend)
-- One on GEX regime and implications for price action dynamics
-- One on any unusual options activity that stands out as institutional signal

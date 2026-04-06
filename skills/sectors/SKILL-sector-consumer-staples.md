@@ -8,7 +8,6 @@ description: Deep-dive analysis of the Consumer Staples sector (XLP). Covers foo
 ## Inputs
 - `config/watchlist.md` (XLP and consumer ETFs)
 - `config/preferences.md` (XLP is an active portfolio holding — defensive inflation play)
-- `memory/sectors/consumer/ROLLING.md`
 - Macro regime output from `macro.md`
 - Commodities output (food/energy input costs)
 
@@ -93,9 +92,3 @@ description: Deep-dive analysis of the Consumer Staples sector (XLP). Covers foo
 ```
 
 ---
-
-## Memory Update
-After analysis, append 3 bullets to `memory/sectors/consumer/ROLLING.md`:
-- One on XLP defensive performance vs SPY (holding premium or fading?)
-- One on pricing power / input cost / margin trend
-- One on any consumer health indicator relevant to thesis

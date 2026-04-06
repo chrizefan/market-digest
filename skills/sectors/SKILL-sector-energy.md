@@ -8,8 +8,6 @@ description: Deep-dive analysis of the Energy sector (XLE, OIH, FCG, DBO). Cover
 ## Inputs
 - `config/watchlist.md` (energy ETFs: XLE, DBO, OIH)
 - `config/preferences.md` (XLE and DBO are active portfolio holdings)
-- `memory/sectors/energy/ROLLING.md`
-- `memory/commodities/ROLLING.md`
 - Macro regime output from `macro.md`
 - Commodities output (WTI/Brent levels already established)
 
@@ -103,9 +101,3 @@ Using commodity output (or re-search if needed):
 ```
 
 ---
-
-## Memory Update
-After analysis, append 3 bullets to `memory/sectors/energy/ROLLING.md`:
-- One on XLE relative performance and whether sector leadership is holding
-- One on geopolitical supply risk status (Iran/OPEC+ development)
-- One on portfolio thesis status at current oil price level

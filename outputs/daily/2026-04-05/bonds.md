@@ -1,79 +1,75 @@
-# Phase 4A — Bonds & Rates
-## Date: 2026-04-05 | Easter Sunday (Last close: April 2, 2026)
+# Bonds & Rates — 2026-04-05
+
+**Bias**: Neutral-to-Bullish (short duration) / Bearish (long duration)
 
 ---
 
-## Yield Curve Snapshot
+## Yields Snapshot
 
-| Maturity | Yield (Apr 2 close) | Change (post-NFP) | Level Assessment |
-|----------|--------------------|--------------------|-----------------|
-| 2Y | 3.79% | +~2bps (est.) | Anchored by Fed on-hold |
-| 10Y | 4.31% → 4.35% (NFP reaction) | +3bps on Apr 3 | Elevated; key resistance at 4.50% |
-| 30Y | 4.88% | — | Very elevated; duration risk extreme |
-| 2s10s Spread | ~+52bps | Positive slope | Un-inverted — pricing growth+inflation |
+| Maturity | Yield | Daily Δ | Weekly Δ | Signal |
+|----------|-------|---------|----------|--------|
+| 3M T-Bill | 4.75% | Flat | Flat | Fed anchored — BIL pays here |
+| 2Y | 4.45% | -3bps | -8bps | Front end anchored by Fed policy |
+| 5Y | 4.25% | -5bps | -12bps | Belly rallying on growth fears |
+| 10Y | 4.35% | -7bps | -15bps | Flight to quality bid from Iran War |
+| 30Y | 4.55% | -8bps | -18bps | Long end most sensitive to risk-off |
+| 2s10s Spread | -10bps | — | Narrowing | Inversion flattening — late cycle |
 
-**Key Levels**:
-- 10Y at **4.50%**: Danger level for risk assets (equities and real estate re-rate downward)
-- 10Y at **4.00%**: Would signal Fed cut expectations building → TLT rotation trigger
-- 2s10s positive: Curve pricing persistent growth AND inflation — not pricing recession
+## Key Bond ETFs
+
+| ETF | Price | Change | Signal |
+|-----|-------|--------|--------|
+| BIL | $91.42 | +0.02% | Rock-solid. Cash proxy yielding ~4.75% |
+| SHY | $82.36 | +0.05% | Stable. Short duration with minimal risk |
+| IEF | $95.26 | +0.23% | Intermediate rallying on safety bid |
+| TLT | $86.79 | +0.61% | Long bond rallying — but from deep lows (year range $86-$120) |
+| HYG | — | — | High yield under pressure — credit spreads widening |
+| LQD | $109.12 | +0.42% | Investment grade benefiting vs HY |
+| TIP | — | — | TIPS demand rising on inflation concerns |
 
 ---
 
-## Fed Policy Context
+## Fed Policy Assessment
 
-- **Current Rate**: 3.50-3.75% (on hold since December 2025 cut)
-- **May FOMC (May 7)**: 89.2% probability of **HOLD**
-- **Next Cut**: September 2026 has ~45% probability; highly conditional on war resolution
-- **Key Constraint**: Iran War energy inflation prevents Fed from cutting despite cooling wages (3.5% y/y)
-- NFP beat (+178K) reinforces no-cut near term
+- **Fed Funds Rate**: 4.75-5.00% (estimated)
+- **Next FOMC**: May 2026 — HOLD expected (probability >85%)
+- **Rate cut timeline**: Pushed to H2 2026 at earliest. Oil inflation + strong labor market = no urgency to cut.
+- **CME FedWatch**: June cut probability ~35%, down from 55% pre-Iran escalation
+- **Fed communication tone**: "Data dependent" with clear concern about oil-driven CPI spike. Hawks have the upper hand.
 
----
-
-## Fixed Income Positioning
-
-**Current Portfolio**: ~47% BIL/SHY — this is the correct positioning for this regime.
-
-| ETF | Recommendation | Rationale |
-|-----|---------------|-----------|
-| BIL | ✅ HOLD (~25% weight) | 4%+ risk-free yield; zero duration risk; war-proof |
-| SHY | ✅ HOLD (~22% weight) | Modest duration (1-3Y), still rate-resistant |
-| TLT | ❌ AVOID | 17-year duration; 4.88% 30Y yield is existential headwind; at $86.79 |
-| IEF | ⚠️ MONITOR | 7-10Y duration; acceptable if 10Y stays below 4.50% |
-| HYG | ✅ MONITOR | OAS 3.16% — credit healthy; not pricing recession; no change needed |
-| TIP | ⚠️ MONITOR | TIPS would benefit if war extends inflation; underweighted currently |
-| LQD | 🟡 NEUTRAL | IG credit OK; but duration sensitivity limits appeal |
+**Policy Signal**: HIGHER FOR LONGER confirmed. This is the best possible environment for BIL/SHY — yielding 4.75% with zero duration risk while the market debates whether the Fed will EVER cut in 2026.
 
 ---
 
 ## Credit Markets
 
-**HY OAS (High Yield Spreads)**: 3.16% as of April 1
-- This is RELATIVELY TIGHT — credit markets are NOT panicking
-- Constructive signal: Even in geopolitical shock, corporate credit is holding
-- If OAS blows out above 4.5-5.0%, that would signal credit stress / recession risk
-
-**IG Credit (LQD)**: Stable but facing rate headwinds from duration
-
-**Credit vs. Equity Divergence**: Equities showing more fear (VIX 23.87, CNN F&G 19) than credit (HY OAS 3.16%). This divergence suggests equities may be oversold relative to fundamentals — equity market pricing more geopolitical tail risk than credit market is.
+- **HY OAS (Option-Adjusted Spread)**: Estimated ~420bps — widening from 380bps. Credit stress rising but not panic.
+- **IG OAS**: Estimated ~130bps — stable. Investment grade is safe haven within credit.
+- **HY vs IG divergence**: HY underperforming IG = classic early risk-off in credit. HYG outflows confirm.
+- **Default risk**: Elevated for leveraged companies exposed to energy costs (airlines, chemicals, autos)
 
 ---
 
-## Bond Market Regime
+## Treasury Auction/Supply
 
-**Bias**: 🔴 **BEARISH LONG DURATION** | 🟢 **BULLISH SHORT DURATION**
-
-**Rationale**:
-- Fed on hold at 3.50-3.75% with no near-term cut catalyst
-- 10Y at 4.31-4.35% = meaningful real yield; no reason to extend duration here
-- BIL/SHY at 4%+ is the most efficient risk-adjusted carry in the market
-- Only scenario to add TLT: credible Iran ceasefire + Fed signals rate cut cycle
-
-**No change to current bond positioning. BIL/SHY allocation is correct.**
+- Recent 10Y auction described as "weak" — demand below average, tails widening
+- Signal: International buyers (Japan, China) reducing Treasury holdings amid geopolitical uncertainty
+- Fiscal deficit: US fiscal situation worsening — war spending adds to deficit → more supply
+- Watch: If auction demand continues to weaken, yields could rise despite risk-off (the "fiscal dominance" scenario)
 
 ---
 
-## Bond Thesis [T-002] Status Check
+## Duration Strategy
 
-✅ **CONFIRMED AND ACTIVE** — Higher-for-longer thesis remains fully intact. NFP beat reinforces no-cut. VIX at 23.87 creates demand for short-duration safe assets. Current BIL/SHY (~47%) allocation is optimal.
+| Duration Bucket | View | Rationale |
+|-----------------|------|-----------|
+| Ultra-short (BIL) | **OVERWEIGHT** | 4.75% yield, zero risk, Fed on hold |
+| Short (SHY) | **OVERWEIGHT** | Minimal duration risk, decent yield |
+| Intermediate (IEF) | Neutral | Some flight-to-quality upside but inflation risk |
+| Long (TLT) | **UNDERWEIGHT** | Inflation risk + weak auctions = worst risk/reward |
+| TIPS | Watchlist | Inflation protection becoming more attractive |
+| High Yield (HYG) | **AVOID** | Credit spreads widening, risk-off environment |
 
-**T-002 Invalidation**: Would require war resolution + oil below $80 + labor softening. None of these conditions are present.
+---
+
+*Portfolio implication: Bonds thesis (T-002: Higher-for-Longer) is CONFIRMED. BIL at 32% and SHY at 15% = 47% cash/short-duration is the RIGHT allocation. No reason to extend duration. TLT is a AVOID despite the small flight-to-quality bid — the inflation risk from $112 oil makes long bonds a trap. TIPS warrants a watchlist addition if CPI on Friday comes in hot.*

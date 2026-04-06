@@ -67,7 +67,6 @@ Analyze the chart structure:
 
 - What macro regime is most relevant to this asset?
 - What's the dominant market narrative around this asset right now?
-- What does the macro `memory/macro/ROLLING.md` say that's directly relevant?
 - Is the macro tailwind or headwind for this asset?
 - What would need to change macro-wise to change the outlook?
 
@@ -101,5 +100,4 @@ Produce a clear research note conclusion:
 
 Save deep dives to: `outputs/daily/[DATE]-deepdive-[ASSET].md`
 
-After completing, add 2-3 bullet summary to the relevant `memory/*/ROLLING.md` file.
 Flag if this deep dive changes or validates any thesis in `config/preferences.md`.

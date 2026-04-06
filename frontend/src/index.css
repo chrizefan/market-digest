@@ -274,6 +274,30 @@ body {
   margin: 16px 0 8px 8px;
 }
 
+/* Filter chip buttons for timeline */
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-family: 'Space Mono', monospace;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.filter-chip:hover {
+  border-color: var(--accent-blue);
+  color: var(--text-secondary);
+}
+.filter-chip.active {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: var(--accent-blue);
+}
+
 /* Markdown styling inside library */
 .md-content {
   line-height: 1.7;
