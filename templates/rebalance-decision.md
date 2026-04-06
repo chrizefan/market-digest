@@ -64,15 +64,34 @@
 
 ---
 
-## Memory Update
+## Position P&L + CAD FX Impact
 
-Append to `memory/portfolio/ROLLING.md`:
+> All positions are USD-denominated; home currency is CAD (`investor_currency` in `config/portfolio.json`).
+> FX effect = change in USD/CAD since entry. Rising USD strengthens CAD returns; falling USD erodes them.
+> Entry prices: from `entry_price_usd` field in portfolio.json, or best-effort historical close if null.
+
+| Ticker | Weight% | Entry Price (USD) | Current Price (USD) | USD Rtn% | USD/CAD Entry | USD/CAD Now | FX Effect% | CAD Rtn% |
+|--------|---------|------------------|--------------------|---------|--------------|------------|-----------|----------|
+| | | | | | | | | |
+
+**Portfolio weighted USD return**: X.X%
+**CAD/USD FX drag or boost**: X.X%
+**Portfolio weighted CAD return**: X.X%
+
+*Key risk*: [Which positions are most exposed to CAD FX headwind? E.g. USD T-bills carry full FX risk with capped USD upside.]
+
+---
+
+## Evolution Log Update
+
+Append to `outputs/daily/{{DATE}}/evolution/proposals.md`:
 ```
 ## {{DATE}}
 - Rebalance actions: [list or "No changes — all within threshold"]
 - Proposed portfolio: [key weights]
 - Key PM decision: [1 sentence]
 - Next invalidation watch: [ticker + level]
+- CAD FX note: [FX drag/boost direction and bp estimate]
 ```
 
 ---

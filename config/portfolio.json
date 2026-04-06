@@ -1,8 +1,9 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "last_updated_date": "2026-04-05",
   "last_updated_by": "agent",
-  "notes": "Current positions as of 2026-04-05 (Iran War regime). Proposed positions written by agent after each rebalance run — promote to positions[] manually after executing trades.",
+  "investor_currency": "CAD",
+  "notes": "Current positions as of 2026-04-05 (Iran War regime). Proposed positions written by agent after each rebalance run — promote to positions[] manually after executing trades. entry_price_usd and entry_usdcad: fill from broker confirmation; if null the tearsheet approximates using yfinance historical close for entry_date.",
 
   "positions": [
     {
@@ -12,6 +13,8 @@
       "weight_pct": 20,
       "thesis_ids": ["T-001"],
       "entry_date": "2026-04-05",
+      "entry_price_usd": null,
+      "entry_usdcad": null,
       "notes": "Gold ATH $4,677. Safe-haven + war inflation hedge. Max position."
     },
     {
@@ -21,6 +24,8 @@
       "weight_pct": 12,
       "thesis_ids": ["T-001"],
       "entry_date": "2026-04-05",
+      "entry_price_usd": null,
+      "entry_usdcad": null,
       "notes": "Only positive YTD S&P sector. Energy geopolitical premium."
     },
     {
@@ -30,6 +35,8 @@
       "weight_pct": 5,
       "thesis_ids": ["T-001"],
       "entry_date": "2026-04-05",
+      "entry_price_usd": null,
+      "entry_usdcad": null,
       "notes": "WTI direct exposure. DBO preferred for optimized roll vs USO."
     },
     {
@@ -39,6 +46,8 @@
       "weight_pct": 8,
       "thesis_ids": ["T-003"],
       "entry_date": "2026-04-05",
+      "entry_price_usd": null,
+      "entry_usdcad": null,
       "notes": "Defensive rotation. Earnings stability + low rate sensitivity."
     },
     {
@@ -48,6 +57,8 @@
       "weight_pct": 8,
       "thesis_ids": ["T-003"],
       "entry_date": "2026-04-05",
+      "entry_price_usd": null,
+      "entry_usdcad": null,
       "notes": "Defensive rotation. Pricing power in inflationary environment."
     },
     {
@@ -57,6 +68,8 @@
       "weight_pct": 32,
       "thesis_ids": ["T-002"],
       "entry_date": "2026-04-05",
+      "entry_price_usd": null,
+      "entry_usdcad": null,
       "notes": "Cash proxy. 4%+ yield. Zero duration risk. Core of higher-for-longer thesis."
     },
     {
@@ -66,6 +79,8 @@
       "weight_pct": 15,
       "thesis_ids": ["T-002"],
       "entry_date": "2026-04-05",
+      "entry_price_usd": null,
+      "entry_usdcad": null,
       "notes": "Short duration. Minimal rate risk vs TLT. Complements BIL in cash sleeve."
     }
   ],

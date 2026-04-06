@@ -16,24 +16,26 @@ BENCHMARKS = ["SPY", "QQQ", "TLT", "GLD"]
 
 
 def load_portfolio_json():
-    """Load config/portfolio.json and return (positions, proposed_positions, constraints).
+    """Load config/portfolio.json and return (positions, proposed_positions, constraints, investor_currency).
 
     Returns authoritative portfolio data written by the PM agent.
     positions[] = user-confirmed actual holdings
     proposed_positions[] = agent-recommended target (from Phase 7D)
+    investor_currency = home currency for FX impact computation (default: USD)
     """
     if not PORTFOLIO_JSON.exists():
-        return [], [], {}
+        return [], [], {}, "USD"
     try:
         with open(PORTFOLIO_JSON, "r", encoding="utf-8") as f:
             data = json.load(f)
         positions = data.get("positions", [])
         proposed = data.get("proposed_positions", [])
         constraints = data.get("constraints", {})
-        return positions, proposed, constraints
+        investor_currency = data.get("investor_currency", "USD").upper()
+        return positions, proposed, constraints, investor_currency
     except Exception as e:
         print(f"   Warning: could not read portfolio.json — {e}")
-        return [], [], {}
+        return [], [], {}, "USD"
 
 
 def load_rebalance_decision(date_str):
@@ -351,6 +353,141 @@ def simulate_portfolio(digests):
                 
     return portfolio_history, active_positions, b_hist, active_digest
 
+def compute_fx_impact(pj_positions, investor_currency):
+    """Compute unrealized P&L (USD) and FX-adjusted returns (investor_currency) per position.
+
+    Entry price source priority:
+      1. entry_price_usd field in portfolio.json (exact trade fill)
+      2. yfinance historical close for entry_date (best-effort approximation)
+    FX rate source priority:
+      1. entry_usdcad field in portfolio.json
+      2. yfinance USDCAD=X historical close for entry_date
+    Returns list of per-position dicts, or empty list if investor_currency == USD or no positions.
+    """
+    if not pj_positions or investor_currency == "USD":
+        return []
+
+    fx_ticker = f"USD{investor_currency}=X"  # e.g. USDCAD=X
+
+    tickers = [p["ticker"] for p in pj_positions if p.get("ticker") and p["ticker"] != "CASH"]
+    if not tickers:
+        return []
+
+    entry_dates = [p.get("entry_date") for p in pj_positions if p.get("entry_date")]
+    start_date = min(entry_dates) if entry_dates else datetime.now().strftime("%Y-%m-%d")
+
+    fetch_list = tickers + [fx_ticker]
+    print(f"   FX Impact: fetching {len(fetch_list)} tickers (incl. {fx_ticker}) from {start_date}...")
+    prices = fetch_prices(fetch_list, start_date)
+    if prices.empty:
+        print(f"   Warning: FX impact fetch returned no data.")
+        return []
+
+    latest_date = prices.index[-1]
+
+    # Current FX rate
+    current_usdx = None
+    if fx_ticker in prices.columns:
+        s = prices[fx_ticker].dropna()
+        if not s.empty:
+            current_usdx = float(s.iloc[-1])
+
+    results = []
+    for p in pj_positions:
+        ticker = p.get("ticker")
+        if not ticker or ticker == "CASH":
+            continue
+
+        entry_date_str = p.get("entry_date")
+
+        # --- Entry price (USD) ---
+        entry_price = p.get("entry_price_usd")
+        entry_price_source = "portfolio.json"
+        if not entry_price and entry_date_str and ticker in prices.columns:
+            try:
+                entry_dt = pd.to_datetime(entry_date_str)
+                idx = prices.index.get_indexer([entry_dt], method="ffill")[0]
+                if idx >= 0:
+                    v = prices.iloc[idx][ticker]
+                    if pd.notna(v):
+                        entry_price = float(v)
+                        entry_price_source = f"yfinance close {prices.index[idx].strftime('%Y-%m-%d')}"
+            except Exception:
+                pass
+
+        # --- Current price (USD) ---
+        current_price = None
+        if ticker in prices.columns:
+            try:
+                v = prices.loc[latest_date, ticker]
+                if pd.notna(v):
+                    current_price = float(v)
+            except Exception:
+                pass
+
+        usd_return_pct = None
+        if entry_price and current_price and entry_price > 0:
+            usd_return_pct = round((current_price - entry_price) / entry_price * 100, 2)
+
+        # --- FX rate ---
+        entry_usdx = p.get("entry_usdcad") if investor_currency == "CAD" else None
+        entry_usdx_source = "portfolio.json"
+        if not entry_usdx and entry_date_str and fx_ticker in prices.columns:
+            try:
+                entry_dt = pd.to_datetime(entry_date_str)
+                idx = prices.index.get_indexer([entry_dt], method="ffill")[0]
+                if idx >= 0:
+                    v = prices.iloc[idx][fx_ticker]
+                    if pd.notna(v):
+                        entry_usdx = float(v)
+                        entry_usdx_source = f"yfinance close {prices.index[idx].strftime('%Y-%m-%d')}"
+            except Exception:
+                pass
+
+        fx_return_pct = None
+        adj_return_pct = None
+        if entry_usdx and current_usdx and entry_usdx > 0:
+            fx_return_pct = round((current_usdx - entry_usdx) / entry_usdx * 100, 2)
+        if usd_return_pct is not None and fx_return_pct is not None:
+            # Exact: (1+r_usd)*(1+r_fx) - 1
+            adj_return_pct = round(((1 + usd_return_pct / 100) * (1 + fx_return_pct / 100) - 1) * 100, 2)
+
+        results.append({
+            "ticker": ticker,
+            "weight_pct": p.get("weight_pct", 0),
+            "entry_price_usd": round(entry_price, 4) if entry_price else None,
+            "entry_price_source": entry_price_source,
+            "current_price_usd": round(current_price, 4) if current_price else None,
+            "usd_return_pct": usd_return_pct,
+            f"entry_{fx_ticker.replace('=X','').lower()}": round(float(entry_usdx), 4) if entry_usdx else None,
+            f"current_{fx_ticker.replace('=X','').lower()}": round(float(current_usdx), 4) if current_usdx else None,
+            "fx_return_pct": fx_return_pct,
+            f"{investor_currency.lower()}_return_pct": adj_return_pct,
+        })
+
+    # Compute portfolio-level weighted averages (weight-averaged, exclude nulls)
+    def weighted_avg(field):
+        total_w, total_v = 0.0, 0.0
+        for r in results:
+            v = r.get(field)
+            w = r.get("weight_pct", 0)
+            if v is not None and w:
+                total_v += v * w
+                total_w += w
+        return round(total_v / total_w, 2) if total_w > 0 else None
+
+    portfolio_summary = {
+        "investor_currency": investor_currency,
+        "fx_pair": fx_ticker,
+        "current_usdx": round(current_usdx, 4) if current_usdx else None,
+        "weighted_usd_return_pct": weighted_avg("usd_return_pct"),
+        "weighted_fx_return_pct": weighted_avg("fx_return_pct"),
+        f"weighted_{investor_currency.lower()}_return_pct": weighted_avg(f"{investor_currency.lower()}_return_pct"),
+        "positions": results,
+    }
+    return portfolio_summary
+
+
 # --- File classification for timeline metadata ---
 
 FILE_CLASSIFICATION = {
@@ -558,12 +695,19 @@ def main():
     print(f"   Latest active digest: {latest_digest['date']}")
 
     # Load authoritative portfolio data from config/portfolio.json
-    pj_positions, pj_proposed, pj_constraints = load_portfolio_json()
+    pj_positions, pj_proposed, pj_constraints, investor_currency = load_portfolio_json()
     if pj_positions:
-        print(f"   Portfolio.json: {len(pj_positions)} positions, {len(pj_proposed)} proposed")
+        print(f"   Portfolio.json: {len(pj_positions)} positions, {len(pj_proposed)} proposed, currency={investor_currency}")
     
     # Load latest rebalance decision
     rebalance_data = load_rebalance_decision(latest_digest['date'])
+
+    # Compute unrealized P&L + FX-adjusted returns (CAD or other non-USD investor currency)
+    pnl_fx_data = compute_fx_impact(pj_positions, investor_currency)
+    if pnl_fx_data:
+        w_usd = pnl_fx_data.get('weighted_usd_return_pct')
+        w_cad = pnl_fx_data.get(f'weighted_{investor_currency.lower()}_return_pct')
+        print(f"   FX Impact: weighted USD return {w_usd}% | {investor_currency} return {w_cad}%")
 
     # Calculate simplistic metrics
     active_nav = history[-1]['nav'] if history else 100.0
@@ -654,7 +798,7 @@ def main():
         "portfolio": {
             "meta": {
                 "name": "Market Digest Dynamic Portfolio",
-                "base_currency": "USD",
+                "base_currency": investor_currency,
                 "inception_date": parsed_digests[0]['date'],
                 "last_updated": datetime.now().strftime("%Y-%m-%d"),
                 "benchmarks": BENCHMARKS
@@ -679,6 +823,9 @@ def main():
                     "category": p.get("category", ""),
                     "weight_pct": p.get("weight_pct", 0),
                     "thesis_ids": p.get("thesis_ids", []),
+                    "entry_date": p.get("entry_date"),
+                    "entry_price_usd": p.get("entry_price_usd"),
+                    "entry_usdcad": p.get("entry_usdcad"),
                     "notes": p.get("notes", ""),
                 }
                 for p in pj_positions
@@ -694,6 +841,8 @@ def main():
             ] if pj_proposed else [],
             "constraints": pj_constraints,
             "rebalance_actions": rebalance_data,
+            "pnl_fx_impact": pnl_fx_data if pnl_fx_data else None,
+            "investor_currency": investor_currency,
         },
         "ratios": [], # Not simulated right now
         "docs": docs,

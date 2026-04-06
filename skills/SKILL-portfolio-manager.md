@@ -31,8 +31,7 @@ rationalizations for the status quo rather than genuine independent analysis.
 Load the following (already in session context if running after Phase 7 of orchestrator):
 
 1. `outputs/daily/{{DATE}}/macro.md` — 4-factor regime classification
-3. `config/preferences.md` — trading style, digest format preferences
-4. `config/investment-profile.md` — risk tolerance (§4), asset preferences (§5), regime playbook (§6), benchmarks (§8)
+2. `config/investment-profile.md` — risk tolerance (§4), asset preferences (§5), ETF universe (§5D), regime playbook (§6), benchmarks (§8)
 5. `outputs/daily/{{DATE}}/DIGEST.md` (if completed) — for cross-asset synthesis
 6. **Research library** — `docs/research/LIBRARY.md`. Load before Phase B. Apply the Black-Litterman conviction-weight table (Section 4.2) for position sizing. Run the Ilmanen 4-quadrant regime check (Section 5.4) before constructing the clean-slate portfolio. Use Kelly ceiling check (Section 4.3) to validate no position exceeds conservative fraction.
 
@@ -70,12 +69,12 @@ Announce after completing: "Deliberation complete. [N] positions resolved, [M] c
 
 ### Step B1: Theme Aggregation
 Group analyst recommendations by theme bucket. Check theme-level constraints:
-- Max 40% per theme (from `config/preferences.md`)
+- Max 40% per theme (from `config/investment-profile.md §5`)
 - If analysts recommend more than 40% in one theme, apply haircut proportionally to lowest-conviction assets in that theme
 
 ### Step B2: Apply Portfolio Constraints
-From `config/preferences.md` constraints:
-- Max 20% per single ETF — if any analyst recommended 20%, confirm it has the highest conviction
+From `config/investment-profile.md §4` and `config/portfolio.json constraints`:
+- Max single ETF weight per `constraints.max_single_etf_pct` (default 100% — no hard cap, but flag any position >25% for PM review)
 - Weight increment: 5% — round any non-5% recommendations to nearest 5%
 - Total must sum to 100% — allocate remaining to BIL (cash proxy) after all positions assigned
 
@@ -95,7 +94,8 @@ Save to: `outputs/daily/{{DATE}}/portfolio-recommended.md`
 > NOW you may read `config/portfolio.json` for current weights.
 
 ### Step C1: Load Current Portfolio
-Read `config/portfolio.json`. Extract `positions[]` with `ticker` and `weight_pct`.
+Read `config/portfolio.json`. Extract from `positions[]`: `ticker`, `weight_pct`, `entry_date`, `entry_price_usd`, and `entry_usdcad`.
+Note `investor_currency` (top-level field) — this determines whether FX impact is computed.
 Also note any `proposed_positions[]` from prior agent runs — if any exist, compare against those
 too (shows drift between consecutive recommendations).
 
@@ -116,6 +116,32 @@ delta = recommended_weight - current_weight
 | current = 0, recommended > 0 | New Entry |
 
 **Override rule**: If a thesis is ❌ Challenged, always flag for action regardless of delta size.
+
+### Step C2.5: Unrealized P&L + CAD FX Impact
+
+> Run this step only when `investor_currency` in `config/portfolio.json` is not USD.
+> Skip if all `entry_price_usd` values are null AND `entry_usdcad` values are null (no baseline).
+
+For each current position, compute:
+1. **USD return** = (current_price − entry_price_usd) / entry_price_usd × 100
+   - If `entry_price_usd` is null, use the closing price from the position's `entry_date` fetched from live data as a best-effort approximation; note the source.
+2. **FX effect** = (current_USD/CAD − entry_USD/CAD) / entry_USD/CAD × 100
+   - Fetch the current USD/CAD rate from `outputs/daily/{{DATE}}/forex.md` (USD/CAD row) or via live search.
+   - If `entry_usdcad` is null, fetch the USD/CAD historical close for `entry_date`; note the source.
+   - Sign: a rising USD/CAD (USD strengthening) boosts CAD returns. A falling USD/CAD (USD weakening) reduces them.
+3. **CAD-adjusted return** = USD return + FX effect (additive approximation; exact = (1+r_usd)(1+r_fx) − 1)
+
+Produce this table and include it in `rebalance-decision.md`:
+
+| Ticker | Weight% | Entry Price (USD) | Current Price (USD) | USD Rtn% | USD/CAD Entry | USD/CAD Now | FX Effect% | CAD Rtn% |
+|--------|---------|------------------|--------------------|---------|--------------|------------|-----------|----------|
+| | | | | | | | | |
+
+**Portfolio weighted USD return**: [Σ weight × USD_return]%
+**CAD/USD FX drag or boost**: [weight-averaged FX effect]%
+**Portfolio weighted CAD return**: [Σ weight × CAD_return]%
+
+Note: BIL/SHY (USD T-bill ETFs) accumulate USD yield; a weaker USD vs CAD erodes that yield in CAD terms. Quantify this explicitly as an additional investment risk.
 
 ### Step C3: Produce Rebalance Decision
 Using `templates/rebalance-decision.md`, produce the rebalance output.
@@ -148,13 +174,15 @@ Write the clean-slate recommended weights to the `proposed_positions` array in `
 
 Also update `"last_updated_date"` and `"last_updated_by": "agent"`.
 
-### Step C6: Update Memory
+### Step C6: Update Evolution Log
+Append a summary block to `outputs/daily/{{DATE}}/evolution/proposals.md`:
 ```markdown
-## {{DATE}}
+## {{DATE}} — Portfolio Review
 - Actions: [list each non-Hold action, or "No changes — all within threshold"]
-- Proposed weights: [summary of key positions as comma-separated list]
+- Proposed weights: [key positions as comma-separated ticker:weight list]
 - PM rationale: [1 sentence]
 - Invalidation watch: [most urgent trigger or "None"]
+- CAD FX note: [FX effect direction and magnitude, or "N/A" if FX data unavailable]
 ```
 
 ---
