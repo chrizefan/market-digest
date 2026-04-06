@@ -17,7 +17,35 @@ export default function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }) 
       {isOpen && <div className="sidebar-overlay" onClick={() => setIsOpen(false)} />}
       <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-brand">
-          digiquant-atlas
+          <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{flexShrink: 0}}>
+            <defs>
+              <clipPath id="atlas-globe-clip">
+                <circle cx="20" cy="20" r="14.5"/>
+              </clipPath>
+            </defs>
+            {/* Globe outline */}
+            <circle cx="20" cy="20" r="14.5" stroke="#f59e0b" strokeWidth="1.5"/>
+            {/* Center meridian */}
+            <ellipse cx="20" cy="20" rx="6.5" ry="14.5" stroke="#f59e0b" strokeWidth="0.9" opacity="0.45"/>
+            {/* Equator */}
+            <line x1="5.5" y1="20" x2="34.5" y2="20" stroke="#f59e0b" strokeWidth="0.9" opacity="0.45"/>
+            {/* Upper latitude */}
+            <ellipse cx="20" cy="13.5" rx="12" ry="2.4" stroke="#f59e0b" strokeWidth="0.7" opacity="0.3"/>
+            {/* Lower latitude */}
+            <ellipse cx="20" cy="26.5" rx="12" ry="2.4" stroke="#f59e0b" strokeWidth="0.7" opacity="0.3"/>
+            {/* Chart trend line — clipped to globe */}
+            <polyline
+              points="8,29 13,22 18,25 23,16 32,19"
+              stroke="#e6e6e6"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              clipPath="url(#atlas-globe-clip)"
+            />
+            {/* Peak marker */}
+            <circle cx="23" cy="16" r="2.2" fill="#f59e0b"/>
+          </svg>
+          <span>digiquant-atlas</span>
         </div>
         <nav>
           {navItems.map((item) => (
