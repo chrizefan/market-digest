@@ -1,9 +1,9 @@
 {
   "schema_version": "1.1",
-  "last_updated_date": "2026-04-05",
+  "last_updated_date": "2026-04-06",
   "last_updated_by": "agent",
   "investor_currency": "CAD",
-  "notes": "Current positions as of 2026-04-05 (Iran War regime). Proposed positions written by agent after each rebalance run — promote to positions[] manually after executing trades. entry_price_usd and entry_usdcad: fill from broker confirmation; if null the tearsheet approximates using yfinance historical close for entry_date.",
+  "notes": "Current positions as of 2026-04-05 (Iran War regime). PENDING TRADE: EXIT XLV (8%) → route proceeds to BIL. All other changes deferred pending Tuesday April 7 ceasefire/escalation resolution. Proposed positions written by agent after each rebalance run — promote to positions[] manually after executing trades. entry_price_usd and entry_usdcad: fill from broker confirmation; if null the tearsheet approximates using yfinance historical close for entry_date.",
 
   "positions": [
     {
@@ -95,12 +95,12 @@
   },
 
   "proposed_positions": [
-    { "ticker": "BIL", "weight_pct": 35, "as_of": "2026-04-05", "action": "Add 3%" },
-    { "ticker": "IAU", "weight_pct": 20, "as_of": "2026-04-05", "action": "Hold" },
-    { "ticker": "SHY", "weight_pct": 15, "as_of": "2026-04-05", "action": "Hold" },
-    { "ticker": "XLE", "weight_pct": 15, "as_of": "2026-04-05", "action": "Add 3%" },
-    { "ticker": "XLP", "weight_pct": 10, "as_of": "2026-04-05", "action": "Add 2%" },
-    { "ticker": "DBO", "weight_pct": 5, "as_of": "2026-04-05", "action": "Hold" },
-    { "ticker": "XLV", "weight_pct": 0, "as_of": "2026-04-05", "action": "Exit" }
+    { "ticker": "BIL", "weight_pct": 40, "as_of": "2026-04-06", "action": "Add 8% (absorbs XLV exit 8%; +3% baseline add deferred pending Tuesday ceasefire resolution)" },
+    { "ticker": "IAU", "weight_pct": 20, "as_of": "2026-04-06", "action": "Hold — elevated conviction (gold +6% above baseline)" },
+    { "ticker": "SHY", "weight_pct": 15, "as_of": "2026-04-06", "action": "Hold" },
+    { "ticker": "XLE", "weight_pct": 12, "as_of": "2026-04-06", "action": "Hold — add deferred; crowding at 90th pctile + ceasefire binary risk" },
+    { "ticker": "XLP", "weight_pct": 8, "as_of": "2026-04-06", "action": "Hold — add deferred pending Tuesday outcome" },
+    { "ticker": "DBO", "weight_pct": 5, "as_of": "2026-04-06", "action": "Hold — stop at $18 (WTI ~$95) active" },
+    { "ticker": "XLV", "weight_pct": 0, "as_of": "2026-04-06", "action": "EXIT — execute immediately at market. PENDING." }
   ]
 }
