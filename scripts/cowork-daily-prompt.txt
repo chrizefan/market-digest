@@ -7,6 +7,8 @@ Step 0: Fetch systematic market data.
   This fetches live quotes + technicals (RSI, MACD, SMA, ATR) for all ~60 watchlist tickers
   and the full yield curve (1M-30Y) + VIX + commodities + FX. All downstream phases read
   from these files instead of web-browsing for individual prices.
+  **If scripts fail** (sandbox, missing yfinance): follow `skills/SKILL-mcp-data-fetch.md`
+  to fetch data via MCP tools (FRED, Alpha Vantage, CoinGecko, Frankfurter) instead.
 
 Step 1: Read `outputs/daily/$(date +%Y-%m-%d)/_meta.json` to detect run mode.
   - If missing: run `./scripts/new-day.sh` first, then re-read.

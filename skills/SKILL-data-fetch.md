@@ -48,6 +48,16 @@ layer, every agent reads the same source-of-truth JSON/Markdown files fetched ri
 pip install -r requirements.txt
 ```
 
+### Sandbox / CI Alternative (no yfinance)
+
+When `fetch-market-data.sh` fails (sandboxed agents, CI, missing yfinance), use the MCP-based
+data fetch instead. See **`skills/SKILL-mcp-data-fetch.md`** for full instructions.
+
+MCP data fetch uses FRED (yield curve, VIX), Frankfurter (FX), CoinGecko (crypto), and
+Alpha Vantage (stock/ETF prices + technicals) to produce the same `quotes.json` and `macro.json`
+output schema. Coverage is slightly reduced (fewer tickers, limited technicals) but sufficient
+for high-quality analysis.
+
 ---
 
 ## Outputs
@@ -158,4 +168,14 @@ pip install -r requirements.txt
 # Installs: yfinance, pandas, numpy, pandas-ta, requests
 ```
 
-No API keys required. All data sources are free and public.
+No API keys required for yfinance mode. All data sources are free and public.
+
+### MCP Mode Dependencies
+
+MCP mode requires active MCP server connections (configured in the agent's environment):
+- **FRED** — requires API key (free at https://fred.stlouisfed.org/docs/api/api_key.html)
+- **Alpha Vantage** — requires API key (free tier: 25 calls/day)
+- **CoinGecko** — free tier, no key required
+- **Frankfurter** — free, no key required
+
+See `skills/SKILL-mcp-data-fetch.md` for detailed MCP data fetch instructions.

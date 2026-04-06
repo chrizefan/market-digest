@@ -39,6 +39,7 @@ description: Run US equity market overview analysis. In the orchestrator pipelin
    - Sector ETF flows (not price — ETF.com for flow data)
 
 > If `outputs/daily/{{DATE}}/data/` is missing, run `./scripts/fetch-market-data.sh` first.
+> If that fails (sandbox), follow `skills/SKILL-mcp-data-fetch.md` for MCP-based data fetch.
 
 ## Research Steps
 

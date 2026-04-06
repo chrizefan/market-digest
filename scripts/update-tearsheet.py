@@ -2,9 +2,15 @@
 import json, sys, re, os
 from datetime import datetime
 from pathlib import Path
-import yfinance as yf
-import pandas as pd
-import numpy as np
+
+# --- Optional heavy dependencies (graceful fallback for CI / sandbox) ---------
+try:
+    import yfinance as yf
+    import pandas as pd
+    import numpy as np
+    _HAS_YFINANCE = True
+except ImportError:
+    _HAS_YFINANCE = False
 
 try:
     import pandas_ta as ta  # optional but recommended — pip install pandas-ta
@@ -196,9 +202,32 @@ def parse_digest(filepath):
 
     return data
 
+
+def _load_prefetched_prices(root):
+    """Load latest pre-fetched quotes.json as a {ticker: {price, rsi14, ...}} dict.
+
+    Used as fallback when yfinance is unavailable (CI/sandbox).
+    """
+    daily_dir = root / "outputs" / "daily"
+    if not daily_dir.exists():
+        return {}
+    # Find the newest day folder with data/quotes.json
+    for day_dir in sorted(daily_dir.iterdir(), reverse=True):
+        quotes_file = day_dir / "data" / "quotes.json"
+        if quotes_file.exists():
+            try:
+                raw = json.loads(quotes_file.read_text(encoding="utf-8"))
+                snapshots = raw.get("snapshots", [])
+                return {s["ticker"]: s for s in snapshots if "error" not in s}
+            except Exception:
+                continue
+    return {}
+
+
 def fetch_prices(tickers, start_date):
     """Fetch daily closing prices from start_date to today."""
-    if not tickers: return pd.DataFrame()
+    if not _HAS_YFINANCE or not tickers:
+        return pd.DataFrame() if _HAS_YFINANCE else None
     
     # Pad start_date backwards slightly in case it falls on a weekend
     start_dt = pd.to_datetime(start_date) - pd.Timedelta(days=5)
@@ -220,7 +249,7 @@ def compute_technicals_for_tickers(tickers: list) -> dict:
     Returns dict: ticker → technicals dict.
     Silently skips if pandas-ta is not installed.
     """
-    if not _HAS_PANDAS_TA or not tickers:
+    if not _HAS_PANDAS_TA or not _HAS_YFINANCE or not tickers:
         return {}
 
     result = {}
@@ -308,8 +337,10 @@ def simulate_portfolio(digests):
     """
     Simulate portfolio NAV and cash over time based on daily digests.
     Assumes base 100 starting on the first digest's date.
+    Requires yfinance + pandas.
     """
-    if not digests: return [], {}
+    if not digests or not _HAS_YFINANCE:
+        return [], [], {}, digests[-1] if digests else None
 
     # Gather all unique tickers excluding CASH
     all_tickers = set()
@@ -326,7 +357,7 @@ def simulate_portfolio(digests):
     prices = fetch_prices(all_symbols, start_date)
 
     if prices.empty:
-        return [], {}
+        return [], [], {}, digests[-1] if digests else None
 
     # Build sequence of business days from start_date to last available price
     if start_date not in prices.index:
@@ -471,7 +502,7 @@ def compute_fx_impact(pj_positions, investor_currency):
       2. yfinance USDCAD=X historical close for entry_date
     Returns list of per-position dicts, or empty list if investor_currency == USD or no positions.
     """
-    if not pj_positions or investor_currency == "USD":
+    if not pj_positions or investor_currency == "USD" or not _HAS_YFINANCE:
         return []
 
     fx_ticker = f"USD{investor_currency}=X"  # e.g. USDCAD=X
@@ -783,6 +814,8 @@ def load_all_markdowns(root):
 
 def main():
     print("📊 Market Digest — Dynamic Backend Parser v3")
+    if not _HAS_YFINANCE:
+        print("   ⚠️  yfinance not available — using docs-only + prefetched-data mode")
     
     digest_files = get_digest_files()
     if not digest_files:
@@ -793,7 +826,22 @@ def main():
     
     parsed_digests = [parse_digest(f) for f in digest_files]
     
-    history, active_positions, b_hist, latest_digest = simulate_portfolio(parsed_digests)
+    # --- Portfolio simulation (yfinance-dependent) ---
+    history = []
+    active_positions = []
+    b_hist = {}
+    latest_digest = parsed_digests[-1] if parsed_digests else None
+    pnl = 0.0
+    total_invested = 0.0
+    cash_pct = 100.0
+    sharpe = 0.0
+    volatility = 0.0
+    max_dd = 0.0
+    alpha = 0.0
+    pnl_fx_data = None
+
+    if _HAS_YFINANCE:
+        history, active_positions, b_hist, latest_digest = simulate_portfolio(parsed_digests)
     
     if not latest_digest:
         print("   ❌ Could not parse any latest digest.")
@@ -809,16 +857,18 @@ def main():
     # Load latest rebalance decision
     rebalance_data = load_rebalance_decision(latest_digest['date'])
 
-    # Compute unrealized P&L + FX-adjusted returns (CAD or other non-USD investor currency)
-    pnl_fx_data = compute_fx_impact(pj_positions, investor_currency)
-    if pnl_fx_data:
-        w_usd = pnl_fx_data.get('weighted_usd_return_pct')
-        w_cad = pnl_fx_data.get(f'weighted_{investor_currency.lower()}_return_pct')
-        print(f"   FX Impact: weighted USD return {w_usd}% | {investor_currency} return {w_cad}%")
+    # Compute unrealized P&L + FX-adjusted returns (yfinance-dependent)
+    if _HAS_YFINANCE:
+        pnl_fx_data = compute_fx_impact(pj_positions, investor_currency)
+        if pnl_fx_data:
+            w_usd = pnl_fx_data.get('weighted_usd_return_pct')
+            w_cad = pnl_fx_data.get(f'weighted_{investor_currency.lower()}_return_pct')
+            print(f"   FX Impact: weighted USD return {w_usd}% | {investor_currency} return {w_cad}%")
 
     # Calculate simplistic metrics
-    active_nav = history[-1]['nav'] if history else 100.0
-    pnl = active_nav - 100.0 # base 100
+    if history:
+        active_nav = history[-1]['nav']
+        pnl = active_nav - 100.0
     total_invested = sum([p['weight_actual'] for p in active_positions])
     cash_found = next((p['weight'] for p in latest_digest['positions'] if p['ticker'] == 'CASH'), None)
     
@@ -827,13 +877,8 @@ def main():
     else:
         cash_pct = cash_found
 
-    # Advanced performance metrics
-    sharpe = 0.0
-    volatility = 0.0
-    max_dd = 0.0
-    alpha = 0.0
-    
-    if len(history) > 1:
+    # Advanced performance metrics (yfinance-dependent)
+    if _HAS_YFINANCE and len(history) > 1:
         navs = pd.Series([h['nav'] for h in history])
         returns = navs.pct_change().dropna()
         if not returns.empty and returns.std() != 0:
@@ -877,27 +922,38 @@ def main():
     if not active_positions and pj_positions:
         print("   Using portfolio.json positions (no DIGEST-derived positions)")
         all_tickers_pj = [p["ticker"] for p in pj_positions if p["ticker"] != "CASH"]
-        if all_tickers_pj:
+
+        # Try pre-fetched data first, then yfinance as fallback
+        prefetched = _load_prefetched_prices(ROOT)
+        pj_prices = None
+        if _HAS_YFINANCE and all_tickers_pj and not prefetched:
             pj_prices = fetch_prices(all_tickers_pj, datetime.now().strftime("%Y-%m-%d"))
-            for p in pj_positions:
-                t = p["ticker"]
-                if t == "CASH":
-                    continue
-                cp = None
-                if not pj_prices.empty and t in pj_prices.columns:
-                    cp = float(pj_prices[t].dropna().iloc[-1]) if not pj_prices[t].dropna().empty else None
-                active_positions.append({
-                    "ticker": t,
-                    "name": p.get("name", t),
-                    "type": "LONG",
-                    "weight_actual": float(p.get("weight_pct", 0)),
-                    "current_price": cp,
-                    "rationale": p.get("notes", ""),
-                    "thesis_ids": p.get("thesis_ids", []),
-                    "category": p.get("category", ""),
-                    "pm_notes": p.get("notes", ""),
-                    "stats": {},
-                })
+
+        for p in pj_positions:
+            t = p["ticker"]
+            if t == "CASH":
+                continue
+            cp = None
+            stats = {}
+            # Prefer pre-fetched data (always available in CI)
+            if t in prefetched:
+                snap = prefetched[t]
+                cp = snap.get("price")
+                stats = {k: v for k, v in snap.items() if k not in ("ticker", "price", "error")}
+            elif pj_prices is not None and hasattr(pj_prices, 'empty') and not pj_prices.empty and t in pj_prices.columns:
+                cp = float(pj_prices[t].dropna().iloc[-1]) if not pj_prices[t].dropna().empty else None
+            active_positions.append({
+                "ticker": t,
+                "name": p.get("name", t),
+                "type": "LONG",
+                "weight_actual": float(p.get("weight_pct", 0)),
+                "current_price": cp,
+                "rationale": p.get("notes", ""),
+                "thesis_ids": p.get("thesis_ids", []),
+                "category": p.get("category", ""),
+                "pm_notes": p.get("notes", ""),
+                "stats": stats,
+            })
         total_invested = sum(p["weight_actual"] for p in active_positions)
         cash_pct = 100.0 - total_invested
 

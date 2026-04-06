@@ -97,6 +97,11 @@ else
   echo "📦 Committing digiquant-atlas outputs — $DATE"
   echo "============================================"
 
+  # Regenerate dashboard-data.json from latest outputs before committing
+  echo ""
+  echo "🔄 Regenerating dashboard-data.json..."
+  python3 scripts/update-tearsheet.py || echo "   ⚠️  Tearsheet update failed — committing stale dashboard-data.json"
+
   # Stage digest outputs and config
   git add outputs/
   git add config/

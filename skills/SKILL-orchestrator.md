@@ -66,8 +66,14 @@ Then load the following. Do NOT summarize to the user — just internalize:
 
 ### Data Layer Check
 Verify that `outputs/daily/{{DATE}}/data/quotes.json` and `outputs/daily/{{DATE}}/data/macro.json` exist.
-- If present: announce their presence to user so they know numerical grounding is available.
-- If missing: **stop**. Run `./scripts/fetch-market-data.sh` (or `python3 scripts/fetch-quotes.py && python3 scripts/fetch-macro.py`) before any analysis. This provides accurate prices, technicals, and yield curve data for all downstream phases.
+- **If present**: announce their presence to user so they know numerical grounding is available.
+- **If missing — try local scripts first**:
+  Run `./scripts/fetch-market-data.sh` (or `python3 scripts/fetch-quotes.py && python3 scripts/fetch-macro.py`).
+  This provides the richest data (full technicals, OHLCV history, Bollinger Bands, ATR).
+- **If scripts fail** (sandbox, missing yfinance, network restrictions):
+  Follow `skills/SKILL-mcp-data-fetch.md` to fetch data via MCP tools (FRED, Alpha Vantage,
+  CoinGecko, Frankfurter). This produces the same JSON schema with slightly reduced coverage
+  (fewer tickers, limited technicals). MCP mode is sufficient for high-quality analysis.
 
 Skills that consume the data layer:
 - `SKILL-macro.md` (Phase 3) — reads `macro-summary.md` for yield curve and VIX

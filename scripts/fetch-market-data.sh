@@ -45,11 +45,18 @@ echo "[ Checking dependencies ]"
 "$PYTHON" -c "import yfinance" 2>/dev/null || {
     echo "  ⚠️  yfinance not found in $PYTHON"
     echo "       Run: pip install -r requirements.txt  (or set DIGIQUANT_PYTHON=...)"
+    echo ""
+    echo "  💡 Sandbox/CI alternative: Use MCP-based data fetch instead."
+    echo "     Follow skills/SKILL-mcp-data-fetch.md to fetch data via FRED, Alpha Vantage,"
+    echo "     CoinGecko, and Frankfurter MCP tools."
     exit 1
 }
 "$PYTHON" -c "import pandas_ta" 2>/dev/null || {
     echo "  ⚠️  pandas-ta not found in $PYTHON"
     echo "       Run: pip install pandas-ta  (or set DIGIQUANT_PYTHON=...)"
+    echo ""
+    echo "  💡 Sandbox/CI alternative: Use MCP-based data fetch instead."
+    echo "     Follow skills/SKILL-mcp-data-fetch.md"
     exit 1
 }
 "$PYTHON" -c "import requests" 2>/dev/null || {
