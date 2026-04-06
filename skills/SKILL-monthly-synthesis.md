@@ -192,4 +192,4 @@ Run: `python3 scripts/update-tearsheet.py`
 - [ ] Delta Efficiency Summary added
 - [ ] Memory files updated with monthly summary entries
 - [ ] Dashboard updated
-- [ ] `git-commit.sh` run
+- [ ] `git-commit.sh` run — commits **and pushes** to origin (triggers web dashboard update)

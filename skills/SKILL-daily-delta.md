@@ -369,4 +369,4 @@ This runs every phase check in sequence and reports a consolidated pass/fail. Al
 - [ ] Phase 7C: Portfolio monitor completed — triggers checked
 - [ ] `update-tearsheet.py` executed successfully
 - [ ] Evolution post-mortem complete (delta quality entry in quality-log.md)
-- [ ] `git-commit.sh` run to commit all outputs
+- [ ] `git-commit.sh` run — commits **and pushes** to origin (triggers web dashboard update)

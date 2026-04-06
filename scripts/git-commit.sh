@@ -116,8 +116,10 @@ else
   git commit -m "digest($DATE): daily market analysis and memory updates"
 
   echo ""
-  echo "✅ Committed: digest($DATE)"
-  echo ""
-  echo "To push to remote: git push origin master"
+  echo "📤 Pushing to origin..."
+  git push origin master 2>/dev/null && echo "✅ Committed + pushed: digest($DATE) — GitHub Pages will redeploy shortly." || {
+    echo "   ⚠️  Push failed — run manually: git push origin master"
+    echo "   Commit is local. Page will not update until pushed."
+  }
   echo ""
 fi

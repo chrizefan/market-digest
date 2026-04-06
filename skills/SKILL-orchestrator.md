@@ -360,8 +360,10 @@ Run the following command exactly in your environment to parse the directories a
 
 Wait for it to confirm the update to `dashboard-data.json`.
 
-After the dashboard update succeeds, commit all digest outputs and memory updates:
+After the dashboard update succeeds, commit and push all digest outputs:
 `./scripts/git-commit.sh`
+
+This commits **and pushes** to `origin/master` — triggering a GitHub Pages redeploy so the web dashboard reflects today's analysis. Confirm the script prints `✅ Committed + pushed`.
 
 This creates the **first commit** — the daily digest outputs.
 
