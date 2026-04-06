@@ -63,7 +63,7 @@ function App() {
   useStarfield();
 
   useEffect(() => {
-    fetch(`${import.meta.env.BASE_URL}dashboard-data.json`)
+    fetch(`${import.meta.env.BASE_URL}dashboard-data.json?v=${Date.now()}`)
       .then((res) => {
         if (!res.ok) throw new Error("Could not load data");
         return res.json();
