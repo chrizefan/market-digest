@@ -12,7 +12,7 @@
 |-------|-------|
 | **Profile name** | Default |
 | **Account type** | Non-registered (taxable) |
-| **Home currency** | USD |
+| **Home currency** | CAD (most holdings USD-denominated; note FX exposure) |
 | **Base brokerage** | Interactive Brokers |
 | **Tax jurisdiction** | Canada |
 
@@ -129,6 +129,76 @@ recommendations toward preferred areas and underweight disliked ones.
 | Consumer Discretionary (XLY) | Neutral | No structural bias — regime-dependent |
 | Communication Services (XLC) | Neutral | No structural bias — regime-dependent |
 
+### 5D. ETF Universe (by Category)
+
+#### US Equities — By Market Cap
+
+| Vehicle | Tickers |
+|---------|----------|
+| Large cap | SPY, QQQ, IWB |
+| Mid cap | MDY, IJH |
+| Small cap | IWM, IJR |
+
+#### US Equities — By Sector (SPDR Select)
+
+XLK (Tech), XLF (Financials), XLE (Energy), XLV (Health Care), XLI (Industrials),
+XLRE (Real Estate), XLU (Utilities), XLY (Consumer Disc.), XLP (Consumer Staples),
+XLB (Materials), XLC (Communication Services)
+
+#### International — Developed Markets
+
+EFA (EAFE), VEA (Vanguard Developed ex-US), VGK (Europe), EWJ (Japan),
+EWG (Germany), EWU (UK), EWA (Australia)
+
+#### International — Emerging Markets
+
+EEM (MSCI EM), VWO (Vanguard EM), FXI (China Large Cap), ASHR (China A-Shares),
+EWZ (Brazil), EWT (Taiwan), EWY (South Korea), INDA (India)
+
+#### Crypto (Spot ETFs)
+
+- Bitcoin: IBIT (BlackRock), FBTC (Fidelity)
+- Ethereum: ETHA (BlackRock), FETH (Fidelity)
+- Solana: No spot ETF yet — track SOL price directly
+
+#### Commodities
+
+| Vehicle | Preferred Ticker | Notes |
+|---------|------------------|-------|
+| Gold | IAU | Lower cost than GLD |
+| Silver | SLV | |
+| Oil (WTI) | DBO | Optimized roll — preferred over USO |
+| Brent | BNO | |
+| Broad commodities | PDBC, DJP | |
+| Copper | CPER | |
+
+#### Fixed Income & Cash Equivalents
+
+| Duration | Tickers |
+|----------|---------|
+| Cash proxy | BIL, SHV (T-bills) |
+| Short | SHY |
+| Intermediate | IEF |
+| Long | TLT |
+| High yield | HYG |
+| Investment grade | LQD |
+| TIPS | TIP |
+| EM bonds | EMB |
+
+### 5E. Ratio / Spread Trades
+
+Long/short ETF pairs for relative views. Size by **net exposure** (not each leg individually).
+
+| Pair | Direction | Thesis |
+|------|-----------|--------|
+| GLD / SLV | Long GLD, Short SLV | Gold/silver ratio expansion |
+| DBO / GLD | Long DBO, Short GLD | Oil over gold — inflation/growth bet |
+| IWM / SPY | Long IWM, Short SPY | Small cap vs. large cap rotation |
+| EEM / SPY | Long EEM, Short SPY | EM vs. US — USD weakness / reflation |
+| XLE / XLU | Long XLE, Short XLU | Energy vs. utilities — risk-on within defensives |
+| QQQ / IWM | Long QQQ, Short IWM | Growth/quality vs. small cap |
+| TLT / HYG | Long TLT, Short HYG | Flight to quality — risk-off spread |
+
 ---
 
 ## 6. Thematic & Macro Preferences
@@ -171,7 +241,31 @@ The system should evaluate each asset class on its merits per cycle without stan
 | **Contrarian signals** | Flag when positioning diverges from consensus |
 | **Memory integration** | Always reference rolling memory for trend continuity |
 | **Noise filter** | Ignore sub-weekly timeframes and mainstream media narratives |
+### 7A. Digest Format Requirements
 
+Every digest must:
+
+1. **Lead with a positioning recommendation** — high-level portfolio allocation suggestion (what to own, underweight, hold in cash).
+   - Express as **target weights by category** (e.g., "25% US large cap, 15% gold, 10% EM, 50% cash")
+   - Compare to current positions in `config/portfolio.json` — flag if a rotation is warranted
+   - **Only recommend changes when the macro regime shifts meaningfully** — do NOT suggest daily moves
+   - Aim for **weekly cadence** on repositioning; always justify clearly
+   - When no rotation is needed, say so explicitly
+
+2. **Provide market context** — macro regime summary, key overnight/pre-market moves, upcoming events
+
+3. **Performance check** — reference current positions from `config/portfolio.json`, note unrealized P&L, flag positions working against the active thesis
+
+4. **Use consistent structure**: headers, bias labels (bullish/bearish/neutral/conflicted) per segment, confidence level (high/medium/low)
+
+### 7B. What to Filter Out (Noise)
+
+- Individual stock analysis (ETF rotation only — no single names)
+- Intraday technical levels and sub-daily price action
+- Options and derivatives analysis
+- Positions requiring intraday monitoring
+- Mainstream financial media narratives (unless genuinely market-moving)
+- Any signal below the weekly time horizon
 ---
 
 ## 8. Benchmark & Performance Tracking
@@ -182,6 +276,15 @@ The system should evaluate each asset class on its merits per cycle without stan
 | **Secondary benchmark** | All-weather (SPY 30%, TLT 40%, GLD 15%, DBC 7.5%, BIL 7.5%) |
 | **Performance review cadence** | Every digest (daily) |
 | **Attribution focus** | Regime call accuracy, sector rotation timing, thesis hit rate |
+
+---
+
+## 9. Active Theses
+
+The live thesis register is maintained in `memory/THESES.md`.
+Read that file for current thesis IDs, status, invalidation triggers, and evidence.
+
+See: `memory/THESES.md`
 
 ---
 
