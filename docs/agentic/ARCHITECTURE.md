@@ -275,16 +275,15 @@ The React frontend reads this file on load — no backend server, no database, n
 
 | Sub-Phase | Action | Output File |
 |-----------|--------|-------------|
-| 9A | Source Scorecard: rate every data source (1–5 stars), log failures, record discoveries | `memory/evolution/sources.md` |
-| 9B | Quality Post-Mortem: check yesterday's predictions (✅/❌/⏳), rate digest on 5 dimensions (1–5 scale each) | `memory/evolution/quality-log.md` |
-| 9C | Improvement Proposals: max 2 per session, each specifying exact target file + change + rationale | `memory/evolution/proposals.md` |
+| 9A | Source Scorecard: rate every data source (1–5 stars), log failures, record discoveries | `outputs/daily/YYYY-MM-DD/evolution/sources.md` |
+| 9B | Quality Post-Mortem: check yesterday's predictions (✅/❌/⏳), rate digest on 5 dimensions (1–5 scale each) | `outputs/daily/YYYY-MM-DD/evolution/quality-log.md` |
+| 9C | Improvement Proposals: max 2 per session, each specifying exact target file + change + rationale | `outputs/daily/YYYY-MM-DD/evolution/proposals.md` |
 | 9D | Document applied proposals (approved in prior PRs) | `docs/evolution-changelog.md` |
 | 9E | Evolution branch + PR | `evolve/YYYY-MM-DD` — requires user approval to merge |
 
 **Guardrails — Phase 9 may NEVER propose changes to:**
 - Output schema / `templates/master-digest.md` section structure (immutable)
-- Risk profile or position sizing in `config/preferences.md`
-- Memory file format (append-only is a hard constraint)
+- Risk profile or position sizing in `config/investment-profile.md` §4
 - These guardrails themselves
 
 ```bash

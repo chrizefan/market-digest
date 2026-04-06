@@ -101,10 +101,12 @@ def parse_digest(filepath):
         "date": date_str,
         "positions": [],
         "regime": "Unknown",
+        "regime_label": "neutral",
         "bias": "Unknown",
         "regime_summary": "",
         "actionable": [],
-        "risks": []
+        "risks": [],
+        "theses": [],
     }
 
     # Extract Target Allocation
@@ -129,6 +131,17 @@ def parse_digest(filepath):
         data["bias"] = full_bias.split("—")[0].strip() if "—" in full_bias else full_bias
         data["regime"] = full_bias
         
+        # Derive regime_label for frontend color coding
+        bias_lower = data["bias"].lower()
+        if any(w in bias_lower for w in ["bullish", "risk-on"]):
+            data["regime_label"] = "bullish"
+        elif any(w in bias_lower for w in ["bearish", "risk-off"]):
+            data["regime_label"] = "bearish"
+        elif any(w in bias_lower for w in ["caution", "mixed", "conflicted", "transitional"]):
+            data["regime_label"] = "caution"
+        else:
+            data["regime_label"] = "neutral"
+        
         # Grab next paragraph
         para = content[regime_match.end():].lstrip().split("\n\n")[0]
         data["regime_summary"] = para.strip()
@@ -146,8 +159,32 @@ def parse_digest(filepath):
                 lines.append(line.strip())
         return [re.sub(r"^(-\s*|\d+\.\s*)", "", l) for l in lines] # strip bullet prefixes
 
-    data["actionable"] = extract_list_under_heading(r"## ⚡ Actionable Summary.*")
-    data["risks"] = extract_list_under_heading(r"## 🚨 Risk Radar.*")
+    data["actionable"] = extract_list_under_heading(r"## (?:⚡\s*)?Actionable Summary")
+    data["risks"] = extract_list_under_heading(r"## (?:🚨\s*)?Risk Radar")
+
+    # Extract Thesis Tracker table
+    thesis_match = re.search(r"## (?:📋\s*)?Thesis Tracker", content)
+    if thesis_match:
+        table_content = content[thesis_match.end():]
+        # Stop at next heading
+        next_heading = re.search(r"\n## ", table_content)
+        if next_heading:
+            table_content = table_content[:next_heading.start()]
+        # Parse markdown table rows (skip header and separator)
+        rows = [l.strip() for l in table_content.splitlines() if l.strip().startswith("|") and not re.match(r"^\|[-\s|]+\|$", l.strip())]
+        if len(rows) >= 2:
+            rows = rows[1:]  # skip header row
+        for row in rows:
+            cells = [c.strip() for c in row.split("|")[1:-1]]
+            if len(cells) >= 5:
+                data["theses"].append({
+                    "id": cells[0],
+                    "name": cells[1],
+                    "vehicle": cells[2],
+                    "invalidation": cells[3],
+                    "status": cells[4],
+                    "notes": cells[5] if len(cells) > 5 else "",
+                })
 
     return data
 
@@ -625,9 +662,11 @@ def main():
             "snapshots": history,
             "strategy": {
                 "regime": latest_digest["regime"],
+                "regime_label": latest_digest.get("regime_label", "neutral"),
                 "summary": latest_digest["regime_summary"],
                 "actionable": latest_digest["actionable"],
                 "risks": latest_digest["risks"],
+                "theses": latest_digest.get("theses", []),
                 "next_review": "Daily"
             }
         },

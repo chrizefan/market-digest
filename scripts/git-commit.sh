@@ -27,7 +27,7 @@ if [ "$1" == "--evolution" ]; then
   fi
 
   # Stage only evolution-related files
-  git add memory/evolution/
+  git add "outputs/daily/${DATE}/evolution/"
   git add docs/evolution-changelog.md
 
   # Check if there's anything to commit
@@ -65,13 +65,13 @@ if [ "$1" == "--evolution" ]; then
 This PR contains post-mortem observations and improvement proposals from today's digest run.
 
 ### Files Changed
-- \`memory/evolution/sources.md\` — Data source ratings
-- \`memory/evolution/quality-log.md\` — Quality self-assessment
-- \`memory/evolution/proposals.md\` — New improvement proposals
+- \`outputs/daily/${DATE}/evolution/sources.md\` — Data source ratings
+- \`outputs/daily/${DATE}/evolution/quality-log.md\` — Quality self-assessment
+- \`outputs/daily/${DATE}/evolution/proposals.md\` — New improvement proposals
 - \`docs/evolution-changelog.md\` — Applied improvements log
 
 ### Review Instructions
-1. Review the proposals in \`memory/evolution/proposals.md\`
+1. Review the proposals in \`outputs/daily/${DATE}/evolution/proposals.md\`
 2. Approve/reject each proposal
 3. Merge this PR to apply the evolution artifacts to master
 
@@ -97,14 +97,10 @@ else
   echo "📦 Committing digiquant-atlas outputs — $DATE"
   echo "============================================"
 
-  # Stage digest outputs and memory (excluding evolution)
+  # Stage digest outputs and config
   git add outputs/
-  git add memory/
   git add config/
   git add frontend/public/dashboard-data.json
-
-  # Exclude evolution files from this commit (they get their own branch)
-  git reset HEAD memory/evolution/ 2>/dev/null || true
 
   # Check if there's anything to commit
   if git diff --staged --quiet; then

@@ -32,7 +32,6 @@ Read `outputs/daily/{{DATE}}/_meta.json` and confirm:
 
 ### Step 1: Load Config
 - `config/watchlist.md` — full asset universe
-- `config/preferences.md` — trading style, risk profile, active theses
 - `config/investment-profile.md` — investor profile, risk tolerance, asset preferences, regime playbook
 
 ### Step 2: Load This Week's Baseline
@@ -258,7 +257,7 @@ For each position in `positions[]`, check today's session data against threshold
 
 | Trigger | Condition | Action |
 |---------|-----------|--------|
-| **Thesis broken** | Any thesis in THESES.md moved to ❌ Challenged for this asset | → Flag URGENT: run full analyst + PM for this position |
+| **Thesis broken** | Any active thesis moved to ❌ Challenged for this asset | → Flag URGENT: run full analyst + PM for this position |
 | **Invalidation trigger hit** | Price crossed the exit condition in the asset's most recent analyst report | → Flag URGENT |
 | **Weight drift ≥10%** | Today's recommended weight (quick estimate from session bias) differs from current by ≥10% | → Flag for full PM review |
 | **New opportunity** | Run scoped screener (`SKILL-opportunity-screener.md`, delta mode: max 2 candidates) — any non-held ticker scores Total ≥ +3 | → Flag for deliberation alongside triggered positions |

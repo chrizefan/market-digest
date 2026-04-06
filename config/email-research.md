@@ -107,7 +107,7 @@ Subscribe to the following newsletters/alerts at your dedicated email:
 | Bridgewater | Daily Observations (institutional) | Macro regime framing |
 | AQR | Research papers + quarterly | Factor analysis, portfolio construction |
 
-**Action**: When a quarterly letter is released, devote 10 minutes to extracting key positions and biases. Update `config/hedge-funds.md` with latest known positions. Append a note to `memory/institutional/hedge-funds/ROLLING.md`.
+**Action**: When a quarterly letter is released, devote 10 minutes to extracting key positions and biases. Update `config/hedge-funds.md` with latest known positions.
 
 ---
 

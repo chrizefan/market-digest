@@ -76,7 +76,7 @@ Run: scripts/monthly-rollup.sh  (collects all baselines + deltas)
 ```
 config/
   watchlist.md        ← Assets to track (read at every session start)
-  preferences.md      ← Trading style, risk profile, active theses (read at every session start)
+  preferences.md      ← Trading style redirect — see investment-profile.md
   investment-profile.md ← Investor identity, horizon, risk tolerance, asset preferences, regime playbook
   hedge-funds.md      ← 16 tracked hedge funds with CIK, X handles, style
   data-sources.md     ← 30+ X accounts, data URLs, economic calendars
@@ -99,9 +99,6 @@ skills/
   sectors/                    ← 11 GICS sector sub-agent skills
   alternative-data/           ← 4 alt-data sub-agent skills
   institutional/              ← 2 institutional intelligence skills
-
-memory/                       ← Evolution files (source scorecard, quality log, proposals)
-  evolution/                    ← Post-mortem artifacts
 
 templates/
   master-digest.md            ← DIGEST.md template (baselines)
@@ -148,7 +145,7 @@ docs/agentic/                 ← Full agentic documentation suite
 ### Always:
 - **Check `_meta.json`** before any analysis — determines baseline vs delta mode
 - **Search the web** for current prices, yields, news. Never use training data cutoff values.
-- **Read config/** at session start (watchlist.md + preferences.md + investment-profile.md minimum)
+- **Read config/** at session start (watchlist.md + investment-profile.md minimum)
 - **Read prior day's outputs** for continuity before running any analysis
 - **Save outputs** to the correct path (see Output File Naming below)
 - **State a bias** (Bullish/Bearish/Neutral/Conflicted) with rationale for every segment

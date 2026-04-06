@@ -58,7 +58,7 @@ Construct exactly 3 bull case arguments, each grounded in a specific data point 
 
 ### Step 3: Build the Bear Case
 Construct exactly 3 bear case arguments, each with a specific counter-signal or risk:
-- Include the thesis invalidation condition if one exists in THESES.md
+- Include the thesis invalidation condition if one exists in the current DIGEST.md Thesis Tracker
 - Be honest — if the bull case is overwhelming, the bear case still needs to be real risks, not strawmen
 
 ### Step 4: Form the Analyst Verdict

@@ -1,7 +1,7 @@
 # Thesis Tracker Agent
 
 ## Role
-Portfolio thesis management specialist. Manages the lifecycle of investment theses from initial construction through confirmation, extension, and exit. Reviews active theses against current market evidence and maintains `memory/THESES.md`.
+Portfolio thesis management specialist. Manages the lifecycle of investment theses from initial construction through confirmation, extension, and exit. Reviews active theses against current market evidence. Theses are tracked in the DIGEST.md Thesis Tracker table and `config/portfolio.json`.
 
 ## Trigger Phrases
 - "Review my theses"
@@ -15,12 +15,12 @@ Portfolio thesis management specialist. Manages the lifecycle of investment thes
 
 ## Inputs
 ```
-skills/SKILL-thesis-tracker.md           ← Review framework
-skills/SKILL-thesis.md                   ← Build framework (if adding)
-memory/THESES.md                         ← All active theses
-config/preferences.md                    ← Trading style + risk tolerance
-memory/BIAS-TRACKER.md                   ← Recent bias trend (last 5 rows)
-outputs/daily/{{DATE}}/DIGEST.md         ← Today's analysis (if available)
+skills/SKILL-thesis-tracker.md               ← Review framework
+skills/SKILL-thesis.md                       ← Build framework (if adding)
+config/investment-profile.md                 ← Trading style + risk tolerance
+config/portfolio.json                        ← Current positions + thesis_ids
+outputs/daily/{{DATE}}/DIGEST.md             ← Today's analysis (Thesis Tracker table)
+outputs/daily/[prior-date]/DIGEST.md         ← Prior output for continuity (if available)
 ```
 
 ## Thesis Lifecycle
@@ -43,15 +43,14 @@ Building → Confirmed → Extended → Exited
 
 ### Review Mode (Reviewing Existing Theses)
 
-1. Read `memory/THESES.md` — list all active theses
-2. Read today's `DIGEST.md` or relevant segment outputs
-3. Read `memory/BIAS-TRACKER.md` last 5 rows for trend context
-4. For each active thesis:
+1. Read the Thesis Tracker table from today's `DIGEST.md` (or most recent available DIGEST.md)
+2. Read `config/portfolio.json` — cross-reference `thesis_ids` on each position
+3. For each active thesis:
    a. Assess current supporting evidence
    b. Assess counter-evidence
    c. Assign updated status
    d. Note exit trigger status (has it been hit?)
-5. Append review to `memory/THESES.md` under `### Updates` header for each thesis
+5. Write an updated thesis status block into the current DIGEST.md Thesis Tracker section, or output a standalone thesis update
 
 ### Build Mode (Creating New Thesis)
 
@@ -59,14 +58,14 @@ Building → Confirmed → Extended → Exited
 2. Gather supporting evidence from memory and current research
 3. Define: thesis statement, entry rationale, exit triggers, time horizon
 4. Structure the thesis using the standard format (see below)
-5. Append the new thesis to `memory/THESES.md`
+5. Output the completed thesis in standard format for inclusion in the next DIGEST.md
 
 ### Exit Mode (Closing a Thesis)
 
 1. Mark status as `Exited`
 2. Document the exit reason (target hit, invalidated, stopped, time expired)
 3. Write a brief post-mortem: what went right, what went wrong
-4. Update `memory/THESES.md` with final update
+4. Note the exit in the output — update `config/portfolio.json` thesis_ids as needed
 
 ## Thesis Format in THESES.md
 
@@ -97,8 +96,8 @@ One to two sentence thesis statement.
 ```
 
 ## Outputs
-- Updated entries in `memory/THESES.md`
-- No file written to `outputs/daily/` unless specifically requested
+- Thesis status summary (in-session or written to `outputs/daily/{{DATE}}/DIGEST.md` Thesis Tracker section)
+- No dedicated file written to `outputs/daily/` unless specifically requested
 
 ## Example Invocations
 
@@ -106,11 +105,9 @@ One to two sentence thesis statement.
 ```
 Today is 2026-04-05.
 Read agents/thesis-tracker.agent.md and skills/SKILL-thesis-tracker.md.
-Read memory/THESES.md for all active theses.
-Read memory/BIAS-TRACKER.md last 5 rows.
-If available, read outputs/daily/2026-04-05/DIGEST.md.
-Review each active thesis and update statuses.
-Append your review under ### Updates for each thesis in memory/THESES.md.
+Read config/portfolio.json for current positions and thesis_ids.
+Read outputs/daily/2026-04-05/DIGEST.md — focus on the Thesis Tracker section.
+Review each active thesis and output updated statuses.
 ```
 
 **New thesis:**
@@ -119,12 +116,12 @@ Today is 2026-04-05.
 Read agents/thesis-tracker.agent.md and skills/SKILL-thesis.md.
 Build a new thesis on: [TOPIC/TICKER]
 Evidence gathered so far: [paste key data points]
-Append the completed thesis to memory/THESES.md.
+Output the completed thesis in standard format.
 ```
 
 **Quick status:**
 ```
-Read memory/THESES.md.
+Read config/portfolio.json and outputs/daily/2026-04-05/DIGEST.md.
 List all active theses, their current status, and one-line summary.
 No updates needed — just a summary.
 ```

@@ -64,8 +64,8 @@ When a thesis resolves (target hit, stop hit, time expired, invalidated):
 1. Set Status to CLOSED-WIN / CLOSED-LOSS / EXPIRED
 2. Set Closed date
 3. Write a Resolution note (2-3 sentences: what happened, what was learned)
-4. Move from "Active" to "Closed" section in THESES.md
-5. Remove from `config/preferences.md`
+4. Move from "Active" to "Closed" section in the Thesis Tracker output
+5. Remove related `thesis_ids` from `config/portfolio.json` positions if relevant
 
 ### Weekly Thesis Review
 At each weekly rollup, run through all ACTIVE theses:

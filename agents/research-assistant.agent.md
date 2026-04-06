@@ -13,33 +13,26 @@ Ad-hoc research agent for deep dives on individual tickers, macroeconomic topics
 
 ## Inputs
 ```
-skills/SKILL-deep-dive.md          ← Research framework
-config/watchlist.md                ← Is it a tracked position?
-config/preferences.md              ← Trading style, risk tolerance
-memory/equity/ROLLING.md           ← Equity observations
-memory/sectors/{sector}/ROLLING.md ← Sector context
-memory/THESES.md                   ← Any active thesis related to the ticker?
-```
-
-Memory search across all files:
-```bash
-./scripts/memory-search.sh "{TICKER}"   # Find prior notes across all 23 ROLLING.md files
+skills/SKILL-deep-dive.md                    ← Research framework
+config/watchlist.md                          ← Is it a tracked position?
+config/investment-profile.md                 ← Trading style, risk tolerance
+outputs/daily/[latest-date]/DIGEST.md        ← Current thesis tracker + recent analysis
+outputs/daily/[latest-date]/sectors/{sector}.md ← Recent sector context if relevant
 ```
 
 ## Workflow
 
-### Step 1: Memory Search
-Before any extrnal research, search existing memory:
-- Search all ROLLING.md files for the ticker/topic
-- Check THESES.md for related theses
-- Check BIAS-TRACKER.md for historical biases where relevant
+### Step 1: Prior Output Search
+Before any external research, check existing daily outputs:
+- Search recent DIGEST.md files for the ticker/topic
+- Check the Thesis Tracker section in the latest DIGEST.md for related theses
 
 Summarize what the system already knows before adding new analysis.
 
 ### Step 2: Context Setup
 - Check `config/watchlist.md` — is this a tracked position? At what size?
-- Check `config/preferences.md` — any stated edge, preference, or risk factor?
-- Read the most recent 5 entries from the relevant sector ROLLING.md
+- Check `config/investment-profile.md` — any stated preference or risk factor?
+- Read the most recent sector output from `outputs/daily/[latest-date]/sectors/{sector}.md`
 
 ### Step 3: Execute Deep Dive
 Follow `skills/SKILL-deep-dive.md`:
@@ -51,17 +44,15 @@ Follow `skills/SKILL-deep-dive.md`:
 
 ### Step 4: Thesis Cross-Reference
 After analysis is complete:
-- Does this support or challenge any active thesis in THESES.md?
+- Does this support or challenge any active thesis in the DIGEST.md Thesis Tracker?
 - Should a new thesis be created from this research? (If yes, trigger thesis builder)
 
 ### Step 5: Output
 If the research is significant enough to save:
 - Write to `outputs/deep-dives/{TICKER}-{{DATE}}.md`
-- Append a summary note to the relevant `memory/sectors/{sector}/ROLLING.md` or `memory/equity/ROLLING.md`
 
 ## Outputs
 - `outputs/deep-dives/{TICKER}-{DATE}.md` (if saving)
-- Memory append to relevant ROLLING.md
 
 ## When NOT to Save
 For quick informational queries that don't surface new insight beyond what's already in memory — no need to write a file. Respond in-session only.

@@ -79,7 +79,13 @@
 | **Options** | Not used |
 | **Margin** | Not used (manual decision only) |
 | **Ratio/spread trades** | Yes — long/short ETF pairs for relative views (net exposure sized) |
+### 4D. Trade Execution Rules
 
+| Rule | Requirement |
+|------|-------------|
+| **New position entry** | Requires an active thesis ID registered in the current thesis register before execution. No ticker enters the portfolio without a named thesis. |
+| **PM override tracking** | Any PM override of an analyst recommendation must state an explicit invalidation condition (e.g., "override expires if gold breaks $4,200"). Tracked in `rebalance-decision.md`. |
+| **Crowding discipline** | When CTA positioning in a category is ≥80th percentile, do not add to that category regardless of regime alignment. Existing positions hold; new adds wait for crowding to unwind below 60th percentile. |
 ---
 
 ## 5. Asset Selection Preferences
@@ -281,10 +287,10 @@ Every digest must:
 
 ## 9. Active Theses
 
-The live thesis register is maintained in `memory/THESES.md`.
-Read that file for current thesis IDs, status, invalidation triggers, and evidence.
+The active thesis register is maintained in the **Thesis Tracker** table in each day's `DIGEST.md`
+and tracked via `thesis_ids` on positions in `config/portfolio.json`.
 
-See: `memory/THESES.md`
+See: `outputs/daily/[latest-date]/DIGEST.md` → Thesis Tracker section
 
 ---
 
@@ -297,4 +303,3 @@ See: `memory/THESES.md`
 5. **Digest synthesis** uses §7 to format outputs and §8 for performance context
 
 > To customize: edit any value in the tables above. Changes take effect on the next agent session.
-> For regime playbook changes, also review `memory/THESES.md` for consistency.

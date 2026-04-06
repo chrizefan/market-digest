@@ -15,12 +15,9 @@ Master pipeline driver for the complete 7-phase digiquant-atlas daily analysis. 
 ```
 skills/SKILL-orchestrator.md         ← Primary instruction set
 config/watchlist.md                  ← Tracked assets
-config/preferences.md                ← Trading style + risk
-config/hedge-funds.md                ← Tracked instiutions
-memory/BIAS-TRACKER.md               ← Last 5 rows for bias context
-memory/macro/ROLLING.md              ← Last 3-5 entries
-memory/equity/ROLLING.md             ← Last 3-5 entries
-memory/THESES.md                     ← Active portfolio theses
+config/investment-profile.md         ← Trading style, risk, preferences
+config/hedge-funds.md                ← Tracked institutions
+outputs/daily/[prior-date]/DIGEST.md ← Prior day for continuity (if available)
 ```
 
 ## Workflow
@@ -81,9 +78,6 @@ All 22 files in `outputs/daily/{{DATE}}/`:
 - `bonds.md`, `commodities.md`, `forex.md`, `crypto.md`, `international.md`
 - `equities.md`, `earnings.md`
 - `sectors/` (11 files)
-
-## Memory Updates
-At session conclusion, append to ALL domain ROLLING.md files, then add a row to `memory/BIAS-TRACKER.md`.
 
 ## Example Invocation
 ```

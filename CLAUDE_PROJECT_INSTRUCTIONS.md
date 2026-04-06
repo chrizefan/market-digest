@@ -20,8 +20,8 @@ This is a daily market intelligence system. Every session is either:
 
 ### At the start of every session:
 1. Identify which of the 4 session types this is
-2. Read `config/watchlist.md`, `config/preferences.md`, `config/hedge-funds.md`, `config/data-sources.md`
-3. Read the relevant `memory/*/ROLLING.md` files for context continuity (all 23 for full digest)
+2. Read `config/watchlist.md`, `config/investment-profile.md`, `config/hedge-funds.md`, `config/data-sources.md`
+3. Read the most recent `outputs/daily/[latest-date]/DIGEST.md` for prior context (if available)
 4. Do NOT summarize what you've read — just use it
 
 ### Tone and style:
@@ -34,7 +34,7 @@ This is a daily market intelligence system. Every session is either:
 
 ### What Claude must always do:
 - Search the web for current market data — never rely on training data for prices, yields, or news
-- Update rolling memory files after every digest session (all 23 applicable files)
+- Update `outputs/daily/YYYY-MM-DD/` segment files after every digest session
 - Save the master digest to `outputs/daily/YYYY-MM-DD/DIGEST.md`
 - Run alternative data (Phase 1) BEFORE macro — sentiment and positioning inform the regime read
 - Be honest about uncertainty — say "conflicted" when evidence is mixed
@@ -42,7 +42,6 @@ This is a daily market intelligence system. Every session is either:
 ### What Claude must never do:
 - Provide specific investment advice or tell the user what to buy/sell
 - Use training data for current prices (always search)
-- Skip the memory update step
 - Produce fluffy, hedge-everything analysis — be direct about the signal
 
 ---
@@ -58,8 +57,7 @@ The full daily digest follows this sequence. Run `skills/SKILL-orchestrator.md` 
 | 3 | Macro Analysis | SKILL-macro (v2) | macro.md |
 | 4 | Asset Classes | SKILL-bonds, SKILL-commodities, SKILL-forex, SKILL-crypto, SKILL-international | 5 segment files |
 | 5 | US Equities + 11 Sectors | SKILL-equity + 11 sector sub-agents | equities.md + 11 sector files |
-| 6 | Memory + Bias Tracker | All 23 ROLLING.md files + BIAS-TRACKER.md | Memory updated |
-| 7 | DIGEST.md Synthesis | templates/master-digest.md | DIGEST.md |
+| 6 | DIGEST.md Synthesis | templates/master-digest.md | DIGEST.md |
 
 **Output**: `outputs/daily/YYYY-MM-DD/DIGEST.md` (+ 21 supporting segment files)
 
@@ -132,7 +130,8 @@ The full daily digest follows this sequence. Run `skills/SKILL-orchestrator.md` 
 
 ```
 config/watchlist.md              ← Assets to track (edit first)
-config/preferences.md            ← Trading style, risk profile, active theses (edit first)
+config/investment-profile.md     ← Trading style, risk profile, preferences (authoritative)
+config/preferences.md            ← Redirect stub — see investment-profile.md
 config/hedge-funds.md            ← Tracked fund registry with CIK, X handle, style
 config/data-sources.md           ← 30+ X accounts, Polymarket topics, databases
 config/email-research.md         ← Dedicated Gmail setup + subscription list
@@ -158,36 +157,6 @@ templates/alt-data-report.md     ← Alternative data output template
 templates/institutional-report.md ← Institutional intelligence template
 templates/weekly-digest.md       ← Weekly rollup template
 templates/monthly-digest.md      ← Monthly rollup template
-
-memory/macro/ROLLING.md          ← Macro memory
-memory/equity/ROLLING.md         ← Equity memory
-memory/crypto/ROLLING.md         ← Crypto memory
-memory/bonds/ROLLING.md          ← Bonds memory
-memory/commodities/ROLLING.md    ← Commodities memory
-memory/forex/ROLLING.md          ← Forex memory
-memory/international/ROLLING.md  ← International/EM memory
-
-memory/sectors/technology/ROLLING.md
-memory/sectors/healthcare/ROLLING.md
-memory/sectors/energy/ROLLING.md
-memory/sectors/financials/ROLLING.md
-memory/sectors/consumer/ROLLING.md     (covers both staples + disc)
-memory/sectors/industrials/ROLLING.md
-memory/sectors/utilities/ROLLING.md
-memory/sectors/materials/ROLLING.md
-memory/sectors/real-estate/ROLLING.md
-memory/sectors/comms/ROLLING.md
-
-memory/alternative-data/sentiment/ROLLING.md
-memory/alternative-data/cta-positioning/ROLLING.md
-memory/alternative-data/options/ROLLING.md
-memory/alternative-data/politician/ROLLING.md
-
-memory/institutional/flows/ROLLING.md
-memory/institutional/hedge-funds/ROLLING.md
-
-memory/BIAS-TRACKER.md          ← Cross-asset bias history with institutional columns
-memory/THESES.md                ← Master thesis register
 
 outputs/daily/YYYY-MM-DD/       ← Folder per day
   DIGEST.md                     ← Master synthesized digest

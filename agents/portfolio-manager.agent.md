@@ -81,7 +81,6 @@ Note: No PM portfolio construction needed — analyst report only
 ## Memory
 
 Update after every session:
-- `memory/portfolio/ROLLING.md` — append rebalance summary
 - `config/portfolio.json` → `proposed_positions[]` — write recommended weights
 
 The `positions[]` array in portfolio.json is **user-maintained**. The agent only writes to

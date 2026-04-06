@@ -8,7 +8,7 @@
 
 ## How This Works
 
-The daily digest pipeline includes a **post-mortem phase** (Phase 9) that evaluates each run's quality, rates data sources, and identifies potential improvements. When the agent identifies a refinement, it files a **proposal** in `memory/evolution/proposals.md`. Approved proposals are applied and documented here as a permanent changelog.
+The daily digest pipeline includes a **post-mortem phase** (Phase 9) that evaluates each run's quality, rates data sources, and identifies potential improvements. When the agent identifies a refinement, it files a **proposal** in `outputs/daily/YYYY-MM-DD/evolution/proposals.md`. Approved proposals are applied and documented here as a permanent changelog.
 
 **Guardrails**: The agent cannot modify the output schema, risk profile, or memory format. All changes require explicit user approval before being applied.
 

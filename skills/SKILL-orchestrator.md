@@ -55,11 +55,10 @@ git pull origin master
 Then load the following. Do NOT summarize to the user — just internalize:
 
 1. `config/watchlist.md` — full asset universe
-2. `config/preferences.md` — trading style, risk profile, active theses
-3. `config/investment-profile.md` — investor identity, horizon, risk tolerance, asset preferences, regime playbook
-4. `config/hedge-funds.md` — tracked fund reference
-5. `config/data-sources.md` — tracked signal sources, KOL accounts, Polymarket topics
-6. Yesterday's `DIGEST.md` if it exists (for continuity)
+2. `config/investment-profile.md` — investor identity, horizon, risk tolerance, asset preferences, regime playbook
+3. `config/hedge-funds.md` — tracked fund reference
+4. `config/data-sources.md` — tracked signal sources, KOL accounts, Polymarket topics
+5. Yesterday's `DIGEST.md` if it exists (for continuity)
 
 **After loading**, internally note:
 - Active theses and their current status
@@ -184,7 +183,17 @@ Follow `skills/SKILL-equity.md` with these additions:
 Save output to: `outputs/daily/{{DATE}}/us-equities.md`
 
 ### 5B–5L: Sector Sub-Agents (All 11 GICS Sectors)
-Run each sector skill sequentially. Each reads the macro regime output and references Phase 5A.
+
+**Before running sector sub-agents, classify each sector into a depth tier:**
+
+| Tier | Criteria | Output depth |
+|------|----------|--------------|
+| **Full** | Current portfolio holding OR screener score ≥ +2 OR sector ETF moved >1% today | Full skill run — comprehensive analysis (~80 lines) |
+| **Compressed** | No holding, screener score ≤ +1, sector ETF quiet (<1% move) | 3-paragraph summary: bias + 3 key drivers + 1 portfolio implication (~25 lines) |
+
+On a typical day expect 3–5 Full sectors, 6–8 Compressed. This reduces sector token cost by ~50% vs running all 11 at full depth.
+
+Run each sector skill (Full) or compressed summary (Compressed) sequentially. Each reads the macro regime output and references Phase 5A.
 
 | Phase | Skill | Output File |
 |-------|-------|-------------|
@@ -373,6 +382,7 @@ Verifies dashboard-data.json exists, is valid JSON, and was recently updated. **
 - **Sources That Failed**: Log any that were unavailable, paywalled, stale, or returned errors
 - **New Sources Discovered**: Record any new X accounts, URLs, or data providers found during research
 - **GUARDRAIL**: Do NOT modify `config/data-sources.md` — only record observations here
+- **Save to**: `outputs/daily/{{DATE}}/evolution/sources.md`
 
 ### 9B: Quality Post-Mortem
 - **Signal Accuracy**: Check yesterday's actionable items and predictions — were they correct? Mark ✅/❌/⏳
@@ -380,6 +390,7 @@ Verifies dashboard-data.json exists, is valid JSON, and was recently updated. **
 - **Data Freshness Issues**: Flag any data that was stale or delayed
 - **Quality Score**: Self-assess today's digest on these 5 dimensions (1-5 scale each):
   - Data completeness | Signal clarity | Actionability | Continuity with prior | Positioning quality
+- **Save to**: `outputs/daily/{{DATE}}/evolution/quality-log.md`
 
 ### 9C: Improvement Proposals
 
@@ -390,10 +401,10 @@ Verifies dashboard-data.json exists, is valid JSON, and was recently updated. **
 4. Categories: `Source Addition` | `Skill Refinement` | `Template Update` | `Efficiency`
 5. **LOCKED — you may NOT propose changes to:**
    - Output schema/structure (`templates/master-digest.md` sections are immutable)
-   - Risk profile or position sizing (`config/preferences.md` §Risk Profile)
-   - Memory file format (append-only structure)
+   - Risk profile or position sizing (`config/investment-profile.md` §4 Risk Constraints)
    - These guardrails themselves
-6. Before filing, read existing proposals to avoid duplicates
+6. Read `outputs/daily/{{DATE}}/evolution/proposals.md` before filing to avoid duplicates
+- **Save to**: `outputs/daily/{{DATE}}/evolution/proposals.md`
 
 ### 9D: Document Applied Improvements
 If any previously pending proposals have been approved and applied during this session, document them in `docs/evolution-changelog.md` with:
@@ -409,6 +420,7 @@ After completing the post-mortem, commit evolution artifacts to a **dedicated br
 
 This script will:
 1. Create a branch named `evolve/YYYY-MM-DD`
+2. Stage `outputs/daily/{{DATE}}/evolution/` and `docs/evolution-changelog.md`
 3. Push the branch and create a GitHub Pull Request
 4. Switch back to `master` so the repo is clean for the next daily run
 
@@ -416,7 +428,7 @@ This script will:
 
 ### Checkpoint: Phase 9
 Run: `./scripts/validate-phase.sh 9`
-Verifies evolution files (source scorecard, quality log) were updated for today.
+Verifies `outputs/daily/{{DATE}}/evolution/` files exist with content.
 
 ---
 

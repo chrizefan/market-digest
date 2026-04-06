@@ -434,36 +434,38 @@ validate_phase9() {
   local run_type="$1"
   print_header "9" "Post-Mortem & Evolution"
 
+  local evo_dir="$OUTPUT_DIR/evolution"
+
   # Check evolution files exist
-  if [ -f "memory/evolution/sources.md" ]; then
+  if [ -f "$evo_dir/sources.md" ]; then
     local lines
-    lines=$(wc -l < "memory/evolution/sources.md" | tr -d ' ')
+    lines=$(wc -l < "$evo_dir/sources.md" | tr -d ' ')
     if [ "$lines" -gt 3 ]; then
       pass "Source scorecard (9A) — $lines lines"
     else
       warn "Source scorecard (9A) is sparse ($lines lines)"
     fi
   else
-    warn "memory/evolution/sources.md does not exist"
+    warn "$evo_dir/sources.md does not exist"
   fi
 
-  if [ -f "memory/evolution/quality-log.md" ]; then
+  if [ -f "$evo_dir/quality-log.md" ]; then
     local lines
-    lines=$(wc -l < "memory/evolution/quality-log.md" | tr -d ' ')
+    lines=$(wc -l < "$evo_dir/quality-log.md" | tr -d ' ')
     if [ "$lines" -gt 3 ]; then
       pass "Quality post-mortem (9B) — $lines lines"
     else
       warn "Quality post-mortem (9B) is sparse ($lines lines)"
     fi
   else
-    warn "memory/evolution/quality-log.md does not exist"
+    warn "$evo_dir/quality-log.md does not exist"
   fi
 
   # Proposals are optional (max 2 per session)
-  if [ -f "memory/evolution/proposals.md" ]; then
+  if [ -f "$evo_dir/proposals.md" ]; then
     pass "Proposals file exists (9C)"
   else
-    warn "memory/evolution/proposals.md not found"
+    warn "$evo_dir/proposals.md not found"
   fi
 }
 

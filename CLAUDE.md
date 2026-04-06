@@ -74,9 +74,6 @@ digiquant-atlas/
 │   ├── weekly-digest.md
 │   └── monthly-digest.md
 │
-├── memory/                           ← Evolution files (source scorecard, quality log, proposals)
-│   └── evolution/                    ← Post-mortem artifacts
-│
 ├── outputs/
 │   ├── daily/YYYY-MM-DD/             ← One folder per day (v2)
 │   │   ├── DIGEST.md                 ← Master synthesized output
@@ -135,8 +132,8 @@ Daily outputs live in `outputs/daily/YYYY-MM-DD/`:
 ## Config File Conventions
 
 - `config/watchlist.md` — edit freely to add/remove tracked assets
-- `config/preferences.md` — edit to update trading style, risk profile, active theses
-- `config/investment-profile.md` — edit to customize investor identity, horizon, trade frequency, risk tolerance, asset/sector preferences, regime playbook, and benchmarks
+- `config/investment-profile.md` — authoritative source for trading style, risk profile, ETF universe, and preferences
+- `config/preferences.md` — redirect stub pointing to investment-profile.md
 - `config/hedge-funds.md` — add/remove tracked funds from the CIK registry
 - `config/data-sources.md` — update URLs, add new X accounts or data sources
 
@@ -193,4 +190,4 @@ Full instructions: `skills/SKILL-orchestrator.md`
 - **Macro regime**: Geopolitical shock (Iran War) → WTI $112, Gold ATH, VIX elevated
 - **Key invalidation triggers**: WTI <$80 (energy thesis breaks), Gold <$4,200 (safe haven breaks)
 
-*Update `config/preferences.md` when allocations change.*
+*Update `config/portfolio.json` when allocations change. Theses are tracked in the DIGEST.md Thesis Tracker table.*

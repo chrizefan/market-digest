@@ -15,37 +15,35 @@ Specialized analyst for individual or multi-sector research. Identifies relative
 ## Inputs (Read at Session Start)
 ```
 config/watchlist.md                            ← Tracked sector names
-config/preferences.md                          ← Sector biases + preferences
-memory/sectors/{target-sector}/ROLLING.md      ← Prior sector research
-memory/macro/ROLLING.md                        ← Macro regime (last 3 entries)
+config/investment-profile.md                   ← Sector preferences
 outputs/daily/{{DATE}}/macro.md                ← Today's macro if available
+outputs/daily/[prior-date]/sectors/{sector}.md ← Prior sector output for continuity
 ```
 
 ## Supported Sectors
 
-| Sector | Skill | Memory |
-|--------|-------|--------|
-| Technology | `skills/sectors/technology.md` | `memory/sectors/technology/` |
-| Healthcare | `skills/sectors/healthcare.md` | `memory/sectors/healthcare/` |
-| Financials | `skills/sectors/financials.md` | `memory/sectors/financials/` |
-| Energy | `skills/sectors/energy.md` | `memory/sectors/energy/` |
-| Consumer Discretionary | `skills/sectors/consumer-discretionary.md` | `memory/sectors/consumer/` |
-| Consumer Staples | `skills/sectors/consumer-staples.md` | `memory/sectors/consumer/` |
-| Industrials | `skills/sectors/industrials.md` | `memory/sectors/industrials/` |
-| Materials | `skills/sectors/materials.md` | `memory/sectors/materials/` |
-| Utilities | `skills/sectors/utilities.md` | `memory/sectors/utilities/` |
-| Real Estate | `skills/sectors/real-estate.md` | `memory/sectors/real-estate/` |
-| Communication | `skills/sectors/communication.md` | `memory/sectors/communication/` |
+| Sector | Skill |
+|--------|-------|
+| Technology | `skills/sectors/technology.md` |
+| Healthcare | `skills/sectors/healthcare.md` |
+| Financials | `skills/sectors/financials.md` |
+| Energy | `skills/sectors/energy.md` |
+| Consumer Discretionary | `skills/sectors/consumer-discretionary.md` |
+| Consumer Staples | `skills/sectors/consumer-staples.md` |
+| Industrials | `skills/sectors/industrials.md` |
+| Materials | `skills/sectors/materials.md` |
+| Utilities | `skills/sectors/utilities.md` |
+| Real Estate | `skills/sectors/real-estate.md` |
+| Communication | `skills/sectors/communication.md` |
 
 ## Workflow
 
 ### Single Sector Mode
 1. Read `skills/sectors/{sector}.md`
-2. Read `memory/sectors/{sector}/ROLLING.md` for history
+2. Read prior sector output for continuity if available
 3. Read macro context if available
 4. Execute the skill steps
 5. Write `outputs/daily/{{DATE}}/sectors/{sector}.md`
-6. Append to `memory/sectors/{sector}/ROLLING.md`
 
 ### Multi-Sector / All-Sectors Mode
 1. Read macro.md for regime context
@@ -54,17 +52,13 @@ outputs/daily/{{DATE}}/macro.md                ← Today's macro if available
 4. Optionally produce a sector heatmap via `SKILL-sector-heatmap.md`
 
 ### Rotation Analysis Mode
-1. Read all `memory/sectors/*/ROLLING.md` files (last 3-5 entries each)
-2. Read recent BIAS-TRACKER.md entries
-3. Execute `skills/SKILL-sector-rotation.md`
-4. Identify leading vs. lagging sectors within the current macro regime
+1. Read prior sector outputs from the most recent baseline for trend context
+2. Execute `skills/SKILL-sector-rotation.md`
+3. Identify leading vs. lagging sectors within the current macro regime
 
 ## Outputs
 - Per sector: `outputs/daily/{{DATE}}/sectors/{sector}.md`
 - Rotation note (optional): `outputs/daily/{{DATE}}/sector-rotation.md`
-
-## Memory Updates
-Append to `memory/sectors/{sector}/ROLLING.md` for each sector analyzed.
 
 ## Example Invocations
 
@@ -73,7 +67,6 @@ Append to `memory/sectors/{sector}/ROLLING.md` for each sector analyzed.
 Today is 2026-04-05.
 Read agents/sector-analyst.agent.md.
 Run a technology sector analysis.
-Read memory/sectors/technology/ROLLING.md for context.
 Read outputs/daily/2026-04-05/macro.md for macro backdrop.
 Write to: outputs/daily/2026-04-05/sectors/technology.md
 ```

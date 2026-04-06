@@ -109,7 +109,7 @@ After completing Phase 7 (DIGEST.md synthesis), append the following section to 
 
 All items from the standard Session Completion Checklist (`skills/SKILL-orchestrator.md`), plus:
 
-- [ ] Prior week review complete (BIAS-TRACKER last 5-7 rows read; portfolio.json loaded)
+- [ ] Prior week DIGEST.md reviewed (portfolio.json loaded)
 - [ ] Week Ahead Calendar scanned (high-impact events identified)
 - [ ] `_meta.json` in output folder confirms `"type": "baseline"`
 - [ ] Week Ahead Setup section added to `DIGEST.md`

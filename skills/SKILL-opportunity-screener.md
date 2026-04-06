@@ -76,14 +76,17 @@ Score each signal found:
 | **Sector scorecard** (Phase 5) | Sector ETF rated Underweight or Strong Sell | -2 |
 | **Institutional flows** (Phase 2) | ETF appears in notable inflows list | +1 |
 | **Institutional flows** (Phase 2) | ETF appears in notable outflows list | -1 |
-| **Alt data — CTA positioning** | Net long or increasing exposure to category | +1 |
+| **Alt data — CTA positioning** | Net long/increasing exposure AND ≤70th percentile (not crowded) | +1 |
+| **Alt data — CTA positioning** | Positioning at ≥80th percentile (explicit crowding warning in cta-positioning.md) | **-1 override** (replaces the +1; flag as crowding risk) |
 | **Alt data — Options** | Unusual call activity or put/call ratio < 0.7 | +1 |
 | **Alt data — Options** | Unusual put activity or put/call ratio > 1.3 | -1 |
-| **Thesis linkage** | Ticker is referenced by an active thesis in THESES.md | +1 |
+| **Thesis linkage** | Ticker is referenced by an active thesis in the current DIGEST.md | +1 |
 | **Thesis challenge** | Ticker's thesis moved to ⚠️ or ❌ today | -2 (flag) |
 | **Cross-asset signal** | DIGEST.md calls out this asset class explicitly | +1 |
 | **Price momentum** | Segment file notes strong trend continuation | +1 |
 | **Price momentum** | Segment file notes breakdown or reversal | -1 |
+
+> **Crowding note**: A CTA crowding flag doesn't necessarily mean exit the position — it means the *risk/reward of adding* is worse, and an unwind would be faster and sharper than a normal drawdown. Flag it prominently in the screener output so the PM can size accordingly.
 
 Sum the signal scores for each ticker. Combined with the regime score, compute:
 
