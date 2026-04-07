@@ -58,13 +58,36 @@ jobs:
           fi
           python3 scripts/preload-history.py $ARGS
 
-      - name: Verify row count
+      # After prices are up-to-date, recompute TA indicators for last 2 days
+      # (2 days covers the new row + recalculates any indicators that depend on
+      # prior values like MACD histogram cross detection)
+      - name: Compute TA indicators (scheduled)
+        if: github.event_name == 'schedule'
+        run: |
+          python3 scripts/compute-technicals.py \
+            --days 2 \
+            --supabase
+
+      - name: Compute TA indicators (manual dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          TICKER_ARG=""
+          if [ -n "${{ github.event.inputs.ticker }}" ]; then
+            TICKER_ARG="--ticker ${{ github.event.inputs.ticker }}"
+          fi
+          python3 scripts/compute-technicals.py \
+            --days 30 \
+            --supabase \
+            $TICKER_ARG
+
+      - name: Verify row counts
         run: |
           python3 - <<'EOF'
           import os
           from supabase import create_client
           sb = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_KEY"])
-          res = sb.rpc("count_price_history_summary").execute() if False else \
-                sb.table("price_history").select("ticker", count="exact").execute()
-          print(f"✅ price_history: {res.count} rows across all tickers")
+          ph = sb.table("price_history").select("ticker", count="exact").execute()
+          pt = sb.table("price_technicals").select("ticker", count="exact").execute()
+          print(f"✅ price_history:    {ph.count} rows")
+          print(f"✅ price_technicals: {pt.count} rows")
           EOF

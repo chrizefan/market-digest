@@ -126,6 +126,40 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['portfolio_metrics']['Row'], 'id' | 'generated_at'> & { id?: string; generated_at?: string };
         Update: Partial<Database['public']['Tables']['portfolio_metrics']['Insert']>;
       };
+      price_history: {
+        Row: {
+          date: string;
+          ticker: string;
+          open: number | null;
+          high: number | null;
+          low: number | null;
+          close: number;
+          volume: number | null;
+        };
+        Insert: Database['public']['Tables']['price_history']['Row'];
+        Update: Partial<Database['public']['Tables']['price_history']['Row']>;
+      };
+      price_technicals: {
+        Row: {
+          date: string;
+          ticker: string;
+          sma_20: number | null; sma_50: number | null; sma_200: number | null;
+          ema_12: number | null; ema_26: number | null; ema_50: number | null;
+          pct_vs_sma20: number | null; pct_vs_sma50: number | null; pct_vs_sma200: number | null;
+          adx_14: number | null; dmi_plus: number | null; dmi_minus: number | null;
+          rsi_7: number | null; rsi_14: number | null; rsi_21: number | null;
+          macd: number | null; macd_signal: number | null; macd_hist: number | null;
+          roc_5: number | null; roc_10: number | null; roc_21: number | null;
+          atr_14: number | null; atr_pct: number | null;
+          bb_upper: number | null; bb_middle: number | null; bb_lower: number | null;
+          bb_pct_b: number | null; bb_bandwidth: number | null;
+          hist_vol_21: number | null;
+          stoch_k: number | null; stoch_d: number | null;
+          zscore_50: number | null; zscore_200: number | null;
+        };
+        Insert: Database['public']['Tables']['price_technicals']['Row'];
+        Update: Partial<Database['public']['Tables']['price_technicals']['Row']>;
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
