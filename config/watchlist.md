@@ -67,17 +67,35 @@
 
 ---
 
-## 🪙 Crypto (Spot ETFs)
+## 🪙 Crypto
 
-| ETF | Description | Category |
-|-----|-------------|----------|
+### Index (native yfinance tickers — full price history)
+
+| Ticker | Description | Category |
+|--------|-------------|----------|
+| BTC-USD | Bitcoin | crypto |
+| ETH-USD | Ethereum | crypto |
+| SOL-USD | Solana | crypto |
+| XRP-USD | XRP (Ripple) | crypto |
+| BNB-USD | BNB (Binance Coin) | crypto |
+| DOGE-USD | Dogecoin | crypto |
+| ADA-USD | Cardano | crypto |
+| AVAX-USD | Avalanche | crypto |
+| LINK-USD | Chainlink | crypto |
+| DOT-USD | Polkadot | crypto |
+
+### Spot ETFs (US-listed, preferred for vol/correlation vs equities)
+
+| Ticker | Description | Category |
+|--------|-------------|----------|
 | IBIT | iShares Bitcoin Trust (BlackRock) | crypto |
 | FBTC | Fidelity Wise Origin Bitcoin Fund | crypto |
 | ETHA | iShares Ethereum Trust (BlackRock) | crypto |
 | FETH | Fidelity Ethereum Fund | crypto |
 | GBTC | Grayscale Bitcoin Trust | crypto |
 
-> **Note:** Solana ETF applications were filed but not yet approved. Track SOL price directly.
+> **Note:** Use index tickers (BTC-USD etc.) for long-run analysis and altcoin coverage.
+> Use ETF tickers (IBIT/FBTC/ETHA) when correlating against equities or computing ETF premium/discount.
 
 ---
 
