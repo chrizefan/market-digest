@@ -16,6 +16,15 @@ set -e
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DATE="${1:-$(date +%Y-%m-%d)}"
 DATA_DIR="$REPO_ROOT/outputs/daily/$DATE/data"
+CACHE_DIR="$REPO_ROOT/data/price-history"
+
+# ── flags ────────────────────────────────────────────────────────────────────
+PRELOAD=false
+for arg in "$@"; do
+    case "$arg" in
+        --preload) PRELOAD=true ;;
+    esac
+done
 
 # ── Python resolution: prefer venv with yfinance/pandas-ta ───────────────────
 # Check common locations in order:
@@ -69,6 +78,23 @@ echo ""
 
 # ── ensure daily folder exists ───────────────────────────────────────────────
 mkdir -p "$DATA_DIR"
+
+# ── price-history cache ──────────────────────────────────────────────────────
+# If --preload flag set, or cache dir is empty/missing, run preload-history.py
+# to seed the per-ticker CSV cache. Daily runs then only fetch latest quotes.
+if [ "$PRELOAD" = true ]; then
+    echo "[ Pre-flight: Preloading price history cache (--preload) ]"
+    "$PYTHON" scripts/preload-history.py --period 2y
+    echo ""
+elif [ ! -d "$CACHE_DIR" ] || [ -z "$(ls -A "$CACHE_DIR" 2>/dev/null)" ]; then
+    echo "[ Pre-flight: No price-history cache found — running initial preload (2y) ]"
+    "$PYTHON" scripts/preload-history.py --period 2y
+    echo ""
+else
+    CACHE_COUNT=$(ls "$CACHE_DIR"/*.csv 2>/dev/null | wc -l | tr -d ' ')
+    echo "  Price-history cache: $CACHE_COUNT tickers cached in data/price-history/"
+fi
+echo ""
 
 # ── fetch quotes ─────────────────────────────────────────────────────────────
 echo "[ Phase 1/2: Quotes + Technicals ]"

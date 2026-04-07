@@ -277,7 +277,7 @@ validate_phase5() {
 
 validate_phase7() {
   local run_type="$1"
-  print_header "7" "DIGEST Synthesis"
+  print_header "7" "DIGEST Synthesis + Snapshot"
 
   if [ "$run_type" = "baseline" ]; then
     check_file "$OUTPUT_DIR/DIGEST.md" "DIGEST.md (master synthesis)" 50
@@ -324,6 +324,48 @@ validate_phase7() {
         warn "Materialized DIGEST.md seems short ($lines lines) — may not be fully materialized"
       fi
     fi
+  fi
+
+  # snapshot.json validation (both baseline and delta)
+  if [ -f "$OUTPUT_DIR/snapshot.json" ]; then
+    if python3 -c "
+import json, sys
+s = json.load(open('$OUTPUT_DIR/snapshot.json'))
+required = ['schema_version','date','run_type','regime','positions','market_data']
+missing = [k for k in required if k not in s]
+if missing:
+    print('Missing keys: ' + ', '.join(missing))
+    sys.exit(1)
+if not isinstance(s.get('positions'), list) or len(s['positions']) == 0:
+    print('positions array is empty')
+    sys.exit(1)
+md = s.get('market_data', {})
+for k in ['SPY','VIX','BTC']:
+    if k not in md:
+        print('market_data missing ' + k)
+        sys.exit(1)
+" 2>/dev/null; then
+      pass "snapshot.json — valid structure with required fields"
+    else
+      local err
+      err=$(python3 -c "
+import json, sys
+s = json.load(open('$OUTPUT_DIR/snapshot.json'))
+required = ['schema_version','date','run_type','regime','positions','market_data']
+missing = [k for k in required if k not in s]
+if missing:
+    print('Missing keys: ' + ', '.join(missing)); sys.exit(0)
+if not isinstance(s.get('positions'), list) or len(s['positions']) == 0:
+    print('positions array is empty'); sys.exit(0)
+md = s.get('market_data', {})
+for k in ['SPY','VIX','BTC']:
+    if k not in md:
+        print('market_data missing ' + k); sys.exit(0)
+" 2>/dev/null)
+      fail "snapshot.json — $err"
+    fi
+  else
+    warn "snapshot.json not found — Supabase ETL will fall back to regex parsing"
   fi
 }
 
@@ -403,30 +445,57 @@ print(len(pp))
 
 validate_phase8() {
   local run_type="$1"
-  print_header "8" "Web Dashboard Update"
+  print_header "8" "Supabase Publish"
 
-  check_file_exists "frontend/public/dashboard-data.json" "dashboard-data.json"
+  # Supabase configuration check (required — no static fallback)
+  if [ -f "config/supabase.env" ] || [ -n "${SUPABASE_URL:-}" ]; then
+    pass "Supabase credentials configured"
 
-  if [ -f "frontend/public/dashboard-data.json" ]; then
-    # Check that dashboard JSON was updated recently (within last 2 hours)
-    local mod_time
-    mod_time=$(stat -f %m "frontend/public/dashboard-data.json" 2>/dev/null || stat -c %Y "frontend/public/dashboard-data.json" 2>/dev/null || echo "0")
-    local now
-    now=$(date +%s)
-    local age=$(( (now - mod_time) / 60 ))
+    # Validate data was actually pushed (check table counts)
+    local sb_check
+    sb_check=$(python3 -c "
+import os, sys
+sys.path.insert(0, '.')
+from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv(Path('config/supabase.env'))
+from supabase import create_client
+url = os.environ.get('SUPABASE_URL','')
+key = os.environ.get('SUPABASE_SERVICE_KEY','')
+if not url or not key:
+    print('NO_CREDS')
+    sys.exit(0)
+sb = create_client(url, key)
+counts = {}
+for t in ['daily_snapshots','positions','theses','documents']:
+    try:
+        r = sb.table(t).select('id', count='exact').execute()
+        counts[t] = r.count if hasattr(r,'count') and r.count else len(r.data)
+    except: counts[t] = 0
+total = sum(counts.values())
+if total > 0:
+    parts = ' '.join(f'{k}={v}' for k,v in counts.items())
+    print(f'OK {parts}')
+else:
+    print('EMPTY')
+" 2>/dev/null || echo "ERROR")
 
-    if [ "$age" -lt 120 ]; then
-      pass "dashboard-data.json updated $age minutes ago"
-    else
-      warn "dashboard-data.json last updated $age minutes ago (may be stale)"
-    fi
-
-    # Validate JSON structure
-    if python3 -c "import json; json.load(open('frontend/public/dashboard-data.json'))" 2>/dev/null; then
-      pass "dashboard-data.json is valid JSON"
-    else
-      fail "dashboard-data.json is not valid JSON"
-    fi
+    case "$sb_check" in
+      OK*)
+        pass "Supabase data verified: ${sb_check#OK }"
+        ;;
+      EMPTY)
+        fail "Supabase tables are empty — run update_tearsheet.py to push data"
+        ;;
+      NO_CREDS)
+        fail "Supabase credentials incomplete in config/supabase.env"
+        ;;
+      *)
+        warn "Supabase connectivity check failed (network or SDK issue)"
+        ;;
+    esac
+  else
+    fail "Supabase not configured — frontend requires Supabase. Set SUPABASE_URL and SUPABASE_SERVICE_KEY in config/supabase.env"
   fi
 }
 

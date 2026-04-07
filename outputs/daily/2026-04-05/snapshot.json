@@ -1,0 +1,146 @@
+{
+  "schema_version": "1.0",
+  "date": "2026-04-05",
+  "run_type": "baseline",
+  "baseline_date": null,
+  "regime": {
+    "label": "RISK-OFF / MIXED",
+    "bias": "RISK-OFF / MIXED",
+    "conviction": "Low",
+    "summary": "The Iran War dominates all asset classes. Oil surged to ~$112/bbl with USO +11.15% on Friday — the single largest daily energy move in months. The Joint Hormuz Protocol provided a partial offset, keeping equities from selling off hard (SPY +0.09%). The regime is transitioning from acute Geopolitical Shock toward sustained Inflationary pressure, with higher-for-longer rates now locked in."
+  },
+  "positions": [
+    {
+      "ticker": "BIL",
+      "weight_pct": 35.0,
+      "action": "ADD",
+      "rationale": "Fortress cash. 4.75% yield. Max safety.",
+      "name": "SPDR Bloomberg 1-3 Month T-Bill ETF",
+      "category": "fixed_income_cash",
+      "thesis_id": "T-002",
+      "entry_price": null,
+      "entry_date": "2026-04-05"
+    },
+    {
+      "ticker": "IAU",
+      "weight_pct": 20.0,
+      "action": "HOLD",
+      "rationale": "Gold correction = opportunity. Dual tailwind (geopolitical + inflation).",
+      "name": "iShares Gold Trust",
+      "category": "commodity_gold",
+      "thesis_id": "T-001",
+      "entry_price": null,
+      "entry_date": "2026-04-05"
+    },
+    {
+      "ticker": "SHY",
+      "weight_pct": 15.0,
+      "action": "HOLD",
+      "rationale": "Short duration safety. Yield ~4.8%.",
+      "name": "iShares 1-3 Year Treasury Bond ETF",
+      "category": "fixed_income_short",
+      "thesis_id": "T-002",
+      "entry_price": null,
+      "entry_date": "2026-04-05"
+    },
+    {
+      "ticker": "XLE",
+      "weight_pct": 15.0,
+      "action": "ADD",
+      "rationale": "Thesis T-001 strongest. $1.8B institutional inflows. Crowding noted.",
+      "name": "Energy Select Sector SPDR",
+      "category": "equity_sector",
+      "thesis_id": "T-001",
+      "entry_price": null,
+      "entry_date": "2026-04-05"
+    },
+    {
+      "ticker": "XLP",
+      "weight_pct": 10.0,
+      "action": "ADD",
+      "rationale": "Defensive equity. Pricing power in inflation.",
+      "name": "Consumer Staples Select Sector SPDR",
+      "category": "equity_sector",
+      "thesis_id": "T-003",
+      "entry_price": null,
+      "entry_date": "2026-04-05"
+    },
+    {
+      "ticker": "DBO",
+      "weight_pct": 5.0,
+      "action": "HOLD",
+      "rationale": "Oil exposure, optimized roll structure.",
+      "name": "Invesco DB Oil Fund",
+      "category": "commodity_oil",
+      "thesis_id": "T-001",
+      "entry_price": null,
+      "entry_date": "2026-04-05"
+    },
+    {
+      "ticker": "XLV",
+      "weight_pct": 0.0,
+      "action": "EXIT",
+      "rationale": "Worst defensive sector. Drug pricing risk. Replaced by XLP.",
+      "name": "XLV",
+      "category": null,
+      "thesis_id": null,
+      "entry_price": null,
+      "entry_date": null
+    }
+  ],
+  "theses": [
+    {
+      "id": "T-001",
+      "name": "Iran War / Energy + Gold",
+      "vehicle": "XLE, DBO, IAU",
+      "invalidation": "WTI <$80, Gold <$4,200",
+      "status": "ACTIVE",
+      "notes": "WTI $112, gold correcting but above $4,200"
+    },
+    {
+      "id": "T-002",
+      "name": "Higher-for-Longer Rates",
+      "vehicle": "BIL, SHY",
+      "invalidation": "Fed cuts >50bps",
+      "status": "ACTIVE",
+      "notes": "Max conviction. Oil inflation eliminates cuts."
+    },
+    {
+      "id": "T-003",
+      "name": "Defensive Rotation",
+      "vehicle": "XLP",
+      "invalidation": "XLP underperforms SPY 4 wks",
+      "status": "MONITORING",
+      "notes": "XLP +0.53% outperforming. XLV exited."
+    }
+  ],
+  "market_data": {
+    "SPY": 655.83,
+    "VIX": 23.9,
+    "DXY": 103.5,
+    "WTI": 112.0,
+    "Gold": 350.0,
+    "BTC": 69183.0,
+    "US10Y": 4.35
+  },
+  "segment_biases": {
+    "macro": "",
+    "bonds": "",
+    "commodities": "Bias",
+    "crypto": "Bias"
+  },
+  "actionable": [
+    "**EXIT XLV Monday open** — Worst defensive sector. Drug pricing + losing RS. Proceeds to BIL.",
+    "**ADD XLE 3% Monday** — Thesis T-001 confirmed. Unless WTI gaps above $118 on open (delay if chasing parabolic).",
+    "**WATCH CPI April 10** — 3.5% consensus. Hot print = oil inflation fears confirmed, bonds sell, BIL/SHY validated. Cool print = regime shift risk.",
+    "**WATCH Hormuz Protocol** — If it holds, oil war premium compresses $10-15/bbl. CTA unwind would be violent. Maintain DBO at 5% (not chasing).",
+    "**MONITOR gold at $4,200** — IAU thesis invalidation level. Correction healthy but must hold. Below $4,200 (IAU ~$84) = exit."
+  ],
+  "risks": [
+    "**CPI Hot Surprise (April 10)**: If CPI >4.0%, stagflation fears spike. VIX to 30+. Gold re-rallies. TLT crushed. Portfolio BENEFITS (energy + gold + cash).",
+    "**Hormuz Protocol Failure**: If shipping disrupted, WTI to $130+. Energy parabolic but portfolio too concentrated. Trigger: Add more BIL, trim DBO.",
+    "**Surprise De-escalation**: If Iran ceasefire, oil crashes $15-20/bbl in days. CTA unwind. XLE -8-10%. DBO hammered. Gold drops. Portfolio takes hit on 20% commodity weight. Hedge: Tight stops on DBO at $18."
+  ],
+  "portfolio_posture": "Defensive",
+  "cash_pct": 50.0
+}

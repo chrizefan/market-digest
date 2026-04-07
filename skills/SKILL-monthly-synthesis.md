@@ -175,7 +175,7 @@ Add a **Delta Efficiency Summary**:
 
 ## Phase 7 — Dashboard Update
 
-Run: `python3 scripts/update-tearsheet.py`
+Run: `python3 scripts/update_tearsheet.py`
 
 ---
 
@@ -192,4 +192,4 @@ Run: `python3 scripts/update-tearsheet.py`
 - [ ] Delta Efficiency Summary added
 - [ ] Memory files updated with monthly summary entries
 - [ ] Dashboard updated
-- [ ] `git-commit.sh` run — commits **and pushes** to origin (triggers web dashboard update)
+- [ ] `git-commit.sh` run — commits to origin; Supabase data already live from push step

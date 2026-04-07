@@ -265,7 +265,7 @@ python3 scripts/update-tearsheet.py   # recalculates NAV, writes dashboard-data.
 
 The Python backend reads all `DIGEST.md` files chronologically, extracts Target Allocation statements via regex, fetches historical closes from Yahoo Finance (`yfinance`), simulates daily NAV tracking from the first entry date, computes performance metrics and drawdown, then writes `frontend/public/dashboard-data.json`.
 
-The React frontend reads this file on load — no backend server, no database, no API.
+The Next.js frontend reads from Supabase (primary) with static JSON fallback — no backend server, no API.
 
 ---
 
@@ -452,9 +452,9 @@ When signals conflict across phases, apply in order:
 DIGEST.md files (structured Markdown)
      │
      ▼  Python parser: scripts/update-tearsheet.py
-dashboard-data.json (frontend/public/)
+dashboard-data.json (frontend/public/ — static fallback)
      │
-     ▼  Vite build → GitHub Pages
+     ▼  Next.js static export → GitHub Pages
 React app at digiquant.io
 ```
 
@@ -466,7 +466,7 @@ The Python parser:
 5. Computes cumulative performance, drawdown, sector exposure
 6. Writes `frontend/public/dashboard-data.json`
 
-No backend server. No database. No API. The frontend is a pure static site.
+The frontend is a static Next.js export deployed to GitHub Pages. Supabase is the primary data source; the JSON file serves as fallback.
 
 ---
 

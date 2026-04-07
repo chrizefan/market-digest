@@ -1,7 +1,7 @@
-# Quotes Snapshot — 2026-04-06 02:46 ET
+# Quotes Snapshot — 2026-04-06 19:17 ET
 
-> **56** tickers fetched successfully. 3 failed.
-> Freshness: ~15min delayed (Yahoo Finance). Technicals computed from 3-month OHLCV.
+> **56** tickers fetched successfully. 0 failed.
+> Freshness: ~15min delayed (Yahoo Finance). Technicals computed from cached OHLCV history.
 
 ---
 
@@ -9,9 +9,9 @@
 
 | Bucket | Count | Tickers |
 |--------|-------|---------|
-| ↑ UPTREND | 0 |  |
-| ↗/→ MIXED | 10 | XLE, XLU, EWZ, DBO, USO, BNO, PDBC, DJP, BIL, SHV |
-| ↓ DOWNTREND | 46 | SPY, QQQ, IWB, MDY, IJH, IWM, IJR, XLK, XLF, XLV, XLI, XLRE… |
+| ↑ UPTREND | 8 | XLE, XLU, EWU, EWZ, DBO, BNO, PDBC, DJP |
+| ↗/→ MIXED | 4 | USO, BIL, SHV, HYG |
+| ↓ DOWNTREND | 44 | SPY, QQQ, IWB, MDY, IJH, IWM, IJR, XLK, XLF, XLV, XLI, XLRE… |
 
 ---
 
@@ -19,70 +19,62 @@
 
 | Ticker | Price | 1D% | Trend | RSI14 | MACD | vs SMA50 | vs SMA200 | Vol Ratio | ATR14 |
 |--------|-------|-----|-------|-------|------|----------|-----------|-----------|-------|
-| USO | 137.92 | +11.15% | ↗ ABOVE50 | 72 ⚠️ | BULLISH_CROSS | ✅ | – | 0.9× | 7.27 |
-| BNO | 54.12 | +7.53% | ↗ ABOVE50 | 66 | BEARISH | ✅ | – | 1.0× | 2.74 |
-| DJP | 48.9 | +2.69% | ↗ ABOVE50 | 68 | BEARISH | ✅ | – | 1.6× | 0.98 |
-| PDBC | 17.52 | +2.46% | ↗ ABOVE50 | 65 | BEARISH | ✅ | – | 1.2× | 0.38 |
-| DBO | 19.42 | +2.05% | ↗ ABOVE50 | 55 | BEARISH | ✅ | – | 1.0× | 0.79 |
-| XLRE | 41.61 | +1.61% | ↘ BELOW50 | 52 | BULLISH_CROSS | ❌ | – | 0.7× | 0.67 |
-| XLK | 135.99 | +0.80% | ↘ BELOW50 | 50 | BEARISH | ❌ | – | 0.7× | 3.49 |
-| IWM | 251.29 | +0.69% | ↘ BELOW50 | 51 | BULLISH | ❌ | – | 0.6× | 6.01 |
-| TLT | 86.79 | +0.61% | ↘ BELOW50 | 49 | BULLISH_CROSS | ❌ | – | 0.7× | 0.77 |
-| XLP | 81.89 | +0.53% | ↘ BELOW50 | 41 | BEARISH | ❌ | – | 1.1× | 1.19 |
-| XLU | 46.34 | +0.50% | ↗ ABOVE50 | 57 | BEARISH | ✅ | – | 0.6× | 0.77 |
-| XLE | 59.25 | +0.47% | ↗ ABOVE50 | 55 | BEARISH | ✅ | – | 1.0× | 1.52 |
-| LQD | 109.12 | +0.42% | ↘ BELOW50 | 53 | BULLISH | ❌ | – | 0.5× | 0.73 |
-| IJR | 125.43 | +0.41% | ↘ BELOW50 | 53 | BULLISH | ❌ | – | 0.6× | 2.66 |
-| XLC | 111.7 | +0.41% | ↘ BELOW50 | 45 | BEARISH | ❌ | – | 0.6× | 1.81 |
-| TIP | 110.81 | +0.41% | ↘ BELOW50 | 52 | BEARISH | ❌ | – | 0.6× | 0.39 |
-| HYG | 79.56 | +0.24% | ↘ BELOW50 | 54 | BULLISH | ❌ | – | 0.8× | 0.44 |
-| IEF | 95.26 | +0.23% | ↘ BELOW50 | 49 | BULLISH_CROSS | ❌ | – | 0.9× | 0.46 |
-| XLF | 49.53 | +0.18% | ↘ BELOW50 | 48 | BULLISH | ❌ | – | 0.7× | 0.94 |
-| IWB | 359.85 | +0.14% | ↘ BELOW50 | 47 | BULLISH_CROSS | ❌ | – | 0.4× | 5.86 |
-| IJH | 68.18 | +0.12% | ↘ BELOW50 | 51 | BULLISH | ❌ | – | 0.8× | 1.44 |
-| EMB | 93.97 | +0.12% | ↘ BELOW50 | 47 | BULLISH_CROSS | ❌ | – | 0.6× | 0.72 |
-| QQQ | 584.98 | +0.11% | ↘ BELOW50 | 47 | BEARISH | ❌ | – | 0.7× | 11.46 |
-| MDY | 622.4 | +0.10% | ↘ BELOW50 | 51 | BULLISH | ❌ | – | 0.3× | 13.11 |
-| SPY | 655.83 | +0.09% | ↘ BELOW50 | 47 | BULLISH_CROSS | ❌ | – | 0.7× | 10.59 |
-| CPER | 34.37 | +0.09% | ↘ BELOW50 | 48 | BULLISH | ❌ | – | 2.2× | 0.80 |
-| SHY | 82.36 | +0.05% | ↘ BELOW50 | 53 | BULLISH | ❌ | – | 0.7× | 0.12 |
-| EWA | 28.1 | +0.04% | ↘ BELOW50 | 49 | BEARISH | ❌ | – | 1.2× | 0.59 |
-| SHV | 110.12 | +0.04% | ↗ ABOVE50 | 100 ⚠️ | BEARISH | ✅ | – | 1.1× | 0.02 |
-| BIL | 91.42 | +0.02% | ↗ ABOVE50 | 97 ⚠️ | BEARISH | ✅ | – | 0.8× | 0.02 |
-| FXI | 35.56 | +0.00% | ↘ BELOW50 | 43 | BULLISH | ❌ | – | 0.6× | 0.63 |
-| EWZ | 38.35 | -0.05% | ↗ ABOVE50 | 58 | BULLISH | ✅ | – | 0.8× | 1.06 |
-| XLB | 50.41 | -0.10% | ↘ BELOW50 | 57 | BULLISH | ❌ | – | 0.8× | 0.98 |
-| INDA | 46.65 | -0.13% | ↘ BELOW50 | 38 | BULLISH_CROSS | ❌ | – | 0.8× | 0.84 |
-| EWU | 46.23 | -0.26% | ↘ BELOW50 | 54 | BULLISH | ❌ | – | 0.7× | 0.83 |
-| XLI | 163.77 | -0.40% | ↘ BELOW50 | 47 | BEARISH | ❌ | – | 0.7× | 3.59 |
-| VGK | 83.22 | -0.48% | ↘ BELOW50 | 50 | BULLISH | ❌ | – | 0.9× | 1.66 |
-| ASHR | 32.58 | -0.55% | ↘ BELOW50 | 46 | BULLISH_CROSS | ❌ | – | 0.7× | 0.44 |
-| XLV | 146.81 | -0.62% | ↘ BELOW50 | 44 | BULLISH | ❌ | – | 0.7× | 2.19 |
-| EFA | 98.0 | -0.62% | ↘ BELOW50 | 50 | BULLISH | ❌ | – | 0.6× | 1.99 |
-| VWO | 53.82 | -0.72% | ↘ BELOW50 | 46 | BULLISH | ❌ | – | 0.8× | 1.06 |
-| EWG | 39.9 | -0.75% | ↘ BELOW50 | 47 | BULLISH | ❌ | – | 1.0× | 0.90 |
-| VEA | 64.64 | -0.77% | ↘ BELOW50 | 50 | BULLISH | ❌ | – | 0.8× | 1.39 |
-| EEM | 56.59 | -1.12% | ↘ BELOW50 | 46 | BULLISH_CROSS | ❌ | – | 0.7× | 1.50 |
-| EWT | 70.77 | -1.32% | ↘ BELOW50 | 49 | BEARISH | ❌ | – | 0.9× | 2.06 |
-| EWJ | 85.29 | -1.38% | ↘ BELOW50 | 50 | BULLISH | ❌ | – | 0.6× | 2.10 |
-| XLY | 108.15 | -1.50% | ↘ BELOW50 | 41 | BULLISH | ❌ | – | 0.8× | 2.38 |
-| FBTC | 58.36 | -1.68% | ↘ BELOW50 | 42 | BEARISH_CROSS | ❌ | – | 0.9× | 2.22 |
-| GBTC | 52.15 | -1.70% | ↘ BELOW50 | 42 | BEARISH_CROSS | ❌ | – | 0.6× | 1.99 |
-| IBIT | 37.97 | -1.73% | ↘ BELOW50 | 42 | BEARISH_CROSS | ❌ | – | 0.7× | 1.45 |
-| GLD | 429.41 | -1.92% | ↘ BELOW50 | 46 | BULLISH_CROSS | ❌ | – | 0.7× | 13.34 |
-| IAU | 87.94 | -1.94% | ↘ BELOW50 | 46 | BULLISH_CROSS | ❌ | – | 0.4× | 2.65 |
-| EWY | 122.87 | -2.65% | ↘ BELOW50 | 46 | BEARISH | ❌ | – | 0.6× | 6.88 |
-| ETHA | 15.63 | -3.28% | ↘ BELOW50 | 47 | BULLISH | ❌ | – | 1.0× | 0.81 |
-| SLV | 65.79 | -3.45% | ↘ BELOW50 | 45 | BULLISH | ❌ | – | 0.8× | 4.03 |
-| FETH | 20.58 | -3.56% | ↘ BELOW50 | 46 | BULLISH | ❌ | – | 0.7× | 1.06 |
-
----
-
-## Fetch Errors
-
-- **ETF**: insufficient_data
-- **DXY**: insufficient_data
-- **VIX**: insufficient_data
+| IBIT | 39.52 | +4.08% | ↓ DOWNTREND | 50 | BULLISH_CROSS | ❌ | ❌ | 0.8× | 1.49 |
+| GBTC | 54.26 | +4.05% | ↓ DOWNTREND | 49 | BULLISH_CROSS | ❌ | ❌ | 0.6× | 2.04 |
+| FBTC | 60.72 | +4.04% | ↓ DOWNTREND | 50 | BULLISH_CROSS | ❌ | ❌ | 0.9× | 2.28 |
+| FETH | 21.38 | +3.89% | ↓ DOWNTREND | 51 | BULLISH | ❌ | ❌ | 0.8× | 1.06 |
+| ETHA | 16.2 | +3.65% | ↓ DOWNTREND | 51 | BULLISH | ❌ | ❌ | 0.7× | 0.81 |
+| EWY | 125.94 | +2.50% | ↘ BELOW50 | 49 | BEARISH | ❌ | ✅ | 0.4× | 6.67 |
+| DBO | 19.79 | +1.91% | ↑ UPTREND | 58 | BEARISH | ✅ | ✅ | 0.5× | 0.77 |
+| INDA | 47.25 | +1.29% | ↓ DOWNTREND | 43 | BULLISH | ❌ | ❌ | 0.6× | 0.83 |
+| BNO | 54.67 | +1.02% | ↑ UPTREND | 67 | BEARISH | ✅ | ✅ | 0.8× | 2.66 |
+| XLP | 82.66 | +0.94% | ↘ BELOW50 | 47 | BULLISH_CROSS | ❌ | ✅ | 0.5× | 1.18 |
+| EEM | 57.11 | +0.92% | ↘ BELOW50 | 48 | BULLISH | ❌ | ✅ | 0.4× | 1.45 |
+| XLY | 109.04 | +0.82% | ↓ DOWNTREND | 44 | BULLISH | ❌ | ❌ | 0.6× | 2.30 |
+| EWG | 40.21 | +0.78% | ↘ BELOW50 | 49 | BULLISH | ❌ | ❌ | 1.3× | 0.87 |
+| VEA | 65.12 | +0.74% | ↘ BELOW50 | 52 | BULLISH | ❌ | ✅ | 0.7× | 1.34 |
+| USO | 138.94 | +0.74% | ↑ UPTREND | 73 ⚠️ | BULLISH | ✅ | ✅ | 0.4× | 7.07 |
+| XLE | 59.68 | +0.73% | ↑ UPTREND | 58 | BEARISH | ✅ | ✅ | 0.4× | 1.47 |
+| EWT | 71.29 | +0.73% | ↘ BELOW50 | 51 | BEARISH | ❌ | ✅ | 0.9× | 2.00 |
+| XLF | 49.88 | +0.71% | ↓ DOWNTREND | 51 | BULLISH | ❌ | ❌ | 0.5× | 0.91 |
+| VGK | 83.78 | +0.67% | ↘ BELOW50 | 52 | BULLISH | ❌ | ✅ | 0.7× | 1.59 |
+| QQQ | 588.5 | +0.60% | ↘ BELOW50 | 49 | BULLISH_CROSS | ❌ | ❌ | 0.5× | 11.07 |
+| XLK | 136.78 | +0.58% | ↘ BELOW50 | 50 | BULLISH_CROSS | ❌ | ❌ | 0.6× | 3.35 |
+| IJR | 126.11 | +0.54% | ↘ BELOW50 | 54 | BULLISH | ❌ | ✅ | 0.6× | 2.58 |
+| XLI | 164.61 | +0.51% | ↘ BELOW50 | 48 | BULLISH_CROSS | ❌ | ✅ | 0.5× | 3.46 |
+| EFA | 98.49 | +0.50% | ↘ BELOW50 | 52 | BULLISH | ❌ | ✅ | 0.4× | 1.90 |
+| EWZ | 38.54 | +0.50% | ↑ UPTREND | 59 | BULLISH | ✅ | ✅ | 0.5× | 1.02 |
+| SPY | 658.93 | +0.47% | ↘ BELOW50 | 49 | BULLISH | ❌ | ❌ | 0.4× | 10.14 |
+| SLV | 66.09 | +0.46% | ↘ BELOW50 | 45 | BULLISH | ❌ | ✅ | 0.4× | 3.81 |
+| IWB | 361.46 | +0.45% | ↘ BELOW50 | 49 | BULLISH | ❌ | ❌ | 0.6× | 5.61 |
+| MDY | 625.2 | +0.45% | ↘ BELOW50 | 52 | BULLISH | ❌ | ✅ | 0.3× | 12.69 |
+| IWM | 252.36 | +0.43% | ↘ BELOW50 | 52 | BULLISH | ❌ | ✅ | 0.4× | 5.78 |
+| EWA | 28.22 | +0.43% | ↘ BELOW50 | 51 | BULLISH_CROSS | ❌ | ✅ | 0.7× | 0.57 |
+| IJH | 68.46 | +0.41% | ↘ BELOW50 | 52 | BULLISH | ❌ | ✅ | 0.5× | 1.40 |
+| EWU | 46.42 | +0.41% | ↑ UPTREND | 55 | BULLISH | ✅ | ✅ | 0.5× | 0.79 |
+| XLRE | 41.76 | +0.36% | ↘ BELOW50 | 54 | BULLISH | ❌ | ✅ | 0.5× | 0.65 |
+| VWO | 54.01 | +0.35% | ↘ BELOW50 | 47 | BULLISH | ❌ | ✅ | 0.7× | 1.02 |
+| EWJ | 85.57 | +0.33% | ↘ BELOW50 | 51 | BULLISH | ❌ | ✅ | 0.3× | 1.99 |
+| DJP | 49.06 | +0.33% | ↑ UPTREND | 68 | BULLISH_CROSS | ✅ | ✅ | 0.5× | 0.94 |
+| HYG | 79.7 | +0.18% | ↗ ABOVE50 | 56 | BULLISH | ✅ | – | 0.5× | 0.43 |
+| PDBC | 17.55 | +0.17% | ↑ UPTREND | 65 | BEARISH | ✅ | ✅ | 0.7× | 0.37 |
+| XLC | 111.76 | +0.05% | ↘ BELOW50 | 46 | BULLISH_CROSS | ❌ | ❌ | 0.4× | 1.74 |
+| BIL | 91.44 | +0.02% | ↑ UPTREND | 97 ⚠️ | BEARISH | ✅ | ✅ | 1.2× | 0.02 |
+| SHV | 110.13 | +0.01% | ↑ UPTREND | 100 ⚠️ | BEARISH | ✅ | ✅ | 0.9× | 0.02 |
+| FXI | 35.55 | -0.03% | ↓ DOWNTREND | 43 | BULLISH | ❌ | ❌ | 0.5× | 0.62 |
+| EMB | 93.94 | -0.03% | ↘ BELOW50 | 47 | BULLISH | ❌ | ✅ | 0.3× | 0.69 |
+| TIP | 110.76 | -0.05% | ↘ BELOW50 | 52 | BULLISH_CROSS | ❌ | ✅ | 0.5× | 0.38 |
+| SHY | 82.28 | -0.10% | ↘ BELOW50 | 49 | BULLISH | ❌ | ✅ | 0.5× | 0.11 |
+| TLT | 86.65 | -0.16% | ↘ BELOW50 | 48 | BULLISH | ❌ | ✅ | 0.3× | 0.74 |
+| LQD | 108.95 | -0.16% | ↘ BELOW50 | 51 | BULLISH | ❌ | ✅ | 0.6× | 0.71 |
+| CPER | 34.3 | -0.20% | ↘ BELOW50 | 48 | BULLISH | ❌ | ✅ | 0.3× | 0.77 |
+| IEF | 95.01 | -0.26% | ↘ BELOW50 | 46 | BULLISH | ❌ | ✅ | 0.4× | 0.45 |
+| XLV | 146.28 | -0.36% | ↘ BELOW50 | 42 | BULLISH | ❌ | ✅ | 0.5× | 2.13 |
+| XLU | 46.17 | -0.37% | ↑ UPTREND | 55 | BEARISH | ✅ | ✅ | 0.5× | 0.74 |
+| XLB | 50.22 | -0.38% | ↘ BELOW50 | 54 | BULLISH | ❌ | ✅ | 0.5× | 0.95 |
+| IAU | 87.61 | -0.38% | ↘ BELOW50 | 45 | BULLISH | ❌ | ✅ | 0.3× | 2.53 |
+| GLD | 427.65 | -0.41% | ↘ BELOW50 | 45 | BULLISH | ❌ | ✅ | 0.4× | 12.74 |
+| ASHR | 32.32 | -0.80% | ↘ BELOW50 | 42 | BEARISH | ❌ | ✅ | 0.6× | 0.44 |
 
 ---
 

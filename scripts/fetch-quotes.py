@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 """
 fetch-quotes.py — Systematic ETF/equity snapshot with technicals
-Reads all tickers from config/watchlist.md, fetches 3-month OHLCV via yfinance,
-computes technicals via pandas-ta (RSI, MACD, SMA20/50/200, ATR, Bollinger Bands),
-and writes quotes.json + quotes-summary.md to the daily data folder.
+Reads all tickers from config/watchlist.md.  If a local price-history cache
+exists (data/price-history/{TICKER}.csv) it loads cached data, fetches only the
+missing recent days via yfinance, appends them to the cache, and then computes
+technicals over the full cached window.  If no cache exists it falls back to a
+plain 3-month download (same as before).
+
+Run  scripts/preload-history.py  once to seed the cache with 2 yr of data.
+Afterwards every daily run touches only the latest 1–5 days per ticker.
 
 Usage:
     python3 scripts/fetch-quotes.py                  # today
@@ -14,7 +19,7 @@ import json
 import re
 import sys
 import time
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -22,6 +27,7 @@ import pandas as pd
 import yfinance as yf
 
 ROOT = Path(__file__).parent.parent
+CACHE_DIR = ROOT / "data" / "price-history"
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -38,11 +44,13 @@ def parse_tickers_from_watchlist() -> list[str]:
     text = wl.read_text(encoding="utf-8")
     # Match table rows: | TICKER | ... — first column is 2-5 uppercase letters
     tickers = re.findall(r"^\|\s*([A-Z]{2,6})\s*\|", text, re.MULTILINE)
+    # Exclude table headers and macro-only indicators (fetched by fetch-macro.py)
+    EXCLUDE = {"ETF", "DXY", "VIX"}
     # Deduplicate while preserving order
     seen = set()
     result = []
     for t in tickers:
-        if t not in seen:
+        if t not in seen and t not in EXCLUDE:
             seen.add(t)
             result.append(t)
     return result
@@ -73,6 +81,120 @@ def safe_float(val, decimals: int = 2):
         return round(f, decimals)
     except (TypeError, ValueError):
         return None
+
+
+# ── price-history cache ──────────────────────────────────────────────────────
+
+def _cache_path(ticker: str) -> Path:
+    return CACHE_DIR / f"{ticker}.csv"
+
+
+def load_cached(ticker: str) -> pd.DataFrame | None:
+    """Load cached OHLCV CSV for *ticker*. Returns None when no cache exists."""
+    p = _cache_path(ticker)
+    if not p.exists():
+        return None
+    try:
+        df = pd.read_csv(p, parse_dates=["Date"], index_col="Date")
+        if df.empty:
+            return None
+        return df.sort_index()
+    except Exception:
+        return None
+
+
+def save_cached(ticker: str, df: pd.DataFrame) -> None:
+    """Persist (or update) the cache CSV for *ticker*."""
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    df = df.sort_index()
+    df.columns = [c.capitalize() for c in df.columns]
+    df.index.name = "Date"
+    df.to_csv(_cache_path(ticker), date_format="%Y-%m-%d")
+
+
+def incremental_fetch(tickers: list[str]) -> dict[str, pd.DataFrame]:
+    """For each ticker: load cache → fetch only missing days → merge & save.
+
+    Tickers *without* a cache are collected and bulk-downloaded (3 mo) in a
+    single yf.download call so we stay fast even on first run.  Tickers that
+    *have* a cache are collected by how many calendar days they're behind and
+    fetched in small date-ranged batches.
+    """
+    uncached: list[str] = []
+    cached_work: list[tuple[str, pd.DataFrame, str]] = []  # (ticker, df, start_str)
+
+    for t in tickers:
+        df = load_cached(t)
+        if df is None:
+            uncached.append(t)
+        else:
+            last_date = df.index.max()
+            start = (last_date + timedelta(days=1)).strftime("%Y-%m-%d")
+            cached_work.append((t, df, start))
+
+    result: dict[str, pd.DataFrame] = {}
+
+    # ── uncached: bulk 3-month download (same as legacy behaviour) ───────
+    if uncached:
+        print(f"  No cache for {len(uncached)} tickers — downloading 3mo bulk...")
+        BATCH = 25
+        for i in range(0, len(uncached), BATCH):
+            batch = uncached[i:i + BATCH]
+            data = fetch_batch(batch, period="3mo")
+            for t, df in data.items():
+                save_cached(t, df)
+                result[t] = df
+            if i + BATCH < len(uncached):
+                time.sleep(0.5)
+
+    # ── cached: incremental update ───────────────────────────────────────
+    if cached_work:
+        today_str = date.today().strftime("%Y-%m-%d")
+        to_fetch = [(t, df, s) for t, df, s in cached_work if s <= today_str]
+        already_current = len(cached_work) - len(to_fetch)
+        if already_current:
+            print(f"  {already_current} tickers already up-to-date in cache")
+        if to_fetch:
+            print(f"  Incremental update for {len(to_fetch)} cached tickers...")
+            # Group tickers to download them together
+            fetch_tickers = [t for t, _, _ in to_fetch]
+            earliest_start = min(s for _, _, s in to_fetch)
+            try:
+                raw = yf.download(
+                    fetch_tickers,
+                    start=earliest_start,
+                    progress=False,
+                    threads=True,
+                )
+                for t, old_df, start_str in to_fetch:
+                    try:
+                        if isinstance(raw.columns, pd.MultiIndex):
+                            new_df = raw.xs(t, level=1, axis=1).copy().dropna(how="all")
+                        elif len(fetch_tickers) == 1:
+                            new_df = raw.copy().dropna(how="all")
+                        else:
+                            new_df = pd.DataFrame()
+                        if not new_df.empty:
+                            merged = pd.concat([old_df, new_df])
+                            merged = merged[~merged.index.duplicated(keep="last")]
+                            merged = merged.sort_index()
+                        else:
+                            merged = old_df
+                        save_cached(t, merged)
+                        result[t] = merged
+                    except Exception:
+                        result[t] = old_df
+            except Exception as e:
+                print(f"    ⚠️  incremental download failed: {e}")
+                for t, old_df, _ in to_fetch:
+                    result[t] = old_df
+
+        # Tickers that were already current still need to be in result
+        for t, df, s in cached_work:
+            if t not in result:
+                result[t] = df
+
+    return result
 
 
 def fetch_batch(tickers: list[str], period: str = "3mo") -> dict[str, pd.DataFrame]:
@@ -108,8 +230,16 @@ def build_snapshot(ticker: str, df: pd.DataFrame) -> dict:
     try:
         import pandas_ta as ta
     except ImportError:
-        print("  ⚠️  pandas-ta not installed — run: pip install pandas-ta")
-        return {"ticker": ticker, "error": "pandas_ta_missing"}
+        # numba doesn't support Python 3.14 — mock it so pandas-ta loads without JIT
+        import types as _t
+        _numba = _t.ModuleType("numba")
+        _numba.njit = lambda f=None, **kw: f if f else (lambda fn: fn)
+        sys.modules.setdefault("numba", _numba)
+        try:
+            import pandas_ta as ta
+        except ImportError:
+            print("  ⚠️  pandas-ta not installed — run: pip install pandas-ta")
+            return {"ticker": ticker, "error": "pandas_ta_missing"}
 
     # Normalise column names
     df.columns = [c.lower() for c in df.columns]
@@ -135,10 +265,10 @@ def build_snapshot(ticker: str, df: pd.DataFrame) -> dict:
     prev_close = safe_float(prev.get("close"))
     pct_1d = round((price - prev_close) / prev_close * 100, 2) if price and prev_close and prev_close > 0 else None
 
-    # 52-week high/low from the YTD data available (up to ~3mo; use full 1yr if fetched elsewhere)
-    high_52w = safe_float(df["high"].max())
-    low_52w = safe_float(df["low"].min())
-    pct_from_52w_high = round((price - high_52w) / high_52w * 100, 2) if price and high_52w and high_52w > 0 else None
+    # 52-week high/low (accurate when cache has ≥1yr; otherwise uses whatever window is available)
+    high_range = safe_float(df["high"].max())
+    low_range = safe_float(df["low"].min())
+    pct_from_high = round((price - high_range) / high_range * 100, 2) if price and high_range and high_range > 0 else None
 
     # Volume ratio vs 20-day average
     avg_vol_20 = safe_float(df["volume"].tail(20).mean(), 0)
@@ -168,9 +298,9 @@ def build_snapshot(ticker: str, df: pd.DataFrame) -> dict:
         "ticker": ticker,
         "price": price,
         "pct_1d": pct_1d,
-        "high_3mo": high_52w,   # labelled as range high within fetched window
-        "low_3mo": low_52w,
-        "pct_from_high": pct_from_52w_high,
+        "high_range": high_range,
+        "low_range": low_range,
+        "pct_from_high": pct_from_high,
         "volume": today_vol,
         "volume_ratio": volume_ratio,
         "rsi14": rsi,
@@ -221,7 +351,7 @@ def write_summary_md(snapshots: list[dict], output_path: Path, fetched_at: str):
         f"# Quotes Snapshot — {fetched_at}",
         "",
         f"> **{len(valid)}** tickers fetched successfully. {len(errors)} failed.",
-        f"> Freshness: ~15min delayed (Yahoo Finance). Technicals computed from 3-month OHLCV.",
+        f"> Freshness: ~15min delayed (Yahoo Finance). Technicals computed from cached OHLCV history.",
         "",
         "---",
         "",
@@ -290,17 +420,8 @@ def main():
     tickers = parse_tickers_from_watchlist()
     print(f"  Found {len(tickers)} tickers")
 
-    # Batch tickers in groups of 25 to avoid Yahoo rate limiting
-    BATCH_SIZE = 25
-    batches = [tickers[i:i + BATCH_SIZE] for i in range(0, len(tickers), BATCH_SIZE)]
-    all_ohlcv: dict[str, pd.DataFrame] = {}
-
-    for i, batch in enumerate(batches, 1):
-        print(f"  Downloading batch {i}/{len(batches)} ({len(batch)} tickers)...")
-        data = fetch_batch(batch)
-        all_ohlcv.update(data)
-        if i < len(batches):
-            time.sleep(0.5)  # brief pause between batches
+    # ── load from cache + incremental update (or bulk 3mo fallback) ──────
+    all_ohlcv = incremental_fetch(tickers)
 
     print(f"  Computing technicals for {len(all_ohlcv)} tickers...")
     snapshots = []

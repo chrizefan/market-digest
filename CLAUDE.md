@@ -9,7 +9,7 @@
 
 A daily market intelligence system that generates structured research across all asset classes using a **7-phase AI-orchestrated pipeline**. The system produces 22 output files per day — one per market segment + master DIGEST.md.
 
-**Tech stack**: Bash scripts + Markdown skill files + Python (tearsheet). No compiled code.
+**Tech stack**: Bash scripts + Markdown skill files + Python (tearsheet) + Next.js frontend (Tailwind + Recharts).
 
 ---
 
@@ -29,7 +29,10 @@ A daily market intelligence system that generates structured research across all
 ./scripts/validate-phase.sh 3     # Validate Phase 3 outputs before proceeding
 ./scripts/validate-phase.sh --all # Validate all pipeline phases end-to-end
 ./scripts/validate-phase.sh --summary  # Quick pass/fail for every phase
-python scripts/update-tearsheet.py  # Rebuild HTML portfolio tearsheet
+./scripts/fetch-market-data.sh    # Fetch quotes + macro data (incremental from cache)
+./scripts/fetch-market-data.sh --preload  # Force full 2yr cache rebuild
+python scripts/preload-history.py          # Seed/refresh OHLCV cache (data/price-history/)
+python scripts/update_tearsheet.py  # Parse digests + push to Supabase (primary data store)
 ```
 
 ---

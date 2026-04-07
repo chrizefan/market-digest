@@ -113,5 +113,6 @@ All items from the standard Session Completion Checklist (`skills/SKILL-orchestr
 - [ ] Week Ahead Calendar scanned (high-impact events identified)
 - [ ] `_meta.json` in output folder confirms `"type": "baseline"`
 - [ ] Week Ahead Setup section added to `DIGEST.md`
+- [ ] `snapshot.json` written alongside `DIGEST.md` (structured data for Supabase ETL)
 - [ ] Phase 7C: All analyst reports in `outputs/daily/{{DATE}}/positions/`
 - [ ] Phase 7D: Rebalance decision + baseline anchor weights in `rebalance-decision.md`

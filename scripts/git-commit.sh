@@ -97,15 +97,35 @@ else
   echo "📦 Committing digiquant-atlas outputs — $DATE"
   echo "============================================"
 
-  # Regenerate dashboard-data.json from latest outputs before committing
+  # Regenerate snapshot.json sidecars from latest outputs
   echo ""
-  echo "🔄 Regenerating dashboard-data.json..."
-  python3 scripts/update-tearsheet.py || echo "   ⚠️  Tearsheet update failed — committing stale dashboard-data.json"
+  echo "🔄 Generating snapshot.json sidecars..."
+  if ! python3 scripts/generate-snapshot.py --all 2>&1; then
+    echo "   ⚠️  Snapshot generation failed — check output above"
+    echo "   Continuing with stale snapshots. Review before pushing."
+  fi
 
-  # Stage digest outputs and config
+  echo ""
+  echo "🔄 Pushing data to Supabase..."
+  if ! python3 scripts/update_tearsheet.py 2>&1; then
+    echo "   ❌  Supabase push failed — dashboard may show stale data"
+    echo "   Fix: pip install -r requirements.txt && python3 scripts/update_tearsheet.py"
+    echo "   Aborting commit to prevent stale state."
+    exit 1
+  fi
+
+  # Validate portfolio constraints before committing
+  if [ -f scripts/validate-portfolio.sh ]; then
+    echo ""
+    echo "🔍 Validating portfolio constraints..."
+    if ! bash scripts/validate-portfolio.sh 2>&1; then
+      echo "   ⚠️  Portfolio validation failed — review warnings above"
+    fi
+  fi
+
+  # Stage digest outputs and config (no more dashboard-data.json needed)
   git add outputs/
   git add config/
-  git add frontend/public/dashboard-data.json
 
   # Check if there's anything to commit
   if git diff --staged --quiet; then
@@ -122,9 +142,9 @@ else
 
   echo ""
   echo "📤 Pushing to origin..."
-  git push origin master 2>/dev/null && echo "✅ Committed + pushed: digest($DATE) — GitHub Pages will redeploy shortly." || {
+  git push origin master 2>/dev/null && echo "✅ Committed + pushed: digest($DATE) — Supabase data already live." || {
     echo "   ⚠️  Push failed — run manually: git push origin master"
-    echo "   Commit is local. Page will not update until pushed."
+    echo "   Commit is local. Supabase data is already updated regardless."
   }
   echo ""
 fi

@@ -60,6 +60,24 @@ EOF
   sed -i "" "s/{{DATE}}/$DATE/g" "$OUTPUT_DIR/DIGEST.md"
   sed -i "" "s/{{TIMESTAMP}}/$(date '+%Y-%m-%d %H:%M %Z')/g" "$OUTPUT_DIR/DIGEST.md"
 
+  # Scaffold snapshot.json placeholder (agent will overwrite with real data in Phase 7)
+  cat > "$OUTPUT_DIR/snapshot.json" << 'SNAPEOF'
+{
+  "schema_version": "1.0",
+  "date": "PLACEHOLDER",
+  "run_type": "baseline",
+  "baseline_date": null,
+  "regime": {},
+  "positions": [],
+  "theses": [],
+  "market_data": {},
+  "segment_biases": {},
+  "actionable": [],
+  "risks": []
+}
+SNAPEOF
+  sed -i "" "s/\"PLACEHOLDER\"/\"$DATE\"/" "$OUTPUT_DIR/snapshot.json"
+
   echo "✅ Created BASELINE directory: $OUTPUT_DIR"
   echo "   Files: DIGEST.md + 10 segment files + 11 sector files + _meta.json"
   echo ""
@@ -137,6 +155,23 @@ EOF
 
   # Create DIGEST.md placeholder (will be materialized by the agent)
   touch "$OUTPUT_DIR/DIGEST.md"
+
+  # Scaffold snapshot.json placeholder (agent will overwrite with real data in Phase 7)
+  cat > "$OUTPUT_DIR/snapshot.json" << SNAPEOF
+{
+  "schema_version": "1.0",
+  "date": "${DATE}",
+  "run_type": "delta",
+  "baseline_date": "${BASELINE_DATE}",
+  "regime": {},
+  "positions": [],
+  "theses": [],
+  "market_data": {},
+  "segment_biases": {},
+  "actionable": [],
+  "risks": []
+}
+SNAPEOF
 
   # Scaffold DIGEST-DELTA.md from template
   cp "templates/delta-digest.md" "$OUTPUT_DIR/DIGEST-DELTA.md"

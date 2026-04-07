@@ -4,9 +4,11 @@ Step 0: Fetch systematic market data.
   Run: ./scripts/fetch-market-data.sh
   (Or individually: python3 scripts/fetch-quotes.py && python3 scripts/fetch-macro.py)
   Wait for completion before proceeding — outputs/daily/$(date +%Y-%m-%d)/data/ must exist.
-  This fetches live quotes + technicals (RSI, MACD, SMA, ATR) for all ~60 watchlist tickers
-  and the full yield curve (1M-30Y) + VIX + commodities + FX. All downstream phases read
-  from these files instead of web-browsing for individual prices.
+  fetch-quotes.py loads per-ticker CSV cache from data/price-history/ and only fetches
+  the latest missing days (incremental). If the cache is empty (first run, new machine),
+  the orchestrator auto-seeds it with 2yr of data via preload-history.py.
+  Technicals (RSI, MACD, SMA20/50/200, ATR, BBands) are computed over the full cached window.
+  **Manual preload/refresh**: python3 scripts/preload-history.py [--refresh]
   **If scripts fail** (sandbox, missing yfinance): follow `skills/SKILL-mcp-data-fetch.md`
   to fetch data via MCP tools (FRED, Alpha Vantage, CoinGecko, Frankfurter) instead.
 

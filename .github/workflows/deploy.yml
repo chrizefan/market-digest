@@ -25,14 +25,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Regenerate dashboard-data.json
-        run: python scripts/update-tearsheet.py
-      
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -49,12 +41,15 @@ jobs:
         
       - name: Build project
         working-directory: frontend
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: npm run build
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './frontend/dist'
+          path: './frontend/out'
           
       - name: Deploy to GitHub Pages
         id: deployment

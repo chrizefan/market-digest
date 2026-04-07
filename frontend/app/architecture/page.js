@@ -1,0 +1,144 @@
+'use client';
+
+import PageHeader from '@/components/page-header';
+import { Badge } from '@/components/ui';
+import {
+  Layers, Clock, Zap, Bot, Database, Globe,
+} from 'lucide-react';
+
+const CADENCE_TIERS = [
+  { label: 'Sunday Baseline', when: 'Sunday', desc: 'Full 9-phase pipeline — all 20+ files from scratch', cost: '100%', color: 'fin-blue' },
+  { label: 'Daily Delta',     when: 'Mon–Sat',   desc: 'Lightweight delta — only changed segments',         cost: '~20–30%', color: 'fin-green' },
+  { label: 'Monthly Synthesis', when: 'Month-end', desc: 'Review of all baselines + deltas for the month',  cost: '~40–50%', color: 'fin-purple' },
+];
+
+const PHASES = [
+  { n: 1,    name: 'Alternative Data',    output: 'alt-data.md',      desc: 'Sentiment, CTA positioning, options flow, political signals', icon: Database },
+  { n: 2,    name: 'Institutional Intel',  output: 'institutional.md', desc: 'ETF flows, hedge fund activity, smart money', icon: Layers },
+  { n: 3,    name: 'Macro Analysis',       output: 'macro.md',         desc: 'Rates, yields, regime, VIX, DXY, leading indicators', icon: Globe },
+  { n: '4A', name: 'Bonds & Rates',        output: 'bonds.md',         desc: 'Treasury yields, credit spreads, duration bets' },
+  { n: '4B', name: 'Commodities',          output: 'commodities.md',   desc: 'Energy, metals, agriculture, commodity curves' },
+  { n: '4C', name: 'Forex',                output: 'forex.md',         desc: 'DXY, EUR/USD, JPY, EM currencies' },
+  { n: '4D', name: 'Crypto',               output: 'crypto.md',        desc: 'BTC, ETH, on-chain, stablecoin flows, altcoin rotation' },
+  { n: '4E', name: 'International',        output: 'international.md', desc: 'EFA, EEM, country risk, EM themes' },
+  { n: '5A', name: 'US Equities',          output: 'us-equities.md',   desc: 'SPY, QQQ, breadth, factor rotation' },
+  { n: '5B–L', name: '11 GICS Sectors',    output: 'sectors/*.md',     desc: 'Sub-agent per sector: XLK, XLV, XLF, XLE…' },
+  { n: 7,    name: 'Digest Synthesis',      output: 'DIGEST.md',        desc: 'Master output — cross-asset synthesis + thesis tracker' },
+];
+
+const AGENTS = [
+  { name: 'Orchestrator',   file: 'orchestrator.agent.md',   role: 'Pipeline driver — routes baseline vs delta' },
+  { name: 'Sector Analyst', file: 'sector-analyst.agent.md', role: 'Runs one or more GICS sector deep-dives' },
+  { name: 'Alt Data',       file: 'alt-data-analyst.agent.md', role: 'Phase 1 alternative data gathering' },
+  { name: 'Institutional',  file: 'institutional-analyst.agent.md', role: 'Phase 2 smart money intelligence' },
+  { name: 'Portfolio Mgr',  file: 'portfolio-manager.agent.md', role: 'Position sizing, rebalancing, risk' },
+  { name: 'Research Asst',  file: 'research-assistant.agent.md', role: 'Ad-hoc research queries' },
+  { name: 'Thesis Tracker', file: 'thesis-tracker.agent.md',    role: 'Portfolio thesis lifecycle management' },
+];
+
+export default function ArchitecturePage() {
+  return (
+    <>
+      <PageHeader title="Architecture" />
+      <div className="p-10 max-w-[1400px] mx-auto w-full space-y-8 max-md:p-4">
+
+        {/* Intro */}
+        <div className="glass-card p-6">
+          <p className="text-sm text-text-secondary leading-relaxed max-w-3xl">
+            <strong className="text-white">digiquant-atlas</strong> is a daily market intelligence system driven by a 
+            multi-phase AI-orchestrated pipeline. Skills (markdown instruction files) define each analysis step,
+            and named agents execute them. The system covers all global asset classes, producing 20+ structured 
+            research files per run.
+          </p>
+        </div>
+
+        {/* Three-Tier Cadence */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Clock size={16} className="text-fin-blue" />
+            <h2 className="text-base font-semibold">Three-Tier Cadence</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {CADENCE_TIERS.map(t => (
+              <div key={t.label} className={`glass-card p-5 border-t-2 border-${t.color}/40`}>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-bold">{t.label}</h3>
+                  <Badge variant="default">{t.when}</Badge>
+                </div>
+                <p className="text-xs text-text-secondary leading-relaxed mb-3">{t.desc}</p>
+                <p className="text-xs text-text-muted">Token cost: <span className="text-white font-mono">{t.cost}</span></p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 9-Phase Pipeline */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Zap size={16} className="text-fin-amber" />
+            <h2 className="text-base font-semibold">9-Phase Pipeline</h2>
+          </div>
+          <div className="glass-card p-0 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[600px]">
+                <thead>
+                  <tr className="text-text-muted text-xs uppercase tracking-wider border-b border-border-subtle bg-bg-secondary">
+                    <th className="text-left px-5 py-3 w-16">Phase</th>
+                    <th className="text-left px-5 py-3">Analysis</th>
+                    <th className="text-left px-5 py-3">Output</th>
+                    <th className="text-left px-5 py-3">Description</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-subtle">
+                  {PHASES.map((p, i) => (
+                    <tr key={i} className="hover:bg-white/[0.02]">
+                      <td className="px-5 py-3 font-mono text-fin-blue font-bold">{p.n}</td>
+                      <td className="px-5 py-3 font-medium">{p.name}</td>
+                      <td className="px-5 py-3 font-mono text-[0.8rem] text-text-muted">{p.output}</td>
+                      <td className="px-5 py-3 text-text-secondary text-[0.85rem]">{p.desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Agent Swarm */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Bot size={16} className="text-fin-green" />
+            <h2 className="text-base font-semibold">Agent Swarm</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {AGENTS.map(a => (
+              <div key={a.name} className="glass-card p-4">
+                <h3 className="text-sm font-bold mb-1 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-fin-green shrink-0" />
+                  {a.name}
+                </h3>
+                <p className="text-xs text-text-secondary leading-relaxed">{a.role}</p>
+                <p className="text-[10px] text-text-muted font-mono mt-2">{a.file}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Pipeline Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[
+            { label: 'Skill Files', value: '25+' },
+            { label: 'Output Files/Day', value: '22' },
+            { label: 'Named Agents', value: '7' },
+            { label: 'GICS Sectors', value: '11' },
+          ].map(s => (
+            <div key={s.label} className="glass-card p-4 text-center">
+              <p className="text-2xl font-bold text-fin-blue">{s.value}</p>
+              <p className="text-xs text-text-muted mt-1">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}

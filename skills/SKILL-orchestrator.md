@@ -288,6 +288,33 @@ Using `templates/master-digest.md`, compile `outputs/daily/{{DATE}}/DIGEST.md`:
 
 Save to: `outputs/daily/{{DATE}}/DIGEST.md`
 
+### Phase 7 — Write snapshot.json (Structured Sidecar)
+
+After saving DIGEST.md, write a machine-readable `snapshot.json` alongside it. This structured file
+is consumed by `update_tearsheet.py` to push data to Supabase — it replaces fragile regex parsing.
+
+**Schema**: See `templates/snapshot-schema.json` for the canonical field definitions.
+
+Write `outputs/daily/{{DATE}}/snapshot.json` with:
+- `schema_version`: `"1.0"`
+- `date`: `"{{DATE}}"`
+- `run_type`: `"baseline"` or `"delta"` (from `_meta.json`)
+- `baseline_date`: null for baselines, the baseline date for deltas
+- `regime`: label, bias, conviction, summary, factors (from Market Regime Snapshot section)
+- `positions[]`: each position from the Portfolio Positioning table — ticker, name, weight_pct, action, thesis_id, rationale, current_price, entry_price, entry_date
+- `theses[]`: each row from the Thesis Tracker table — id, name, vehicle, invalidation, status, notes
+- `market_data`: key levels used in the digest (SPY, QQQ, VIX, DXY, US10Y, WTI, Gold, BTC, etc.)
+- `segment_biases`: bias per segment (macro, bonds, commodities, forex, crypto, international, us_equities)
+- `sector_biases`: bias per sector (OW/UW/N + driver)
+- `actionable[]`: top 5 action items from the Actionable Summary section
+- `risks[]`: risk radar items from the Risk Radar section
+- `portfolio_posture`: Defensive / Neutral / Offensive
+- `cash_pct`: cash allocation percentage
+
+**Important**: All numerical values (prices, weights, yields) must be actual numbers, not strings.
+Positions weights must sum to approximately 100%. Use the data already gathered during the pipeline —
+this step should be a simple marshaling of existing analysis, not new research.
+
 ### Checkpoint: Phase 7
 Run: `./scripts/validate-phase.sh 7`
 Verifies DIGEST.md exists with ≥50 lines and contains required sections (Market Regime, Thesis Tracker, Actionable Summary, Risk Radar). **Do not proceed to Phase 7B until validated.**
@@ -367,25 +394,33 @@ Verifies portfolio-recommended.md, rebalance-decision.md, and portfolio.json pro
 
 ---
 
-## Phase 8 — Web Dashboard Update
+## Phase 8 — Supabase Publish + Commit
 
-> To ensure the interactive web application always reflects the latest analysis, you must explicitly trigger the backend generator.
+> Pushes all analysis data to Supabase so the web dashboard updates instantly — no redeployment needed.
 
-Run the following command exactly in your environment to parse the directories and output the new metric JSON to the frontend:
-`python3 scripts/update-tearsheet.py`
+### 8A: Generate snapshot.json (if not already written by Phase 7)
+Run: `python3 scripts/generate-snapshot.py`
+This extracts structured data from DIGEST.md + portfolio.json into `outputs/daily/{{DATE}}/snapshot.json`. The snapshot.json is the primary data source for the Supabase ETL.
 
-Wait for it to confirm the update to `dashboard-data.json`.
+### 8B: Push to Supabase
+Run: `python3 scripts/update_tearsheet.py`
+Wait for it to confirm:
+1. Supabase push complete — all 8 tables upserted (daily_snapshots, positions, theses, position_events, documents, nav_history, benchmark_history, portfolio_metrics)
 
-After the dashboard update succeeds, commit and push all digest outputs:
-`./scripts/git-commit.sh`
+The frontend reads directly from Supabase at runtime — no static JSON file or redeployment is needed. The dashboard updates as soon as the Supabase push completes.
 
-This commits **and pushes** to `origin/master` — triggering a GitHub Pages redeploy so the web dashboard reflects today's analysis. Confirm the script prints `✅ Committed + pushed`.
+If Supabase push reports 0 rows for positions or nav_history, check:
+- `snapshot.json` exists and has a populated `positions[]` array
+- `yfinance` is installed in the venv (needed for NAV simulation)
+- `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` are set in `config/supabase.env`
 
-This creates the **first commit** — the daily digest outputs.
+### 8C: Commit and push
+Run: `./scripts/git-commit.sh`
+This commits outputs to `origin/master` for version control. The web dashboard is already live from step 8B — the git push is for archival, not deployment.
 
 ### Checkpoint: Phase 8
 Run: `./scripts/validate-phase.sh 8`
-Verifies dashboard-data.json exists, is valid JSON, and was recently updated. **Do not proceed to Phase 9 until validated.**
+Verifies Supabase tables have current data for today's date. **Do not proceed to Phase 9 until validated.**
 
 ---
 
@@ -473,7 +508,7 @@ Confirm all of the following before ending the session:
 - [ ] Phase 7B: Opportunity screen complete; `outputs/daily/{{DATE}}/opportunity-screen.md` saved; analyst roster determined
 - [ ] Phase 7C: Deliberation complete; transcript in `outputs/daily/{{DATE}}/deliberation.md`; analyst reports in `positions/`
 - [ ] Phase 7D: `portfolio-recommended.md` + `rebalance-decision.md` created; `portfolio.json` proposed_positions updated
-- [ ] Phase 8: `update-tearsheet.py` executed successfully; digest commit created
+- [ ] Phase 8: `update_tearsheet.py` pushed to Supabase; digest commit created; dashboard live
 - [ ] Phase 9: Post-mortem completed; source scorecard, quality log updated; evolution commit created
 
 **Total output files per day: ~21 segment files + DIGEST.md + deliberation.md + analyst positions/ + portfolio-recommended.md + rebalance-decision.md + 3 evolution files = 29 files**

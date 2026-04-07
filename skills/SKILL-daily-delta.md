@@ -237,6 +237,20 @@ to the baseline (and any prior deltas from this week).
 This materialized file is what the dashboard (`update-tearsheet.py`) reads — it must be a valid,
 complete digest with all required sections present.
 
+### Phase 7 — Write snapshot.json (Structured Sidecar)
+
+After materializing DIGEST.md, write `outputs/daily/{{DATE}}/snapshot.json` — a machine-readable
+sidecar consumed by the Supabase ETL. See `templates/snapshot-schema.json` for the schema.
+
+For delta days:
+- `run_type`: `"delta"`
+- `baseline_date`: the baseline date from `_meta.json`
+- All fields reflect the **materialized** state (baseline + deltas applied), not just today's changes
+- Positions and theses should reflect the current full portfolio, not just what changed
+
+This data marshaling step should be quick — all values are already in your context from the
+materialization step above.
+
 ### Checkpoint: Phase 7
 Run: `./scripts/validate-phase.sh 7`
 Verifies both DIGEST-DELTA.md and materialized DIGEST.md exist with substantive content. Materialized DIGEST.md should be ≥50 lines. **Do not proceed to Phase 7C until validated.**
@@ -312,15 +326,22 @@ Verifies portfolio monitor completed (rebalance-decision.md or monitor note exis
 
 ---
 
-## Phase 8 — Web Dashboard Update
+## Phase 8 — Web Dashboard + Supabase Push
 
-Run: `python3 scripts/update-tearsheet.py`
+### 8A: Generate snapshot.json
+Run: `python3 scripts/generate-snapshot.py`
+Generates structured JSON sidecar from today's materialized DIGEST.md + portfolio.json.
 
-Verify the command completes without error and `frontend/public/dashboard-data.json` is updated.
+### 8B: Push to Supabase
+Run: `python3 scripts/update_tearsheet.py`
+Verify: Supabase push complete (all 8 tables). The dashboard updates instantly — no redeployment needed.
+
+### 8C: Commit and push
+Run: `./scripts/git-commit.sh`
 
 ### Checkpoint: Phase 8
 Run: `./scripts/validate-phase.sh 8`
-Verifies dashboard-data.json is valid JSON and was recently updated. **Do not proceed to Phase 9 until validated.**
+Verifies Supabase tables have current data for today's date. **Do not proceed to Phase 9 until validated.**
 
 ---
 
@@ -369,4 +390,4 @@ This runs every phase check in sequence and reports a consolidated pass/fail. Al
 - [ ] Phase 7C: Portfolio monitor completed — triggers checked
 - [ ] `update-tearsheet.py` executed successfully
 - [ ] Evolution post-mortem complete (delta quality entry in quality-log.md)
-- [ ] `git-commit.sh` run — commits **and pushes** to origin (triggers web dashboard update)
+- [ ] `git-commit.sh` run — commits to origin; Supabase data already live from push step

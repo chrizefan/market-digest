@@ -179,7 +179,7 @@ Skill: `skills/SKILL-weekly-baseline.md` → `skills/SKILL-orchestrator.md`
 | 4A–E | Bonds, Commodities, Forex, Crypto, International | 5 files |
 | 5A–L | US Equities + 11 GICS Sector Sub-Agents | 12 files |
 | 7 | DIGEST.md Synthesis + Week Ahead Setup | `DIGEST.md` |
-| 8 | Web Dashboard Update | `dashboard-data.json` |
+| 8 | Supabase Publish | 8 Supabase tables |
 | 9 | Post-Mortem & Evolution | `evolution/` |
 
 ### Mon–Sat — Daily Delta (~70% token savings)
@@ -191,7 +191,7 @@ Skill: `skills/SKILL-daily-delta.md`
 | 1–5 | Run only segments with material changes | `deltas/*.delta.md` |
 | Mandatory | Always: macro, us-equities, crypto | 3 delta files min |
 | 7 | DIGEST-DELTA.md + materialize DIGEST.md | Both files |
-| 8–9 | Dashboard + Evolution | Same as baseline |
+| 8–9 | Supabase Publish + Evolution | Same as baseline |
 
 ### End of Month — Monthly Synthesis
 Skill: `skills/SKILL-monthly-synthesis.md`

@@ -29,24 +29,45 @@ layer, every agent reads the same source-of-truth JSON/Markdown files fetched ri
 
 | Script | What It Does |
 |--------|-------------|
-| `scripts/fetch-quotes.py [date]` | Downloads 3-month OHLCV for all ~60 watchlist tickers and computes RSI(14), MACD, SMA20/50/200, ATR(14), Bollinger Bands via pandas-ta |
+| `scripts/preload-history.py` | **One-time / weekly**: bulk-downloads 2yr OHLCV for all watchlist tickers and caches them as CSV files in `data/price-history/`. Run once to seed the cache; re-run with `--refresh` to update stale tickers. |
+| `scripts/fetch-quotes.py [date]` | **Daily**: loads cached history, fetches only the latest missing days, appends to cache, then computes RSI(14), MACD, SMA20/50/200, ATR(14), Bollinger Bands via pandas-ta. Falls back to 3-month bulk download if no cache exists. |
 | `scripts/fetch-macro.py [date]` | Fetches full US yield curve (US Treasury public XML API, no auth) + VIX, SKEW, crude, gold, NatGas, BTC, ETH, FX pairs via yfinance |
-| `scripts/fetch-market-data.sh [date]` | Runs both scripts, validates outputs, prints summary. Use this as the single entry point. |
+| `scripts/fetch-market-data.sh [date]` | Orchestrator — auto-seeds cache on first run, then runs both fetch scripts, validates outputs, prints summary. Pass `--preload` to force a full cache rebuild. |
 
 ---
 
 ## How to Run
 
 ```bash
-# Standard (today):
+# First-time setup — preload 2yr price history cache:
+python3 scripts/preload-history.py              # all watchlist tickers, 2yr
+python3 scripts/preload-history.py --period 5y   # deeper history
+python3 scripts/preload-history.py --ticker SPY  # single ticker
+python3 scripts/preload-history.py --refresh     # only update stale (>7d) tickers
+
+# Standard daily run (today) — incremental update from cache:
 ./scripts/fetch-market-data.sh
 
 # Specific date:
 ./scripts/fetch-market-data.sh 2026-04-06
 
+# Force full cache rebuild:
+./scripts/fetch-market-data.sh --preload
+
 # Dependencies (one-time setup):
 pip install -r requirements.txt
 ```
+
+### Price History Cache
+
+The cache lives at `data/price-history/{TICKER}.csv` — one CSV per ticker with columns: Date, Open, High, Low, Close, Volume. Benefits:
+
+- **SMA200 accuracy**: with 2yr of data, the 200-day SMA is fully warmed up (3-month window only had ~63 trading days)
+- **True 52-week high/low**: the range high/low now reflects the actual cached window, not just 3 months
+- **Speed**: daily runs download 1–5 new rows per ticker instead of ~63 rows × 70 tickers
+- **Resilience**: if yfinance is rate-limited, the cache still provides yesterday's data for technicals
+
+The cache directory is in `.gitignore` (derived data). Run `preload-history.py` to regenerate.
 
 ### Sandbox / CI Alternative (no yfinance)
 
@@ -82,8 +103,8 @@ Each entry in `snapshots[]` contains:
 | `ticker` | Ticker symbol |
 | `price` | Latest close price (~15min delayed) |
 | `pct_1d` | 1-day % change |
-| `high_3mo` / `low_3mo` | 3-month high / low |
-| `pct_from_high` | % below 3-month high |
+| `high_range` / `low_range` | Range high / low (full cached window — up to 2yr when preloaded) |
+| `pct_from_high` | % below range high |
 | `volume` | Today's volume |
 | `volume_ratio` | Today's volume ÷ 20-day average (>1.3 = elevated) |
 | `rsi14` | RSI with 14-period lookback |

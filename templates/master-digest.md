@@ -238,5 +238,6 @@
 ---
 
 *Segment files: macro ✓ | bonds ✓ | commodities ✓ | forex ✓ | crypto ✓ | international ✓ | 11 sectors ✓ | alt-data ✓ | institutional ✓*
+*Structured data: `snapshot.json` (same folder — consumed by Supabase ETL)*
 *Memory updated: 24 ROLLING.md files ✓*
 *Output saved: `outputs/daily/{{DATE}}/DIGEST.md`*
