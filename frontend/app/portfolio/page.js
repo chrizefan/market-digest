@@ -97,7 +97,9 @@ export default function PortfolioPage() {
                   <th className="text-left px-6 py-4">Ticker</th>
                   <th className="text-left px-6 py-4">Name</th>
                   <th className="text-right px-6 py-4">Weight</th>
-                  <th className="text-right px-6 py-4">Price</th>
+                  <th className="text-right px-6 py-4">Entry</th>
+                  <th className="text-right px-6 py-4">Current</th>
+                  <th className="text-right px-6 py-4">P&L</th>
                   <th className="text-left px-6 py-4">Category</th>
                   <th className="px-6 py-4 w-8"></th>
                 </tr>
@@ -105,6 +107,8 @@ export default function PortfolioPage() {
               <tbody className="divide-y divide-border-subtle">
                 {positions.map((p, i) => {
                   const isExpanded = expandedRow === i;
+                  const pnlPct = p.entry_price && p.current_price && p.entry_price > 0
+                    ? ((p.current_price - p.entry_price) / p.entry_price) * 100 : null;
                   return (
                     <tbody key={i}>
                       <tr
@@ -114,7 +118,11 @@ export default function PortfolioPage() {
                         <td className="px-6 py-4"><Badge variant="blue">{p.ticker}</Badge></td>
                         <td className="px-6 py-4">{p.name}</td>
                         <td className="px-6 py-4 text-right font-mono tabular-nums">{p.weight_actual?.toFixed(1)}%</td>
-                        <td className="px-6 py-4 text-right font-mono tabular-nums">${p.current_price?.toFixed(2) || '—'}</td>
+                        <td className="px-6 py-4 text-right font-mono tabular-nums text-text-secondary">{p.entry_price ? `$${p.entry_price.toFixed(2)}` : '—'}</td>
+                        <td className="px-6 py-4 text-right font-mono tabular-nums">{p.current_price ? `$${p.current_price.toFixed(2)}` : '—'}</td>
+                        <td className={`px-6 py-4 text-right font-mono tabular-nums font-semibold ${pnlPct != null ? (pnlPct >= 0 ? 'text-fin-green' : 'text-fin-red') : ''}`}>
+                          {pnlPct != null ? `${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%` : '—'}
+                        </td>
                         <td className="px-6 py-4 text-text-secondary">{formatCategory(p.category)}</td>
                         <td className="px-6 py-4 text-text-muted">
                           {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
@@ -122,7 +130,7 @@ export default function PortfolioPage() {
                       </tr>
                       {isExpanded && (
                         <tr className="bg-white/[0.02]">
-                          <td colSpan="6" className="px-6 py-6">
+                          <td colSpan="8" className="px-6 py-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <div>
                                 <h4 className="flex items-center gap-2 text-base font-semibold mb-2">
@@ -163,7 +171,7 @@ export default function PortfolioPage() {
                   );
                 })}
                 {positions.length === 0 && (
-                  <tr><td colSpan="6" className="text-center py-10 text-text-muted">No active positions</td></tr>
+                  <tr><td colSpan="8" className="text-center py-10 text-text-muted">No active positions</td></tr>
                 )}
               </tbody>
             </table>

@@ -75,7 +75,10 @@ export async function getFullDashboardData() {
     },
     positions: currentPositions.map((p) => ({
       ticker: p.ticker, name: p.name || p.ticker, type: 'LONG',
-      weight_actual: Number(p.weight_pct || 0), current_price: p.current_price != null ? Number(p.current_price) : null,
+      weight_actual: Number(p.weight_pct || 0),
+      current_price: p.current_price != null ? Number(p.current_price) : null,
+      entry_price: p.entry_price != null ? Number(p.entry_price) : null,
+      entry_date: p.entry_date || null,
       rationale: p.rationale || '', thesis_ids: p.thesis_id ? [p.thesis_id] : [],
       category: p.category || '', pm_notes: p.pm_notes || '', stats: {},
     })),
