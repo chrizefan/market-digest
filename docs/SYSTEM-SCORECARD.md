@@ -1,159 +1,197 @@
 # digiquant-atlas — System Scorecard & Improvement Plan
 
-> Scored April 6, 2026. Covers all layers: scripts, ETL, frontend, database, skill files.
-> **Note**: Frontend references below refer to the old Vite + React app (`frontend/src/`), which was replaced by Next.js + Tailwind on April 6, 2026. The new frontend lives at `frontend/` (Next.js App Router).
+> **Scored**: April 6, 2026 (updated end of day — session 2).
+> Covers all layers: shell scripts (18), Python ETL (6), frontend (14 files, Next.js 15), Supabase (3 migrations), config (7), skill files (43), templates (13).
 
 ---
 
-## Overall Score: 5.5 / 10 — Functional but Fragile
+## Overall Score: 7.5 / 10 — Robust, Production-Ready
 
-The system completes its daily pipeline and produces correct output. But it has **multiple silent failure modes**, weak error recovery, and brittle parsing that will cause debugging pain as the system matures.
+The system completes its three-tier cadence (baseline / delta / synthesis) reliably and produces correct output. The April 6 session (session 1) delivered a **full Vite → Next.js migration**, moved the data layer to **Supabase-first**, and hardened the commit pipeline. Session 2 implemented all 10 high/medium-priority open issues: React error boundary, retry logic, atomic writes, tar verification, race guard, XML validation, and more. Key remaining weaknesses are the **fragile regex parsing** in ETL (architectural) and missing **partition strategy** for Supabase tables at scale.
 
 ---
 
 ## Category Scores
 
-| Category | Score | Key Strength | Key Weakness |
-|----------|-------|-------------|-------------|
-| **Shell Scripts** (18) | 5/10 | Good macOS portability (`sed -i ""`) | Silent failures; no error propagation |
-| **Python ETL** (6) | 4/10 | Comprehensive data extraction | Fragile regex; optional deps mask errors |
-| **Frontend** (12 files) | 5/10 | Clean component architecture | No error boundary; crash on null data |
-| **Supabase** (2 migrations) | 7/10 | Solid constraints + RLS | Missing audit trail, composite indexes |
-| **Config Files** (6) | 6/10 | Well-documented, clear structure | No runtime validation enforcement |
-| **Skill Files** (38) | 8/10 | Thorough, composable, platform-agnostic | No compile-time checks on format |
-| **Templates** (14) | 9/10 | Consistent, complete | Minor placeholder drift |
+| Category | Files | Score | Key Strength | Key Weakness |
+|----------|-------|-------|-------------|-------------|
+| **Shell Scripts** | 18 | 7/10 | macOS portability; tar verification; atomic mkdir | Cross-platform `sed` not addressed; no `--help` flags |
+| **Python ETL** | 6 | 7/10 | Atomic writes; stderr error reporting; XML validation | Regex parsing still brittle (no JSON sidecar yet) |
+| **Frontend** | 14 | 8/10 | Error boundary; retry logic; bounded queries; env vars | No PropTypes / TypeScript |
+| **Supabase** | 3 | 8/10 | 11 composite indexes; audit columns + triggers; RLS | No partition strategy; migrations lack inline comments |
+| **Config** | 7 | 7/10 | Well-documented; portfolio validation in commit pipeline | Entry prices often null; no runtime config-delta validation |
+| **Skill Files** | 43 | 8/10 | Thorough, composable, platform-agnostic; MCP tool refs | No compile-time frontmatter checks; minor sector drift |
+| **Templates** | 13 | 9/10 | Consistent, complete | Minor placeholder naming inconsistency |
 
 ---
 
-## Top 10 Issues Found (ranked by impact)
+## Changelog — Fixes Applied April 6 (Session 2)
 
-### 1. No Error Boundary — app crashes to blank screen
+All items below were completed during the second April 6 session:
+
+| # | Issue (was) | Fix Applied | Layer |
+|---|------------|-------------|-------|
+| 1 | Hardcoded Supabase credentials in source | **Moved to env vars** (`NEXT_PUBLIC_SUPABASE_*`); added `.env.local` + `.env.local.example`; updated `deploy.yml` with GitHub secrets injection | Frontend |
+| 2 | No React error boundary | **Created `frontend/app/error.js`** — Next.js App Router boundary with Try again / Reload buttons | Frontend |
+| 4 | No atomic writes in `preload-history.py` | **Atomic write pattern** — write to `.csv.tmp`, then `os.rename()` in `save_cache()` | ETL |
+| 4b | Same issue in `fetch-quotes.py` | **Atomic write pattern** applied to `save_cached()` | ETL |
+| 5 | `archive.sh` deletes originals without verifying tar | **Added `tar -tzf` verification** before any `rm -f` — exits 1 if archive corrupt | Scripts |
+| 6 | No retry logic on Supabase queries | **Wrapped `querySupabase()`** with 3-attempt exponential backoff (500ms → 1s → 2s) | Frontend |
+| 7 | Unbounded `documents` query — OOM risk | **Added `.limit(500)`** to `documents` select in `getFullDashboardData()` | Frontend |
+| 8 | `validate-phase.sh` silently passed on malformed `_meta.json` | **Hard-fail** replaced `2>/dev/null \|\| echo "unknown"` with stderr output + `exit 1` on parse error | Scripts |
+| 9 | TOCTOU race in `new-day.sh` directory creation | **Atomic `mkdir`** replaces check+create: `mkdir "$OUTPUT_DIR" 2>/dev/null \|\| { exit 1; }` | Scripts |
+| 10 | Treasury XML returns empty yields if schema changes | **Required-key validation** — checks `{2Y, 10Y}` present before returning; falls back to yfinance if not | ETL |
+| 11 | `materialize.sh` warned but continued on missing baseline | **Changed to `exit 1`** — missing baseline is now a hard error | Scripts |
+| 12 | Failed tickers silently dropped in `fetch-quotes.py` | **stderr logging** — each failed ticker printed to stderr at pipeline end | ETL |
+| 14 | `status.sh` spawned 2–3 python3 subprocesses per `_meta.json` file | **Consolidated to 1 python3 call per file** using `read -r` and pipe-separated output | Scripts |
+
+---
+
+## Changelog — Fixes Applied April 6 (Session 1)
+
+| # | Issue (was) | Fix Applied | Layer |
+|---|------------|-------------|-------|
+| 1 | Vite + React SPA with static JSON fallback | **Migrated to Next.js 15.3.2 App Router** with Supabase-first data layer | Frontend |
+| 2 | `update-tearsheet.py` (hyphenated, un-importable) | **Renamed** to `update_tearsheet.py`; updated 7 references | ETL |
+| 3 | `publish-update.sh` pushed to wrong branch (`main`) | **Fixed** to `master`; added repo check + empty-commit guard | Scripts |
+| 4 | `git-commit.sh` suppressed ETL failures | **Tearsheet failure now blocks** the commit; snapshot shows stderr | Scripts |
+| 5 | Portfolio validation never ran automatically | **Added** `validate-portfolio.sh` call in `git-commit.sh` | Scripts |
+| 6 | Starfield ignored `prefers-reduced-motion` | **Added** media query check + `useRef` cleanup in `starfield.js` | Frontend |
+| 7 | Missing composite indexes + audit trail | **Created** `003_performance_audit.sql` — 11 indexes + audit columns | Supabase |
+| 8 | `backfill-supabase.py` used `importlib` hack | **Direct import** of `update_tearsheet` | ETL |
+| 9 | No systematic market data fetch | **New** `fetch-quotes.py`, `fetch-macro.py`, `fetch-market-data.sh` | ETL |
+| 10 | No MCP tool integration in skill files | **Wired** MCP tools (FRED, CoinGecko, Alpha Vantage) into phase skills | Skills |
+| 11 | `git-commit.sh` did not push after commit | **Added** `git push origin master` with graceful fallback | Scripts |
+| 12 | Performance page basic | **Redesigned** — NAV-only default, benchmark toggle, position P&L, advanced stats | Frontend |
+
+---
+
+## Top 10 Open Issues (ranked by impact)
+
+### 1. Hardcoded Supabase credentials in source
 **Severity**: CRITICAL | **Layer**: Frontend
-- Any thrown error in Portfolio, Strategy, or Performance pages kills the entire React tree
-- User sees a blank white page with no recovery path
-- **FIXED**: Added `ErrorBoundary.jsx` wrapping `<App/>` in `main.jsx`
+- `frontend/lib/supabase.js` contains the Supabase URL and anon key as string literals
+- Credentials are visible in the public GitHub repository
+- The anon key is read-only (RLS-protected), but embedding it invites abuse and makes key rotation painful
+- **Fix**: Move to `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` env vars; add `.env.local.example`
+- **Effort**: 15 min | **Note**: Since the frontend is a static export for GitHub Pages, env vars must be baked at build time — acceptable for an anon key, but should still be externalized
 
-### 2. Silent ETL failures in git-commit.sh
-**Severity**: CRITICAL | **Layer**: Scripts
-- `generate-snapshot.py` and `update-tearsheet.py` failures were suppressed with `2>/dev/null || echo "⚠️"`
-- Stale `dashboard-data.json` gets committed and deployed to GitHub Pages
-- Users see outdated portfolio data with no indication it's stale
-- **FIXED**: tearsheet failure now blocks the commit; snapshot failure shows stderr
+### 2. No React error boundary
+**Severity**: CRITICAL | **Layer**: Frontend
+- The old Vite app had an `ErrorBoundary.jsx` wrapping `<App/>`
+- The new Next.js app has **no** `error.js` file in any route segment and no custom error boundary
+- An unhandled error in any page component (Portfolio, Strategy, Performance) crashes to a blank white screen
+- **Fix**: Add `frontend/app/error.js` (Next.js convention) or a client-side `ErrorBoundary` component
+- **Effort**: 30 min
 
-### 3. Fragile regex parsing in generate-snapshot.py
+### 3. Fragile regex parsing in Python ETL
 **Severity**: HIGH | **Layer**: ETL
-- Regime, positions, theses, and market data all extracted via regex from DIGEST.md
-- Any change to Markdown formatting (emoji, dashes, emphasis) silently returns empty data
-- Missing sections returned `[]` or `{}` with **zero warnings**
-- **FIXED**: Added `stderr` warnings when key sections (Regime, Positions, Theses) are missing
+- `generate-snapshot.py` and `update_tearsheet.py` extract regime, positions, theses, and market data via regex from DIGEST.md
+- Any Markdown formatting change (emoji, dashes, emphasis, column reorder) silently returns empty data
+- Warnings were added for missing top-level sections, but intra-section regex is still brittle
+- **Fix**: Emit a `snapshot.json` sidecar during DIGEST generation; consume JSON instead of reparsing Markdown
+- **Effort**: 2 hrs
 
-### 4. No error/retry state in App.jsx data loading
-**Severity**: HIGH | **Layer**: Frontend
-- Failed `getFullDashboardData()` set `loading=false` but left `data=null`
-- User saw a brief error message with no way to retry
-- **FIXED**: Added explicit `error` state, retry button, and proper `finally()` cleanup
+### 4. No atomic writes in `preload-history.py`
+**Severity**: HIGH | **Layer**: ETL
+- CSV files written directly to `data/price-history/{ticker}.csv`
+- Disk-full or interruption mid-write truncates the file; next run reads corrupt cache
+- **Fix**: Write to `{ticker}.csv.tmp`, then `os.rename()`
+- **Effort**: 30 min
 
-### 5. publish-update.sh pushes to wrong branch
+### 5. `archive.sh` deletes originals without verifying tar
 **Severity**: HIGH | **Layer**: Scripts
-- Script pushed to `git push origin main` but repo uses `master` branch
-- Would fail on every invocation
-- Also: no git repo check, no empty-commit guard
-- **FIXED**: Changed to `master`, added repo check, added empty-commit guard
+- After `tar -czf`, originals are removed with `xargs rm -f`
+- If disk is full the tar is incomplete; data is permanently lost
+- **Fix**: `tar -tzf` verification before `rm`
+- **Effort**: 30 min
 
-### 6. Starfield animation ignores prefers-reduced-motion
-**Severity**: MEDIUM | **Layer**: Frontend / Accessibility
-- 180-star animation runs unconditionally
-- Users with motion sensitivity get no relief
-- Animation cleanup used a local `var` instead of `useRef`, risking stale closures
-- **FIXED**: Added `prefers-reduced-motion` check; switched to `useRef` for animation ID
+### 6. No retry logic on Supabase queries
+**Severity**: HIGH | **Layer**: Frontend
+- `queries.js` calls Supabase once; any timeout or transient error sets error state permanently
+- No exponential backoff, no automatic retry
+- **Fix**: Wrap `querySupabase()` with retry (3 attempts, exponential backoff)
+- **Effort**: 1 hr
 
-### 7. Layout.jsx crashes on undefined meta
+### 7. Unbounded `documents` query in `queries.js`
 **Severity**: MEDIUM | **Layer**: Frontend
-- `meta.name`, `meta.base_currency` accessed without null checks
-- If data shape changes or Supabase returns partial data, entire layout crashes
-- **FIXED**: Default parameter `meta = {}`, fallback values for each field
+- `getFullDashboardData()` fetches all rows from `documents` with no `.limit()` — OOM risk as data grows
+- Other queries (positions, theses, snapshots) are appropriately bounded
+- **Fix**: Add `.limit(500)` or implement pagination
+- **Effort**: 15 min
 
-### 8. Portfolio validation never runs automatically
-**Severity**: MEDIUM | **Layer**: Pipeline
-- `validate-portfolio.sh` exists and works, but is never called by any automated script
-- Agent could write 150% total weight and it would be committed
-- **FIXED**: Added validation step to `git-commit.sh` before staging
+### 8. `validate-phase.sh` silently passes on malformed `_meta.json`
+**Severity**: MEDIUM | **Layer**: Scripts
+- JSON parse errors in `_meta.json` are caught with `|| echo ""`, making validation pass incorrectly
+- **Fix**: Hard-fail if `python3 -c "json.load()"` exits non-zero
+- **Effort**: 15 min
 
-### 9. update-tearsheet.py impossible to import normally
+### 9. No race-condition guard in `new-day.sh`
+**Severity**: MEDIUM | **Layer**: Scripts
+- Two concurrent runs can create a corrupt output folder
+- Script checks `if [ -d "$OUTPUT_DIR" ]` but there's a TOCTOU window
+- **Fix**: Use `mkdir -p` atomicity or `flock`
+- **Effort**: 30 min
+
+### 10. `fetch-macro.py` — no Treasury XML schema validation
 **Severity**: MEDIUM | **Layer**: ETL
-- Hyphenated filename required `importlib.import_module()` hack in `backfill-supabase.py`
-- Breaks IDE tooling, type checking, and standard `import` statements
-- **FIXED**: Renamed to `update_tearsheet.py`; updated all references (7 files)
-
-### 10. Missing Supabase composite indexes + audit trail
-**Severity**: MEDIUM | **Layer**: Database
-- Single-column indexes exist but common queries (by category+date, ticker+date) require table scans
-- No `created_at`/`updated_at` on any table — impossible to detect when data was modified
-- **FIXED**: Created `003_performance_audit.sql` migration with 11 composite indexes + audit columns + triggers
+- Treasury API XML is parsed directly; if schema changes, yields dict is silently empty
+- **Fix**: Validate expected XML elements before extraction
+- **Effort**: 30 min
 
 ---
 
-## Changes Made in This Session
+## Open Issues (lower priority)
 
-| # | File | Change | Impact |
-|---|------|--------|--------|
-| 1 | [frontend/src/components/ErrorBoundary.jsx](frontend/src/components/ErrorBoundary.jsx) | **NEW** — React error boundary with reload button | Prevents blank screen on component errors |
-| 2 | [frontend/src/main.jsx](frontend/src/main.jsx) | Wrapped `<App>` in `<ErrorBoundary>` | Catches any render error |
-| 3 | [frontend/src/App.jsx](frontend/src/App.jsx) | Error state, retry button, `useRef` for animation, `prefers-reduced-motion` | Better UX on failure + accessibility |
-| 4 | [frontend/src/components/Layout.jsx](frontend/src/components/Layout.jsx) | Null guards on `meta` props | Prevents crash on partial data |
-| 5 | [scripts/git-commit.sh](scripts/git-commit.sh) | Fail-hard on tearsheet; validate portfolio before commit | No more stale deploys |
-| 6 | [scripts/generate-snapshot.py](scripts/generate-snapshot.py) | Warnings on missing DIGEST sections; fixed dead code after early return | Visible diagnostics |
-| 7 | [scripts/publish-update.sh](scripts/publish-update.sh) | Fix branch name (main→master), add repo check, error handling | Correct, safe publishing |
-| 8 | [supabase/migrations/003_performance_audit.sql](supabase/migrations/003_performance_audit.sql) | **NEW** — 11 composite indexes + audit columns + triggers | Query performance + data audit trail |
-| 9 | `scripts/update-tearsheet.py` → [scripts/update_tearsheet.py](scripts/update_tearsheet.py) | Renamed; updated 7 files referencing it | Normal Python imports |
-| 10 | [scripts/backfill-supabase.py](scripts/backfill-supabase.py) | Direct import replaces `importlib` hack | Cleaner, IDE-friendly |
+### #3 — Fragile regex parsing in Python ETL
+**Severity**: HIGH | **Layer**: ETL | **Effort**: 2 hrs
+- `generate-snapshot.py` and `update_tearsheet.py` extract regime, positions, theses, and market data via regex from DIGEST.md
+- DIGEST Markdown formatting changes silently produce empty data
+- **Fix**: Emit a `snapshot.json` sidecar during DIGEST generation; consume JSON instead of reparsing Markdown
+- **Status**: Deferred — architectural change, 2+ hr effort
+
+### Remaining Medium / Low Priority
+
+| # | Improvement | Effort | Why |
+|---|------------|--------|-----|
+| 13 | **Cross-platform `sed`** — use `sed -i.bak` + `rm .bak` pattern | 1 hr | Current `sed -i ""` works on macOS only |
+| 15 | **Add `--help` flags to all scripts** | 1 hr | Some scripts (run-segment.sh, new-week.sh) have no usage text |
+| 16 | **PropTypes / TypeScript on React components** | 1–2 hrs | 14 frontend files have zero type validation |
+| 17 | **Supabase migration inline comments** | 30 min | Migrations lack context for future maintainers |
+| 18 | **Partition strategy for Supabase tables** | 2 hrs | As data grows (1K+ daily snapshots), full table scans will slow |
 
 ---
 
-## Remaining Improvements (not yet implemented)
+## Score History & Projection
 
-Ranked by impact. These are the next things to tackle:
-
-### HIGH IMPACT
-
-| # | Improvement | Effort | Why |
-|---|------------|--------|-----|
-| 1 | **Retry logic in `queries.js`** — exponential backoff on Supabase timeouts | 1 hr | Brief network hiccups cause fallback to stale JSON |
-| 2 | **Default `LIMIT` on unbounded Supabase queries** | 30 min | `getDocIndex()` loads all rows if no filter.limit — OOM risk as data grows |
-| 3 | **Atomic writes in `preload-history.py`** — write to `.tmp` then rename | 30 min | Truncated CSV on disk-full corrupts ticker cache |
-| 4 | **Treasury XML schema validation in `fetch-macro.py`** | 30 min | If XML schema changes, yields dict is silently empty |
-| 5 | **`validate-phase.sh` — fail on malformed `_meta.json`** | 30 min | Currently catches JSON errors with `|| echo ""`, passes validation incorrectly |
-
-### MEDIUM IMPACT
-
-| # | Improvement | Effort | Why |
-|---|------------|--------|-----|
-| 6 | **Race condition guard in `new-day.sh`** — use `mkdir` atomicity or `flock` | 30 min | Two concurrent runs can corrupt output folder |
-| 7 | **`archive.sh` — verify tar before deleting originals** | 30 min | Disk-full → incomplete tar → data loss |
-| 8 | **Watchlist ticker validation** — flag delisted ETFs in `fetch-quotes.py` | 1 hr | Delisted tickers return empty data, silently omitted |
-| 9 | **`materialize.sh` — hard error on missing baseline** | 15 min | Currently warns but continues with incomplete output |
-| 10 | **Cross-platform `sed`** — use `sed -i.bak` + `rm .bak` pattern | 1 hr | Current `sed -i ""` works on macOS only |
-
-### LOW IMPACT (quality of life)
-
-| # | Improvement | Effort | Why |
-|---|------------|--------|-----|
-| 11 | **Deduplicate `status.sh` grep calls** — read file once with awk | 30 min | 40+ grep processes for 20 memory files is slow |
-| 12 | **Add `--help` flags to all scripts** | 1 hr | Some scripts have no usage text |
-| 13 | **PropTypes on all React components** | 1 hr | Catch prop shape issues during development |
-
----
-
-## Score Projection After Fixes
-
-| Category | Before | After (today's fixes) | After (remaining HIGH) |
-|----------|--------|----------------------|----------------------|
+| Category | Initial (Apr 6 AM) | Session 1 (Apr 6 PM) | Session 2 (Apr 6 Eve) |
+|----------|--------------------|--------------------|--------------------|
 | Shell Scripts | 5/10 | 6/10 | 7/10 |
 | Python ETL | 4/10 | 5/10 | 7/10 |
-| Frontend | 5/10 | 7/10 | 8/10 |
+| Frontend | 5/10 | 6/10 | 8/10 |
 | Supabase | 7/10 | 8/10 | 8/10 |
+| Config | 6/10 | 7/10 | 7/10 |
+| Skill Files | 8/10 | 8/10 | 8/10 |
+| Templates | 9/10 | 9/10 | 9/10 |
 | **Overall** | **5.5/10** | **6.5/10** | **7.5/10** |
 
 ---
 
-*Next review: After implementing the HIGH-impact remaining items.*
+## Quick Reference
+
+| Metric | Value |
+|--------|-------|
+| Total shell scripts | 18 |
+| Total Python scripts | 6 |
+| Frontend files (app + components + lib) | 14 |
+| Supabase migrations | 3 (7 tables, 11 composite indexes) |
+| Skill files | 43 (26 core + 11 sector + 4 alt-data + 2 institutional) |
+| Templates | 13 |
+| Config files | 7 |
+| Frontend framework | Next.js 15.3.2, React 19, Tailwind 4.1.7, Recharts 2.15 |
+| Data layer | Supabase-first (no static JSON fallback) |
+| Deployment | GitHub Pages via static export (`output: 'export'`) |
+
+---
+
+*Next review: After addressing regex parsing (#3) and partition strategy (#18) — the two remaining architectural items.*

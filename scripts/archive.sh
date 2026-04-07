@@ -33,6 +33,13 @@ echo ""
 tar -czf "$ARCHIVE_NAME" $OLD_FILES
 echo "✅ Archived to: $ARCHIVE_NAME"
 
+# Verify archive integrity before removing originals
+if ! tar -tzf "$ARCHIVE_NAME" > /dev/null 2>&1; then
+  echo "❌ Archive verification failed — $ARCHIVE_NAME may be corrupt."
+  echo "   Original files have NOT been removed."
+  exit 1
+fi
+
 # Remove original files
 echo "$OLD_FILES" | xargs rm -f
 echo "✅ Removed originals from $DAILY_DIR"

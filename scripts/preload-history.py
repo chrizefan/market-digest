@@ -78,7 +78,10 @@ def save_cache(ticker: str, df: pd.DataFrame) -> None:
     # Ensure consistent column names
     df.columns = [c.capitalize() for c in df.columns]
     df.index.name = "Date"
-    df.to_csv(cache_path(ticker), date_format="%Y-%m-%d")
+    dest = cache_path(ticker)
+    tmp = dest.with_suffix(".csv.tmp")
+    df.to_csv(tmp, date_format="%Y-%m-%d")
+    tmp.rename(dest)
 
 
 # ── download ─────────────────────────────────────────────────────────────────

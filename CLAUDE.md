@@ -1,15 +1,6 @@
 # digiquant-atlas — Claude Code Instructions
 
-> This file is read automatically by Claude Code (`claude` CLI) when invoked in this repo.
-> For Claude.ai Projects, see `CLAUDE_PROJECT_INSTRUCTIONS.md` instead.
-
----
-
-## What This Repository Is
-
-A daily market intelligence system that generates structured research across all asset classes using a **7-phase AI-orchestrated pipeline**. The system produces 22 output files per day — one per market segment + master DIGEST.md.
-
-**Tech stack**: Bash scripts + Markdown skill files + Python (tearsheet) + Next.js frontend (Tailwind + Recharts).
+> For pipeline/behavioral rules see `AGENTS.md`. For Claude.ai Projects, see `CLAUDE_PROJECT_INSTRUCTIONS.md`.
 
 ---
 
@@ -37,108 +28,19 @@ python scripts/update_tearsheet.py  # Parse digests + push to Supabase (primary 
 
 ---
 
-## Repository Architecture
+## Repository Layout
 
 ```
-digiquant-atlas/
-├── CLAUDE.md                         ← This file (Claude Code entry point)
-├── CLAUDE_PROJECT_INSTRUCTIONS.md    ← Claude.ai Projects entry point
-├── AGENTS.md                         ← Cross-platform agent entry point
-│
-├── config/
-│   ├── watchlist.md                  ← Tracked assets (edit to customize)
-│   ├── preferences.md                ← Trading style, risk profile, active theses
-│   ├── investment-profile.md         ← Investor identity, horizon, risk, asset preferences
-│   ├── hedge-funds.md                ← Tracked fund registry (16 funds, CIK, style)
-│   ├── data-sources.md               ← 30+ X accounts, data URLs, calendars
-│   └── email-research.md             ← Gmail setup guide + subscription list
-│
-├── skills/                           ← Instruction files — how Claude runs each analysis
-│   ├── SKILL-orchestrator.md         ← MASTER: 7-phase pipeline driver
-│   ├── SKILL-digest.md               ← Legacy pointer → redirects to orchestrator
-│   ├── SKILL-macro.md                ← Macro analysis (v2)
-│   ├── SKILL-equity.md               ← US equities overview (v2)
-│   ├── SKILL-crypto.md               ← Crypto analysis (v2)
-│   ├── SKILL-bonds.md                ← Bonds & rates (v2)
-│   ├── SKILL-commodities.md          ← Commodities (v2)
-│   ├── SKILL-forex.md                ← Forex (v2)
-│   ├── SKILL-international.md        ← International/EM
-│   ├── SKILL-profile-setup.md        ← Interactive investment profile wizard
-│   ├── SKILL-[thesis/earnings/etc.]  ← 7 specialized tools
-│   ├── sectors/                      ← 11 GICS sector sub-agent skills
-│   ├── alternative-data/             ← 4 alternative data sub-agent skills
-│   └── institutional/                ← 2 institutional intelligence skills
-│
-├── templates/                        ← Output templates (do not delete)
-│   ├── master-digest.md              ← Used by new-day.sh to scaffold DIGEST.md
-│   ├── sector-report.md              ← Sector sub-agent output template
-│   ├── alt-data-report.md            ← Alternative data report template
-│   ├── institutional-report.md       ← Institutional intelligence template
-│   ├── weekly-digest.md
-│   └── monthly-digest.md
-│
-├── outputs/
-│   ├── daily/YYYY-MM-DD/             ← One folder per day (v2)
-│   │   ├── DIGEST.md                 ← Master synthesized output
-│   │   ├── macro.md bonds.md ...     ← 9 segment files
-│   │   └── sectors/technology.md ... ← 11 sector files
-│   ├── weekly/                       ← Weekly rollups
-│   ├── monthly/                      ← Monthly rollups
-│   └── deep-dives/                   ← Standalone research notes
-│
-├── scripts/                          ← Bash automation (see Quick Commands above)
-├── agents/                           ← Named agent role definitions
-└── docs/agentic/                     ← Cross-platform agentic documentation
+config/      watchlist.md, investment-profile.md, portfolio.json, hedge-funds.md
+skills/      Skill files (step-by-step instruction sets for AI pipeline phases)
+templates/   Output templates — do not delete
+outputs/     daily/YYYY-MM-DD/, weekly/, monthly/, deep-dives/
+scripts/     Bash + Python automation
+agents/      Named agent role definitions
+docs/agentic/ Full architecture, platform, workflow docs
+frontend/    Next.js dashboard (app/, components/, lib/)
+supabase/    Schema migrations
 ```
-
----
-
-## Skill File Format
-
-Skill files use YAML frontmatter followed by step-by-step Markdown instructions:
-
-```markdown
----
-name: skill-identifier
-description: >
-  Trigger phrases that invoke this skill.
----
-
-# Skill Name
-
-## Inputs
-- files to read first
-
-## Steps
-### 1. Step name
-- detailed instructions...
-
-## Output Format
-...template snippets...
-```
-
-**When editing skills**: maintain existing frontmatter, keep output format tables intact.
-
----
-
-## Output Conventions
-
-Daily outputs live in `outputs/daily/YYYY-MM-DD/`:
-- `DIGEST.md` — master synthesized output (compiled last, in Phase 7)
-- `{segment}.md` — individual phase outputs (macro, bonds, etc.)
-- `sectors/{sector}.md` — sector sub-agent outputs
-
-**Never modify** `outputs/daily/` files directly — they are generated by Claude during a digest session.
-
----
-
-## Config File Conventions
-
-- `config/watchlist.md` — edit freely to add/remove tracked assets
-- `config/investment-profile.md` — authoritative source for trading style, risk profile, ETF universe, and preferences
-- `config/preferences.md` — redirect stub pointing to investment-profile.md
-- `config/hedge-funds.md` — add/remove tracked funds from the CIK registry
-- `config/data-sources.md` — update URLs, add new X accounts or data sources
 
 ---
 
@@ -146,9 +48,9 @@ Daily outputs live in `outputs/daily/YYYY-MM-DD/`:
 
 ### When editing skill files:
 1. Read the existing file completely before editing
-2. Preserve YAML frontmatter exactly — changing `name:` breaks Claude's routing
+2. Preserve YAML frontmatter exactly — changing `name:` breaks routing
 3. Keep output format templates — downstream skills parse specific headers
-4. Test by checking that the modified skill still references the correct output file paths
+4. Output paths use `{{DATE}}` placeholder; never hardcode dates
 
 ### When adding a new sector or asset class:
 1. Create `skills/sectors/SKILL-sector-newname.md` using `templates/sector-report.md` as a base
@@ -171,26 +73,8 @@ git commit -m "research: YYYY-MM-DD — [brief summary]"
 
 ---
 
-## 7-Phase Daily Pipeline (Overview)
-
-| Phase | What Runs | Output File |
-|-------|-----------|-------------|
-| 1 | Alt Data (sentiment + CTA + options + politician) | `alt-data.md` |
-| 2 | Institutional (ETF flows + hedge fund intel) | `institutional.md` |
-| 3 | Macro Analysis | `macro.md` |
-| 4A-E | Asset Classes (bonds, commodities, forex, crypto, international) | 5 files |
-| 5A | US Equities Overview | `equities.md` |
-| 5B-L | 11 GICS Sector Sub-Agents | `sectors/*.md` |
-| 7 | DIGEST.md Synthesis | `DIGEST.md` |
-
-Full instructions: `skills/SKILL-orchestrator.md`
-
----
-
 ## Current Portfolio Context
 
-- **Active holdings**: IAU (gold, ~20%), XLE (energy, 12%), DBO (oil, 5%), XLV (healthcare, 8%), XLP (staples, 8%), BIL/SHY (short T-bills, ~47%)
-- **Macro regime**: Geopolitical shock (Iran War) → WTI $112, Gold ATH, VIX elevated
-- **Key invalidation triggers**: WTI <$80 (energy thesis breaks), Gold <$4,200 (safe haven breaks)
-
-*Update `config/portfolio.json` when allocations change. Theses are tracked in the DIGEST.md Thesis Tracker table.*
+Active: IAU (gold ~20%), XLE (energy 12%), DBO (oil 5%), XLP (staples 8%), BIL/SHY (~47%)
+Macro regime: Geopolitical shock (Iran War) → WTI $112, Gold ATH, VIX elevated
+Update `config/portfolio.json` when allocations change.

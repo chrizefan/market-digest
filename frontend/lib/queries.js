@@ -4,13 +4,24 @@
  */
 import { supabase, isSupabaseConfigured } from './supabase';
 
-async function querySupabase(queryFn) {
+async function querySupabase(queryFn, { retries = 3, delayMs = 500 } = {}) {
   if (!isSupabaseConfigured()) {
     throw new Error('Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
   }
-  const { data, error } = await queryFn(supabase);
-  if (error) throw error;
-  return data;
+  let lastError;
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const { data, error } = await queryFn(supabase);
+      if (error) throw error;
+      return data;
+    } catch (err) {
+      lastError = err;
+      if (attempt < retries - 1) {
+        await new Promise((r) => setTimeout(r, delayMs * Math.pow(2, attempt)));
+      }
+    }
+  }
+  throw lastError;
 }
 
 /**
@@ -31,7 +42,7 @@ export async function getFullDashboardData() {
     supabase.from('nav_history').select('*').order('date', { ascending: true }),
     supabase.from('benchmark_history').select('*').order('date', { ascending: true }),
     supabase.from('portfolio_metrics').select('*').order('date', { ascending: false }).limit(1).single(),
-    supabase.from('documents').select('id, date, title, doc_type, phase, category, segment, sector, run_type, file_path').order('date', { ascending: false }),
+    supabase.from('documents').select('id, date, title, doc_type, phase, category, segment, sector, run_type, file_path').order('date', { ascending: false }).limit(500),
   ]);
 
   const snapshot = snapshotRes.data || {};

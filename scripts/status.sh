@@ -25,8 +25,7 @@ WEEK_DELTA_DATES=""
 for dir in $(find outputs/daily -mindepth 1 -maxdepth 1 -type d -name "${YEAR}-*" | sort); do
   META="$dir/_meta.json"
   if [ -f "$META" ]; then
-    META_TYPE=$(python3 -c "import json; d=json.load(open('$META')); print(d.get('type',''))" 2>/dev/null || echo "")
-    META_WEEK=$(python3 -c "import json; d=json.load(open('$META')); print(d.get('week',''))" 2>/dev/null || echo "")
+    read -r META_TYPE META_WEEK < <(python3 -c "import json; d=json.load(open('$META')); print(d.get('type',''), d.get('week',''))" 2>/dev/null || echo " ")
     if [ "$META_WEEK" = "$WEEK_LABEL" ]; then
       if [ "$META_TYPE" = "baseline" ]; then
         WEEK_BASELINE_DATE=$(basename "$dir")
@@ -57,9 +56,8 @@ echo "── Today's Output ─────────────────�
 TODAY_META="outputs/daily/$DATE/_meta.json"
 if [ -d "outputs/daily/$DATE" ]; then
   if [ -f "$TODAY_META" ]; then
-    TODAY_TYPE=$(python3 -c "import json; d=json.load(open('$TODAY_META')); print(d.get('type','?'))" 2>/dev/null || echo "?")
-    TODAY_BASELINE=$(python3 -c "import json; d=json.load(open('$TODAY_META')); print(d.get('baseline','n/a'))" 2>/dev/null || echo "n/a")
-    TODAY_DELTA_NUM=$(python3 -c "import json; d=json.load(open('$TODAY_META')); print(d.get('delta_number',''))" 2>/dev/null || echo "")
+    read -r TODAY_TYPE TODAY_BASELINE TODAY_DELTA_NUM < <(python3 -c "import json; d=json.load(open('$TODAY_META')); print(d.get('type','?'), d.get('baseline','n/a'), d.get('delta_number','-'))" 2>/dev/null || echo "? n/a -")
+    [ "$TODAY_DELTA_NUM" = "-" ] && TODAY_DELTA_NUM=""
     if [ "$TODAY_TYPE" = "baseline" ]; then
       echo "  Type: WEEKLY BASELINE"
     elif [ "$TODAY_TYPE" = "delta" ]; then
@@ -115,8 +113,9 @@ else
     FDATE=$(basename "$F")
     META="$F/_meta.json"
     if [ -f "$META" ]; then
-      FTYPE=$(python3 -c "import json; d=json.load(open('$META')); print(d.get('type','?'))" 2>/dev/null || echo "?")
-      FNUM=$(python3 -c "import json; d=json.load(open('$META')); print('Δ'+str(d.get('delta_number','')) if d.get('type')=='delta' else '')" 2>/dev/null || echo "")
+      FINFO=$(python3 -c "import json; d=json.load(open('$META')); t=d.get('type','?'); n=d.get('delta_number',''); print(t+'|'+('Δ'+str(n) if t=='delta' and n!='' else ''))" 2>/dev/null || echo "?|")
+      FTYPE="${FINFO%%|*}"
+      FNUM="${FINFO##*|}"
     else
       FTYPE="(legacy)"
       FNUM=""

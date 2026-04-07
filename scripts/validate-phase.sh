@@ -85,13 +85,19 @@ check_file_exists() {
   fi
 }
 
-# Detect run type from _meta.json
+# Detect run type from _meta.json — exits 1 (hard fail) if file is malformed
 detect_run_type() {
   if [ ! -f "$OUTPUT_DIR/_meta.json" ]; then
     echo "unknown"
     return
   fi
-  python3 -c "import json; print(json.load(open('$OUTPUT_DIR/_meta.json')).get('type','unknown'))" 2>/dev/null || echo "unknown"
+  local run_type
+  if ! run_type=$(python3 -c "import json, sys; d=json.load(open('$OUTPUT_DIR/_meta.json')); print(d.get('type','unknown'))" 2>&1); then
+    echo -e "${RED}❌ FAIL${NC}: _meta.json is malformed — cannot determine run type" >&2
+    echo -e "   Error: $run_type" >&2
+    exit 1
+  fi
+  echo "$run_type"
 }
 
 print_header() {

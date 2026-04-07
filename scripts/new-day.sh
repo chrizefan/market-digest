@@ -17,8 +17,8 @@ echo ""
 echo "📊 digiquant-atlas — $DATE"
 echo "================================"
 
-# Check if today's output already exists
-if [ -d "$OUTPUT_DIR" ]; then
+# Atomically create the output directory — prevents TOCTOU race with parallel runs
+if ! mkdir "$OUTPUT_DIR" 2>/dev/null; then
   echo "⚠️  Output directory for $DATE already exists: $OUTPUT_DIR"
   echo "   Delete it first if you want to regenerate."
   exit 1

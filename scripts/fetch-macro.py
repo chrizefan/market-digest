@@ -200,6 +200,14 @@ def fetch_treasury_yield_curve(target_date_str: str) -> dict:
                     pass
 
         if yields:
+            # Verify that the anchor maturities needed for spread calculations are present.
+            # If the XML schema changed, partially populated yields would silently break
+            # compute_spreads(). Warn and try the next month instead.
+            required_keys = {"2Y", "10Y"}
+            missing_keys = required_keys - yields.keys()
+            if missing_keys:
+                print(f"  ⚠️  Treasury XML ({yyyymm}): yields missing required keys {missing_keys} — trying next month")
+                continue
             return {
                 "source": "US Treasury XML API",
                 "curve_date": curve_date,

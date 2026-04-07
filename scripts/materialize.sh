@@ -60,8 +60,9 @@ echo ""
 
 # Validate baseline exists
 if [ ! -f "outputs/daily/$BASELINE_DATE/DIGEST.md" ]; then
-  echo "⚠️  Baseline DIGEST.md not found: outputs/daily/$BASELINE_DATE/DIGEST.md"
-  echo "   Materialization may be incomplete without the baseline."
+  echo "❌ Baseline DIGEST.md not found: outputs/daily/$BASELINE_DATE/DIGEST.md"
+  echo "   Cannot materialize — run the baseline for $BASELINE_DATE first."
+  exit 1
 fi
 
 # Find all delta DIGEST-DELTA.md files from baseline to target date (inclusive)

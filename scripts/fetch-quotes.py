@@ -109,7 +109,10 @@ def save_cached(ticker: str, df: pd.DataFrame) -> None:
     df = df.sort_index()
     df.columns = [c.capitalize() for c in df.columns]
     df.index.name = "Date"
-    df.to_csv(_cache_path(ticker), date_format="%Y-%m-%d")
+    dest = _cache_path(ticker)
+    tmp = dest.with_suffix(".csv.tmp")
+    df.to_csv(tmp, date_format="%Y-%m-%d")
+    tmp.rename(dest)
 
 
 def incremental_fetch(tickers: list[str]) -> dict[str, pd.DataFrame]:
@@ -448,7 +451,11 @@ def main():
     print(f"  ✅ Wrote {quotes_md}")
 
     success = sum(1 for s in snapshots if "error" not in s)
-    errors = len(snapshots) - success
+    failed = [s for s in snapshots if "error" in s]
+    errors = len(failed)
+    if failed:
+        for s in failed:
+            print(f"  ⚠️  {s['ticker']}: {s['error']}", file=sys.stderr)
     print(f"  Done — {success} OK, {errors} errors")
 
 
