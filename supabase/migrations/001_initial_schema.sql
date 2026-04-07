@@ -1,9 +1,13 @@
 -- ============================================================================
--- digiquant-atlas: Supabase Schema
--- Run via Supabase SQL Editor or `supabase db push`
+-- digiquant-atlas: Supabase Schema (Migration 001)
+-- Establishes all 8 core tables, their composite indexes, and RLS policies.
+-- Run via Supabase SQL Editor or `supabase db push`.
+-- Safe to re-run (all statements use IF NOT EXISTS / DROP POLICY IF EXISTS).
 -- ============================================================================
 
 -- 1. daily_snapshots — one row per daily run
+-- Stores the top-level digest snapshot: regime, market data, biases, and
+-- actionable ideas. Used by the frontend Overview page and ETL scripts.
 CREATE TABLE IF NOT EXISTS daily_snapshots (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   date          date NOT NULL UNIQUE,
@@ -16,9 +20,13 @@ CREATE TABLE IF NOT EXISTS daily_snapshots (
   risks         text[],
   created_at    timestamptz DEFAULT now()
 );
+-- Descending index: supports "latest N days" queries without full scans
 CREATE INDEX IF NOT EXISTS idx_snapshots_date ON daily_snapshots(date DESC);
 
 -- 2. positions — one row per ticker per day
+-- Snapshot of each holding as it appears in config/portfolio.json on that date.
+-- Updated nightly by update_tearsheet.py; entry_price/entry_date may be null
+-- for legacy records predating automated ETL.
 CREATE TABLE IF NOT EXISTS positions (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   date          date NOT NULL,
@@ -36,9 +44,12 @@ CREATE TABLE IF NOT EXISTS positions (
   UNIQUE(date, ticker)
 );
 CREATE INDEX IF NOT EXISTS idx_positions_date ON positions(date DESC);
+-- Composite index: supports ticker history queries (e.g. "all IAU rows")
 CREATE INDEX IF NOT EXISTS idx_positions_ticker ON positions(ticker, date DESC);
 
 -- 3. theses — one row per thesis per day
+-- Each active investment thesis is snapshotted per day. thesis_id is a short
+-- slug (e.g. "geo-risk-gold") that links to position_events and documents.
 CREATE TABLE IF NOT EXISTS theses (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   date          date NOT NULL,
@@ -53,6 +64,9 @@ CREATE TABLE IF NOT EXISTS theses (
 CREATE INDEX IF NOT EXISTS idx_theses_date ON theses(date DESC);
 
 -- 4. position_events — append-only change ledger
+-- Records each discrete portfolio action (OPEN/EXIT/REBALANCE/HOLD) per ticker
+-- per day. The UNIQUE(date, ticker) constraint prevents duplicate event rows;
+-- if a ticker has multiple actions in one day the last write wins.
 CREATE TABLE IF NOT EXISTS position_events (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   date            date NOT NULL,
@@ -67,9 +81,13 @@ CREATE TABLE IF NOT EXISTS position_events (
   UNIQUE(date, ticker)
 );
 CREATE INDEX IF NOT EXISTS idx_events_date ON position_events(date DESC);
+-- Composite index: supports per-ticker event history queries
 CREATE INDEX IF NOT EXISTS idx_events_ticker ON position_events(ticker, date DESC);
 
 -- 5. documents — markdown content index (lazy-loaded by frontend)
+-- One row per output file per date. Stores the raw markdown in `content`.
+-- The frontend Research Library page queries this table filtered by category
+-- and date. Full-text search can be layered on top via pg_trgm if needed.
 CREATE TABLE IF NOT EXISTS documents (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   date          date NOT NULL,
@@ -85,9 +103,12 @@ CREATE TABLE IF NOT EXISTS documents (
   UNIQUE(date, file_path)
 );
 CREATE INDEX IF NOT EXISTS idx_docs_date ON documents(date DESC);
+-- category index: supports filtered document queries (macro, equity, sector, ...)
 CREATE INDEX IF NOT EXISTS idx_docs_category ON documents(category);
 
 -- 6. nav_history — portfolio NAV time series
+-- Populated by update_tearsheet.py when it detects changes in portfolio weight.
+-- Used by the Performance page NAV chart.
 CREATE TABLE IF NOT EXISTS nav_history (
   date          date PRIMARY KEY,
   nav           numeric NOT NULL,
@@ -95,7 +116,9 @@ CREATE TABLE IF NOT EXISTS nav_history (
   invested_pct  numeric
 );
 
--- 7. benchmark_history — comparison benchmarks
+-- 7. benchmark_history — comparison benchmarks (SPY, QQQ, TLT, GLD)
+-- Used by the Performance page to plot portfolio vs. benchmark returns.
+-- Populated by the yfinance ETL layer in update_tearsheet.py.
 CREATE TABLE IF NOT EXISTS benchmark_history (
   date          date NOT NULL,
   ticker        text NOT NULL,
@@ -103,7 +126,9 @@ CREATE TABLE IF NOT EXISTS benchmark_history (
   PRIMARY KEY (date, ticker)
 );
 
--- 8. portfolio_metrics — computed rolling metrics
+-- 8. portfolio_metrics — computed rolling metrics (Sharpe, volatility, drawdown)
+-- Populated by update_tearsheet.py after each digest run. date is UNIQUE;
+-- if a day's metrics are recalculated, the row is upserted via ON CONFLICT.
 CREATE TABLE IF NOT EXISTS portfolio_metrics (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   date          date NOT NULL UNIQUE,
@@ -119,6 +144,8 @@ CREATE TABLE IF NOT EXISTS portfolio_metrics (
 
 -- ============================================================================
 -- Row Level Security — anon = read-only, service_role = full access
+-- The anon role (used by the public Next.js dashboard via the anon key) gets
+-- SELECT on all tables. Writes require the service_role key (ETL scripts only).
 -- ============================================================================
 
 ALTER TABLE daily_snapshots ENABLE ROW LEVEL SECURITY;

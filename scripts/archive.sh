@@ -1,8 +1,10 @@
 #!/bin/bash
 # archive.sh — Move outputs older than N days to the archive folder
 # Keeps the outputs/daily/ folder clean while preserving history in archive/
+# Usage: ./scripts/archive.sh [days]   (default: 30)
 
 set -e
+[[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
 
 DAYS_TO_KEEP=${1:-30}  # Default: keep last 30 days, pass arg to override
 ARCHIVE_DIR="archive"

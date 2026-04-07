@@ -1,8 +1,10 @@
 #!/bin/bash
 # status.sh — Show the health and status of the digiquant-atlas project at a glance
 # v3: Understands three-tier cadence (baseline + deltas)
+# Usage: ./scripts/status.sh
 
 set -e
+[[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
 
 DATE=$(date +%Y-%m-%d)
 WEEK=$(date +%V)

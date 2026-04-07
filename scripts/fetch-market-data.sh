@@ -6,12 +6,14 @@
 # Usage:
 #   ./scripts/fetch-market-data.sh              # today
 #   ./scripts/fetch-market-data.sh 2026-04-06   # specific date
+#   ./scripts/fetch-market-data.sh --preload    # force full 2yr cache rebuild
 #
 # Outputs (in outputs/daily/YYYY-MM-DD/data/):
 #   quotes.json         quotes-summary.md
 #   macro.json          macro-summary.md
 
 set -e
+[[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DATE="${1:-$(date +%Y-%m-%d)}"

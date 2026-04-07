@@ -6,6 +6,10 @@
 
 set -e
 
+# Cross-platform sed in-place (macOS BSD sed + GNU/Linux sed)
+sedi() { sed -i.bak "$@" && rm -f "${@: -1}.bak"; }
+[[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
+
 DATE=${1:-$(date +%Y-%m-%d)}
 YEAR=$(date +%Y)
 WEEK=$(date +%V)
@@ -53,8 +57,8 @@ done
 
 # Set up DIGEST.md from template
 cp "templates/master-digest.md" "$OUTPUT_DIR/DIGEST.md"
-sed -i "" "s/{{DATE}}/$DATE/g" "$OUTPUT_DIR/DIGEST.md"
-sed -i "" "s/{{TIMESTAMP}}/$(date '+%Y-%m-%d %H:%M %Z')/g" "$OUTPUT_DIR/DIGEST.md"
+sedi "s/{{DATE}}/$DATE/g" "$OUTPUT_DIR/DIGEST.md"
+sedi "s/{{TIMESTAMP}}/$(date '+%Y-%m-%d %H:%M %Z')/g" "$OUTPUT_DIR/DIGEST.md"
 
 echo "✅ Created BASELINE directory: $OUTPUT_DIR"
 echo "   _meta.json: type=baseline, week=${WEEK_LABEL}"

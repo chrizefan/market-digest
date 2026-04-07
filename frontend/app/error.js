@@ -1,5 +1,6 @@
 'use client';
 
+import PropTypes from 'prop-types';
 import { useEffect } from 'react';
 
 export default function Error({ error, reset }) {
@@ -32,3 +33,8 @@ export default function Error({ error, reset }) {
     </div>
   );
 }
+
+Error.propTypes = {
+  error: PropTypes.shape({ message: PropTypes.string }),
+  reset: PropTypes.func.isRequired,
+};

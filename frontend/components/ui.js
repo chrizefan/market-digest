@@ -1,3 +1,5 @@
+import PropTypes from 'prop-types';
+
 /** Reusable stat card for KPI display */
 export function StatCard({ label, value, icon: Icon, iconColor = 'text-fin-blue', subtitle, valueClass = '' }) {
   return (
@@ -50,3 +52,23 @@ export function pnlColor(v) {
   if (v == null) return '';
   return v >= 0 ? 'text-fin-green' : 'text-fin-red';
 }
+
+StatCard.propTypes = {
+  label: PropTypes.string.isRequired,
+  value: PropTypes.node.isRequired,
+  icon: PropTypes.elementType,
+  iconColor: PropTypes.string,
+  subtitle: PropTypes.node,
+  valueClass: PropTypes.string,
+};
+
+Badge.propTypes = {
+  children: PropTypes.node.isRequired,
+  variant: PropTypes.oneOf(['default', 'blue', 'green', 'red', 'amber']),
+  className: PropTypes.string,
+};
+
+SectionTitle.propTypes = {
+  children: PropTypes.node.isRequired,
+  className: PropTypes.string,
+};

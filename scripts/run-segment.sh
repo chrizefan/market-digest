@@ -14,7 +14,7 @@ DATE=$(date +%Y-%m-%d)
 SEGMENT=${1:-""}
 MODE_FLAG=${2:-""}
 
-if [ -z "$SEGMENT" ]; then
+if [ -z "$SEGMENT" ] || [[ "$SEGMENT" == '--help' || "$SEGMENT" == '-h' ]]; then
   echo "Usage: ./scripts/run-segment.sh [segment-name] [--delta]"
   echo ""
   echo "Available segments:"

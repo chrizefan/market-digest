@@ -1,5 +1,6 @@
 'use client';
 
+import PropTypes from 'prop-types';
 import { useState, useMemo } from 'react';
 import { useDashboard } from '@/lib/dashboard-context';
 import PageHeader from '@/components/page-header';
@@ -459,3 +460,18 @@ function AdvancedStats({ metrics, snaps, benchmarks }) {
     </div>
   );
 }
+
+PositionPnlTable.propTypes = {
+  positions: PropTypes.arrayOf(PropTypes.shape({
+    ticker: PropTypes.string,
+    weight_pct: PropTypes.number,
+    action: PropTypes.string,
+    rationale: PropTypes.string,
+  })).isRequired,
+};
+
+AdvancedStats.propTypes = {
+  metrics: PropTypes.object,
+  snaps: PropTypes.arrayOf(PropTypes.shape({ nav: PropTypes.number })),
+  benchmarks: PropTypes.object,
+};

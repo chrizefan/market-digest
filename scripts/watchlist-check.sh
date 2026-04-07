@@ -1,8 +1,10 @@
 #!/bin/bash
 # watchlist-check.sh — Print the prompt for a quick watchlist health check
 # Use this mid-week when you don't want a full digest
+# Usage: ./scripts/watchlist-check.sh
 
 set -e
+[[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
 
 DATE=$(date +%Y-%m-%d)
 TIME=$(date +%H:%M)

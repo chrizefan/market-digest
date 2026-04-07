@@ -5,6 +5,7 @@
 #        ./scripts/materialize.sh 2026-04-09
 
 set -e
+[[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
 
 TARGET_DATE=${1:-$(date +%Y-%m-%d)}
 OUTPUT_DIR="outputs/daily/$TARGET_DATE"

@@ -6,6 +6,7 @@
 #                                           artifacts, pushes, and opens a PR for approval
 
 set -e
+[[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
 
 DATE=$(date +%Y-%m-%d)
 

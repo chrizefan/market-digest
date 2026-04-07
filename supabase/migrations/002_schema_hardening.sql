@@ -1,14 +1,17 @@
 -- ============================================================================
--- digiquant-atlas: Schema Hardening Migration
--- Adds stricter constraints, valid ranges, NOT NULL enforcement
--- Run via Supabase SQL Editor after 001_initial_schema.sql
+-- digiquant-atlas: Schema Hardening Migration (002)
+-- Adds stricter constraints and valid-range checks to all tables.
+-- Safe to re-run (all ALTER TABLE statements are wrapped in DO$$ EXCEPTION blocks).
+-- Prerequisite: 001_initial_schema.sql must be applied first.
 -- ============================================================================
 
 -- ============================================================================
--- 1. ENUM-LIKE TYPES (created as text domains so Supabase Dashboard works)
+-- 1. ENUM-LIKE TYPES (implemented as CHECK constraints, not PG ENUM types)
+-- Using CHECK instead of native ENUM so columns remain type=text and the
+-- Supabase Dashboard can display / filter values without casting.
 -- ============================================================================
 
--- Position categories (matches portfolio.json category values)
+-- Position categories (matches portfolio.json `.category` field values)
 DO $$ BEGIN
   ALTER TABLE positions ADD CONSTRAINT chk_positions_category
     CHECK (category IS NULL OR category IN (
@@ -20,7 +23,8 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- Thesis status — normalize existing free-form values first, then constrain
+-- Thesis status — normalize any legacy free-form values before constraining
+-- (early manual entries used mixed case / different spellings)
 UPDATE theses SET status = 'ACTIVE'      WHERE status ILIKE '%confirmed%' OR status ILIKE '%active%';
 UPDATE theses SET status = 'MONITORING'  WHERE status ILIKE '%monitoring%';
 UPDATE theses SET status = 'CHALLENGED'  WHERE status ILIKE '%challenged%';

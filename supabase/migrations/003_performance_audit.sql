@@ -1,14 +1,18 @@
 -- ============================================================================
--- digiquant-atlas: Performance & Audit Improvements
--- Run via Supabase SQL Editor after 002_schema_hardening.sql
+-- digiquant-atlas: Performance & Audit Improvements (003)
+-- Adds 11 composite indexes for frontend query patterns, audit columns
+-- (created_at / updated_at) with auto-update triggers, and NOT NULL
+-- enforcement on critical columns.
+-- Prerequisite: 002_schema_hardening.sql must be applied first.
 -- ============================================================================
 
 -- ============================================================================
 -- 1. COMPOSITE INDEXES for common query patterns
---    (matches queries in frontend/lib/queries.js)
+--    Derived from the actual Supabase queries in frontend/lib/queries.js.
+--    Each index targets a specific page filter + date sort combination.
 -- ============================================================================
 
--- Position history by category + date (sector-specific time series)
+-- Position history by category + date (portfolio/sector-specific time series)
 CREATE INDEX IF NOT EXISTS idx_positions_category_date ON positions(category, date DESC);
 
 -- Position lookups by ticker + date (position drilldown)

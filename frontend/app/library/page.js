@@ -1,5 +1,6 @@
 'use client';
 
+import PropTypes from 'prop-types';
 import { useState, useMemo } from 'react';
 import { useDashboard } from '@/lib/dashboard-context';
 import PageHeader from '@/components/page-header';
@@ -298,3 +299,9 @@ export default function LibraryPage() {
     </>
   );
 }
+
+MiniCalendar.propTypes = {
+  dates: PropTypes.arrayOf(PropTypes.string).isRequired,
+  selected: PropTypes.string,
+  onSelect: PropTypes.func.isRequired,
+};

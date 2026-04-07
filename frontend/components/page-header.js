@@ -1,5 +1,6 @@
 'use client';
 
+import PropTypes from 'prop-types';
 import { Clock } from 'lucide-react';
 import { useDashboard } from '@/lib/dashboard-context';
 
@@ -22,3 +23,7 @@ export default function PageHeader({ title }) {
     </header>
   );
 }
+
+PageHeader.propTypes = {
+  title: PropTypes.string.isRequired,
+};

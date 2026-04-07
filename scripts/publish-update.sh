@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
+# publish-update.sh — Parse digest, build latest data, push to GitHub Pages
+# Usage: ./scripts/publish-update.sh
+#   Runs update_tearsheet.py, regenerates snapshot.json, builds frontend, commits + pushes.
 set -e
-
-# digiquant-atlas - Automatic Publish Script
-# Use this script after a new digest is output to automatically parse, 
-# build the latest data, and push it to GitHub for GitHub Pages deployment.
+[[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
 
 # Verify we're in a git repo
 if ! git rev-parse --git-dir > /dev/null 2>&1; then

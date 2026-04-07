@@ -1,4 +1,5 @@
 import './globals.css';
+import PropTypes from 'prop-types';
 import { DashboardProvider } from '@/lib/dashboard-context';
 import Sidebar from '@/components/sidebar';
 import Starfield from '@/components/starfield';
@@ -30,3 +31,7 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
+
+RootLayout.propTypes = {
+  children: PropTypes.node.isRequired,
+};

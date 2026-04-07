@@ -14,6 +14,7 @@
 #   1 = One or more checks failed (blocks pipeline)
 #   2 = Warnings only (non-blocking, but should be reviewed)
 
+[[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
 set +e  # Don't exit on error — we collect failures and report at end
 
 DATE="${2:-$(date +%Y-%m-%d)}"

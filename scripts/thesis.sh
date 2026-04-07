@@ -7,6 +7,7 @@
 #   ./scripts/thesis.sh review        — Print prompt for a full thesis review
 
 set -e
+[[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
 
 ACTION=${1:-list}
 DATE=$(date +%Y-%m-%d)

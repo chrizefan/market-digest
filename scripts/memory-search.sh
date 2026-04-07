@@ -6,6 +6,7 @@
 #          ./scripts/memory-search.sh "Fed"
 
 set -e
+[[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
 
 QUERY=${1:-""}
 

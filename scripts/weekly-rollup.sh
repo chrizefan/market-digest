@@ -5,6 +5,10 @@
 
 set -e
 
+# Cross-platform sed in-place (macOS BSD sed + GNU/Linux sed)
+sedi() { sed -i.bak "$@" && rm -f "${@: -1}.bak"; }
+[[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
+
 # Get ISO week number and year
 YEAR=$(date +%Y)
 WEEK=$(date +%V)
@@ -78,14 +82,14 @@ fi
 # ── Create the weekly file from template ─────────────────────────────────────
 mkdir -p "outputs/weekly"
 cp "templates/weekly-digest.md" "$OUTPUT_FILE"
-sed -i "" "s/{{WEEK_LABEL}}/$WEEK_LABEL/g" "$OUTPUT_FILE"
-sed -i "" "s/{{WEEK}}/$WEEK/g" "$OUTPUT_FILE"
-sed -i "" "s/{{YEAR}}/$YEAR/g" "$OUTPUT_FILE"
-sed -i "" "s/{{TIMESTAMP}}/$(date '+%Y-%m-%d %H:%M %Z')/g" "$OUTPUT_FILE"
+sedi "s/{{WEEK_LABEL}}/$WEEK_LABEL/g" "$OUTPUT_FILE"
+sedi "s/{{WEEK}}/$WEEK/g" "$OUTPUT_FILE"
+sedi "s/{{YEAR}}/$YEAR/g" "$OUTPUT_FILE"
+sedi "s/{{TIMESTAMP}}/$(date '+%Y-%m-%d %H:%M %Z')/g" "$OUTPUT_FILE"
 
 DATE_RANGE="$BASELINE_DATE to $(echo $DELTA_DATES | tr ' ' '\n' | tail -1 | tr -d '\n')"
 [ -z "$DELTA_DATES" ] && DATE_RANGE="$BASELINE_DATE (baseline only)"
-sed -i "" "s/{{DATE_RANGE}}/$DATE_RANGE/g" "$OUTPUT_FILE"
+sedi "s/{{DATE_RANGE}}/$DATE_RANGE/g" "$OUTPUT_FILE"
 
 echo "✅ Created: $OUTPUT_FILE"
 echo ""

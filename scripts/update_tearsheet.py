@@ -922,7 +922,7 @@ def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_position
         snap = load_snapshot_json(day_dir)
 
         if snap:
-            # Prefer structured snapshot.json
+            # Prefer structured snapshot.json (AI-written in Phase 7)
             row = {
                 "date": snap["date"],
                 "run_type": snap.get("run_type", "baseline"),
@@ -934,7 +934,8 @@ def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_position
                 "risks": snap.get("risks", []),
             }
         else:
-            # Fall back to regex-parsed digest data
+            # Fallback: regex-parsed digest data — less reliable, may return empty fields
+            print(f"   ⚠️  {d['date']}: snapshot.json missing/unpopulated, using regex fallback (run generate-snapshot.py to fix)", file=sys.stderr)
             meta = _detect_run_type(day_dir) if day_dir.exists() else "baseline"
             row = {
                 "date": d["date"],

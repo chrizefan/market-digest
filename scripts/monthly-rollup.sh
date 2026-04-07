@@ -5,6 +5,10 @@
 
 set -e
 
+# Cross-platform sed in-place (macOS BSD sed + GNU/Linux sed)
+sedi() { sed -i.bak "$@" && rm -f "${@: -1}.bak"; }
+[[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
+
 YEAR=$(date +%Y)
 MONTH=$(date +%m)
 MONTH_LABEL="${YEAR}-${MONTH}"
@@ -63,10 +67,10 @@ fi
 # ── Create output file from template ─────────────────────────────────────────
 MONTH_NAME=$(date -jf "%Y-%m" "${YEAR}-${MONTH}" "+%B %Y" 2>/dev/null || echo "$MONTH_LABEL")
 cp "templates/monthly-digest.md" "$OUTPUT_FILE"
-sed -i "" "s/{{MONTH_LABEL}}/$MONTH_LABEL/g" "$OUTPUT_FILE"
-sed -i "" "s/{{MONTH_NAME}}/$MONTH_NAME/g" "$OUTPUT_FILE"
-sed -i "" "s/{{WEEK_COUNT}}/$WEEK_COUNT/g" "$OUTPUT_FILE"
-sed -i "" "s/{{TIMESTAMP}}/$(date '+%Y-%m-%d %H:%M %Z')/g" "$OUTPUT_FILE"
+sedi "s/{{MONTH_LABEL}}/$MONTH_LABEL/g" "$OUTPUT_FILE"
+sedi "s/{{MONTH_NAME}}/$MONTH_NAME/g" "$OUTPUT_FILE"
+sedi "s/{{WEEK_COUNT}}/$WEEK_COUNT/g" "$OUTPUT_FILE"
+sedi "s/{{TIMESTAMP}}/$(date '+%Y-%m-%d %H:%M %Z')/g" "$OUTPUT_FILE"
 
 # Append file reference lists
 {

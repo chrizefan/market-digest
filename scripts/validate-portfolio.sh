@@ -1,9 +1,9 @@
 #!/bin/bash
-set -e
-
 # validate-portfolio.sh — Check portfolio.json against investment-profile.md constraints
 # Run from repo root: ./scripts/validate-portfolio.sh
 # Validate proposed positions: ./scripts/validate-portfolio.sh --proposed
+set -e
+[[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
 
 PORTFOLIO="config/portfolio.json"
 PROFILE="config/investment-profile.md"

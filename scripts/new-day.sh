@@ -6,6 +6,10 @@
 
 set -e
 
+# Cross-platform sed in-place (macOS BSD sed + GNU/Linux sed)
+sedi() { sed -i.bak "$@" && rm -f "${@: -1}.bak"; }
+[[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
+
 DATE=$(date +%Y-%m-%d)
 YEAR=$(date +%Y)
 WEEK=$(date +%V)
@@ -57,8 +61,8 @@ EOF
 
   # Scaffold DIGEST.md from template
   cp "templates/master-digest.md" "$OUTPUT_DIR/DIGEST.md"
-  sed -i "" "s/{{DATE}}/$DATE/g" "$OUTPUT_DIR/DIGEST.md"
-  sed -i "" "s/{{TIMESTAMP}}/$(date '+%Y-%m-%d %H:%M %Z')/g" "$OUTPUT_DIR/DIGEST.md"
+  sedi "s/{{DATE}}/$DATE/g" "$OUTPUT_DIR/DIGEST.md"
+  sedi "s/{{TIMESTAMP}}/$(date '+%Y-%m-%d %H:%M %Z')/g" "$OUTPUT_DIR/DIGEST.md"
 
   # Scaffold snapshot.json placeholder (agent will overwrite with real data in Phase 7)
   cat > "$OUTPUT_DIR/snapshot.json" << 'SNAPEOF'
@@ -76,7 +80,7 @@ EOF
   "risks": []
 }
 SNAPEOF
-  sed -i "" "s/\"PLACEHOLDER\"/\"$DATE\"/" "$OUTPUT_DIR/snapshot.json"
+  sedi "s/\"PLACEHOLDER\"/\"$DATE\"/" "$OUTPUT_DIR/snapshot.json"
 
   echo "✅ Created BASELINE directory: $OUTPUT_DIR"
   echo "   Files: DIGEST.md + 10 segment files + 11 sector files + _meta.json"
@@ -175,11 +179,11 @@ SNAPEOF
 
   # Scaffold DIGEST-DELTA.md from template
   cp "templates/delta-digest.md" "$OUTPUT_DIR/DIGEST-DELTA.md"
-  sed -i "" "s/{{DATE}}/$DATE/g" "$OUTPUT_DIR/DIGEST-DELTA.md"
-  sed -i "" "s/{{BASELINE_DATE}}/$BASELINE_DATE/g" "$OUTPUT_DIR/DIGEST-DELTA.md"
-  sed -i "" "s/{{WEEK_LABEL}}/$WEEK_LABEL/g" "$OUTPUT_DIR/DIGEST-DELTA.md"
-  sed -i "" "s/{{DELTA_NUMBER}}/$DELTA_NUM/g" "$OUTPUT_DIR/DIGEST-DELTA.md"
-  sed -i "" "s/{{TIMESTAMP}}/$(date '+%Y-%m-%d %H:%M %Z')/g" "$OUTPUT_DIR/DIGEST-DELTA.md"
+  sedi "s/{{DATE}}/$DATE/g" "$OUTPUT_DIR/DIGEST-DELTA.md"
+  sedi "s/{{BASELINE_DATE}}/$BASELINE_DATE/g" "$OUTPUT_DIR/DIGEST-DELTA.md"
+  sedi "s/{{WEEK_LABEL}}/$WEEK_LABEL/g" "$OUTPUT_DIR/DIGEST-DELTA.md"
+  sedi "s/{{DELTA_NUMBER}}/$DELTA_NUM/g" "$OUTPUT_DIR/DIGEST-DELTA.md"
+  sedi "s/{{TIMESTAMP}}/$(date '+%Y-%m-%d %H:%M %Z')/g" "$OUTPUT_DIR/DIGEST-DELTA.md"
 
   echo "✅ Created DELTA directory: $OUTPUT_DIR"
   echo "   Files:        DIGEST.md (to materialize) + DIGEST-DELTA.md + deltas/ + sectors/"
