@@ -1,9 +1,13 @@
 'use client';
 
-import PropTypes from 'prop-types';
 import { useEffect } from 'react';
 
-export default function Error({ error, reset }) {
+interface ErrorProps {
+  error: Error & { digest?: string };
+  reset: () => void;
+}
+
+export default function Error({ error, reset }: ErrorProps) {
   useEffect(() => {
     console.error('[Dashboard Error]', error);
   }, [error]);
@@ -33,8 +37,3 @@ export default function Error({ error, reset }) {
     </div>
   );
 }
-
-Error.propTypes = {
-  error: PropTypes.shape({ message: PropTypes.string }),
-  reset: PropTypes.func.isRequired,
-};

@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { StatCard, Badge, formatPct, pnlColor } from '@/components/ui';
 
-const REGIME_COLORS = {
+const REGIME_COLORS: Record<string, string> = {
   bullish: 'text-fin-green border-fin-green/40',
   bearish: 'text-fin-red border-fin-red/40',
   caution: 'text-fin-amber border-fin-amber/40',

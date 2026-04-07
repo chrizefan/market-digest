@@ -1,6 +1,5 @@
 'use client';
 
-import PropTypes from 'prop-types';
 import { useState, useMemo } from 'react';
 import { useDashboard } from '@/lib/dashboard-context';
 import PageHeader from '@/components/page-header';
@@ -9,10 +8,17 @@ import remarkGfm from 'remark-gfm';
 import {
   Calendar, ChevronDown, ChevronRight, Filter, FileText, X,
 } from 'lucide-react';
+import { Doc } from '@/lib/types';
 
 /* ── Mini Calendar ── */
-function MiniCalendar({ dates, selected, onSelect }) {
-  const [viewMonth, setViewMonth] = useState(() => {
+interface MiniCalendarProps {
+  dates: string[];
+  selected: string | null;
+  onSelect: (date: string) => void;
+}
+
+function MiniCalendar({ dates, selected, onSelect }: MiniCalendarProps) {
+  const [viewMonth, setViewMonth] = useState<{ year: number; month: number }>(() => {
     const today = new Date();
     return { year: today.getFullYear(), month: today.getMonth() };
   });
@@ -22,12 +28,12 @@ function MiniCalendar({ dates, selected, onSelect }) {
   const first = new Date(year, month, 1);
   const startDay = first.getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const cells = [];
+  const cells: (number | null)[] = [];
 
   for (let i = 0; i < startDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
-  function pad(n) { return String(n).padStart(2, '0'); }
+  function pad(n: number): string { return String(n).padStart(2, '0'); }
 
   function prev() {
     setViewMonth(v => v.month === 0
@@ -80,9 +86,10 @@ function MiniCalendar({ dates, selected, onSelect }) {
 }
 
 /* ── Main Page ── */
-const CADENCES = ['Daily', 'Weekly', 'Monthly'];
+const CADENCES = ['Daily', 'Weekly', 'Monthly'] as const;
+type Cadence = typeof CADENCES[number];
 
-const CATEGORIES = {
+const CATEGORIES: Record<string, string[]> = {
   'Market Analysis': ['macro', 'bonds', 'commodities', 'forex', 'crypto', 'international'],
   'Equities':        ['us-equities', 'equities'],
   'Sectors':         ['sector', 'technology', 'healthcare', 'financials', 'energy', 'industrials',
@@ -92,7 +99,7 @@ const CATEGORIES = {
   'Digest':          ['digest', 'DIGEST'],
 };
 
-function categorize(filename) {
+function categorize(filename: string | undefined): string {
   const lower = (filename || '').toLowerCase();
   for (const [cat, keys] of Object.entries(CATEGORIES)) {
     if (keys.some(k => lower.includes(k))) return cat;
@@ -102,17 +109,16 @@ function categorize(filename) {
 
 export default function LibraryPage() {
   const { data, loading, error } = useDashboard();
-  const [cadence, setCadence] = useState('Daily');
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [activeFile, setActiveFile] = useState(null);
-  const [filterCat, setFilterCat] = useState(null);
+  const [cadence, setCadence] = useState<Cadence>('Daily');
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [activeFile, setActiveFile] = useState<Doc | null>(null);
+  const [filterCat, setFilterCat] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
-  const docs = useMemo(() => data?.docs || [], [data]);
+  const docs = useMemo<Doc[]>(() => data?.docs || [], [data]);
 
-  /* Group docs by cadence */
-  const cadenceDocs = useMemo(() => {
-    const map = { Daily: [], Weekly: [], Monthly: [] };
+  const cadenceDocs = useMemo<Record<Cadence, Doc[]>>(() => {
+    const map: Record<Cadence, Doc[]> = { Daily: [], Weekly: [], Monthly: [] };
     docs.forEach(d => {
       const c = (d.cadence || 'daily').toLowerCase();
       if (c === 'weekly') map.Weekly.push(d);
@@ -124,27 +130,23 @@ export default function LibraryPage() {
 
   const activeDocs = cadenceDocs[cadence] || [];
 
-  /* Unique dates for the current cadence */
-  const dates = useMemo(() => {
+  const dates = useMemo<string[]>(() => {
     const set = new Set(activeDocs.map(d => d.date));
     return [...set].sort().reverse();
   }, [activeDocs]);
 
-  /* Effective selected date */
   const effDate = selectedDate && dates.includes(selectedDate)
     ? selectedDate
     : dates[0] || null;
 
-  /* Docs for this date, optionally filtered */
-  const dateDocs = useMemo(() => {
+  const dateDocs = useMemo<Doc[]>(() => {
     let list = activeDocs.filter(d => d.date === effDate);
     if (filterCat) list = list.filter(d => categorize(d.filename) === filterCat);
     return list;
   }, [activeDocs, effDate, filterCat]);
 
-  /* Group by category */
-  const grouped = useMemo(() => {
-    const map = {};
+  const grouped = useMemo<[string, Doc[]][]>(() => {
+    const map: Record<string, Doc[]> = {};
     dateDocs.forEach(d => {
       const cat = categorize(d.filename);
       (map[cat] = map[cat] || []).push(d);
@@ -152,7 +154,7 @@ export default function LibraryPage() {
     return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
   }, [dateDocs]);
 
-  const categoryList = useMemo(() => {
+  const categoryList = useMemo<string[]>(() => {
     const set = new Set(activeDocs.filter(d => d.date === effDate).map(d => categorize(d.filename)));
     return [...set].sort();
   }, [activeDocs, effDate]);
@@ -265,7 +267,6 @@ export default function LibraryPage() {
                 </div>
               </div>
             ) : (
-              /* File list grouped by category */
               grouped.length > 0 ? (
                 grouped.map(([cat, files]) => (
                   <div key={cat} className="glass-card p-0 overflow-hidden">
@@ -299,9 +300,3 @@ export default function LibraryPage() {
     </>
   );
 }
-
-MiniCalendar.propTypes = {
-  dates: PropTypes.arrayOf(PropTypes.string).isRequired,
-  selected: PropTypes.string,
-  onSelect: PropTypes.func.isRequired,
-};

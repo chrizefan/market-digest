@@ -2,18 +2,25 @@
 
 import { useEffect, useRef } from 'react';
 
+interface Star {
+  x: number;
+  y: number;
+  d: number;
+  ph: number;
+}
+
 export default function Starfield() {
-  const animIdRef = useRef(null);
+  const animIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const canvas = document.getElementById('network-canvas');
+    const canvas = document.getElementById('network-canvas') as HTMLCanvasElement | null;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let width, height;
+    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+    let width: number, height: number;
 
     const N = 180;
-    const stars = Array.from({ length: N }, () => ({
+    const stars: Star[] = Array.from({ length: N }, () => ({
       x: Math.random(), y: Math.random(),
       d: Math.random(), ph: Math.random() * Math.PI * 2,
     }));

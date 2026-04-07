@@ -1,5 +1,5 @@
 import './globals.css';
-import PropTypes from 'prop-types';
+import { ReactNode } from 'react';
 import { DashboardProvider } from '@/lib/dashboard-context';
 import Sidebar from '@/components/sidebar';
 import Starfield from '@/components/starfield';
@@ -9,7 +9,7 @@ export const metadata = {
   description: 'AI-orchestrated market intelligence dashboard',
 };
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="dark">
       <head>
@@ -31,7 +31,3 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
-
-RootLayout.propTypes = {
-  children: PropTypes.node.isRequired,
-};

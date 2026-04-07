@@ -2,13 +2,19 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, ElementType } from 'react';
 import {
   LayoutDashboard, PieChart, TrendingUp, Target, Clock,
   Database, Menu, X,
 } from 'lucide-react';
 
-const NAV = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: ElementType<{ size?: number }>;
+}
+
+const NAV: NavItem[] = [
   { href: '/',              label: 'Overview',           icon: LayoutDashboard },
   { href: '/portfolio',     label: 'Asset Allocation',   icon: PieChart },
   { href: '/performance',   label: 'Performance',        icon: TrendingUp },
@@ -19,7 +25,7 @@ const NAV = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const base = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  const base = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
   const [open, setOpen] = useState(false);
 
   return (

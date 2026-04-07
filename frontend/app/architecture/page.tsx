@@ -1,39 +1,62 @@
 'use client';
 
+import { ElementType } from 'react';
 import PageHeader from '@/components/page-header';
 import { Badge } from '@/components/ui';
 import {
   Layers, Clock, Zap, Bot, Database, Globe,
 } from 'lucide-react';
 
-const CADENCE_TIERS = [
-  { label: 'Sunday Baseline', when: 'Sunday', desc: 'Full 9-phase pipeline — all 20+ files from scratch', cost: '100%', color: 'fin-blue' },
-  { label: 'Daily Delta',     when: 'Mon–Sat',   desc: 'Lightweight delta — only changed segments',         cost: '~20–30%', color: 'fin-green' },
+interface CadenceTier {
+  label: string;
+  when: string;
+  desc: string;
+  cost: string;
+  color: string;
+}
+
+interface AnalysisPhase {
+  n: number | string;
+  name: string;
+  output: string;
+  desc: string;
+  icon?: ElementType<{ size?: number; className?: string }>;
+}
+
+interface AgentEntry {
+  name: string;
+  file: string;
+  role: string;
+}
+
+const CADENCE_TIERS: CadenceTier[] = [
+  { label: 'Sunday Baseline', when: 'Sunday',    desc: 'Full 9-phase pipeline — all 20+ files from scratch', cost: '100%',    color: 'fin-blue' },
+  { label: 'Daily Delta',     when: 'Mon–Sat',   desc: 'Lightweight delta — only changed segments',          cost: '~20–30%', color: 'fin-green' },
   { label: 'Monthly Synthesis', when: 'Month-end', desc: 'Review of all baselines + deltas for the month',  cost: '~40–50%', color: 'fin-purple' },
 ];
 
-const PHASES = [
-  { n: 1,    name: 'Alternative Data',    output: 'alt-data.md',      desc: 'Sentiment, CTA positioning, options flow, political signals', icon: Database },
-  { n: 2,    name: 'Institutional Intel',  output: 'institutional.md', desc: 'ETF flows, hedge fund activity, smart money', icon: Layers },
-  { n: 3,    name: 'Macro Analysis',       output: 'macro.md',         desc: 'Rates, yields, regime, VIX, DXY, leading indicators', icon: Globe },
-  { n: '4A', name: 'Bonds & Rates',        output: 'bonds.md',         desc: 'Treasury yields, credit spreads, duration bets' },
-  { n: '4B', name: 'Commodities',          output: 'commodities.md',   desc: 'Energy, metals, agriculture, commodity curves' },
-  { n: '4C', name: 'Forex',                output: 'forex.md',         desc: 'DXY, EUR/USD, JPY, EM currencies' },
-  { n: '4D', name: 'Crypto',               output: 'crypto.md',        desc: 'BTC, ETH, on-chain, stablecoin flows, altcoin rotation' },
-  { n: '4E', name: 'International',        output: 'international.md', desc: 'EFA, EEM, country risk, EM themes' },
-  { n: '5A', name: 'US Equities',          output: 'us-equities.md',   desc: 'SPY, QQQ, breadth, factor rotation' },
-  { n: '5B–L', name: '11 GICS Sectors',    output: 'sectors/*.md',     desc: 'Sub-agent per sector: XLK, XLV, XLF, XLE…' },
-  { n: 7,    name: 'Digest Synthesis',      output: 'DIGEST.md',        desc: 'Master output — cross-asset synthesis + thesis tracker' },
+const PHASES: AnalysisPhase[] = [
+  { n: 1,     name: 'Alternative Data',     output: 'alt-data.md',      desc: 'Sentiment, CTA positioning, options flow, political signals', icon: Database },
+  { n: 2,     name: 'Institutional Intel',  output: 'institutional.md', desc: 'ETF flows, hedge fund activity, smart money', icon: Layers },
+  { n: 3,     name: 'Macro Analysis',       output: 'macro.md',         desc: 'Rates, yields, regime, VIX, DXY, leading indicators', icon: Globe },
+  { n: '4A',  name: 'Bonds & Rates',        output: 'bonds.md',         desc: 'Treasury yields, credit spreads, duration bets' },
+  { n: '4B',  name: 'Commodities',          output: 'commodities.md',   desc: 'Energy, metals, agriculture, commodity curves' },
+  { n: '4C',  name: 'Forex',                output: 'forex.md',         desc: 'DXY, EUR/USD, JPY, EM currencies' },
+  { n: '4D',  name: 'Crypto',               output: 'crypto.md',        desc: 'BTC, ETH, on-chain, stablecoin flows, altcoin rotation' },
+  { n: '4E',  name: 'International',        output: 'international.md', desc: 'EFA, EEM, country risk, EM themes' },
+  { n: '5A',  name: 'US Equities',          output: 'us-equities.md',   desc: 'SPY, QQQ, breadth, factor rotation' },
+  { n: '5B–L', name: '11 GICS Sectors',     output: 'sectors/*.md',     desc: 'Sub-agent per sector: XLK, XLV, XLF, XLE…' },
+  { n: 7,     name: 'Digest Synthesis',     output: 'DIGEST.md',        desc: 'Master output — cross-asset synthesis + thesis tracker' },
 ];
 
-const AGENTS = [
-  { name: 'Orchestrator',   file: 'orchestrator.agent.md',   role: 'Pipeline driver — routes baseline vs delta' },
-  { name: 'Sector Analyst', file: 'sector-analyst.agent.md', role: 'Runs one or more GICS sector deep-dives' },
-  { name: 'Alt Data',       file: 'alt-data-analyst.agent.md', role: 'Phase 1 alternative data gathering' },
+const AGENTS: AgentEntry[] = [
+  { name: 'Orchestrator',   file: 'orchestrator.agent.md',        role: 'Pipeline driver — routes baseline vs delta' },
+  { name: 'Sector Analyst', file: 'sector-analyst.agent.md',      role: 'Runs one or more GICS sector deep-dives' },
+  { name: 'Alt Data',       file: 'alt-data-analyst.agent.md',    role: 'Phase 1 alternative data gathering' },
   { name: 'Institutional',  file: 'institutional-analyst.agent.md', role: 'Phase 2 smart money intelligence' },
-  { name: 'Portfolio Mgr',  file: 'portfolio-manager.agent.md', role: 'Position sizing, rebalancing, risk' },
-  { name: 'Research Asst',  file: 'research-assistant.agent.md', role: 'Ad-hoc research queries' },
-  { name: 'Thesis Tracker', file: 'thesis-tracker.agent.md',    role: 'Portfolio thesis lifecycle management' },
+  { name: 'Portfolio Mgr',  file: 'portfolio-manager.agent.md',   role: 'Position sizing, rebalancing, risk' },
+  { name: 'Research Asst',  file: 'research-assistant.agent.md',  role: 'Ad-hoc research queries' },
+  { name: 'Thesis Tracker', file: 'thesis-tracker.agent.md',      role: 'Portfolio thesis lifecycle management' },
 ];
 
 export default function ArchitecturePage() {
@@ -45,9 +68,9 @@ export default function ArchitecturePage() {
         {/* Intro */}
         <div className="glass-card p-6">
           <p className="text-sm text-text-secondary leading-relaxed max-w-3xl">
-            <strong className="text-white">digiquant-atlas</strong> is a daily market intelligence system driven by a 
+            <strong className="text-white">digiquant-atlas</strong> is a daily market intelligence system driven by a
             multi-phase AI-orchestrated pipeline. Skills (markdown instruction files) define each analysis step,
-            and named agents execute them. The system covers all global asset classes, producing 20+ structured 
+            and named agents execute them. The system covers all global asset classes, producing 20+ structured
             research files per run.
           </p>
         </div>

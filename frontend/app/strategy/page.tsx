@@ -6,6 +6,35 @@ import { Badge } from '@/components/ui';
 import {
   AlertTriangle, ArrowUpRight, Target, TrendingUp, ArrowRightLeft,
 } from 'lucide-react';
+import { Thesis, ProposedPosition, RebalanceAction } from '@/lib/types';
+
+interface RegimeColorSet {
+  text: string;
+  border: string;
+}
+
+const regimeColors: Record<string, RegimeColorSet> = {
+  bullish: { text: 'text-fin-green', border: 'border-fin-green/40' },
+  bearish: { text: 'text-fin-red',   border: 'border-fin-red/40' },
+  caution: { text: 'text-fin-amber', border: 'border-fin-amber/40' },
+  neutral: { text: 'text-fin-blue',  border: 'border-fin-blue/40' },
+};
+
+function statusColor(status: string | null | undefined): string {
+  const s = (status || '').toLowerCase();
+  if (s.includes('confirmed') || s.includes('active')) return 'text-fin-green';
+  if (s.includes('monitoring') || s.includes('watch')) return 'text-fin-amber';
+  if (s.includes('invalidated') || s.includes('broken') || s.includes('challenged')) return 'text-fin-red';
+  return 'text-text-muted';
+}
+
+function actionColor(action: string | null | undefined): string {
+  const a = (action || '').toLowerCase();
+  if (a.includes('exit')) return 'text-fin-red';
+  if (a.includes('add') || a.includes('new')) return 'text-fin-green';
+  if (a === 'hold') return 'text-text-muted';
+  return 'text-fin-amber';
+}
 
 export default function StrategyPage() {
   const { data, loading, error } = useDashboard();
@@ -15,34 +44,12 @@ export default function StrategyPage() {
 
   const { strategy } = data.portfolio;
   const pm = data.portfolio_management || {};
-  const theses = strategy.theses || [];
-  const proposed = pm.proposed_positions || [];
-  const rebalance = pm.rebalance_actions || [];
+  const theses: Thesis[] = strategy.theses || [];
+  const proposed: ProposedPosition[] = pm.proposed_positions || [];
+  const rebalance: RebalanceAction[] = pm.rebalance_actions || [];
 
   const regimeLabel = strategy.regime_label || 'neutral';
-  const regimeColors = {
-    bullish:  { text: 'text-fin-green', border: 'border-fin-green/40' },
-    bearish:  { text: 'text-fin-red',   border: 'border-fin-red/40' },
-    caution:  { text: 'text-fin-amber', border: 'border-fin-amber/40' },
-    neutral:  { text: 'text-fin-blue',  border: 'border-fin-blue/40' },
-  };
   const rc = regimeColors[regimeLabel] || regimeColors.neutral;
-
-  function statusColor(status) {
-    const s = (status || '').toLowerCase();
-    if (s.includes('confirmed') || s.includes('active')) return 'text-fin-green';
-    if (s.includes('monitoring') || s.includes('watch')) return 'text-fin-amber';
-    if (s.includes('invalidated') || s.includes('broken') || s.includes('challenged')) return 'text-fin-red';
-    return 'text-text-muted';
-  }
-
-  function actionColor(action) {
-    const a = (action || '').toLowerCase();
-    if (a.includes('exit')) return 'text-fin-red';
-    if (a.includes('add') || a.includes('new')) return 'text-fin-green';
-    if (a === 'hold') return 'text-text-muted';
-    return 'text-fin-amber';
-  }
 
   return (
     <>

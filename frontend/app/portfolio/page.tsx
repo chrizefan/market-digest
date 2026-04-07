@@ -6,10 +6,11 @@ import PageHeader from '@/components/page-header';
 import { Badge, SectionTitle } from '@/components/ui';
 import { ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { Position } from '@/lib/types';
 
 const PALETTE = ['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#06B6D4','#F97316','#EC4899','#6366F1','#14B8A6'];
 
-const CATEGORY_LABELS = {
+const CATEGORY_LABELS: Record<string, string> = {
   commodity_gold: 'Commodity — Gold',
   commodity_oil: 'Commodity — Oil',
   commodity_silver: 'Commodity — Silver',
@@ -23,24 +24,29 @@ const CATEGORY_LABELS = {
   international: 'International',
 };
 
-function formatCategory(cat) {
-  return CATEGORY_LABELS[cat] || (cat ? cat.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '—');
+function formatCategory(cat: string | null | undefined): string {
+  if (!cat) return '—';
+  return CATEGORY_LABELS[cat] || cat.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+interface AllocationDatum {
+  name: string;
+  value: number;
 }
 
 export default function PortfolioPage() {
   const { data, loading, error } = useDashboard();
-  const [expandedRow, setExpandedRow] = useState(null);
+  const [expandedRow, setExpandedRow] = useState<number | null>(null);
 
   if (loading) return <div className="flex items-center justify-center h-screen text-text-secondary">Loading…</div>;
   if (error || !data) return <div className="flex items-center justify-center h-screen text-fin-red">{error}</div>;
 
   const { positions, ratios, calculated: metrics } = data;
 
-  // Build pie chart data
-  const pieData = useMemo(() => {
-    const slices = positions.map(p => ({ name: p.ticker, value: p.weight_actual }));
-    ratios.forEach(r => slices.push({ name: `${r.long_ticker}/${r.short_ticker}`, value: r.net_weight }));
-    if (metrics.cash_pct > 0) slices.push({ name: 'CASH', value: metrics.cash_pct });
+  const pieData = useMemo<AllocationDatum[]>(() => {
+    const slices: AllocationDatum[] = positions.map(p => ({ name: p.ticker, value: p.weight_actual ?? 0 }));
+    ratios.forEach(r => slices.push({ name: `${r.long_ticker}/${r.short_ticker}`, value: r.net_weight ?? 0 }));
+    if ((metrics.cash_pct ?? 0) > 0) slices.push({ name: 'CASH', value: metrics.cash_pct ?? 0 });
     return slices;
   }, [positions, ratios, metrics.cash_pct]);
 
@@ -69,7 +75,7 @@ export default function PortfolioPage() {
                 </Pie>
                 <Tooltip
                   contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px', fontSize: '0.85rem' }}
-                  formatter={(val) => `${val.toFixed(1)}%`}
+                  formatter={(val: number) => `${val.toFixed(1)}%`}
                 />
                 <Legend
                   verticalAlign="middle"
@@ -77,7 +83,7 @@ export default function PortfolioPage() {
                   layout="vertical"
                   iconType="circle"
                   iconSize={8}
-                  formatter={(val) => <span className="text-text-secondary text-xs ml-1">{val}</span>}
+                  formatter={(val: string) => <span className="text-text-secondary text-xs ml-1">{val}</span>}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -105,13 +111,14 @@ export default function PortfolioPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-subtle">
-                {positions.map((p, i) => {
+                {positions.map((p: Position, i: number) => {
                   const isExpanded = expandedRow === i;
                   const pnlPct = p.entry_price && p.current_price && p.entry_price > 0
                     ? ((p.current_price - p.entry_price) / p.entry_price) * 100 : null;
                   return (
-                    <tbody key={i}>
+                    <>
                       <tr
+                        key={`row-${i}`}
                         onClick={() => setExpandedRow(isExpanded ? null : i)}
                         className={`cursor-pointer transition-colors hover:bg-white/[0.03] ${isExpanded ? 'bg-white/[0.02]' : ''}`}
                       >
@@ -129,8 +136,8 @@ export default function PortfolioPage() {
                         </td>
                       </tr>
                       {isExpanded && (
-                        <tr className="bg-white/[0.02]">
-                          <td colSpan="8" className="px-6 py-6">
+                        <tr key={`expand-${i}`} className="bg-white/[0.02]">
+                          <td colSpan={8} className="px-6 py-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <div>
                                 <h4 className="flex items-center gap-2 text-base font-semibold mb-2">
@@ -167,11 +174,11 @@ export default function PortfolioPage() {
                           </td>
                         </tr>
                       )}
-                    </tbody>
+                    </>
                   );
                 })}
                 {positions.length === 0 && (
-                  <tr><td colSpan="8" className="text-center py-10 text-text-muted">No active positions</td></tr>
+                  <tr><td colSpan={8} className="text-center py-10 text-text-muted">No active positions</td></tr>
                 )}
               </tbody>
             </table>
