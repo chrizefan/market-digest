@@ -70,7 +70,9 @@ def parse_tickers_from_watchlist() -> list[str]:
     if not wl.exists():
         return []
     text = wl.read_text(encoding="utf-8")
-    tickers = re.findall(r"^\|\s*([A-Z]{2,6})\s*\|", text, re.MULTILINE)
+    # Match tickers: plain uppercase (SPY), hyphenated crypto (BTC-USD),
+    # or alphanumeric yfinance IDs (SUI20947-USD)
+    tickers = re.findall(r"^\|\s*([A-Z][A-Z0-9]{1,9}(?:-[A-Z]{2,4})?)\s*\|", text, re.MULTILINE)
     EXCLUDE = {"ETF", "DXY", "VIX"}
     seen, result = set(), []
     for t in tickers:

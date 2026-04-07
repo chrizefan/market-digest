@@ -13,6 +13,7 @@ Usage:
 """
 
 import argparse
+import os
 import re
 import sys
 import time
@@ -38,7 +39,9 @@ def parse_tickers_from_watchlist() -> list[str]:
                 "IAU", "SLV", "USO", "DBO", "IBIT", "FBTC", "BIL", "SHY",
                 "EFA", "EEM", "FXI", "EWJ", "EWZ"]
     text = wl.read_text(encoding="utf-8")
-    tickers = re.findall(r"^\|\s*([A-Z]{2,6})\s*\|", text, re.MULTILINE)
+    # Match tickers: plain uppercase (SPY), hyphenated crypto (BTC-USD),
+    # or alphanumeric yfinance IDs (SUI20947-USD)
+    tickers = re.findall(r"^\|\s*([A-Z][A-Z0-9]{1,9}(?:-[A-Z]{2,4})?)\s*\|", text, re.MULTILINE)
     # Exclude table headers and macro-only indicators
     EXCLUDE = {"ETF", "DXY", "VIX"}
     seen = set()
@@ -82,6 +85,63 @@ def save_cache(ticker: str, df: pd.DataFrame) -> None:
     tmp = dest.with_suffix(".csv.tmp")
     df.to_csv(tmp, date_format="%Y-%m-%d")
     tmp.rename(dest)
+
+
+def upsert_to_supabase(ticker: str, df: pd.DataFrame) -> int:
+    """Upsert OHLCV rows for a single ticker into the Supabase price_history table.
+
+    Returns the number of rows upserted, or 0 on error.
+    Requires SUPABASE_URL and SUPABASE_SERVICE_KEY environment variables.
+    """
+    try:
+        from supabase import create_client
+    except ImportError:
+        print("    ⚠️  supabase-py not installed — pip install supabase")
+        return 0
+
+    # Load .env if present
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(ROOT / "config" / "supabase.env")
+    except ImportError:
+        pass
+
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_SERVICE_KEY")
+    if not url or not key:
+        print("    ⚠️  SUPABASE_URL / SUPABASE_SERVICE_KEY not set — skipping Supabase upsert")
+        return 0
+
+    sb = create_client(url, key)
+
+    df = df.copy()
+    df.index.name = "Date"
+    df = df.sort_index()
+    col_map = {c: c.capitalize() for c in df.columns}
+    df = df.rename(columns=col_map)
+
+    rows = []
+    for date_idx, row in df.iterrows():
+        rows.append({
+            "date": date_idx.strftime("%Y-%m-%d") if hasattr(date_idx, "strftime") else str(date_idx)[:10],
+            "ticker": ticker,
+            "open": float(row["Open"]) if "Open" in row and pd.notna(row["Open"]) else None,
+            "high": float(row["High"]) if "High" in row and pd.notna(row["High"]) else None,
+            "low": float(row["Low"]) if "Low" in row and pd.notna(row["Low"]) else None,
+            "close": float(row["Close"]) if "Close" in row and pd.notna(row["Close"]) else None,
+            "volume": int(row["Volume"]) if "Volume" in row and pd.notna(row["Volume"]) else None,
+        })
+        # Drop rows where close is None (required column)
+    rows = [r for r in rows if r["close"] is not None]
+
+    if not rows:
+        return 0
+
+    # Upsert in chunks of 500
+    CHUNK = 500
+    for i in range(0, len(rows), CHUNK):
+        sb.table("price_history").upsert(rows[i:i + CHUNK]).execute()
+    return len(rows)
 
 
 # ── download ─────────────────────────────────────────────────────────────────
@@ -132,6 +192,8 @@ def main():
                         help="Only re-fetch tickers whose cache is >7 days stale")
     parser.add_argument("--max-stale-days", type=int, default=7,
                         help="Staleness threshold for --refresh mode (default: 7)")
+    parser.add_argument("--supabase", action="store_true",
+                        help="Also upsert fetched data to Supabase price_history table")
     args = parser.parse_args()
 
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -166,6 +228,7 @@ def main():
     data = download_full_history(tickers, period=args.period)
 
     saved = 0
+    sb_total = 0
     for t in tickers:
         df = data.get(t)
         if df is not None and not df.empty:
@@ -173,13 +236,20 @@ def main():
             rows = len(df)
             first = df.index.min().strftime("%Y-%m-%d")
             last = df.index.max().strftime("%Y-%m-%d")
-            print(f"    ✅ {t:6s}  {rows:>4d} rows  {first} → {last}")
+            sb_note = ""
+            if args.supabase:
+                sb_rows = upsert_to_supabase(t, df)
+                sb_note = f"  ↑Supabase {sb_rows}r" if sb_rows else "  ↑skip"
+                sb_total += sb_rows
+            print(f"    ✅ {t:6s}  {rows:>4d} rows  {first} → {last}{sb_note}")
             saved += 1
         else:
             print(f"    ❌ {t:6s}  no data returned")
 
     print()
     print(f"  Cached {saved}/{len(tickers)} tickers to {CACHE_DIR}")
+    if args.supabase:
+        print(f"  Upserted {sb_total} rows to Supabase price_history")
     print("  Done.")
 
 

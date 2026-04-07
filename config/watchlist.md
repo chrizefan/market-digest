@@ -78,11 +78,18 @@
 | SOL-USD | Solana | crypto |
 | XRP-USD | XRP (Ripple) | crypto |
 | BNB-USD | BNB (Binance Coin) | crypto |
+| TRX-USD | TRON | crypto |
 | DOGE-USD | Dogecoin | crypto |
 | ADA-USD | Cardano | crypto |
 | AVAX-USD | Avalanche | crypto |
 | LINK-USD | Chainlink | crypto |
 | DOT-USD | Polkadot | crypto |
+| BCH-USD | Bitcoin Cash | crypto |
+| LTC-USD | Litecoin | crypto |
+| NEAR-USD | NEAR Protocol | crypto |
+| ATOM-USD | Cosmos | crypto |
+| XMR-USD | Monero | crypto |
+| SUI20947-USD | Sui (yfinance ID: SUI20947-USD) | crypto |
 
 ### Spot ETFs (US-listed, preferred for vol/correlation vs equities)
 

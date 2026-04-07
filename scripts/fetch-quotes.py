@@ -15,6 +15,7 @@ Usage:
     python3 scripts/fetch-quotes.py 2026-04-06       # specific date
 """
 
+import argparse
 import json
 import re
 import sys
@@ -42,8 +43,9 @@ def parse_tickers_from_watchlist() -> list[str]:
                 "IAU", "SLV", "USO", "DBO", "IBIT", "FBTC", "BIL", "SHY",
                 "EFA", "EEM", "FXI", "EWJ", "EWZ"]
     text = wl.read_text(encoding="utf-8")
-    # Match table rows: | TICKER | ... — first column is 2-5 uppercase letters
-    tickers = re.findall(r"^\|\s*([A-Z]{2,6})\s*\|", text, re.MULTILINE)
+    # Match tickers: plain uppercase (SPY), hyphenated crypto (BTC-USD),
+    # or alphanumeric yfinance IDs (SUI20947-USD)
+    tickers = re.findall(r"^\|\s*([A-Z][A-Z0-9]{1,9}(?:-[A-Z]{2,4})?)\s*\|", text, re.MULTILINE)
     # Exclude table headers and macro-only indicators (fetched by fetch-macro.py)
     EXCLUDE = {"ETF", "DXY", "VIX"}
     # Deduplicate while preserving order
@@ -412,7 +414,16 @@ def write_summary_md(snapshots: list[dict], output_path: Path, fetched_at: str):
 # ── main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    target_date = sys.argv[1] if len(sys.argv) > 1 else date.today().strftime("%Y-%m-%d")
+    parser = argparse.ArgumentParser(
+        description="fetch-quotes.py — Systematic ETF/equity snapshot with technicals",
+        epilog="Reads all tickers from config/watchlist.md. Uses local CSV cache when available."
+    )
+    parser.add_argument(
+        "date", nargs="?", default=date.today().strftime("%Y-%m-%d"),
+        metavar="YYYY-MM-DD", help="Target date (default: today)"
+    )
+    args = parser.parse_args()
+    target_date = args.date
     fetched_at = datetime.now().strftime("%Y-%m-%d %H:%M ET")
 
     out_dir = ROOT / "outputs" / "daily" / target_date / "data"
