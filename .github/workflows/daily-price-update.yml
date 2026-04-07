@@ -1,11 +1,12 @@
 name: Daily Price Update
 
-# Runs each trading day at 9:30 PM ET (1:30 AM UTC next day) — ~3 hours after NYSE close.
-# This ensures all same-day OHLCV data is settled before upsert.
+# Runs each trading day at 6:00 PM ET (22:00 UTC) — ~2 hours after NYSE close.
+# This ensures all same-day OHLCV data is settled before upsert, and the full
+# indicator table is ready for the next morning's digest run.
 # Manual trigger also available for backfills or reruns.
 on:
   schedule:
-    - cron: "30 1 * * 2-6"   # Tue–Sat UTC = Mon–Fri after US market close
+    - cron: "0 22 * * 1-5"   # Mon–Fri 22:00 UTC = 6:00 PM ET (≈2h after NYSE close)
   workflow_dispatch:
     inputs:
       period:
@@ -58,14 +59,14 @@ jobs:
           fi
           python3 scripts/preload-history.py $ARGS
 
-      # After prices are up-to-date, recompute TA indicators for last 2 days
-      # (2 days covers the new row + recalculates any indicators that depend on
-      # prior values like MACD histogram cross detection)
+      # After prices are up-to-date, recompute TA indicators for last 7 days.
+      # 7 days covers: Mon catching up Fri's row, rolling indicators that depend
+      # on prior values (MACD histogram, Stochastic), and any weekend data gaps.
       - name: Compute TA indicators (scheduled)
         if: github.event_name == 'schedule'
         run: |
           python3 scripts/compute-technicals.py \
-            --days 2 \
+            --days 7 \
             --supabase
 
       - name: Compute TA indicators (manual dispatch)

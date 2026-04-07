@@ -81,6 +81,70 @@ for high-quality analysis.
 
 ---
 
+## Supabase as Primary Data Source (post-April 2026)
+
+A GitHub Actions workflow runs every trading day at **6:00 PM ET** (right after the data settles
+post-close). It fetches OHLCV for all 56 watchlist tickers and computes 35 TA indicators, writing
+both into Supabase. This is the **fastest and most reliable** data source for digest runs.
+
+### Tables
+
+| Table | Contents | Refresh |
+|-------|----------|---------|
+| `price_history` | OHLCV rows per ticker per date | Daily, 6 PM ET |
+| `price_technicals` | 35 TA indicators per ticker per date | Daily, after price_history |
+
+### Key indicator columns in `price_technicals`
+
+| Column | Description |
+|--------|-------------|
+| `sma_20`, `sma_50`, `sma_200` | Simple moving averages |
+| `ema_12`, `ema_26`, `ema_50` | Exponential moving averages |
+| `pct_vs_sma20`, `pct_vs_sma50`, `pct_vs_sma200` | % price deviation from each MA |
+| `rsi_7`, `rsi_14`, `rsi_21` | RSI at 3 lookback periods |
+| `macd`, `macd_signal`, `macd_hist` | MACD line, signal, histogram |
+| `roc_5`, `roc_10`, `roc_21` | Rate of change (5, 10, 21 days) |
+| `atr_14`, `atr_pct` | ATR dollar and % of price |
+| `bb_upper`, `bb_middle`, `bb_lower` | Bollinger Bands (20-period, 2σ) |
+| `bb_pct_b`, `bb_bandwidth` | %B (0–1 position) and bandwidth |
+| `hist_vol_21` | 21-day realized vol (annualized) |
+| `stoch_k`, `stoch_d` | Stochastic %K and %D |
+| `adx_14`, `dmi_plus`, `dmi_minus` | ADX trend strength + DMI ±14 |
+| `zscore_50`, `zscore_200` | Price z-score vs 50-day and 200-day rolling mean |
+
+### Example MCP queries (use `mcp_supabase_execute_sql`)
+
+```sql
+-- Latest indicators for all tickers
+SELECT * FROM price_technicals
+WHERE date = (SELECT MAX(date) FROM price_technicals);
+
+-- Single ticker detail
+SELECT * FROM price_technicals
+WHERE ticker = 'SPY'
+ORDER BY date DESC
+LIMIT 5;
+
+-- Check freshness
+SELECT MAX(date) AS latest_date, COUNT(DISTINCT ticker) AS tickers
+FROM price_technicals;
+
+-- Screening: RSI oversold + above 200-day MA
+SELECT ticker, date, rsi_14, pct_vs_sma200
+FROM price_technicals
+WHERE date = (SELECT MAX(date) FROM price_technicals)
+  AND rsi_14 < 35
+  AND pct_vs_sma200 > 0
+ORDER BY rsi_14;
+```
+
+**When to use Supabase vs local scripts:**
+- **Supabase first**: If the workflow ran today (`MAX(date)` = today), query Supabase — no scripts needed.
+- **Local scripts fallback**: If `MAX(date)` < today (workflow hasn't run, holiday, failure), run `./scripts/fetch-market-data.sh`.
+- **MCP fallback**: If scripts are unavailable (sandbox), follow `SKILL-mcp-data-fetch.md`.
+
+---
+
 ## Outputs
 
 All files written to `outputs/daily/YYYY-MM-DD/data/`:

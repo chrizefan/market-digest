@@ -38,10 +38,34 @@ data (full technicals, 3-month OHLCV history, Bollinger Bands, ATR).
 
 ---
 
+## Step 0A — Check Supabase First (Zero-Cost Technicals)
+
+Before consuming any Alpha Vantage budget, check whether the GitHub Actions workflow has already
+run today and pre-computed all 35 TA indicators for all 56 watchlist tickers:
+
+```sql
+-- Run via mcp_supabase_execute_sql:
+SELECT MAX(date) AS latest_date, COUNT(DISTINCT ticker) AS tickers
+FROM price_technicals;
+```
+
+**If `latest_date` = today**: All indicators are already available at zero cost.
+- Query `price_technicals` directly instead of calling Alpha Vantage for RSI/MACD/SMA/EMA.
+- You still need Alpha Vantage for **current prices** (not in `price_technicals`), or check
+  `price_history` for yesterday's close: `SELECT * FROM price_history WHERE date = MAX(date) ...`
+- **Skip Tier 4 (Technicals)** from the Alpha Vantage budget table entirely — saves 7 calls.
+- Full column reference: `skills/SKILL-data-fetch.md` → "Supabase as Primary Data Source".
+
+**If `latest_date` < today** (workflow hasn't run yet, holiday, or failure):
+- Proceed with the full Alpha Vantage budget plan below.
+
+---
+
 ## Rate Limit Awareness
 
 | MCP Server | Free Tier Limit | Strategy |
 |------------|----------------|----------|
+| **Supabase** | Unlimited (own DB) | **Check first** — 35 indicators, 56 tickers, zero cost |
 | **FRED** | 120 requests/min | Generous — fetch all macro series freely |
 | **Frankfurter** | Unlimited | Single call returns all FX rates |
 | **CoinGecko** | ~30 calls/min | Single call for BTC + ETH is sufficient |
@@ -54,9 +78,11 @@ data (full technicals, 3-month OHLCV history, Bollinger Bands, ATR).
 | **1 — Portfolio** | Current holdings from `config/portfolio.json` | ~7 | MUST fetch |
 | **2 — Benchmarks** | SPY, QQQ, IWM, DXY (DX-Y.NYB) | ~4 | MUST fetch |
 | **3 — Sector ETFs** | XLK, XLF, XLE, XLV, XLI, XLP, XLB, XLC, XLRE, XLU, XLY | ~11 | Fetch if budget allows |
-| **4 — Technicals** | RSI for portfolio tickers | ~7 | Fetch if budget allows |
+| **4 — Technicals** | RSI for portfolio tickers | ~7 | **Skip if Supabase has today's data** |
 
 **With 25 calls**: Fetch Tier 1 + Tier 2 prices (11 calls) + RSI for portfolio tickers (7 calls) = 18 calls. Remaining 7 for sector ETFs.
+
+**If Supabase is current**: Fetch only Tiers 1–3 prices (22 calls) — all technicals come free from `price_technicals`.
 
 **If you have a premium key**: Fetch all ~60 watchlist tickers + full technicals.
 

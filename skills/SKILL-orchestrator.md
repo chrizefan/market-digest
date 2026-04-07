@@ -65,15 +65,36 @@ Then load the following. Do NOT summarize to the user — just internalize:
 - Macro regime from the last digest (to compare with today)
 
 ### Data Layer Check
-Verify that `outputs/daily/{{DATE}}/data/quotes.json` and `outputs/daily/{{DATE}}/data/macro.json` exist.
-- **If present**: announce their presence to user so they know numerical grounding is available.
-- **If missing — try local scripts first**:
-  Run `./scripts/fetch-market-data.sh` (or `python3 scripts/fetch-quotes.py && python3 scripts/fetch-macro.py`).
-  This provides the richest data (full technicals, OHLCV history, Bollinger Bands, ATR).
-- **If scripts fail** (sandbox, missing yfinance, network restrictions):
-  Follow `skills/SKILL-mcp-data-fetch.md` to fetch data via MCP tools (FRED, Alpha Vantage,
-  CoinGecko, Frankfurter). This produces the same JSON schema with slightly reduced coverage
-  (fewer tickers, limited technicals). MCP mode is sufficient for high-quality analysis.
+
+There are three data sources in priority order:
+
+**Option A — Supabase `price_technicals` (preferred — zero-cost, no scripts needed)**
+Check if today's indicators are already loaded by the 6 PM ET GitHub Actions workflow:
+```sql
+SELECT MAX(date) AS latest_date, COUNT(DISTINCT ticker) AS tickers
+FROM price_technicals;
+```
+If `latest_date` = today, the full 35-indicator dataset for all 56 tickers is available.
+Query via `mcp_supabase_execute_sql`.  See `skills/SKILL-data-fetch.md` for example queries and
+column reference.  Announce to the user: "Supabase data layer confirmed — {date}, {n} tickers."
+
+**Option B — Local scripts (richest output, requires Python + yfinance)**
+If Supabase is stale or `quotes.json` / `macro.json` are needed for downstream skills that
+read local files, run:
+```bash
+./scripts/fetch-market-data.sh
+# or separately:
+python3 scripts/fetch-quotes.py && python3 scripts/fetch-macro.py
+```
+This writes `outputs/daily/{{DATE}}/data/quotes.json` and `macro.json`.
+If the files already exist, announce their presence — numerical grounding is available.
+
+**Option C — MCP fallback (sandbox/restricted environments)**
+If scripts are unavailable (sandbox, CI, no yfinance), follow `skills/SKILL-mcp-data-fetch.md`
+to fetch data via FRED, Alpha Vantage, CoinGecko, and Frankfurter.  This produces the same JSON
+schema with slightly reduced coverage (fewer tickers, limited technicals) but is sufficient for
+high-quality analysis.  **Check Supabase first** — if `price_technicals` is current, skip
+Alpha Vantage entirely and save the 25-call daily budget for prices only.
 
 Skills that consume the data layer:
 - `SKILL-macro.md` (Phase 3) — reads `macro-summary.md` for yield curve and VIX
