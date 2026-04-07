@@ -1,8 +1,22 @@
 import './globals.css';
 import { ReactNode } from 'react';
+import { Inter, Space_Mono } from 'next/font/google';
 import { DashboardProvider } from '@/lib/dashboard-context';
 import Sidebar from '@/components/sidebar';
 import Starfield from '@/components/starfield';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+
+const spaceMono = Space_Mono({
+  subsets: ['latin'],
+  variable: '--font-space-mono',
+  weight: ['400', '700'],
+  display: 'swap',
+});
 
 export const metadata = {
   title: 'digiquant-atlas',
@@ -12,12 +26,7 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="dark">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
-      </head>
-      <body className="min-h-screen bg-bg-primary text-text-primary antialiased">
+      <body className={`min-h-screen bg-bg-primary text-text-primary antialiased ${inter.variable} ${spaceMono.variable}`}>
         <Starfield />
         <DashboardProvider>
           <div className="flex min-h-screen">

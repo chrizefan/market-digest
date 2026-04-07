@@ -128,7 +128,7 @@ export default function LibraryPage() {
     return map;
   }, [docs]);
 
-  const activeDocs = cadenceDocs[cadence] || [];
+  const activeDocs = useMemo<Doc[]>(() => cadenceDocs[cadence] || [], [cadenceDocs, cadence]);
 
   const dates = useMemo<string[]>(() => {
     const set = new Set(activeDocs.map(d => d.date));
@@ -256,7 +256,11 @@ export default function LibraryPage() {
                     <FileText size={14} className="text-fin-blue" />
                     <span className="font-mono">{activeFile.filename}</span>
                   </div>
-                  <button onClick={() => setActiveFile(null)} className="text-text-muted hover:text-white">
+                  <button
+                    onClick={() => setActiveFile(null)}
+                    className="text-text-muted hover:text-white"
+                    aria-label="Close document"
+                  >
                     <X size={16} />
                   </button>
                 </div>

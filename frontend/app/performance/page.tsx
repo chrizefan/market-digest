@@ -16,6 +16,18 @@ import { Position, BenchmarkHistoryMap, NavChartPoint, PerfChartPoint, Calculate
 
 /* ── helpers ── */
 
+function MetricCard({ label, value, fmt, color, sub }: MetricProps) {
+  return (
+    <div className="bg-bg-secondary rounded-lg p-4 border border-border-subtle">
+      <span className="text-xs text-text-muted uppercase tracking-wider block mb-1">{label}</span>
+      <span className={`text-lg font-bold tabular-nums ${color || ''}`}>
+        {fmt && value != null ? fmt(value as number) : value}
+      </span>
+      {sub && <span className="text-xs text-text-muted block mt-1">{sub}</span>}
+    </div>
+  );
+}
+
 function fmtNav(v: number | null | undefined): string {
   if (v == null) return '—';
   return v.toFixed(2);
@@ -251,16 +263,6 @@ function AdvancedStats({ metrics: _metrics, snaps, benchmarks }: AdvancedStatsPr
     return <div className="px-6 py-8 text-center text-text-muted text-sm">Insufficient data for advanced statistics</div>;
   }
 
-  const Metric = ({ label, value, fmt, color, sub }: MetricProps) => (
-    <div className="bg-bg-secondary rounded-lg p-4 border border-border-subtle">
-      <span className="text-xs text-text-muted uppercase tracking-wider block mb-1">{label}</span>
-      <span className={`text-lg font-bold tabular-nums ${color || ''}`}>
-        {fmt && value != null ? fmt(value as number) : value}
-      </span>
-      {sub && <span className="text-xs text-text-muted block mt-1">{sub}</span>}
-    </div>
-  );
-
   const fPct = (v: number) => v != null ? `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` : '—';
   const fNum = (v: number) => v != null ? v.toFixed(2) : '—';
   const pcol = (v: number | null | undefined) => v != null ? (v >= 0 ? 'text-fin-green' : 'text-fin-red') : '';
@@ -270,40 +272,40 @@ function AdvancedStats({ metrics: _metrics, snaps, benchmarks }: AdvancedStatsPr
       <div>
         <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">Returns</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Metric label="Total Return" value={stats.totalReturn} fmt={fPct} color={pcol(stats.totalReturn)} />
-          <Metric label="Annualized Return" value={stats.annReturn} fmt={fPct} color={pcol(stats.annReturn)} />
-          <Metric label="Best Day" value={stats.bestDay} fmt={fPct} color="text-fin-green" />
-          <Metric label="Worst Day" value={stats.worstDay} fmt={fPct} color="text-fin-red" />
+          <MetricCard label="Total Return" value={stats.totalReturn} fmt={fPct} color={pcol(stats.totalReturn)} />
+          <MetricCard label="Annualized Return" value={stats.annReturn} fmt={fPct} color={pcol(stats.annReturn)} />
+          <MetricCard label="Best Day" value={stats.bestDay} fmt={fPct} color="text-fin-green" />
+          <MetricCard label="Worst Day" value={stats.worstDay} fmt={fPct} color="text-fin-red" />
         </div>
       </div>
 
       <div>
         <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">Risk</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Metric label="Ann. Volatility" value={stats.annVol} fmt={fPct} />
-          <Metric label="Max Drawdown" value={stats.maxDd} fmt={fPct} color="text-fin-red" sub={`${stats.ddStart} → ${stats.ddEnd}`} />
-          <Metric label="Current Drawdown" value={stats.currDd} fmt={fPct} color={pcol(stats.currDd)} />
-          <Metric label="Trading Days" value={stats.tradingDays} />
+          <MetricCard label="Ann. Volatility" value={stats.annVol} fmt={fPct} />
+          <MetricCard label="Max Drawdown" value={stats.maxDd} fmt={fPct} color="text-fin-red" sub={`${stats.ddStart} → ${stats.ddEnd}`} />
+          <MetricCard label="Current Drawdown" value={stats.currDd} fmt={fPct} color={pcol(stats.currDd)} />
+          <MetricCard label="Trading Days" value={stats.tradingDays} />
         </div>
       </div>
 
       <div>
         <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">Risk-Adjusted</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Metric label="Sharpe Ratio" value={stats.sharpe} fmt={fNum} sub="Rf = 0%" />
-          <Metric label="Sortino Ratio" value={stats.sortino} fmt={fNum} sub="Downside deviation" />
-          <Metric label="Calmar Ratio" value={stats.calmar} fmt={fNum} sub="Return / MaxDD" />
-          <Metric label="Profit Factor" value={stats.profitFactor} fmt={fNum} />
+          <MetricCard label="Sharpe Ratio" value={stats.sharpe} fmt={fNum} sub="Rf = 0%" />
+          <MetricCard label="Sortino Ratio" value={stats.sortino} fmt={fNum} sub="Downside deviation" />
+          <MetricCard label="Calmar Ratio" value={stats.calmar} fmt={fNum} sub="Return / MaxDD" />
+          <MetricCard label="Profit Factor" value={stats.profitFactor} fmt={fNum} />
         </div>
       </div>
 
       <div>
         <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">Win / Loss</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Metric label="Win Rate" value={stats.winRate} fmt={fPct} />
-          <Metric label="Up Days" value={stats.upDays} />
-          <Metric label="Avg Win" value={stats.avgWin} fmt={fPct} color="text-fin-green" />
-          <Metric label="Avg Loss" value={stats.avgLoss} fmt={fPct} color="text-fin-red" />
+          <MetricCard label="Win Rate" value={stats.winRate} fmt={fPct} />
+          <MetricCard label="Up Days" value={stats.upDays} />
+          <MetricCard label="Avg Win" value={stats.avgWin} fmt={fPct} color="text-fin-green" />
+          <MetricCard label="Avg Loss" value={stats.avgLoss} fmt={fPct} color="text-fin-red" />
         </div>
       </div>
 
@@ -311,10 +313,10 @@ function AdvancedStats({ metrics: _metrics, snaps, benchmarks }: AdvancedStatsPr
         <div>
           <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">vs SPY</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Metric label="Beta" value={stats.beta} fmt={fNum} />
-            <Metric label="Correlation" value={stats.correlation} fmt={fNum} />
-            <Metric label="Alpha (ann.)" value={stats.alphaAnn} fmt={fPct} color={pcol(stats.alphaAnn)} />
-            <Metric label="Info Ratio" value={stats.infoRatio} fmt={fNum} sub={`TE: ${stats.trackingError?.toFixed(2)}%`} />
+            <MetricCard label="Beta" value={stats.beta} fmt={fNum} />
+            <MetricCard label="Correlation" value={stats.correlation} fmt={fNum} />
+            <MetricCard label="Alpha (ann.)" value={stats.alphaAnn} fmt={fPct} color={pcol(stats.alphaAnn)} />
+            <MetricCard label="Info Ratio" value={stats.infoRatio} fmt={fNum} sub={`TE: ${stats.trackingError?.toFixed(2)}%`} />
           </div>
         </div>
       )}
@@ -334,14 +336,13 @@ export default function PerformancePage() {
   const [selectedBenchmarks, setSelectedBenchmarks] = useState<string[]>(['SPY']);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  if (loading) return <div className="flex items-center justify-center h-screen text-text-secondary">Loading…</div>;
-  if (error || !data) return <div className="flex items-center justify-center h-screen text-fin-red">{error}</div>;
-
-  const { portfolio, positions, benchmarks, calculated: metrics } = data;
-  const snaps = portfolio.snapshots || [];
+  const positions = useMemo(() => data?.positions ?? [], [data]);
+  const benchmarks = useMemo(() => data?.benchmarks ?? {}, [data]);
+  const metrics = data?.calculated;
+  const snaps = useMemo(() => data?.portfolio?.snapshots ?? [], [data]);
   const latestNav = snaps.length ? snaps[snaps.length - 1].nav : 100;
   const dailyRet = dayReturn(snaps);
-  const availBenchmarks = Object.keys(benchmarks);
+  const availBenchmarks = useMemo(() => Object.keys(benchmarks), [benchmarks]);
 
   const chartData = useMemo<PerfChartPoint[]>(() => {
     const snapMap: Record<string, number | null> = {};
@@ -383,6 +384,9 @@ export default function PerformancePage() {
       return row;
     });
   }, [snaps, benchmarks, showBenchmarks, selectedBenchmarks]);
+
+  if (loading) return <div className="flex items-center justify-center h-screen text-text-secondary">Loading…</div>;
+  if (error || !data || !metrics) return <div className="flex items-center justify-center h-screen text-fin-red">{error || 'Failed to load'}</div>;
 
   const toggleBenchmark = (b: string) => {
     setSelectedBenchmarks(prev =>

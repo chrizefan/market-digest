@@ -38,17 +38,19 @@ export default function PortfolioPage() {
   const { data, loading, error } = useDashboard();
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
 
-  if (loading) return <div className="flex items-center justify-center h-screen text-text-secondary">Loading…</div>;
-  if (error || !data) return <div className="flex items-center justify-center h-screen text-fin-red">{error}</div>;
-
-  const { positions, ratios, calculated: metrics } = data;
+  const positions = useMemo(() => data?.positions ?? [], [data]);
+  const ratios = useMemo(() => data?.ratios ?? [], [data]);
+  const metrics = data?.calculated;
 
   const pieData = useMemo<AllocationDatum[]>(() => {
     const slices: AllocationDatum[] = positions.map(p => ({ name: p.ticker, value: p.weight_actual ?? 0 }));
     ratios.forEach(r => slices.push({ name: `${r.long_ticker}/${r.short_ticker}`, value: r.net_weight ?? 0 }));
-    if ((metrics.cash_pct ?? 0) > 0) slices.push({ name: 'CASH', value: metrics.cash_pct ?? 0 });
+    if ((metrics?.cash_pct ?? 0) > 0) slices.push({ name: 'CASH', value: metrics?.cash_pct ?? 0 });
     return slices;
-  }, [positions, ratios, metrics.cash_pct]);
+  }, [positions, ratios, metrics?.cash_pct]);
+
+  if (loading) return <div className="flex items-center justify-center h-screen text-text-secondary">Loading…</div>;
+  if (error || !data || !metrics) return <div className="flex items-center justify-center h-screen text-fin-red">{error || 'Failed to load'}</div>;
 
   return (
     <>
