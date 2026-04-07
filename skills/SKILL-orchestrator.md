@@ -69,14 +69,18 @@ Then load the following. Do NOT summarize to the user — just internalize:
 There are three data sources in priority order:
 
 **Option A — Supabase `price_technicals` (preferred — zero-cost, no scripts needed)**
-Check if today's indicators are already loaded by the 6 PM ET GitHub Actions workflow:
+Check if the GitHub Actions workflow has run recently (fires at 6 PM ET every trading day):
 ```sql
 SELECT MAX(date) AS latest_date, COUNT(DISTINCT ticker) AS tickers
 FROM price_technicals;
 ```
-If `latest_date` = today, the full 35-indicator dataset for all 56 tickers is available.
-Query via `mcp_supabase_execute_sql`.  See `skills/SKILL-data-fetch.md` for example queries and
-column reference.  Announce to the user: "Supabase data layer confirmed — {date}, {n} tickers."
+The data is **current** if `latest_date` is within the last 3 calendar days — this covers
+weekend gaps (Monday morning sees Friday close) and US market holidays like Good Friday.
+For morning digest runs, `latest_date` will be the prior trading day's close, never today.
+If data is current, query `price_technicals` directly via `mcp_supabase_execute_sql` for all
+35 indicators across all 56 tickers at zero cost.  See `skills/SKILL-data-fetch.md` for example
+queries and column reference.  Announce: "Supabase data layer confirmed — {date}, {n} tickers."
+If `latest_date` is 4+ days old, the workflow may have failed — fall back to Option B.
 
 **Option B — Local scripts (richest output, requires Python + yfinance)**
 If Supabase is stale or `quotes.json` / `macro.json` are needed for downstream skills that

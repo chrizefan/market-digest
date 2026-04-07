@@ -139,8 +139,11 @@ ORDER BY rsi_14;
 ```
 
 **When to use Supabase vs local scripts:**
-- **Supabase first**: If the workflow ran today (`MAX(date)` = today), query Supabase — no scripts needed.
-- **Local scripts fallback**: If `MAX(date)` < today (workflow hasn't run, holiday, failure), run `./scripts/fetch-market-data.sh`.
+- **Supabase first**: If `MAX(date)` is within the last 3 calendar days (covers weekends and
+  US market holidays — e.g. Monday morning will see Friday's close as latest_date), query
+  Supabase — no scripts needed.
+- **Local scripts fallback**: If `MAX(date)` is 4+ calendar days old (workflow failed or
+  hasn't been configured), run `./scripts/fetch-market-data.sh`.
 - **MCP fallback**: If scripts are unavailable (sandbox), follow `SKILL-mcp-data-fetch.md`.
 
 ---

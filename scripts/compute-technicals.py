@@ -136,11 +136,20 @@ def compute_indicators(df: pd.DataFrame) -> pd.DataFrame:
     atr_pct = (atr_14 / close * 100).round(4)
 
     bb_df       = ta.bbands(close, length=20, std=2)
-    bb_upper    = bb_df.get("BBU_20_2.0")  if bb_df is not None else None
-    bb_middle   = bb_df.get("BBM_20_2.0")  if bb_df is not None else None
-    bb_lower    = bb_df.get("BBL_20_2.0")  if bb_df is not None else None
-    bb_pct_b    = bb_df.get("BBP_20_2.0")  if bb_df is not None else None
-    bb_bandwidth = bb_df.get("BBB_20_2.0") if bb_df is not None else None
+    # Column names vary by pandas_ta version: try both "BBU_20_2.0" and "BBU_20_2.0_2.0"
+    if bb_df is not None:
+        _bbu_key  = next((c for c in bb_df.columns if c.startswith("BBU_")), None)
+        _bbm_key  = next((c for c in bb_df.columns if c.startswith("BBM_")), None)
+        _bbl_key  = next((c for c in bb_df.columns if c.startswith("BBL_")), None)
+        _bbp_key  = next((c for c in bb_df.columns if c.startswith("BBP_")), None)
+        _bbb_key  = next((c for c in bb_df.columns if c.startswith("BBB_")), None)
+        bb_upper    = bb_df[_bbu_key]  if _bbu_key  else None
+        bb_middle   = bb_df[_bbm_key]  if _bbm_key  else None
+        bb_lower    = bb_df[_bbl_key]  if _bbl_key  else None
+        bb_pct_b    = bb_df[_bbp_key]  if _bbp_key  else None
+        bb_bandwidth = bb_df[_bbb_key] if _bbb_key  else None
+    else:
+        bb_upper = bb_middle = bb_lower = bb_pct_b = bb_bandwidth = None
 
     # 21-day realized volatility: annualized std of log returns (%)
     log_ret  = np.log(close / close.shift(1))

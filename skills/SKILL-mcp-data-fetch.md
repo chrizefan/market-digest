@@ -49,7 +49,9 @@ SELECT MAX(date) AS latest_date, COUNT(DISTINCT ticker) AS tickers
 FROM price_technicals;
 ```
 
-**If `latest_date` = today**: All indicators are already available at zero cost.
+**If `latest_date` is within the last 3 calendar days**: All indicators are already available
+at zero cost. For morning digest runs, `latest_date` will always be the prior trading day's
+close (not today) — this is expected and correct.  A Monday morning digest sees Friday's close.
 - Query `price_technicals` directly instead of calling Alpha Vantage for RSI/MACD/SMA/EMA.
 - You still need Alpha Vantage for **current prices** (not in `price_technicals`), or check
   `price_history` for yesterday's close: `SELECT * FROM price_history WHERE date = MAX(date) ...`
