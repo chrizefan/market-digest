@@ -13,6 +13,7 @@ Usage:
     python3 scripts/fetch-macro.py 2026-04-06       # specific date
 """
 
+import argparse
 import json
 import sys
 import time
@@ -457,7 +458,16 @@ def write_summary_md(yield_data: dict, spreads: dict, inversions: list,
 # ── main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    target_date = sys.argv[1] if len(sys.argv) > 1 else date.today().strftime("%Y-%m-%d")
+    parser = argparse.ArgumentParser(
+        description="fetch-macro.py — Systematic macro data snapshot (yield curve, VIX, FX, commodities, crypto)",
+        epilog="Uses US Treasury public XML API for yield curve; yfinance for everything else."
+    )
+    parser.add_argument(
+        "date", nargs="?", default=date.today().strftime("%Y-%m-%d"),
+        metavar="YYYY-MM-DD", help="Target date (default: today)"
+    )
+    args = parser.parse_args()
+    target_date = args.date
     fetched_at = datetime.now().strftime("%Y-%m-%d %H:%M ET")
 
     out_dir = ROOT / "outputs" / "daily" / target_date / "data"

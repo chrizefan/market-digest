@@ -14,7 +14,7 @@ DATE=$(date +%Y-%m-%d)
 SEGMENT=${1:-""}
 MODE_FLAG=${2:-""}
 
-if [ -z "$SEGMENT" ] || [[ "$SEGMENT" == '--help' || "$SEGMENT" == '-h' ]]; then
+if [[ "$SEGMENT" == '--help' || "$SEGMENT" == '-h' ]]; then
   echo "Usage: ./scripts/run-segment.sh [segment-name] [--delta]"
   echo ""
   echo "Available segments:"
@@ -26,6 +26,11 @@ if [ -z "$SEGMENT" ] || [[ "$SEGMENT" == '--help' || "$SEGMENT" == '-h' ]]; then
   echo ""
   echo "Flags:"
   echo "  --delta       Force delta mode (compare against baseline, only write if changed)"
+  exit 0
+fi
+
+if [ -z "$SEGMENT" ]; then
+  echo "Error: segment name required. Run with --help for usage."
   exit 1
 fi
 

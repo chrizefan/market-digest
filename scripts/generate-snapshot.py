@@ -12,6 +12,7 @@ NOTE: If snapshot.json already exists and has a populated 'regime' key (written
 directly by the AI in Phase 7), this script returns it unchanged unless --force
 is given. Regex parsing is a fallback for legacy/missing files only.
 """
+import argparse
 import json, re, sys, os
 from pathlib import Path
 from datetime import datetime
@@ -361,13 +362,30 @@ def generate_snapshot(day_dir, pj_positions, force=False):
 
 def main():
     pj_positions, _ = load_portfolio_json()
-    args = sys.argv[1:]
-    force = "--force" in args
-    args = [a for a in args if a != "--force"]
 
-    if args and args[0] == "--validate":
+    parser = argparse.ArgumentParser(
+        description="generate-snapshot.py — Generate snapshot.json sidecar from DIGEST.md + portfolio.json",
+        epilog="Without arguments, processes the latest day folder."
+    )
+    parser.add_argument(
+        "date", nargs="?", metavar="YYYY-MM-DD",
+        help="Target date folder (default: latest)"
+    )
+    parser.add_argument("--all", action="store_true", help="Process all day folders")
+    parser.add_argument(
+        "--validate", action="store_true",
+        help="Validate existing snapshot.json files against schema expectations"
+    )
+    parser.add_argument(
+        "--force", action="store_true",
+        help="Re-parse even if snapshot.json already exists (overrides regime guard)"
+    )
+    args = parser.parse_args()
+    force = args.force
+
+    if args.validate:
         # Validate all existing snapshot.json files against schema expectations
-        target = args[1] if len(args) > 1 else None
+        target = args.date
         day_dirs = []
         if target and re.match(r"\d{4}-\d{2}-\d{2}", target):
             day_dirs = [DAILY_DIR / target]
@@ -392,7 +410,7 @@ def main():
         print(f"\nValidation: {ok} OK, {err} errors, {skipped} skipped (no snapshot.json)")
         sys.exit(1 if err else 0)
 
-    elif args and args[0] == "--all":
+    elif args.all:
         # Process all day folders
         count = 0
         for day_dir in sorted(DAILY_DIR.iterdir()):
@@ -403,15 +421,15 @@ def main():
                     count += 1
         print(f"\nGenerated {count} snapshot.json files")
 
-    elif args and re.match(r"\d{4}-\d{2}-\d{2}", args[0]):
+    elif args.date and re.match(r"\d{4}-\d{2}-\d{2}", args.date):
         # Specific date
-        day_dir = DAILY_DIR / args[0]
+        day_dir = DAILY_DIR / args.date
         if not day_dir.exists():
             print(f"❌ Folder not found: {day_dir}")
             sys.exit(1)
         snap = generate_snapshot(day_dir, pj_positions, force=force)
         if snap:
-            print(f"✅ {args[0]}: {len(snap['positions'])} positions, {len(snap['theses'])} theses")
+            print(f"✅ {args.date}: {len(snap['positions'])} positions, {len(snap['theses'])} theses")
             print(json.dumps(snap, indent=2)[:2000])
         else:
             print(f"❌ No DIGEST.md in {day_dir}")

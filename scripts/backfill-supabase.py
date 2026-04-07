@@ -6,6 +6,7 @@ Usage:
   export SUPABASE_SERVICE_KEY=eyJ...
   python scripts/backfill-supabase.py
 """
+import argparse
 import sys, os
 from pathlib import Path
 
@@ -15,6 +16,16 @@ import update_tearsheet as mod
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="backfill-supabase.py — One-time backfill of all daily data to Supabase",
+        epilog="Requires SUPABASE_URL and SUPABASE_SERVICE_KEY environment variables."
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true",
+        help="Parse and print what would be pushed without writing to Supabase"
+    )
+    cli_args = parser.parse_args()
+
     if not mod.supabase_configured():
         print("❌ Supabase not configured. Set SUPABASE_URL and SUPABASE_SERVICE_KEY env vars.")
         sys.exit(1)
@@ -51,9 +62,13 @@ def main():
             "total_invested": 0,
         }
 
+    if cli_args.dry_run:
+        print(f"   [dry-run] Would push {len(parsed_digests)} digests — skipping Supabase write")
+        print("✅ Dry run complete!")
+        return
+
     mod.push_to_supabase(parsed_digests, docs, history, b_hist, metrics_row, pj_positions)
     print("✅ Backfill complete!")
-
 
 if __name__ == "__main__":
     main()

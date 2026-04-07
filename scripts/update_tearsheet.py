@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import json, sys, re, os
 from datetime import datetime
 from pathlib import Path
@@ -1161,6 +1162,16 @@ def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_position
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="update_tearsheet.py — Parse daily digests and push portfolio data to Supabase",
+        epilog="By default writes to Supabase only. Use --json to also emit the static dashboard-data.json."
+    )
+    parser.add_argument(
+        "--json", action="store_true",
+        help="Also write static frontend/public/dashboard-data.json (legacy debugging fallback)"
+    )
+    cli_args = parser.parse_args()
+
     print("📊 Market Digest — Dynamic Backend Parser v3")
     if not _HAS_YFINANCE:
         print("   ⚠️  yfinance not available — using docs-only + prefetched-data mode")
@@ -1391,7 +1402,7 @@ def main():
     }
     
     # Write static JSON only when explicitly requested (legacy fallback / debugging)
-    if "--json" in sys.argv:
+    if cli_args.json:
         OUTPUT_JSON.parent.mkdir(parents=True, exist_ok=True)
         with open(OUTPUT_JSON, "w", encoding="utf-8") as f:
             json.dump(dashboard_data, f, ensure_ascii=False)
