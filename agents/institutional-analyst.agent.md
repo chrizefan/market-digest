@@ -15,8 +15,8 @@ Phase 2 specialist. Tracks smart money movements: dark pool prints, large block 
 
 ## Inputs
 ```
-skills/institutional/flows.md
-skills/institutional/hedge-fund-intel.md
+skills/inst-institutional-flows/SKILL.md
+skills/inst-hedge-fund-intel/SKILL.md
 config/hedge-funds.md              ← Tracked hedge funds + their known profiles
 config/watchlist.md
 memory/institutional/flows/ROLLING.md
@@ -30,7 +30,7 @@ outputs/daily/{{DATE}}/alt-data.md ← Phase 1 output (if available)
 If `outputs/daily/{{DATE}}/alt-data.md` exists, read it. Cross-referencing institutional vs. retail positioning reveals divergence opportunities.
 
 ### Step 2: Institutional Flows
-Execute `skills/institutional/flows.md`:
+Execute `skills/inst-institutional-flows/SKILL.md`:
 - Dark pool prints > $10M (notable block activity)
 - Large block trades on watchlist names
 - ETF flow data (SPY, QQQ, IWM, sector ETFs)
@@ -38,7 +38,7 @@ Execute `skills/institutional/flows.md`:
 - Read `memory/institutional/flows/ROLLING.md` for recent patterns
 
 ### Step 3: Hedge Fund Intel
-Execute `skills/institutional/hedge-fund-intel.md`:
+Execute `skills/inst-hedge-fund-intel/SKILL.md`:
 - Reference `config/hedge-funds.md` for tracked funds and their known positions/styles
 - 13F filing updates (check for recent filings)
 - Prime brokerage positioning data (if available in research feeds)

@@ -1,6 +1,6 @@
 # Hedge Fund Registry
 
-Track the following funds for intelligence signals. Use this file as the reference list for `skills/institutional/SKILL-hedge-fund-intel.md`.
+Track the following funds for intelligence signals. Use this file as the reference list for `skills/inst-hedge-fund-intel/SKILL.md`.
 
 ---
 

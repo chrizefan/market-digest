@@ -11,16 +11,16 @@ A daily market intelligence system producing structured research across equities
 ## 7-Phase Pipeline
 | Phase | Name | Skill File | Reads From |
 |-------|------|-----------|------------|
-| 1 | Alternative Data | `SKILL-premarket-pulse.md` + alt-data skills | External feeds |
-| 2 | Institutional Intel | `skills/institutional/` | Phase 1 outputs |
-| 3 | Macro Regime | `SKILL-macro.md` | Phases 1-2 + memory |
+| 1 | Alternative Data | `skills/premarket-pulse/SKILL.md` + alt-data skills | External feeds |
+| 2 | Institutional Intel | `skills/inst-institutional-flows/SKILL.md` + `skills/inst-hedge-fund-intel/SKILL.md` | Phase 1 outputs |
+| 3 | Macro Regime | `skills/macro/SKILL.md` | Phases 1-2 + memory |
 | 4 | Asset Classes | bonds/commodities/forex/crypto/intl skills | Phase 3 macro |
-| 5 | Equities + Sectors | `SKILL-equity.md` + 11 sector skills | Phases 3-4 |
-| 6 | Earnings & Events | `SKILL-earnings.md` | Phases 3-5 |
-| 7 | Synthesis | `SKILL-digest.md` | All phases |
+| 5 | Equities + Sectors | `skills/equity/SKILL.md` + 11 sector skills | Phases 3-4 |
+| 6 | Earnings & Events | `skills/earnings/SKILL.md` | Phases 3-5 |
+| 7 | Synthesis | `skills/digest/SKILL.md` | All phases |
 
 ## Critical Files
-- `skills/SKILL-orchestrator.md` — read this FIRST for any full session
+- `skills/orchestrator/SKILL.md` — read this FIRST for any full session
 - `config/watchlist.md` — tracked assets
 - `config/preferences.md` — trading style + active theses
 - `memory/BIAS-TRACKER.md` — daily cross-asset bias (14-column table)

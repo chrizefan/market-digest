@@ -12,6 +12,9 @@ import type {
   Doc,
   BenchmarkHistoryMap,
 } from './types';
+import { renderDigestMarkdownFromSnapshot, type DigestSnapshot } from './render-digest-from-snapshot';
+import { renderDocumentMarkdownFromPayload } from './render-document-from-payload';
+import { DASHBOARD_BENCHMARK_TICKERS } from './benchmark-tickers';
 
 type SB = SupabaseClient<Database>;
 
@@ -59,21 +62,36 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     supabase.from('positions').select('*').order('date', { ascending: false }).limit(50),
     supabase.from('theses').select('*').order('date', { ascending: false }).limit(50),
     supabase.from('nav_history').select('*').order('date', { ascending: true }),
-    supabase.from('benchmark_history').select('*').order('date', { ascending: true }),
+    supabase
+      .from('price_history')
+      .select('date, ticker, close')
+      .in('ticker', [...DASHBOARD_BENCHMARK_TICKERS])
+      .order('date', { ascending: true }),
     supabase.from('portfolio_metrics').select('*').order('date', { ascending: false }).limit(1).single(),
     supabase.from('documents')
-      .select('id, date, title, doc_type, phase, category, segment, sector, run_type, file_path')
+      .select('id, date, title, doc_type, phase, category, segment, sector, run_type, document_key')
       .order('date', { ascending: false })
       .limit(500),
   ]);
+
+  if (docsRes.error) {
+    console.error('Supabase documents query:', docsRes.error);
+  }
+  if (benchRes.error) {
+    console.error('Supabase price_history (benchmarks) query:', benchRes.error);
+  }
 
   const snapshot: TableRow<'daily_snapshots'> = snapshotRes.data ?? ({} as TableRow<'daily_snapshots'>);
   const allPositions: TableRow<'positions'>[] = positionsRes.data ?? [];
   const allTheses: TableRow<'theses'>[] = thesesRes.data ?? [];
   const navHistory: TableRow<'nav_history'>[] = navRes.data ?? [];
-  const benchRows: TableRow<'benchmark_history'>[] = benchRes.data ?? [];
+  const benchRows: Pick<TableRow<'price_history'>, 'date' | 'ticker' | 'close'>[] =
+    benchRes.data ?? [];
   const metrics: TableRow<'portfolio_metrics'> = metricsRes.data ?? ({} as TableRow<'portfolio_metrics'>);
-  const rawDocs: Pick<TableRow<'documents'>, 'id' | 'date' | 'title' | 'doc_type' | 'phase' | 'category' | 'segment' | 'sector' | 'run_type' | 'file_path'>[] = docsRes.data ?? [];
+  const rawDocs: Pick<
+    TableRow<'documents'>,
+    'id' | 'date' | 'title' | 'doc_type' | 'phase' | 'category' | 'segment' | 'sector' | 'run_type' | 'document_key'
+  >[] = docsRes.data ?? [];
 
   const latestPosDate = allPositions.length ? allPositions[0].date : null;
   const currentPositions = latestPosDate
@@ -100,7 +118,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     if (!benchmarks[row.ticker]) {
       benchmarks[row.ticker] = { current: null, history: [] };
     }
-    benchmarks[row.ticker].history.push({ date: row.date, price: Number(row.price) });
+    benchmarks[row.ticker].history.push({ date: row.date, price: Number(row.close) });
   }
   for (const bData of Object.values(benchmarks)) {
     if (bData.history.length) {
@@ -126,6 +144,14 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     category: p.category ?? '',
     pm_notes: p.pm_notes ?? '',
     stats: {},
+    unrealized_pnl_pct:
+      p.unrealized_pnl_pct != null ? Number(p.unrealized_pnl_pct) : null,
+    day_change_pct: p.day_change_pct != null ? Number(p.day_change_pct) : null,
+    since_entry_return_pct:
+      p.since_entry_return_pct != null ? Number(p.since_entry_return_pct) : null,
+    contribution_pct:
+      p.contribution_pct != null ? Number(p.contribution_pct) : null,
+    metrics_as_of: p.metrics_as_of ?? null,
   }));
 
   const theses: Thesis[] = currentTheses.map((t) => ({
@@ -147,7 +173,8 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     segment: d.segment,
     sector: d.sector,
     runType: d.run_type,
-    path: d.file_path,
+    path: d.document_key,
+    filename: d.document_key?.split('/').pop() || d.document_key,
   }));
 
   return {
@@ -201,6 +228,61 @@ export async function getFullDashboardData(): Promise<DashboardData> {
       alpha: metrics.alpha != null ? Number(metrics.alpha) : 0,
     },
   };
+}
+
+export async function getDocumentContentById(
+  id: string
+): Promise<Pick<TableRow<'documents'>, 'id' | 'content'>> {
+  if (!isSupabaseConfigured() || !supabase) {
+    throw new Error(
+      'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
+    );
+  }
+
+  type DocPick = Pick<
+    TableRow<'documents'>,
+    'id' | 'content' | 'payload' | 'date' | 'document_key'
+  >;
+
+  const { data: row, error } = await supabase
+    .from('documents')
+    .select('id, content, payload, date, document_key')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!row) throw new Error('Document not found');
+
+  const doc = row as DocPick;
+
+  let md = doc.content?.trim() ? doc.content : '';
+
+  if (!md && doc.payload != null) {
+    md = renderDocumentMarkdownFromPayload(doc.payload) || md;
+  }
+
+  if (!md && doc.document_key === 'digest') {
+    const { data: snapRow } = await supabase
+      .from('daily_snapshots')
+      .select('digest_markdown, snapshot')
+      .eq('date', doc.date)
+      .maybeSingle();
+    const snap = snapRow as {
+      digest_markdown?: string | null;
+      snapshot?: TableRow<'daily_snapshots'>['snapshot'];
+    } | null;
+    if (snap?.digest_markdown?.trim()) {
+      md = snap.digest_markdown;
+    } else if (snap?.snapshot != null && typeof snap.snapshot === 'object' && !Array.isArray(snap.snapshot)) {
+      try {
+        md = renderDigestMarkdownFromSnapshot(snap.snapshot as DigestSnapshot);
+      } catch {
+        /* noop */
+      }
+    }
+  }
+
+  return { id: doc.id, content: md || '_No content available._' };
 }
 
 export async function getDailySnapshots(

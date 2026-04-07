@@ -18,11 +18,11 @@ CTA positioning and retail sentiment data reveal WHAT the market IS doing before
 
 ## Inputs
 ```
-skills/alternative-data/sentiment.md
-skills/alternative-data/cta-positioning.md
-skills/alternative-data/options-flow.md
-skills/alternative-data/politician-tracker.md
-skills/SKILL-premarket-pulse.md
+skills/alt-sentiment-news/SKILL.md
+skills/alt-cta-positioning/SKILL.md
+skills/alt-options-derivatives/SKILL.md
+skills/alt-politician-signals/SKILL.md
+skills/premarket-pulse/SKILL.md
 config/watchlist.md
 outputs/daily/[prior-date]/alt-data.md  ← Prior alt-data output for trend continuity (if available)
 ```
@@ -30,32 +30,32 @@ outputs/daily/[prior-date]/alt-data.md  ← Prior alt-data output for trend cont
 ## Workflow
 
 ### Step 1: Premarket Pulse
-Execute `skills/SKILL-premarket-pulse.md`
+Execute `skills/premarket-pulse/SKILL.md`
 - Futures, overnight action, key pre-market movers
 - Serves as context for all sub-analyses
 
 ### Step 2: Retail Sentiment
-Execute `skills/alternative-data/sentiment.md`
+Execute `skills/alt-sentiment-news/SKILL.md`
 - Fear/Greed Index
 - AAII Bull/Bear survey
 - Social media directional bias (Reddit/Twitter/Fintwit)
 - Compare to prior alt-data output for trend changes
 
 ### Step 3: CTA Positioning
-Execute `skills/alternative-data/cta-positioning.md`
+Execute `skills/alt-cta-positioning/SKILL.md`
 - Estimated CTA equity exposure (very long / long / neutral / short / very short)
 - Recent trend signal changes
 - Key trigger levels for position flips
 
 ### Step 4: Options Flow
-Execute `skills/alternative-data/options-flow.md`
+Execute `skills/alt-options-derivatives/SKILL.md`
 - Unusual options activity (UOA) flags
 - Put/call ratio
 - Gamma exposure (GEX) levels
 - Dealer hedging dynamics
 
 ### Step 5: Politician Tracker
-Execute `skills/alternative-data/politician-tracker.md`
+Execute `skills/alt-politician-signals/SKILL.md`
 - Recent congressional trade disclosures
 - Filter for large trades or high-profile members
 - Note any clustered buying/selling patterns

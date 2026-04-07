@@ -88,8 +88,8 @@ for SECTOR in technology healthcare energy financials consumer-staples consumer-
   fi
 done
 echo ""
-echo "Using template: templates/master-digest.md"
-echo "Write the complete synthesized DIGEST.md to: $DIGEST_FILE"
+echo "DB-first: produce snapshot JSON (templates/digest-snapshot-schema.json) and publish via scripts/materialize_snapshot.py"
+echo "Markdown digest is rendered from JSON and stored in Supabase documents."
 echo ""
 echo "Include all required sections from the template:"
 echo "- Market Regime Snapshot"

@@ -20,6 +20,8 @@ export interface Database {
           segment_biases: Json | null;
           actionable: string[] | null;
           risks: string[] | null;
+          snapshot?: Json | null;        // jsonb — full digest snapshot (DB-first)
+          digest_markdown?: string | null; // rendered digest for Library
           created_at: string | null;
         };
         Insert: Omit<Database['public']['Tables']['daily_snapshots']['Row'], 'id' | 'created_at'> & { id?: string; created_at?: string };
@@ -33,13 +35,17 @@ export interface Database {
           name: string | null;
           category: string | null;
           weight_pct: number;
-          action: string | null;
           thesis_id: string | null;
           rationale: string | null;
           current_price: number | null;
           entry_price: number | null;
           entry_date: string | null;
           pm_notes: string | null;
+          unrealized_pnl_pct?: number | null;
+          day_change_pct?: number | null;
+          since_entry_return_pct?: number | null;
+          contribution_pct?: number | null;
+          metrics_as_of?: string | null;
         };
         Insert: Omit<Database['public']['Tables']['positions']['Row'], 'id'> & { id?: string };
         Update: Partial<Database['public']['Tables']['positions']['Insert']>;
@@ -66,6 +72,8 @@ export interface Database {
           event: 'OPEN' | 'EXIT' | 'REBALANCE' | 'HOLD';
           weight_pct: number | null;
           prev_weight_pct: number | null;
+          weight_change_pct?: number | null;
+          cumulative_return_since_event_pct?: number | null;
           price: number | null;
           thesis_id: string | null;
           reason: string | null;
@@ -85,8 +93,11 @@ export interface Database {
           segment: string | null;
           sector: string | null;
           run_type: string | null;
-          file_path: string;
+          /** Logical key within the run date (e.g. digest, sectors/energy); not a repo path. */
+          document_key: string;
           content: string | null;
+          /** Digest snapshot JSON when document_key is digest (optional elsewhere). */
+          payload: Json | null;
         };
         Insert: Omit<Database['public']['Tables']['documents']['Row'], 'id'> & { id?: string };
         Update: Partial<Database['public']['Tables']['documents']['Insert']>;
@@ -97,18 +108,10 @@ export interface Database {
           nav: number;
           cash_pct: number | null;
           invested_pct: number | null;
+          updated_at?: string | null;
         };
         Insert: Database['public']['Tables']['nav_history']['Row'];
         Update: Partial<Database['public']['Tables']['nav_history']['Row']>;
-      };
-      benchmark_history: {
-        Row: {
-          date: string;
-          ticker: string;
-          price: number;
-        };
-        Insert: Database['public']['Tables']['benchmark_history']['Row'];
-        Update: Partial<Database['public']['Tables']['benchmark_history']['Row']>;
       };
       portfolio_metrics: {
         Row: {
@@ -122,6 +125,8 @@ export interface Database {
           cash_pct: number | null;
           total_invested: number | null;
           generated_at: string | null;
+          computed_from?: string | null;
+          as_of_date?: string | null;
         };
         Insert: Omit<Database['public']['Tables']['portfolio_metrics']['Row'], 'id' | 'generated_at'> & { id?: string; generated_at?: string };
         Update: Partial<Database['public']['Tables']['portfolio_metrics']['Insert']>;

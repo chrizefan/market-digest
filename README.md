@@ -5,7 +5,7 @@ A daily market intelligence system with a 7-phase AI-orchestrated pipeline. Prod
 ## Quick Start
 
 ```bash
-./scripts/new-day.sh        # Create today's folder + print full digest prompt
+python3 scripts/run_db_first.py  # DB-first: publish JSON artifacts to Supabase
 ./scripts/status.sh         # Project health check
 ./scripts/git-commit.sh     # Commit all outputs
 ```

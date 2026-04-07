@@ -58,7 +58,7 @@ echo "[ Checking dependencies ]"
     echo "       Run: pip install -r requirements.txt  (or set DIGIQUANT_PYTHON=...)"
     echo ""
     echo "  💡 Sandbox/CI alternative: Use MCP-based data fetch instead."
-    echo "     Follow skills/SKILL-mcp-data-fetch.md to fetch data via FRED, Alpha Vantage,"
+    echo "     Follow skills/mcp-data-fetch/SKILL.md to fetch data via FRED, Alpha Vantage,"
     echo "     CoinGecko, and Frankfurter MCP tools."
     exit 1
 }
@@ -67,7 +67,7 @@ echo "[ Checking dependencies ]"
     echo "       Run: pip install pandas-ta  (or set DIGIQUANT_PYTHON=...)"
     echo ""
     echo "  💡 Sandbox/CI alternative: Use MCP-based data fetch instead."
-    echo "     Follow skills/SKILL-mcp-data-fetch.md"
+    echo "     Follow skills/mcp-data-fetch/SKILL.md"
     exit 1
 }
 "$PYTHON" -c "import requests" 2>/dev/null || {

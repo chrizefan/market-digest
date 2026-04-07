@@ -9,7 +9,7 @@ Named agents defined in `agents/`. Each agent is a specialized role with a defin
 
 **Role**: Drives the complete 7-phase daily pipeline. Reads all config and memory, delegates to sub-agents for each phase, synthesizes into DIGEST.md.
 
-**Skills used**: All skills via `SKILL-orchestrator.md`
+**Skills used**: All skills via `skills/orchestrator/SKILL.md`
 **Outputs**: All 22 daily files in `outputs/daily/YYYY-MM-DD/`
 **Memory updated**: All 23 ROLLING.md files + BIAS-TRACKER.md
 
@@ -22,7 +22,7 @@ Named agents defined in `agents/`. Each agent is a specialized role with a defin
 
 **Role**: Runs one or more sector analyses using the 11 sector skill files. Identifies relative strength, catalyst exposure, rotation signals, and watchlist names within the sector.
 
-**Skills used**: `skills/sectors/{sector}.md`, `SKILL-sector-rotation.md`, `SKILL-sector-heatmap.md`
+**Skills used**: `skills/sector-{sector}/SKILL.md`, `skills/sector-rotation/SKILL.md`, `skills/sector-heatmap/SKILL.md`
 **Outputs**: `outputs/daily/YYYY-MM-DD/sectors/{sector}.md`
 **Memory updated**: `memory/sectors/{sector}/ROLLING.md`
 
@@ -36,10 +36,10 @@ Named agents defined in `agents/`. Each agent is a specialized role with a defin
 **Role**: Runs Phase 1 of the pipeline — aggregates retail sentiment, CTA positioning signals, unusual options activity, and politician trade disclosures. Flags anomalous positioning before macro analysis.
 
 **Skills used**:
-- `skills/alternative-data/sentiment.md`
-- `skills/alternative-data/cta-positioning.md`
-- `skills/alternative-data/options-flow.md`
-- `skills/alternative-data/politician-tracker.md`
+- `skills/alt-sentiment-news/SKILL.md`
+- `skills/alt-cta-positioning/SKILL.md`
+- `skills/alt-options-derivatives/SKILL.md`
+- `skills/alt-politician-signals/SKILL.md`
 
 **Outputs**: `outputs/daily/YYYY-MM-DD/alt-data.md`
 **Memory updated**: `memory/alternative-data/*/ROLLING.md` (4 files)
@@ -54,8 +54,8 @@ Named agents defined in `agents/`. Each agent is a specialized role with a defin
 **Role**: Runs Phase 2 — analyzes institutional positioning changes, dark pool prints, large block trades, and known hedge fund portfolio shifts (based on `config/hedge-funds.md`).
 
 **Skills used**:
-- `skills/institutional/flows.md`
-- `skills/institutional/hedge-fund-intel.md`
+- `skills/inst-institutional-flows/SKILL.md`
+- `skills/inst-hedge-fund-intel/SKILL.md`
 
 **Outputs**: `outputs/daily/YYYY-MM-DD/institutional.md`
 **Memory updated**: `memory/institutional/flows/ROLLING.md`, `memory/institutional/hedge-fund/ROLLING.md`
@@ -69,7 +69,7 @@ Named agents defined in `agents/`. Each agent is a specialized role with a defin
 
 **Role**: Ad-hoc research agent for ticker or topic deep dives. Reads all memory files for existing context on the subject, synthesizes a structured research note, and optionally writes to `outputs/deep-dives/`.
 
-**Skills used**: `SKILL-deep-dive.md`, sector skills (contextual), memory search
+**Skills used**: `skills/deep-dive/SKILL.md`, sector skills (contextual), memory search
 **Outputs**: `outputs/deep-dives/{ticker}-{date}.md` (optional)
 **Memory updated**: Sector or equity ROLLING.md (contextual)
 
@@ -82,7 +82,7 @@ Named agents defined in `agents/`. Each agent is a specialized role with a defin
 
 **Role**: Manages the portfolio thesis system. Reviews `memory/THESES.md` and `config/preferences.md` against current market evidence. Scores theses, flags those under threat, and manages lifecycle (building → confirmed → extended → exited).
 
-**Skills used**: `SKILL-thesis-tracker.md`, `SKILL-thesis.md`
+**Skills used**: `skills/thesis-tracker/SKILL.md`, `skills/thesis/SKILL.md`
 **Outputs**: Updates to `memory/THESES.md`, optional summary in session
 **Memory updated**: `memory/THESES.md` (special file — not ROLLING.md format)
 

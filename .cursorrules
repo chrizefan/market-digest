@@ -4,7 +4,7 @@
 A daily market intelligence repo using a 7-phase AI-orchestrated pipeline. Skill files (`skills/*.md`) are step-by-step instruction sets for AI agents. Memory files (`memory/*/ROLLING.md`) are append-only research logs.
 
 ## Core Architecture
-- `skills/SKILL-orchestrator.md` — master pipeline (read this first for context)
+- `skills/orchestrator/SKILL.md` — master pipeline (read this first for context)
 - `config/watchlist.md` + `config/preferences.md` — user configuration (read at session start)
 - `memory/BIAS-TRACKER.md` — daily cross-asset bias log (14 columns)
 - `outputs/daily/YYYY-MM-DD/` — one folder per day, 22 output files
@@ -29,9 +29,8 @@ Files in `memory/*/ROLLING.md` are APPEND-ONLY:
 - Search memory subdirs with `find memory/ -name "ROLLING.md"` not `memory/*/ROLLING.md`
 
 ## Output Rules
-- outputs/daily/ is AGENT-GENERATED — do not manually edit these files
-- New day folder: `outputs/daily/YYYY-MM-DD/` with `sectors/` subfolder
-- Master output: `outputs/daily/YYYY-MM-DD/DIGEST.md`
+- DB-first: Supabase is canonical; markdown is derived from JSON payloads.
+- Legacy outputs are archived under `archive/legacy-outputs/daily/` (read-only).
 
 ## Markdown Standards
 - Headings: `#` then `##` then `###` — never skip levels

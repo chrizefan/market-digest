@@ -1,6 +1,6 @@
 #!/bin/bash
-# run-daily.sh — Single-command daily pipeline launcher
-# Creates today's output folder (if needed) and prints the cowork prompt.
+# run-daily.sh — Legacy entrypoint (filesystem-first)
+# DB-first replacement: python3 scripts/run_db_first.py
 #
 # Usage:
 #   ./scripts/run-daily.sh            # Normal: auto-detect baseline vs delta
@@ -13,9 +13,10 @@
 set -e
 [[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
 
-DATE=$(date +%Y-%m-%d)
-DOW=$(date +%u)
-OUTPUT_DIR="outputs/daily/$DATE"
+echo "⚠️  Legacy script: scripts/run-daily.sh"
+echo "   Use DB-first entrypoint instead:"
+echo "   python3 scripts/run_db_first.py"
+exit 0
 FORCE_BASELINE=false
 DRY_RUN=false
 
@@ -99,9 +100,9 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Ready. Pipeline entry point:"
 echo ""
 if [ "$RUN_TYPE" = "baseline" ]; then
-  echo "  → skills/SKILL-weekly-baseline.md"
+  echo "  → skills/weekly-baseline/SKILL.md"
 else
-  echo "  → skills/SKILL-daily-delta.md"
+  echo "  → skills/daily-delta/SKILL.md"
 fi
 echo ""
 echo "  Phase validation:  ./scripts/validate-phase.sh <phase>"

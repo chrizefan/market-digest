@@ -96,15 +96,14 @@ if [ -n "$DELTA_FILES" ]; then
   done
   echo ""
 fi
-echo "Step 3 — Write the complete materialized digest:"
-echo "  Save to: $OUTPUT_DIR/DIGEST.md"
+echo "DB-first: materialize snapshot JSON and publish via scripts/materialize_snapshot.py"
 echo ""
 echo "Rules for materialization:"
 echo "  - Sections marked 'CHANGED' in a delta override the baseline"
 echo "  - Sections marked 'UNCHANGED' carry forward from baseline (or last delta that changed them)"
 echo "  - Update all date/timestamp headers to $TARGET_DATE"
 echo "  - The output must be a complete, self-contained DIGEST.md"
-echo "  - Must match the structure of templates/master-digest.md"
+echo "  - Must match the structure of templates/digest-snapshot-schema.json"
 echo "  - Must include: Market Regime, Alt Data, Institutional, Macro, Asset Classes,"
 echo "    Equities + Sectors, Thesis Tracker, Portfolio Positioning, Actionable Summary, Risk Radar"
 echo "=========================="

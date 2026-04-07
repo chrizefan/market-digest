@@ -10,13 +10,13 @@ A daily market intelligence system that orchestrates a 7-phase pipeline of AI re
 
 **Full daily digest:**
 ```
-Read skills/SKILL-orchestrator.md and run the full 7-phase pipeline.
+Read skills/orchestrator/SKILL.md and run the full pipeline.
 Today's date is YYYY-MM-DD. Output goes to outputs/daily/YYYY-MM-DD/
 ```
 
 **Single segment:**
 ```
-Read skills/SKILL-macro.md and produce today's macro analysis.
+Read skills/macro/SKILL.md and produce today's macro analysis.
 Date: YYYY-MM-DD. Write to outputs/daily/YYYY-MM-DD/macro.md
 Update memory/macro/ROLLING.md
 ```

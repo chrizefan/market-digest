@@ -25,10 +25,10 @@ Step-by-step procedures for every recurring workflow.
 **Manual prompt for full digest:**
 ```
 Today is YYYY-MM-DD.
-Read skills/SKILL-orchestrator.md and run the complete 7-phase pipeline.
+Read skills/orchestrator/SKILL.md and run the complete pipeline.
 Read config/watchlist.md and config/preferences.md first.
 Read all relevant memory/*/ROLLING.md files for prior context.
-Output all files to outputs/daily/YYYY-MM-DD/
+DB-first: publish to Supabase (no canonical outputs/daily writing). Legacy archive lives under `archive/legacy-outputs/daily/`.
 Update all memory files when complete.
 ```
 
@@ -37,7 +37,7 @@ Update all memory files when complete.
 ./scripts/git-commit.sh
 ```
 
-**Output**: 22 files in `outputs/daily/YYYY-MM-DD/` + updated memory
+**Output**: Supabase rows updated (daily_snapshots, documents, positions, theses, nav_history, portfolio_metrics) + updated memory
 
 ---
 
@@ -54,9 +54,9 @@ Run just one phase or segment without the full pipeline.
 
 **Manual prompt pattern:**
 ```
-Read skills/SKILL-{segment}.md and run the analysis for {DATE}.
+Read skills/{segment}/SKILL.md (or the appropriate skill package) and run the analysis for {DATE}.
 First read memory/{segment}/ROLLING.md for prior context.
-Write output to outputs/daily/{DATE}/{segment}.md
+Write JSON artifacts as needed and publish to Supabase (see RUNBOOK.md)
 Append findings to memory/{segment}/ROLLING.md
 ```
 
@@ -75,15 +75,15 @@ After running phases 1-6 manually or partially:
 
 **Manual synthesis prompt:**
 ```
-Read all files in outputs/daily/{DATE}/:
+If reviewing legacy output history, read files under archive: `archive/legacy-outputs/daily/{DATE}/`
 - alt-data.md, institutional.md, macro.md
 - bonds.md, commodities.md, forex.md, crypto.md, international.md
 - equities.md, all sectors/*.md, earnings.md
 
-Read templates/master-digest.md for the output template.
+Daily digest is DB-first: produce a digest snapshot JSON (schema: `templates/digest-snapshot-schema.json`) and publish via `scripts/materialize_snapshot.py`. Markdown is rendered from JSON.
 Read memory/BIAS-TRACKER.md for prior bias context.
 
-Synthesize into outputs/daily/{DATE}/DIGEST.md
+Synthesize into snapshot JSON and publish via `scripts/materialize_snapshot.py` (see RUNBOOK.md)
 Update memory/BIAS-TRACKER.md with today's row.
 ```
 
@@ -103,8 +103,8 @@ Update memory/BIAS-TRACKER.md with today's row.
 ```
 Read all DIGEST.md files from this week's outputs/daily/ folders.
 Read memory/BIAS-TRACKER.md for the week's bias history.
-Read templates/weekly-digest.md for the output format.
-Synthesize into outputs/weekly/{WEEK-OF-DATE}.md
+Write a weekly JSON artifact (schema: `templates/schemas/weekly-digest.schema.json`).
+Synthesize into `outputs/weekly/{YYYY}-W{WW}.json`
 Do NOT update memory files — this is read-only synthesis.
 ```
 
@@ -125,8 +125,8 @@ Do NOT update memory files — this is read-only synthesis.
 Read all outputs/weekly/ files from this month.
 Read memory/BIAS-TRACKER.md for the month's entries.
 Read each memory/*/ROLLING.md and summarize the month's key observations per domain.
-Read templates/monthly-digest.md for the output format.
-Write to outputs/monthly/{YYYY-MM}.md
+Write a monthly JSON artifact (schema: `templates/schemas/monthly-digest.schema.json`).
+Write to `outputs/monthly/{YYYY-MM}.json`
 ```
 
 ---
@@ -141,7 +141,7 @@ Write to outputs/monthly/{YYYY-MM}.md
 
 **Manual prompt:**
 ```
-Read SKILL-thesis.md.
+Read skills/thesis/SKILL.md.
 Build a new research thesis for: [TOPIC/TICKER/THEME]
 Read config/preferences.md for context on trading style.
 Read relevant memory/*/ROLLING.md files for existing research.
@@ -156,7 +156,7 @@ Append the completed thesis to memory/THESES.md with today's date.
 
 **Manual prompt:**
 ```
-Read SKILL-thesis-tracker.md.
+Read skills/thesis-tracker/SKILL.md.
 Read memory/THESES.md for all active theses.
 Read today's DIGEST.md or relevant segment outputs.
 Score each thesis: [Building | Confirmed | Extended | At Risk | Exited]
@@ -171,7 +171,7 @@ For ad-hoc in-depth research on a specific ticker or topic:
 
 **Prompt:**
 ```
-Read skills/SKILL-deep-dive.md.
+Read skills/deep-dive/SKILL.md.
 Run a deep dive on: {TICKER or TOPIC}
 Read memory/equity/ROLLING.md and relevant sector ROLLING.md for prior notes.
 Read config/watchlist.md to see if it's a tracked position.
@@ -253,7 +253,7 @@ CI/CD in `.github/workflows/deploy.yml` publishes the tearsheet on push to maste
 **If an output file is incomplete:**
 ```
 Read the existing partial file at outputs/daily/{DATE}/{segment}.md
-Continue from where it left off, following skills/SKILL-{segment}.md
+Continue from where it left off, following the appropriate `skills/{segment}/SKILL.md` (or segment-specific package).
 Do not restart from scratch — append to the file.
 ```
 

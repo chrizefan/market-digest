@@ -8,7 +8,7 @@ This repository is a **daily market intelligence system** with a 7-phase AI-orch
 
 ## Project Context
 
-- **Language**: Bash scripts + Markdown (skill files as instruction sets) + Python (tearsheet)
+- **Language**: Bash scripts + Markdown (skill files as instruction sets) + Python (tearsheet + DB-first publishers)
 - **Architecture**: Skill files (`skills/*.md`) are step-by-step instruction sets for AI agents
 - **Outputs**: `outputs/daily/YYYY-MM-DD/` folders (22 files per day)
 
@@ -16,12 +16,13 @@ This repository is a **daily market intelligence system** with a 7-phase AI-orch
 
 | File | Purpose |
 |------|---------|
-| `skills/SKILL-orchestrator.md` | Master 7-phase pipeline driver — read this first |
+| `skills/orchestrator/SKILL.md` | Master pipeline driver — read this first |
 | `config/watchlist.md` | Tracked assets — edit to customize |
 | `config/preferences.md` | Trading style + active theses |
 | `config/investment-profile.md` | Investor identity, horizon, risk, asset preferences |
-| `skills/SKILL-profile-setup.md` | Interactive wizard to configure investment-profile.md |
-| `templates/master-digest.md` | DIGEST.md output template |
+| `skills/profile-setup/SKILL.md` | Interactive wizard to configure investment-profile.md |
+| `templates/digest-snapshot-schema.json` | Canonical daily digest snapshot JSON schema |
+| `templates/schemas/*.schema.json` | Canonical schemas for weekly/monthly/delta/rebalance artifacts |
 | `scripts/new-day.sh` | Creates daily folder structure |
 | `scripts/validate-phase.sh` | Validates outputs after each pipeline phase |
 
@@ -29,7 +30,7 @@ This repository is a **daily market intelligence system** with a 7-phase AI-orch
 
 When editing or creating skill files in `skills/`:
 - Keep YAML frontmatter intact: `name:` and `description:` fields are routing keys
-- Match the output path format: `outputs/daily/{{DATE}}/{segment}.md`
+- Recurring artifacts are JSON-first; markdown is rendered from JSON.
 - Use `{{DATE}}` placeholder in output paths (replaced at runtime)
 
 ## Script Conventions

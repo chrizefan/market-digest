@@ -72,8 +72,18 @@ function PositionPnlTable({ positions }: PositionPnlTableProps) {
             {positions.map((p, i) => {
               const entry = p.entry_price;
               const curr = p.current_price;
-              const pnlPct = entry && curr && entry > 0 ? ((curr - entry) / entry) * 100 : null;
-              const contrib = pnlPct != null ? (pnlPct * (p.weight_actual || 0)) / 100 : null;
+              const pnlPct =
+                p.unrealized_pnl_pct != null && !Number.isNaN(p.unrealized_pnl_pct)
+                  ? p.unrealized_pnl_pct
+                  : entry && curr && entry > 0
+                    ? ((curr - entry) / entry) * 100
+                    : null;
+              const contrib =
+                p.contribution_pct != null && !Number.isNaN(p.contribution_pct)
+                  ? p.contribution_pct
+                  : pnlPct != null
+                    ? (pnlPct * (p.weight_actual || 0)) / 100
+                    : null;
               return (
                 <tr key={i} className="hover:bg-white/[0.02] transition-colors">
                   <td className="px-6 py-3 font-semibold">{p.ticker}</td>

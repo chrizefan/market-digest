@@ -14,7 +14,6 @@ export type PositionRow = TableRow<'positions'>;
 export type ThesisRow = TableRow<'theses'>;
 export type DocumentRow = TableRow<'documents'>;
 export type NavHistoryRow = TableRow<'nav_history'>;
-export type BenchmarkHistoryRow = TableRow<'benchmark_history'>;
 export type PortfolioMetricsRow = TableRow<'portfolio_metrics'>;
 
 // ---------------------------------------------------------------------------
@@ -35,6 +34,12 @@ export interface Position {
   category: string;
   pm_notes: string;
   stats: Record<string, unknown>;
+  /** Filled by refresh_performance_metrics.py after close (optional). */
+  unrealized_pnl_pct?: number | null;
+  day_change_pct?: number | null;
+  since_entry_return_pct?: number | null;
+  contribution_pct?: number | null;
+  metrics_as_of?: string | null;
 }
 
 /** Active investment thesis as returned to components. */

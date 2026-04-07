@@ -13,7 +13,7 @@ Ad-hoc research agent for deep dives on individual tickers, macroeconomic topics
 
 ## Inputs
 ```
-skills/SKILL-deep-dive.md                    ← Research framework
+skills/deep-dive/SKILL.md                    ← Research framework
 config/watchlist.md                          ← Is it a tracked position?
 config/investment-profile.md                 ← Trading style, risk tolerance
 outputs/daily/[latest-date]/DIGEST.md        ← Current thesis tracker + recent analysis
@@ -35,7 +35,7 @@ Summarize what the system already knows before adding new analysis.
 - Read the most recent sector output from `outputs/daily/[latest-date]/sectors/{sector}.md`
 
 ### Step 3: Execute Deep Dive
-Follow `skills/SKILL-deep-dive.md`:
+Follow `skills/deep-dive/SKILL.md`:
 - Business fundamentals (if equity)
 - Technical setup (price structure, key levels)
 - Upcoming catalysts (earnings, events, data)
@@ -92,7 +92,7 @@ Search all memory files and summarize existing notes. No need to write output.
 **Full deep dive:**
 ```
 Today is 2026-04-05.
-Read agents/research-assistant.agent.md and skills/SKILL-deep-dive.md.
+Read agents/research-assistant.agent.md and skills/deep-dive/SKILL.md.
 Run a full deep dive on NVDA.
 Search all memory for prior notes.
 Check config/watchlist.md for current position size.

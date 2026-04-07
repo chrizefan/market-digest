@@ -160,7 +160,7 @@ Data Layer Decision Tree:
   │             → VIX, DXY, FX pairs, commodity prices, crypto
   │             → Output: data/macro.json + data/macro-summary.md
   │
-  └── NO  → Follow skills/SKILL-mcp-data-fetch.md
+  └── NO  → Follow skills/mcp-data-fetch/SKILL.md
             │
             ├── MCP: FRED → yield curve, rates, economic indicators
             ├── MCP: Alpha Vantage → stock prices, earnings
@@ -678,7 +678,7 @@ PROPOSAL FORMAT:
   └── Impact: (expected improvement)
 
 LOCKED SECTIONS (cannot propose changes to):
-  ├── Output schema/structure (templates/master-digest.md)
+  ├── Output schema/structure (templates/digest-snapshot-schema.json)
   ├── Risk constraints (config/investment-profile.md §4)
   └── These guardrails themselves
 

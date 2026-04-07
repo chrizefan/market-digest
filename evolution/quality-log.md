@@ -61,8 +61,8 @@
 ### IP-005 (2026-04-03): MCP-Based Data Fetch for Sandbox Environments
 **Problem**: `fetch-market-data.sh` requires yfinance + pandas-ta, which are unavailable in sandboxed agent environments. This blocks the Data Layer Check in the orchestrator pipeline.
 **Resolution** (2026-04-03):
-1. Created `skills/SKILL-mcp-data-fetch.md` — comprehensive skill for fetching market data via MCP tools (FRED, Alpha Vantage, CoinGecko, Frankfurter)
-2. Updated `skills/SKILL-orchestrator.md` Data Layer Check — now tries local scripts first, falls back to MCP skill if scripts fail
-3. Updated `skills/SKILL-data-fetch.md` — documents MCP as sandbox/CI alternative
+1. Created `skills/mcp-data-fetch/SKILL.md` — comprehensive skill for fetching market data via MCP tools (FRED, Alpha Vantage, CoinGecko, Frankfurter)
+2. Updated `skills/orchestrator/SKILL.md` Data Layer Check — now tries local scripts first, falls back to MCP skill if scripts fail
+3. Updated `skills/data-fetch/SKILL.md` — documents MCP as sandbox/CI alternative
 4. Updated `scripts/fetch-market-data.sh` — prints MCP guidance instead of just failing when yfinance is missing
 **Coverage**: MCP mode provides yield curve (FRED), VIX (FRED), FX rates (Frankfurter), crypto (CoinGecko), and stock/ETF prices + RSI/SMA (Alpha Vantage). Main gaps vs yfinance: MACD, Bollinger Bands, ATR, volume ratio, SKEW — these are supplementary and downstream skills handle nulls gracefully.

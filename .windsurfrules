@@ -17,7 +17,7 @@ agents/               ← Named agent role definitions
 
 ## Session Start Protocol
 When starting a session:
-1. Read `skills/SKILL-orchestrator.md` for pipeline context
+1. Read `skills/orchestrator/SKILL.md` for pipeline context
 2. Read `config/watchlist.md` + `config/preferences.md`
 3. Read relevant `memory/*/ROLLING.md` files for prior context
 

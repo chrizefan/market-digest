@@ -24,22 +24,22 @@ outputs/daily/[prior-date]/sectors/{sector}.md ← Prior sector output for conti
 
 | Sector | Skill |
 |--------|-------|
-| Technology | `skills/sectors/technology.md` |
-| Healthcare | `skills/sectors/healthcare.md` |
-| Financials | `skills/sectors/financials.md` |
-| Energy | `skills/sectors/energy.md` |
-| Consumer Discretionary | `skills/sectors/consumer-discretionary.md` |
-| Consumer Staples | `skills/sectors/consumer-staples.md` |
-| Industrials | `skills/sectors/industrials.md` |
-| Materials | `skills/sectors/materials.md` |
-| Utilities | `skills/sectors/utilities.md` |
-| Real Estate | `skills/sectors/real-estate.md` |
-| Communication | `skills/sectors/communication.md` |
+| Technology | `skills/sector-technology/SKILL.md` |
+| Healthcare | `skills/sector-healthcare/SKILL.md` |
+| Financials | `skills/sector-financials/SKILL.md` |
+| Energy | `skills/sector-energy/SKILL.md` |
+| Consumer Discretionary | `skills/sector-consumer-disc/SKILL.md` |
+| Consumer Staples | `skills/sector-consumer-staples/SKILL.md` |
+| Industrials | `skills/sector-industrials/SKILL.md` |
+| Materials | `skills/sector-materials/SKILL.md` |
+| Utilities | `skills/sector-utilities/SKILL.md` |
+| Real Estate | `skills/sector-real-estate/SKILL.md` |
+| Communication | `skills/sector-comms/SKILL.md` |
 
 ## Workflow
 
 ### Single Sector Mode
-1. Read `skills/sectors/{sector}.md`
+1. Read `skills/sector-{sector}/SKILL.md`
 2. Read prior sector output for continuity if available
 3. Read macro context if available
 4. Execute the skill steps
@@ -53,7 +53,7 @@ outputs/daily/[prior-date]/sectors/{sector}.md ← Prior sector output for conti
 
 ### Rotation Analysis Mode
 1. Read prior sector outputs from the most recent baseline for trend context
-2. Execute `skills/SKILL-sector-rotation.md`
+2. Execute `skills/sector-rotation/SKILL.md`
 3. Identify leading vs. lagging sectors within the current macro regime
 
 ## Outputs

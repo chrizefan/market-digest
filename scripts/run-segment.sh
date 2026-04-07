@@ -48,61 +48,61 @@ fi
 # ── Map segment name to skill file and output path ────────────────────────────
 case "$SEGMENT" in
   macro)
-    SKILL="skills/SKILL-macro.md"
+    SKILL="skills/macro/SKILL.md"
     OUTPUT="outputs/daily/$DATE/macro.md"
     DELTA_OUTPUT="outputs/daily/$DATE/deltas/macro.delta.md"
     MEMORY="memory/macro/ROLLING.md"
     ;;
   bonds)
-    SKILL="skills/SKILL-bonds.md"
+    SKILL="skills/bonds/SKILL.md"
     OUTPUT="outputs/daily/$DATE/bonds.md"
     DELTA_OUTPUT="outputs/daily/$DATE/deltas/bonds.delta.md"
     MEMORY="memory/bonds/ROLLING.md"
     ;;
   commodities)
-    SKILL="skills/SKILL-commodities.md"
+    SKILL="skills/commodities/SKILL.md"
     OUTPUT="outputs/daily/$DATE/commodities.md"
     DELTA_OUTPUT="outputs/daily/$DATE/deltas/commodities.delta.md"
     MEMORY="memory/commodities/ROLLING.md"
     ;;
   forex)
-    SKILL="skills/SKILL-forex.md"
+    SKILL="skills/forex/SKILL.md"
     OUTPUT="outputs/daily/$DATE/forex.md"
     DELTA_OUTPUT="outputs/daily/$DATE/deltas/forex.delta.md"
     MEMORY="memory/forex/ROLLING.md"
     ;;
   crypto)
-    SKILL="skills/SKILL-crypto.md"
+    SKILL="skills/crypto/SKILL.md"
     OUTPUT="outputs/daily/$DATE/crypto.md"
     DELTA_OUTPUT="outputs/daily/$DATE/deltas/crypto.delta.md"
     MEMORY="memory/crypto/ROLLING.md"
     ;;
   international)
-    SKILL="skills/SKILL-international.md"
+    SKILL="skills/international/SKILL.md"
     OUTPUT="outputs/daily/$DATE/international.md"
     DELTA_OUTPUT="outputs/daily/$DATE/deltas/international.delta.md"
     MEMORY="memory/international/ROLLING.md"
     ;;
   us-equities|equities)
-    SKILL="skills/SKILL-equity.md"
+    SKILL="skills/equity/SKILL.md"
     OUTPUT="outputs/daily/$DATE/us-equities.md"
     DELTA_OUTPUT="outputs/daily/$DATE/deltas/us-equities.delta.md"
     MEMORY="memory/equity/ROLLING.md"
     ;;
   alt-data|alternative-data|sentiment)
-    SKILL="skills/alternative-data/SKILL-sentiment-news.md + SKILL-cta-positioning.md + SKILL-options-derivatives.md + SKILL-politician-signals.md"
+    SKILL="skills/alt-sentiment-news/SKILL.md + skills/alt-cta-positioning/SKILL.md + skills/alt-options-derivatives/SKILL.md + skills/alt-politician-signals/SKILL.md"
     OUTPUT="outputs/daily/$DATE/alt-data.md"
     DELTA_OUTPUT="outputs/daily/$DATE/deltas/alt-data.delta.md"
     MEMORY="memory/alternative-data/{sentiment,cta-positioning,options,politician}/ROLLING.md"
     ;;
   institutional)
-    SKILL="skills/institutional/SKILL-institutional-flows.md + SKILL-hedge-fund-intel.md"
+    SKILL="skills/inst-institutional-flows/SKILL.md + skills/inst-hedge-fund-intel/SKILL.md"
     OUTPUT="outputs/daily/$DATE/institutional.md"
     DELTA_OUTPUT="outputs/daily/$DATE/deltas/institutional.delta.md"
     MEMORY="memory/institutional/{flows,hedge-funds}/ROLLING.md"
     ;;
   technology|healthcare|energy|financials|consumer-staples|consumer-disc|industrials|utilities|materials|real-estate|comms)
-    SKILL="skills/sectors/SKILL-sector-$SEGMENT.md"
+    SKILL="skills/sector-$SEGMENT/SKILL.md"
     OUTPUT="outputs/daily/$DATE/sectors/$SEGMENT.md"
     DELTA_OUTPUT="outputs/daily/$DATE/sectors/$SEGMENT.delta.md"
     case "$SEGMENT" in
@@ -133,7 +133,7 @@ if [ "$RUN_TYPE" = "delta" ]; then
   echo "Mode: Delta (compare against baseline — only write delta file if material change)"
   echo "Baseline: outputs/daily/${BASELINE_DATE:-'[find via _meta.json]'}"
   echo "Skill: $SKILL"
-  echo "Delta output: $DELTA_OUTPUT (use templates/delta-segment.md)"
+  echo "Delta output: JSON ops only (schema: templates/schemas/delta-segment.schema.json OR templates/delta-request-schema.json for full snapshot ops)"
   echo "Update memory: $MEMORY"
   echo ""
   echo "Instructions:"
@@ -141,9 +141,9 @@ if [ "$RUN_TYPE" = "delta" ]; then
   echo "2. Read baseline: outputs/daily/${BASELINE_DATE:-'[baseline]'}/${SEGMENT}.md (or equivalent)"
   echo "3. Fetch today's live data for $SEGMENT"
   echo "4. Compare: did anything change materially vs baseline?"
-  echo "5. If yes: write $DELTA_OUTPUT using templates/delta-segment.md"
-  echo "   If no material change: note 'carried forward' and skip writing the file"
-  echo "6. Update $MEMORY with today's bullets"
+  echo "5. If yes: emit a delta JSON (preferred: Delta Request JSON; fallback: delta-segment JSON ops)"
+  echo "6. Operator publishes via scripts/materialize_snapshot.py (DB-first) and validates data is stored."
+  echo "7. Update $MEMORY with today's bullets"
 else
   echo "Run a full analysis for the '$SEGMENT' segment."
   echo ""

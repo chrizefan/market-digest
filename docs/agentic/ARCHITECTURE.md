@@ -28,11 +28,11 @@ The system operates on a **three-tier cadence**:
 
 The full pipeline. Every segment is re-analyzed from scratch. The baseline becomes the week's analytical anchor. All 28+ output files are written.
 
-Entry point: `skills/SKILL-weekly-baseline.md` → `skills/SKILL-orchestrator.md`
+Entry point: `skills/weekly-baseline/SKILL.md` → `skills/orchestrator/SKILL.md`
 
 ### Mon–Sat — Daily Delta
 
-The delta skill (`skills/SKILL-daily-delta.md`) loads the week's baseline and any prior deltas, then runs a triage protocol:
+The delta skill (`skills/daily-delta/SKILL.md`) loads the week's baseline and any prior deltas, then runs a triage protocol:
 
 | Priority | Segments | Threshold to Trigger Delta |
 |----------|----------|---------------------------|
@@ -45,7 +45,7 @@ Output: `.delta.md` files for changed segments + a fully materialized `DIGEST.md
 
 ### Month-End — Monthly Synthesis
 
-Entry point: `skills/SKILL-monthly-synthesis.md`
+Entry point: `skills/monthly-synthesis/SKILL.md`
 Script: `./scripts/monthly-rollup.sh`
 
 Collects all weekly baselines + daily deltas, produces a `DIGEST-MONTHLY.md` with cumulative regime shifts, thesis win/loss record, and portfolio evolution.
@@ -73,10 +73,10 @@ Before any phase executes, the agent performs a structured context load:
 
 | Sub-Phase | Skill | Output |
 |-----------|-------|--------|
-| 1A | `skills/alternative-data/SKILL-sentiment-news.md` | `alt-data/sentiment-news.md` |
-| 1B | `skills/alternative-data/SKILL-cta-positioning.md` | `alt-data/cta-positioning.md` |
-| 1C | `skills/alternative-data/SKILL-options-derivatives.md` | `alt-data/options-derivatives.md` |
-| 1D | `skills/alternative-data/SKILL-politician-signals.md` | `alt-data/politician-signals.md` |
+| 1A | `skills/alt-sentiment-news/SKILL.md` | `alt-data/sentiment-news.md` |
+| 1B | `skills/alt-cta-positioning/SKILL.md` | `alt-data/cta-positioning.md` |
+| 1C | `skills/alt-options-derivatives/SKILL.md` | `alt-data/options-derivatives.md` |
+| 1D | `skills/alt-politician-signals/SKILL.md` | `alt-data/politician-signals.md` |
 
 Memory updates: `memory/alternative-data/{sentiment,cta-positioning,options,politician}/ROLLING.md`
 
@@ -94,8 +94,8 @@ Memory updates: `memory/alternative-data/{sentiment,cta-positioning,options,poli
 
 | Sub-Phase | Skill | Output |
 |-----------|-------|--------|
-| 2A | `skills/institutional/SKILL-institutional-flows.md` | `institutional-flows.md` |
-| 2B | `skills/institutional/SKILL-hedge-fund-intel.md` | `hedge-fund-intel.md` |
+| 2A | `skills/inst-institutional-flows/SKILL.md` | `institutional-flows.md` |
+| 2B | `skills/inst-hedge-fund-intel/SKILL.md` | `hedge-fund-intel.md` |
 
 Memory updates: `memory/institutional/{flows,hedge-funds}/ROLLING.md`
 
@@ -110,7 +110,7 @@ Memory updates: `memory/institutional/{flows,hedge-funds}/ROLLING.md`
 > The analytical anchor for all downstream work.
 > Every asset class analysis in Phases 4–5 must reference this regime.
 
-Skill: `skills/SKILL-macro.md`
+Skill: `skills/macro/SKILL.md`
 Output: `outputs/daily/{{DATE}}/macro.md`
 Memory: `memory/macro/ROLLING.md`
 
@@ -133,11 +133,11 @@ Output: a regime label (e.g., `Growth Slowing / Inflation Sticky / Policy Tighte
 
 | Sub-Phase | Skill | Output |
 |-----------|-------|--------|
-| 4A | `skills/SKILL-bonds.md` | `bonds.md` |
-| 4B | `skills/SKILL-commodities.md` | `commodities.md` |
-| 4C | `skills/SKILL-forex.md` | `forex.md` |
-| 4D | `skills/SKILL-crypto.md` | `crypto.md` |
-| 4E | `skills/SKILL-international.md` | `international.md` |
+| 4A | `skills/bonds/SKILL.md` | `bonds.md` |
+| 4B | `skills/commodities/SKILL.md` | `commodities.md` |
+| 4C | `skills/forex/SKILL.md` | `forex.md` |
+| 4D | `skills/crypto/SKILL.md` | `crypto.md` |
+| 4E | `skills/international/SKILL.md` | `international.md` |
 
 Memory updates: `memory/{bonds,commodities,forex,crypto,international}/ROLLING.md`
 
@@ -156,18 +156,18 @@ Memory updates: `memory/{bonds,commodities,forex,crypto,international}/ROLLING.m
 
 | Sub-Phase | Skill | Output |
 |-----------|-------|--------|
-| 5A | `skills/SKILL-equity.md` | `us-equities.md` |
-| 5B | `skills/sectors/SKILL-sector-technology.md` | `sectors/technology.md` |
-| 5C | `skills/sectors/SKILL-sector-healthcare.md` | `sectors/healthcare.md` |
-| 5D | `skills/sectors/SKILL-sector-energy.md` | `sectors/energy.md` |
-| 5E | `skills/sectors/SKILL-sector-financials.md` | `sectors/financials.md` |
-| 5F | `skills/sectors/SKILL-sector-consumer-staples.md` | `sectors/consumer-staples.md` |
-| 5G | `skills/sectors/SKILL-sector-consumer-disc.md` | `sectors/consumer-disc.md` |
-| 5H | `skills/sectors/SKILL-sector-industrials.md` | `sectors/industrials.md` |
-| 5I | `skills/sectors/SKILL-sector-utilities.md` | `sectors/utilities.md` |
-| 5J | `skills/sectors/SKILL-sector-materials.md` | `sectors/materials.md` |
-| 5K | `skills/sectors/SKILL-sector-real-estate.md` | `sectors/real-estate.md` |
-| 5L | `skills/sectors/SKILL-sector-comms.md` | `sectors/comms.md` |
+| 5A | `skills/equity/SKILL.md` | `us-equities.md` |
+| 5B | `skills/sector-technology/SKILL.md` | `sectors/technology.md` |
+| 5C | `skills/sector-healthcare/SKILL.md` | `sectors/healthcare.md` |
+| 5D | `skills/sector-energy/SKILL.md` | `sectors/energy.md` |
+| 5E | `skills/sector-financials/SKILL.md` | `sectors/financials.md` |
+| 5F | `skills/sector-consumer-staples/SKILL.md` | `sectors/consumer-staples.md` |
+| 5G | `skills/sector-consumer-disc/SKILL.md` | `sectors/consumer-disc.md` |
+| 5H | `skills/sector-industrials/SKILL.md` | `sectors/industrials.md` |
+| 5I | `skills/sector-utilities/SKILL.md` | `sectors/utilities.md` |
+| 5J | `skills/sector-materials/SKILL.md` | `sectors/materials.md` |
+| 5K | `skills/sector-real-estate/SKILL.md` | `sectors/real-estate.md` |
+| 5L | `skills/sector-comms/SKILL.md` | `sectors/comms.md` |
 | 5M | *(orchestrator synthesis)* | Sector Scorecard (compiled into `DIGEST.md`) |
 
 Memory updates: `memory/equity/ROLLING.md` + all 11 `memory/sectors/{sector}/ROLLING.md`
@@ -201,13 +201,13 @@ SECTOR SCORECARD — {{DATE}}
 
 ---
 
-### Phase 7 — Master Synthesis: DIGEST.md
+### Phase 7 — Master Synthesis: Digest Snapshot (JSON)
 
 > Synthesis, not regurgitation. Pull the most important signals across all phases
 > into a coherent, actionable brief.
 
-Skill: `templates/master-digest.md` (structure template — immutable schema)
-Output: `outputs/daily/{{DATE}}/DIGEST.md`
+Schema: `templates/digest-snapshot-schema.json` (immutable)
+Output: Supabase `daily_snapshots.snapshot` (jsonb) + Supabase `documents` row with `payload` + derived markdown `content`.
 
 **Required DIGEST.md sections:**
 1. **Market Regime Snapshot** — single dominant force today
@@ -282,7 +282,7 @@ The Next.js frontend reads from Supabase (primary) with static JSON fallback —
 | 9E | Evolution branch + PR | `evolve/YYYY-MM-DD` — requires user approval to merge |
 
 **Guardrails — Phase 9 may NEVER propose changes to:**
-- Output schema / `templates/master-digest.md` section structure (immutable)
+- Output schema / `templates/digest-snapshot-schema.json` (immutable)
 - Risk profile or position sizing in `config/investment-profile.md` §4
 - These guardrails themselves
 

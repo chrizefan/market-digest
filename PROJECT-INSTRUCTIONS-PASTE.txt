@@ -10,18 +10,18 @@ THREE-TIER CADENCE
 
 WEEKLY BASELINE (Sunday)
   Full 9-phase pipeline — all 29+ output files from scratch
-  Skill: skills/SKILL-weekly-baseline.md → skills/SKILL-orchestrator.md
+  Skill: skills/weekly-baseline/SKILL.md → skills/orchestrator/SKILL.md
   Token cost: 100% (full run)
 
 DAILY DELTA (Mon–Sat)
   Lightweight run — only segments with material changes get .delta.md files
-  Skill: skills/SKILL-daily-delta.md
+  Skill: skills/daily-delta/SKILL.md
   Mandatory deltas: macro, us-equities, crypto (always written)
   Token savings: ~70% vs full run
 
 MONTHLY SYNTHESIS (end of month)
   Review of all baselines + deltas for the month
-  Skill: skills/SKILL-monthly-synthesis.md
+  Skill: skills/monthly-synthesis/SKILL.md
 
 Run type is determined by _meta.json in each day's output folder.
 
@@ -31,42 +31,42 @@ SESSION TYPES — identify at start of each session
 
 1. FULL DAILY DIGEST (baseline or delta)
    Triggers: "run digest", "daily analysis", "morning brief", automated daily prompt
-   Baseline (Sunday): skills/SKILL-weekly-baseline.md → full 9-phase pipeline
-   Delta (Mon–Sat): skills/SKILL-daily-delta.md → triage + changed segments only
+   Baseline (Sunday): skills/weekly-baseline/SKILL.md → full pipeline
+   Delta (Mon–Sat): skills/daily-delta/SKILL.md → triage + changed segments only
    Both modes materialize a complete DIGEST.md
 
 2. PRE-MARKET PULSE
    Triggers: "pre-market", "morning scan", "quick scan", "what's moving"
-   Skill: skills/SKILL-premarket-pulse.md
+   Skill: skills/premarket-pulse/SKILL.md
    Fast scan only — under 300 words, no segment files
 
 3. THESIS REVIEW
    Triggers: "check my theses", "thesis review", "portfolio check", "how are my positions"
-   Skill: skills/SKILL-thesis-tracker.md
+   Skill: skills/thesis-tracker/SKILL.md
 
 4. DEEP DIVE
    Triggers: "deep dive on X", "full analysis of X", "research X", "break down X"
-   Skill: skills/SKILL-deep-dive.md
+   Skill: skills/deep-dive/SKILL.md
 
 5. EARNINGS
    Triggers: "earnings preview", "earnings reaction", "how did X report", "earnings this week"
-   Skill: skills/SKILL-earnings.md
+   Skill: skills/earnings/SKILL.md
 
 6. SECTOR HEATMAP
    Triggers: "sector heatmap", "sector rotation", "where's the money flowing", "which sectors are leading"
-   Skill: skills/SKILL-sector-heatmap.md
+   Skill: skills/sector-heatmap/SKILL.md
 
 7. SEGMENT-ONLY ANALYSIS
    Triggers: "macro analysis", "crypto analysis", "bond analysis", etc.
-   Skills: SKILL-macro.md / SKILL-equity.md / SKILL-crypto.md / SKILL-bonds.md / SKILL-commodities.md / SKILL-forex.md / SKILL-international.md
+   Skills: skills/macro/SKILL.md / skills/equity/SKILL.md / skills/crypto/SKILL.md / skills/bonds/SKILL.md / skills/commodities/SKILL.md / skills/forex/SKILL.md / skills/international/SKILL.md
 
 8. OPPORTUNITY SCREEN
    Triggers: "screen opportunities", "what looks interesting", "scan the watchlist"
-   Skill: skills/SKILL-opportunity-screener.md
+   Skill: skills/opportunity-screener/SKILL.md
 
 9. PORTFOLIO DELIBERATION
    Triggers: "run deliberation", "challenge positions", "rebalance check"
-   Skills: skills/SKILL-deliberation.md → skills/SKILL-portfolio-manager.md
+   Skills: skills/deliberation/SKILL.md → skills/portfolio-manager/SKILL.md
 
 10. WEEKLY / MONTHLY SYNTHESIS
     Triggers: "weekly rollup", "weekly synthesis", "monthly summary"

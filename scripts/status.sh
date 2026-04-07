@@ -6,7 +6,11 @@
 set -e
 [[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
 
-DATE=$(date +%Y-%m-%d)
+DATE=${1:-$(date +%Y-%m-%d)}
+
+echo "DB-first status (Supabase):"
+python3 scripts/validate_db_first.py --date "$DATE"
+exit $?
 WEEK=$(date +%V)
 YEAR=$(date +%Y)
 WEEK_LABEL="${YEAR}-W${WEEK}"

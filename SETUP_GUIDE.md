@@ -79,8 +79,8 @@ In the Project's **Knowledge** section, upload:
 - `config/preferences.md`
 - `memory/THESES.md`
 - All `memory/*/ROLLING.md` files (6 files)
-- All `skills/SKILL-*.md` files (all skill files)
-- `templates/master-digest.md`
+- All `skills/**/SKILL.md` files (all skill packages)
+- `templates/digest-snapshot-schema.json` (daily canonical JSON)
 
 > **Note on file updates**: Each time Claude updates a memory file or you edit config, you'll need to re-upload the updated version to the Project Knowledge. This is the current limitation of Claude Projects — there's no live file sync. The git repo is your source of truth; the Project Knowledge is Claude's working copy.
 
@@ -158,17 +158,17 @@ Read it. The first one is calibration — if anything is wrong in focus, tone, o
 ### When you want to add a new thesis
 
 Tell Claude in the Project: *"Add a new thesis: [your view]"*
-Claude will use `SKILL-thesis.md` to structure it properly and add it to `memory/THESES.md`.
+Claude will use `skills/thesis/SKILL.md` to structure it properly and add it to `memory/THESES.md`.
 
 ### When you want a deep dive
 
 Tell Claude: *"Deep dive on NVDA"* or *"Full breakdown of the Treasury curve right now"*
-Claude will use `SKILL-deep-dive.md` for a standalone research note.
+Claude will use `skills/deep-dive/SKILL.md` for a standalone research note.
 
 ### Quick morning scan (before full digest)
 
 Tell Claude: *"Pre-market pulse"*
-Claude will use `SKILL-premarket-pulse.md` for a fast 5-minute read.
+Claude will use `skills/premarket-pulse/SKILL.md` for a fast 5-minute read.
 
 ---
 

@@ -53,8 +53,8 @@ supabase/    Schema migrations
 4. Output paths use `{{DATE}}` placeholder; never hardcode dates
 
 ### When adding a new sector or asset class:
-1. Create `skills/sectors/SKILL-sector-newname.md` using `templates/sector-report.md` as a base
-2. Add the sector to `skills/SKILL-orchestrator.md` Phase 5 list
+1. Create `skills/sector-newname/SKILL.md` using schema `templates/schemas/sector-report.schema.json` as the output contract
+2. Add the sector to `skills/orchestrator/SKILL.md` Phase 5 list
 3. Add an empty output file path to `scripts/new-day.sh` SECTORS loop
 4. Add the sector to `scripts/run-segment.sh` case statement
 5. Update `CLAUDE_PROJECT_INSTRUCTIONS.md` skill table

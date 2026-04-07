@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "digiquant-atlas Portfolio Recommendation",
+  "description": "Clean-slate or delta portfolio recommendation artifact (PM output). JSON source of truth; markdown is derived.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "doc_type", "date", "meta", "body"],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^1\\.[0-9]+$" },
+    "doc_type": { "type": "string", "const": "portfolio_recommendation" },
+    "date": { "type": "string", "format": "date" },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["baseline", "delta_scoped"] },
+        "based_on": { "type": ["string", "null"], "maxLength": 240 },
+        "triggers": { "type": "array", "items": { "type": "string", "maxLength": 200 } },
+        "regime": { "type": ["string", "null"], "maxLength": 200 },
+        "posture": { "type": ["string", "null"], "maxLength": 64 },
+        "conviction": { "type": ["string", "null"], "maxLength": 64 }
+      }
+    },
+    "body": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision_summary", "recommended_portfolio", "allocation_buckets", "conditional_plans", "monitoring_levels"],
+      "properties": {
+        "decision_summary": { "type": "string", "maxLength": 6000 },
+        "recommended_portfolio": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["ticker", "category", "weight_pct", "action", "thesis_id", "conviction"],
+            "properties": {
+              "ticker": { "type": "string", "maxLength": 12 },
+              "category": { "type": ["string", "null"], "maxLength": 64 },
+              "weight_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+              "action": { "type": "string", "enum": ["HOLD", "ADD", "TRIM", "EXIT", "NEW"] },
+              "thesis_id": { "type": ["string", "null"], "maxLength": 32 },
+              "conviction": { "type": ["string", "null"], "maxLength": 64 },
+              "rationale": { "type": ["string", "null"], "maxLength": 2000 }
+            }
+          }
+        },
+        "total_pct": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "allocation_buckets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["bucket", "allocation_pct", "notes"],
+            "properties": {
+              "bucket": { "type": "string", "maxLength": 64 },
+              "allocation_pct": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+              "notes": { "type": "string", "maxLength": 2000 }
+            }
+          }
+        },
+        "conditional_plans": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["label", "probability_pct", "actions"],
+            "properties": {
+              "label": { "type": "string", "maxLength": 120 },
+              "probability_pct": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+              "actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["action", "from_pct", "to_pct", "rationale"],
+                  "properties": {
+                    "action": { "type": "string", "maxLength": 200 },
+                    "from_pct": { "type": ["number", "null"] },
+                    "to_pct": { "type": ["number", "null"] },
+                    "rationale": { "type": "string", "maxLength": 2000 }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "monitoring_levels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["asset", "hold_signal", "exit_signal", "add_signal"],
+            "properties": {
+              "asset": { "type": "string", "maxLength": 32 },
+              "hold_signal": { "type": ["string", "null"], "maxLength": 400 },
+              "exit_signal": { "type": ["string", "null"], "maxLength": 400 },
+              "add_signal": { "type": ["string", "null"], "maxLength": 400 }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

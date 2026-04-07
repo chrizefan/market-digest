@@ -16,61 +16,61 @@ Skill files are Markdown instruction sets for AI agents. Each file:
 
 | Skill File | Name | Phase | Output File | Memory Updated |
 |-----------|------|-------|------------|----------------|
-| `SKILL-orchestrator.md` | orchestrator | All | All 22 files | All |
-| `SKILL-premarket-pulse.md` | premarket-pulse | 1 | alt-data.md | alt-data/sentiment |
-| `SKILL-macro.md` | macro | 3 | macro.md | macro/ROLLING.md |
-| `SKILL-bonds.md` | bonds | 4A | bonds.md | bonds/ROLLING.md |
-| `SKILL-commodities.md` | commodities | 4B | commodities.md | commodities/ROLLING.md |
-| `SKILL-forex.md` | forex | 4C | forex.md | forex/ROLLING.md |
-| `SKILL-crypto.md` | crypto | 4D | crypto.md | crypto/ROLLING.md |
-| `SKILL-international.md` | international | 4E | international.md | international/ROLLING.md |
-| `SKILL-equity.md` | equity | 5A | equities.md | equity/ROLLING.md |
-| `SKILL-earnings.md` | earnings | 6 | earnings.md | equity/ROLLING.md |
-| `SKILL-digest.md` | digest | 7 | DIGEST.md | BIAS-TRACKER.md |
+| `orchestrator/SKILL.md` | orchestrator | All | DB-first publish | All |
+| `premarket-pulse/SKILL.md` | premarket-pulse | 1 | alt-data.md | alt-data/sentiment |
+| `macro/SKILL.md` | macro | 3 | macro.md | macro/ROLLING.md |
+| `bonds/SKILL.md` | bonds | 4A | bonds.md | bonds/ROLLING.md |
+| `commodities/SKILL.md` | commodities | 4B | commodities.md | commodities/ROLLING.md |
+| `forex/SKILL.md` | forex | 4C | forex.md | forex/ROLLING.md |
+| `crypto/SKILL.md` | crypto | 4D | crypto.md | crypto/ROLLING.md |
+| `international/SKILL.md` | international | 4E | international.md | international/ROLLING.md |
+| `equity/SKILL.md` | equity | 5A | equities.md | equity/ROLLING.md |
+| `earnings/SKILL.md` | earnings | 6 | earnings.md | equity/ROLLING.md |
+| `digest/SKILL.md` | digest | 7 | digest snapshot | BIAS-TRACKER.md |
 
 ---
 
 ## Sector Skills (Phase 5B–5L)
 
-All in `skills/sectors/`:
+All as packages: `skills/sector-*/SKILL.md`:
 
 | Skill File | Output File | Memory |
 |-----------|------------|--------|
-| `sectors/technology.md` | sectors/technology.md | sectors/technology |
-| `sectors/healthcare.md` | sectors/healthcare.md | sectors/healthcare |
-| `sectors/financials.md` | sectors/financials.md | sectors/financials |
-| `sectors/energy.md` | sectors/energy.md | sectors/energy |
-| `sectors/consumer-discretionary.md` | sectors/consumer-discretionary.md | sectors/consumer |
-| `sectors/consumer-staples.md` | sectors/consumer-staples.md | sectors/consumer |
-| `sectors/industrials.md` | sectors/industrials.md | sectors/industrials |
-| `sectors/materials.md` | sectors/materials.md | sectors/materials |
-| `sectors/utilities.md` | sectors/utilities.md | sectors/utilities |
-| `sectors/real-estate.md` | sectors/real-estate.md | sectors/real-estate |
-| `sectors/communication.md` | sectors/communication.md | sectors/communication |
+| `sector-technology/SKILL.md` | sectors/technology.md | sectors/technology |
+| `sector-healthcare/SKILL.md` | sectors/healthcare.md | sectors/healthcare |
+| `sector-financials/SKILL.md` | sectors/financials.md | sectors/financials |
+| `sector-energy/SKILL.md` | sectors/energy.md | sectors/energy |
+| `sector-consumer-disc/SKILL.md` | sectors/consumer-disc.md | sectors/consumer |
+| `sector-consumer-staples/SKILL.md` | sectors/consumer-staples.md | sectors/consumer |
+| `sector-industrials/SKILL.md` | sectors/industrials.md | sectors/industrials |
+| `sector-materials/SKILL.md` | sectors/materials.md | sectors/materials |
+| `sector-utilities/SKILL.md` | sectors/utilities.md | sectors/utilities |
+| `sector-real-estate/SKILL.md` | sectors/real-estate.md | sectors/real-estate |
+| `sector-comms/SKILL.md` | sectors/comms.md | sectors/comms |
 
 ---
 
 ## Alternative Data Skills (Phase 1)
 
-All in `skills/alternative-data/`:
+All as packages:
 
 | Skill File | What It Does | Output | Memory |
 |-----------|-------------|--------|--------|
-| `alternative-data/sentiment.md` | Retail sentiment (Fear/Greed, AAII, social) | alt-data.md section | alternative-data/sentiment |
-| `alternative-data/cta-positioning.md` | CTA trend-following exposure estimates | alt-data.md section | alternative-data/cta |
-| `alternative-data/options-flow.md` | Unusual options activity, gamma, put/call | alt-data.md section | alternative-data/options |
-| `alternative-data/politician-tracker.md` | Congressional trade disclosures | alt-data.md section | alternative-data/politician |
+| `alt-sentiment-news/SKILL.md` | Retail sentiment + news | alt-data.md section | alternative-data/sentiment |
+| `alt-cta-positioning/SKILL.md` | CTA positioning | alt-data.md section | alternative-data/cta |
+| `alt-options-derivatives/SKILL.md` | Options/vol structure | alt-data.md section | alternative-data/options |
+| `alt-politician-signals/SKILL.md` | Politician/official signals | alt-data.md section | alternative-data/politician |
 
 ---
 
 ## Institutional Skills (Phase 2)
 
-All in `skills/institutional/`:
+All as packages:
 
 | Skill File | What It Does | Output | Memory |
 |-----------|-------------|--------|--------|
-| `institutional/flows.md` | Dark pools, block prints, ETF flows | institutional.md | institutional/flows |
-| `institutional/hedge-fund-intel.md` | 13F analysis, prime brokerage data | institutional.md | institutional/hedge-fund |
+| `inst-institutional-flows/SKILL.md` | Dark pools, block prints, ETF flows | institutional.md | institutional/flows |
+| `inst-hedge-fund-intel/SKILL.md` | 13F analysis, fund commentary | institutional.md | institutional/hedge-fund |
 
 ---
 
@@ -78,11 +78,11 @@ All in `skills/institutional/`:
 
 | Skill File | Name | When to Use |
 |-----------|------|-------------|
-| `SKILL-deep-dive.md` | deep-dive | Detailed single-ticker research |
-| `SKILL-thesis.md` | thesis | Building a new investment thesis |
-| `SKILL-thesis-tracker.md` | thesis-tracker | Reviewing + scoring active theses |
-| `SKILL-sector-rotation.md` | sector-rotation | Identifying rotation between sectors |
-| `SKILL-sector-heatmap.md` | sector-heatmap | Generating sector strength heatmap |
+| `deep-dive/SKILL.md` | deep-dive | Detailed single-ticker research |
+| `thesis/SKILL.md` | thesis | Building a new investment thesis |
+| `thesis-tracker/SKILL.md` | thesis-tracker | Reviewing + scoring active theses |
+| `sector-rotation/SKILL.md` | sector-rotation | Identifying rotation between sectors |
+| `sector-heatmap/SKILL.md` | sector-heatmap | Generating sector strength heatmap |
 
 ---
 
@@ -128,8 +128,7 @@ Read config/watchlist.md for relevant tracked assets.
 [Describe the analysis framework]
 
 ### 4. Write Output
-Write to `outputs/daily/{{DATE}}/{output-filename}.md`
-Follow `templates/segment-report.md` for structure.
+Write JSON artifacts for recurring outputs; follow the appropriate schema in `templates/schemas/`.
 
 ## Output Format
 File: `outputs/daily/{{DATE}}/{output-filename}.md`
@@ -152,6 +151,6 @@ When adding a new skill:
 1. Create the skill file with proper frontmatter
 2. Add a row to this catalog
 3. Update `CLAUDE_PROJECT_INSTRUCTIONS.md` skills section
-4. If it's a pipeline skill, update `SKILL-orchestrator.md`
+4. If it's a pipeline skill, update `skills/orchestrator/SKILL.md`
 5. Create the matching `memory/{domain}/ROLLING.md` file
 6. Update `scripts/new-day.sh` if it needs a new output folder

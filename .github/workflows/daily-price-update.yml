@@ -81,6 +81,10 @@ jobs:
             --supabase \
             $TICKER_ARG
 
+      - name: Refresh position & NAV metrics (after closes)
+        run: |
+          python3 scripts/refresh_performance_metrics.py --supabase
+
       - name: Verify row counts
         run: |
           python3 - <<'EOF'

@@ -70,7 +70,8 @@
 │                                                                        │
 │  ┌──────────────┐  ┌───────────────┐  ┌───────────────────────────┐   │
 │  │  Skill Files  │  │  Config Files  │  │  MCP Tool Servers          │   │
-│  │  (skills/*.md)│  │  (config/*.md) │  │  FRED, CoinGecko,          │   │
+│  │ (skills/**/   │  │  (config/*.md) │  │  FRED, CoinGecko,          │   │
+│  │   SKILL.md)   │  │               │  │                            │   │
 │  │  26 skills    │  │  watchlist     │  │  Polymarket, SEC-EDGAR,    │   │
 │  │  + 17 sub-    │  │  investment-   │  │  Alpha Vantage, Frankfurter│   │
 │  │    agent      │  │  profile       │  └───────────────────────────┘   │
@@ -163,9 +164,9 @@ Skills are structured Markdown files with YAML frontmatter. They serve as execut
 |----------|-------|-----------|---------|
 | Core Pipeline | 5 | `skills/` | Orchestrator, baseline, delta, monthly, digest |
 | Asset Class | 7 | `skills/` | Macro, bonds, commodities, forex, crypto, international, equity |
-| Sector | 11 | `skills/sectors/` | One per GICS sector |
-| Alternative Data | 4 | `skills/alternative-data/` | Sentiment, CTA, options, politicians |
-| Institutional | 2 | `skills/institutional/` | ETF flows, hedge fund intel |
+| Sector | 11 | `skills/sector-*/` | One per GICS sector |
+| Alternative Data | 4 | `skills/alt-*/` | Sentiment, CTA, options, politicians |
+| Institutional | 2 | `skills/inst-*/` | ETF flows, hedge fund intel |
 | Portfolio | 5 | `skills/` | PM, deliberation, opportunity screener, thesis tracker, asset analyst |
 | Specialized | 4 | `skills/` | Deep dive, earnings, sector rotation, premarket pulse |
 | **Total** | **38** | | |
@@ -688,7 +689,7 @@ Agent "roles" (orchestrator, sector analyst, PM) are implemented as **skill file
                      ┌──────────────────────────────┐
                      │      SINGLE AI SESSION        │
                      │                                │
-                     │  Reads SKILL-orchestrator.md   │
+                     │  Reads skills/orchestrator/SKILL.md   │
                      │         │                      │
                      │         ▼                      │
                      │  Phase 1: reads SKILL-         │

@@ -3,28 +3,28 @@ Run today's market digest.
 Step 0: Fetch systematic market data.
   Run: ./scripts/fetch-market-data.sh
   (Or individually: python3 scripts/fetch-quotes.py && python3 scripts/fetch-macro.py)
-  Wait for completion before proceeding — outputs/daily/$(date +%Y-%m-%d)/data/ must exist.
+  DB-first: do not rely on outputs/daily. Use Supabase + JSON artifacts; see RUNBOOK.md.
   fetch-quotes.py loads per-ticker CSV cache from data/price-history/ and only fetches
   the latest missing days (incremental). If the cache is empty (first run, new machine),
   the orchestrator auto-seeds it with 2yr of data via preload-history.py.
   Technicals (RSI, MACD, SMA20/50/200, ATR, BBands) are computed over the full cached window.
   **Manual preload/refresh**: python3 scripts/preload-history.py [--refresh]
-  **If scripts fail** (sandbox, missing yfinance): follow `skills/SKILL-mcp-data-fetch.md`
+  **If scripts fail** (sandbox, missing yfinance): follow `skills/mcp-data-fetch/SKILL.md`
   to fetch data via MCP tools (FRED, Alpha Vantage, CoinGecko, Frankfurter) instead.
 
-Step 1: Read `outputs/daily/$(date +%Y-%m-%d)/_meta.json` to detect run mode.
+Step 1: Run `python3 scripts/run_db_first.py` to detect mode and print required actions.
   - If missing: run `./scripts/new-day.sh` first, then re-read.
-  - If type = "baseline": read `skills/SKILL-weekly-baseline.md` → follow full 9-phase pipeline.
-  - If type = "delta": read `skills/SKILL-daily-delta.md` → follow delta pipeline.
+  - If type = "baseline": read `skills/weekly-baseline/SKILL.md` → follow full 9-phase pipeline.
+  - If type = "delta": read `skills/daily-delta/SKILL.md` → follow delta pipeline.
 
 Step 2: Execute the pipeline from the skill file exactly. Every phase, every output file, every checkpoint.
   - Run `./scripts/validate-phase.sh [phase]` after each phase before proceeding to the next.
   - Do not skip phases or continue past a failed checkpoint.
 
-Step 3: After DIGEST.md is complete (Phase 7), run the portfolio layer:
-  - Read `skills/SKILL-opportunity-screener.md` — scan full watchlist against digest, produce ranked shortlist → `opportunity-screen.md`
-  - Baseline days: Read `skills/SKILL-deliberation.md` — full multi-round deliberation (analysts present → PM challenges → analysts defend/revise → PM decides). Then `skills/SKILL-portfolio-manager.md` Phase B (clean-slate build) and Phase C (rebalance diff).
-  - Delta days: Follow Phase 7C in `skills/SKILL-daily-delta.md` — threshold monitor first. If triggers fire → scoped screener + deliberation → Phase B/C.
+Step 3: After the digest snapshot is available, run the portfolio layer:
+  - Read `skills/opportunity-screener/SKILL.md` — scan full watchlist against digest, produce ranked shortlist → `opportunity_screen` artifact
+  - Baseline days: Read `skills/deliberation/SKILL.md` (full multi-round) then `skills/portfolio-manager/SKILL.md` (clean-slate + rebalance decision).
+  - Delta days: Follow Phase 7C in `skills/daily-delta/SKILL.md` — threshold monitor first. If triggers fire → scoped screener + deliberation → PM review.
   - Save: positions/{TICKER}.md, deliberation.md, portfolio-recommended.md, rebalance-decision.md
   - Update: config/portfolio.json → proposed_positions[] (when rebalance triggered)
 

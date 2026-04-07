@@ -9,7 +9,7 @@ Copy-paste prompts for every task type. Replace `{DATE}` with today's date (YYYY
 ```
 Today is {DATE}.
 
-Read skills/SKILL-orchestrator.md and run the complete 7-phase pipeline.
+Read skills/orchestrator/SKILL.md and run the complete pipeline.
 
 Setup:
 - Read config/watchlist.md and config/preferences.md
@@ -26,7 +26,7 @@ Update all memory files at the end of the session.
 ```
 Today is {DATE}.
 
-Read skills/SKILL-macro.md for instructions.
+Read skills/macro/SKILL.md for instructions.
 First read memory/macro/ROLLING.md for prior context.
 Also read config/preferences.md.
 
@@ -42,7 +42,7 @@ Append findings to: memory/macro/ROLLING.md
 ```
 Today is {DATE}.
 
-Read skills/SKILL-crypto.md.
+Read skills/crypto/SKILL.md.
 Read memory/crypto/ROLLING.md for prior context.
 Read config/watchlist.md for tracked crypto assets.
 
@@ -58,8 +58,8 @@ Append to: memory/crypto/ROLLING.md
 ```
 Today is {DATE}.
 
-Read skills/sectors/{SECTOR}.md (replace {SECTOR} with: technology, healthcare, energy, financials, 
-consumer-discretionary, consumer-staples, industrials, materials, utilities, real-estate, or communication)
+Read skills/sector-{SECTOR}/SKILL.md (replace {SECTOR} with: technology, healthcare, energy, financials,
+consumer-disc, consumer-staples, industrials, materials, utilities, real-estate, or comms)
 
 Read memory/sectors/{SECTOR}/ROLLING.md for prior research.
 Read today's macro.md if available: outputs/daily/{DATE}/macro.md
@@ -77,13 +77,13 @@ Today is {DATE}.
 Macro context: [paste key points from macro.md or describe regime]
 
 Run all 11 sector analyses in parallel. For each sector:
-- Read: skills/sectors/{sector}.md
+- Read: skills/sector-{sector}/SKILL.md
 - Read: memory/sectors/{sector}/ROLLING.md
 - Write: outputs/daily/{DATE}/sectors/{sector}.md
 - Append: memory/sectors/{sector}/ROLLING.md
 
-Sectors: technology, healthcare, financials, energy, consumer-discretionary, 
-consumer-staples, industrials, materials, utilities, real-estate, communication
+Sectors: technology, healthcare, financials, energy, consumer-disc,
+consumer-staples, industrials, materials, utilities, real-estate, comms
 ```
 
 ---
@@ -94,10 +94,10 @@ consumer-staples, industrials, materials, utilities, real-estate, communication
 Today is {DATE}.
 
 Run Phase 1 alternative data analysis:
-1. Read skills/alternative-data/sentiment.md → surface retail sentiment
-2. Read skills/alternative-data/cta-positioning.md → assess CTA exposure
-3. Read skills/alternative-data/options-flow.md → scan unusual options activity
-4. Read skills/alternative-data/politician-tracker.md → flag recent politician trades
+1. Read skills/alt-sentiment-news/SKILL.md → sentiment/news
+2. Read skills/alt-cta-positioning/SKILL.md → CTA exposure
+3. Read skills/alt-options-derivatives/SKILL.md → options/vol
+4. Read skills/alt-politician-signals/SKILL.md → politician/official signals
 
 Read each corresponding memory file in memory/alternative-data/ for prior context.
 Write combined output to: outputs/daily/{DATE}/alt-data.md
@@ -112,8 +112,8 @@ Update each memory/alternative-data/*/ROLLING.md
 Today is {DATE}.
 
 Run Phase 2 institutional analysis:
-1. Read skills/institutional/flows.md
-2. Read skills/institutional/hedge-fund-intel.md
+1. Read skills/inst-institutional-flows/SKILL.md
+2. Read skills/inst-hedge-fund-intel/SKILL.md
 3. Read config/hedge-funds.md for tracked hedge funds
 
 Read memory/institutional/flows/ROLLING.md and memory/institutional/hedge-fund/ROLLING.md.
@@ -144,11 +144,11 @@ Read ALL of the following:
 - outputs/daily/{DATE}/earnings.md
 - All files in outputs/daily/{DATE}/sectors/
 
-Read templates/master-digest.md for the output structure.
+Produce a digest snapshot JSON (schema: templates/digest-snapshot-schema.json) and publish via scripts/materialize_snapshot.py.
 Read memory/BIAS-TRACKER.md for prior bias context.
 Read config/preferences.md for portfolio positioning.
 
-Synthesize into: outputs/daily/{DATE}/DIGEST.md
+Store to Supabase (DB-first). Markdown is derived from JSON.
 Append today's row to memory/BIAS-TRACKER.md (14-column table).
 ```
 
@@ -159,7 +159,7 @@ Append today's row to memory/BIAS-TRACKER.md (14-column table).
 ```
 Run a deep dive on: {TICKER}
 
-1. Read skills/SKILL-deep-dive.md for the research framework
+1. Read skills/deep-dive/SKILL.md for the research framework
 2. Search memory/ for any prior notes: run memory-search.sh {TICKER} or grep all ROLLING.md files
 3. Read config/watchlist.md to see if it's tracked and at what size
 4. Check config/preferences.md for relevant biases or theses
@@ -210,10 +210,10 @@ Read all DIGEST.md files from this week:
 - outputs/daily/{FRI}/DIGEST.md (if exists)
 
 Read memory/BIAS-TRACKER.md entries for this week.
-Read templates/weekly-digest.md for the output structure.
+Write a weekly JSON artifact (schema: templates/schemas/weekly-digest.schema.json).
 
 Identify the week's key themes, regime shifts, and position-relevant events.
-Write to: outputs/weekly/{DATE}.md
+Write to: outputs/weekly/{YYYY}-W{WW}.json
 Do NOT update memory files — this is read-only synthesis.
 ```
 
@@ -254,14 +254,14 @@ Purpose: {description of what it should do}
 
 Please:
 1. Read docs/agentic/SKILLS-CATALOG.md to understand the existing catalog
-2. Read skills/SKILL-macro.md as a format reference
-3. Create skills/{category}/{skill-name}.md following the standard template:
+2. Read skills/macro/SKILL.md as a format reference
+3. Create skills/{skill-slug}/SKILL.md following the standard template:
    - YAML frontmatter with name: and description:
    - Steps numbered ### 1. through ### N.
    - ## Output Format section with {{DATE}} placeholder
    - ## Memory Update section
 4. Create memory/{domain}/ROLLING.md stub file
-5. Reference in skills/SKILL-orchestrator.md if it's a pipeline phase
+5. Reference in skills/orchestrator/SKILL.md if it's a pipeline phase
 6. Add to docs/agentic/SKILLS-CATALOG.md
 ```
 

@@ -47,17 +47,17 @@ All in `memory/sectors/{name}/ROLLING.md`:
 
 | Sector | Directory | Skill File |
 |--------|-----------|-----------|
-| Technology | `memory/sectors/technology/` | `skills/sectors/technology.md` |
-| Healthcare | `memory/sectors/healthcare/` | `skills/sectors/healthcare.md` |
-| Financials | `memory/sectors/financials/` | `skills/sectors/financials.md` |
-| Energy | `memory/sectors/energy/` | `skills/sectors/energy.md` |
-| Consumer Discretionary | `memory/sectors/consumer/` | `skills/sectors/consumer-discretionary.md` |
-| Consumer Staples | `memory/sectors/consumer/` | `skills/sectors/consumer-staples.md` |
-| Industrials | `memory/sectors/industrials/` | `skills/sectors/industrials.md` |
-| Materials | `memory/sectors/materials/` | `skills/sectors/materials.md` |
-| Utilities | `memory/sectors/utilities/` | `skills/sectors/utilities.md` |
-| Real Estate | `memory/sectors/real-estate/` | `skills/sectors/real-estate.md` |
-| Communication | `memory/sectors/communication/` | `skills/sectors/communication.md` |
+| Technology | `memory/sectors/technology/` | `skills/sector-technology/SKILL.md` |
+| Healthcare | `memory/sectors/healthcare/` | `skills/sector-healthcare/SKILL.md` |
+| Financials | `memory/sectors/financials/` | `skills/sector-financials/SKILL.md` |
+| Energy | `memory/sectors/energy/` | `skills/sector-energy/SKILL.md` |
+| Consumer Discretionary | `memory/sectors/consumer/` | `skills/sector-consumer-disc/SKILL.md` |
+| Consumer Staples | `memory/sectors/consumer/` | `skills/sector-consumer-staples/SKILL.md` |
+| Industrials | `memory/sectors/industrials/` | `skills/sector-industrials/SKILL.md` |
+| Materials | `memory/sectors/materials/` | `skills/sector-materials/SKILL.md` |
+| Utilities | `memory/sectors/utilities/` | `skills/sector-utilities/SKILL.md` |
+| Real Estate | `memory/sectors/real-estate/` | `skills/sector-real-estate/SKILL.md` |
+| Communication | `memory/sectors/comms/` | `skills/sector-comms/SKILL.md` |
 
 > Consumer Staples and Consumer Discretionary share `memory/sectors/consumer/ROLLING.md` by design — the file tracks both sub-sectors together.
 

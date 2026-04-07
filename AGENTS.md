@@ -17,29 +17,28 @@ Daily market intelligence system. Three-tier cadence:
 
 ### Step 1: Check today's run type
 ```
-Read: outputs/daily/YYYY-MM-DD/_meta.json
-  "type": "baseline" → Sunday full run
-  "type": "delta"    → Weekday delta run
-  (missing)           → Legacy folder — treat as baseline
+DB-first: run the single entrypoint and follow its printed instructions:
+
+python3 scripts/run_db_first.py
 ```
 
 ### Sunday — Weekly Baseline (full run):
 ```
-Read: skills/SKILL-weekly-baseline.md
+Read: skills/weekly-baseline/SKILL.md
 Follow: All 9 phases in order
 Output: outputs/daily/YYYY-MM-DD/DIGEST.md  (complete digest)
 ```
 
 ### Mon–Sat — Daily Delta
 ```
-Read: skills/SKILL-daily-delta.md
+Read: skills/daily-delta/SKILL.md
 Load: outputs/daily/[baseline-date]/DIGEST.md
 Write: outputs/daily/YYYY-MM-DD/deltas/*.delta.md → Materialize DIGEST.md
 ```
 
 ### Key scripts
 ```bash
-./scripts/new-day.sh            # Create daily folder + print prompt
+python3 scripts/run_db_first.py # DB-first entrypoint (baseline/delta + publish + validate)
 ./scripts/run-segment.sh [x]    # Single segment prompt (--delta flag supported)
 ./scripts/combine-digest.sh     # Synthesis prompt (auto-detects mode)
 ./scripts/git-commit.sh         # Commit + push (runs ETL first)
@@ -52,7 +51,7 @@ Write: outputs/daily/YYYY-MM-DD/deltas/*.delta.md → Materialize DIGEST.md
 
 - **Search the web** for prices/yields/news — never use training data cutoff values
 - **Read `config/watchlist.md` + `config/investment-profile.md`** at session start
-- Always **materialize `DIGEST.md`** — dashboard reads DIGEST.md, not DIGEST-DELTA.md
+- Daily digest is DB-first: markdown is derived from the snapshot JSON stored in Supabase.
 - **State a bias** (Bullish/Bearish/Neutral/Conflicted) with rationale for every segment
 - Run **Phase 1 (alt-data) BEFORE Phase 3 (macro)** — positioning informs regime read
 - Daily δ: always write mandatory deltas: macro, us-equities, crypto

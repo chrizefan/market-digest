@@ -46,9 +46,9 @@ This is a daily market intelligence system. Every session is either:
 
 ---
 
-## 7-Phase Daily Pipeline
+## 7-Phase Daily Pipeline (DB-first)
 
-The full daily digest follows this sequence. Run `skills/SKILL-orchestrator.md` for complete instructions.
+The full daily digest follows this sequence. Run `skills/orchestrator/SKILL.md` for complete instructions.
 
 | Phase | Content | Skills Used | Output |
 |-------|---------|-------------|--------|
@@ -57,9 +57,9 @@ The full daily digest follows this sequence. Run `skills/SKILL-orchestrator.md` 
 | 3 | Macro Analysis | SKILL-macro (v2) | macro.md |
 | 4 | Asset Classes | SKILL-bonds, SKILL-commodities, SKILL-forex, SKILL-crypto, SKILL-international | 5 segment files |
 | 5 | US Equities + 11 Sectors | SKILL-equity + 11 sector sub-agents | equities.md + 11 sector files |
-| 6 | DIGEST.md Synthesis | templates/master-digest.md | DIGEST.md |
+| 6 | Digest Snapshot (JSON) | templates/digest-snapshot-schema.json | Supabase daily_snapshots.snapshot |
 
-**Output**: `outputs/daily/YYYY-MM-DD/DIGEST.md` (+ 21 supporting segment files)
+**Output**: DB-first (Supabase). Markdown is derived from JSON; filesystem recurring artifacts should be JSON-only.
 
 ---
 
@@ -68,61 +68,61 @@ The full daily digest follows this sequence. Run `skills/SKILL-orchestrator.md` 
 ### Core Orchestration
 | Skill | Triggers |
 |-------|---------|
-| `skills/SKILL-orchestrator.md` | **PRIMARY**: "run digest", "daily analysis", "morning brief", "market update" |
-| `skills/SKILL-digest.md` | Legacy pointer → redirects to SKILL-orchestrator.md |
+| `skills/orchestrator/SKILL.md` | **PRIMARY**: "run digest", "daily analysis", "morning brief", "market update" |
+| `skills/digest/SKILL.md` | Pointer → redirects to orchestrator |
 
 ### Core Segment Skills (v2)
 | Skill | Triggers |
 |-------|---------|
-| `skills/SKILL-macro.md` | "macro analysis", "economic data", "central bank", "regime" |
-| `skills/SKILL-equity.md` | "equity overview", "market breadth", "factor analysis" |
-| `skills/SKILL-crypto.md` | "crypto analysis", "bitcoin", "BTC", "crypto market" |
-| `skills/SKILL-bonds.md` | "bond analysis", "rates", "yields", "Fed", "credit spreads" |
-| `skills/SKILL-commodities.md` | "commodities", "oil", "gold", "copper", "energy" |
-| `skills/SKILL-forex.md` | "forex", "FX", "dollar", "DXY", "currency" |
-| `skills/SKILL-international.md` | "international", "emerging markets", "China", "Japan", "EFA" |
+| `skills/macro/SKILL.md` | "macro analysis", "economic data", "central bank", "regime" |
+| `skills/equity/SKILL.md` | "equity overview", "market breadth", "factor analysis" |
+| `skills/crypto/SKILL.md` | "crypto analysis", "bitcoin", "BTC", "crypto market" |
+| `skills/bonds/SKILL.md` | "bond analysis", "rates", "yields", "Fed", "credit spreads" |
+| `skills/commodities/SKILL.md` | "commodities", "oil", "gold", "copper", "energy" |
+| `skills/forex/SKILL.md` | "forex", "FX", "dollar", "DXY", "currency" |
+| `skills/international/SKILL.md` | "international", "emerging markets", "China", "Japan", "EFA" |
 
 ### Sector Sub-Agents (11 GICS Sectors)
 | Skill | Sector | Key ETF |
 |-------|--------|---------|
-| `skills/sectors/SKILL-sector-technology.md` | Technology | XLK, SOXX |
-| `skills/sectors/SKILL-sector-healthcare.md` | Healthcare ★ | XLV, IBB |
-| `skills/sectors/SKILL-sector-energy.md` | Energy ★ | XLE, DBO |
-| `skills/sectors/SKILL-sector-financials.md` | Financials | XLF, KRE |
-| `skills/sectors/SKILL-sector-consumer-staples.md` | Consumer Staples ★ | XLP |
-| `skills/sectors/SKILL-sector-consumer-disc.md` | Consumer Discretionary | XLY |
-| `skills/sectors/SKILL-sector-industrials.md` | Industrials | XLI, ITA |
-| `skills/sectors/SKILL-sector-utilities.md` | Utilities | XLU |
-| `skills/sectors/SKILL-sector-materials.md` | Materials | XLB |
-| `skills/sectors/SKILL-sector-real-estate.md` | Real Estate | XLRE, VNQ |
-| `skills/sectors/SKILL-sector-comms.md` | Communication Services | XLC |
+| `skills/sector-technology/SKILL.md` | Technology | XLK, SOXX |
+| `skills/sector-healthcare/SKILL.md` | Healthcare ★ | XLV, IBB |
+| `skills/sector-energy/SKILL.md` | Energy ★ | XLE, DBO |
+| `skills/sector-financials/SKILL.md` | Financials | XLF, KRE |
+| `skills/sector-consumer-staples/SKILL.md` | Consumer Staples ★ | XLP |
+| `skills/sector-consumer-disc/SKILL.md` | Consumer Discretionary | XLY |
+| `skills/sector-industrials/SKILL.md` | Industrials | XLI, ITA |
+| `skills/sector-utilities/SKILL.md` | Utilities | XLU |
+| `skills/sector-materials/SKILL.md` | Materials | XLB |
+| `skills/sector-real-estate/SKILL.md` | Real Estate | XLRE, VNQ |
+| `skills/sector-comms/SKILL.md` | Communication Services | XLC |
 
 *★ = active portfolio holding*
 
 ### Alternative Data Sub-Agents
 | Skill | Focus |
 |-------|-------|
-| `skills/alternative-data/SKILL-sentiment-news.md` | X/Twitter KOL, Polymarket, Reddit, Fear & Greed |
-| `skills/alternative-data/SKILL-cta-positioning.md` | CFTC COT, systematic positioning, crowding |
-| `skills/alternative-data/SKILL-options-derivatives.md` | VIX, SKEW, GEX, P/C ratios, unusual activity |
-| `skills/alternative-data/SKILL-politician-signals.md` | STOCK Act, Fed/Treasury statements, geopolitical |
+| `skills/alt-sentiment-news/SKILL.md` | X/Twitter KOL, Polymarket, Reddit, Fear & Greed |
+| `skills/alt-cta-positioning/SKILL.md` | CFTC COT, systematic positioning, crowding |
+| `skills/alt-options-derivatives/SKILL.md` | VIX, SKEW, GEX, P/C ratios, unusual activity |
+| `skills/alt-politician-signals/SKILL.md` | STOCK Act, Fed/Treasury statements, geopolitical |
 
 ### Institutional Intelligence Sub-Agents
 | Skill | Focus |
 |-------|-------|
-| `skills/institutional/SKILL-institutional-flows.md` | ETF flows, dark pool, 13D/13G filings |
-| `skills/institutional/SKILL-hedge-fund-intel.md` | 16 tracked funds, 13F, fund commentary |
+| `skills/inst-institutional-flows/SKILL.md` | ETF flows, dark pool, 13D/13G filings |
+| `skills/inst-hedge-fund-intel/SKILL.md` | tracked funds, 13F, fund commentary |
 
 ### Specialized Tools
 | Skill | Triggers |
 |-------|---------|
-| `skills/SKILL-thesis.md` | "add thesis", "close thesis", "update thesis" |
-| `skills/SKILL-thesis-tracker.md` | "check my theses", "thesis review", "portfolio check" |
-| `skills/SKILL-sector-rotation.md` | "sector rotation", "where's the money flowing" |
-| `skills/SKILL-sector-heatmap.md` | "sector heatmap", "sector breakdown" |
-| `skills/SKILL-earnings.md` | "earnings", "earnings calendar", "how did X report" |
-| `skills/SKILL-deep-dive.md` | "deep dive on X", "full analysis of X", "research X" |
-| `skills/SKILL-premarket-pulse.md` | "pre-market", "morning scan", "quick scan" |
+| `skills/thesis/SKILL.md` | "add thesis", "close thesis", "update thesis" |
+| `skills/thesis-tracker/SKILL.md` | "check my theses", "thesis review", "portfolio check" |
+| `skills/sector-rotation/SKILL.md` | "sector rotation", "where's the money flowing" |
+| `skills/sector-heatmap/SKILL.md` | "sector heatmap", "sector breakdown" |
+| `skills/earnings/SKILL.md` | "earnings", "earnings calendar", "how did X report" |
+| `skills/deep-dive/SKILL.md` | "deep dive on X", "full analysis of X", "research X" |
+| `skills/premarket-pulse/SKILL.md` | "pre-market", "morning scan", "quick scan" |
 
 ---
 
@@ -136,27 +136,31 @@ config/hedge-funds.md            ← Tracked fund registry with CIK, X handle, s
 config/data-sources.md           ← 30+ X accounts, Polymarket topics, databases
 config/email-research.md         ← Dedicated Gmail setup + subscription list
 
-skills/SKILL-orchestrator.md     ← MASTER: 7-phase pipeline driver
-skills/SKILL-digest.md           ← Legacy pointer → redirects to orchestrator
-skills/SKILL-macro.md            ← Macro analysis (v2)
-skills/SKILL-equity.md           ← US equities overview (v2)
-skills/SKILL-crypto.md           ← Crypto analysis (v2)
-skills/SKILL-bonds.md            ← Bonds & rates (v2)
-skills/SKILL-commodities.md      ← Commodities (v2)
-skills/SKILL-forex.md            ← Forex (v2)
-skills/SKILL-international.md    ← International/EM analysis
-skills/SKILL-*.md                ← 7 specialized tool skills
+skills/orchestrator/SKILL.md     ← MASTER: pipeline driver
+skills/digest/SKILL.md           ← Pointer → redirects to orchestrator
+skills/macro/SKILL.md            ← Macro analysis
+skills/equity/SKILL.md           ← US equities overview
+skills/crypto/SKILL.md           ← Crypto analysis
+skills/bonds/SKILL.md            ← Bonds & rates
+skills/commodities/SKILL.md      ← Commodities
+skills/forex/SKILL.md            ← Forex
+skills/international/SKILL.md    ← International/EM analysis
+skills/*/SKILL.md                ← All skill packages
 
-skills/sectors/                  ← 11 GICS sector sub-agent skill files
-skills/alternative-data/         ← 4 alternative data sub-agent skill files
-skills/institutional/            ← 2 institutional intelligence skill files
+skills/sector-*/                 ← 11 GICS sector skill packages
+skills/alt-*/                    ← 4 alternative data skill packages
+skills/inst-*/                   ← 2 institutional intelligence skill packages
 
-templates/master-digest.md       ← Daily output template (v2 — expanded)
-templates/sector-report.md       ← Sector output template
-templates/alt-data-report.md     ← Alternative data output template
-templates/institutional-report.md ← Institutional intelligence template
-templates/weekly-digest.md       ← Weekly rollup template
-templates/monthly-digest.md      ← Monthly rollup template
+templates/digest-snapshot-schema.json ← Canonical daily digest snapshot schema (DB-first)
+templates/schemas/weekly-digest.schema.json ← Weekly rollup schema
+templates/schemas/monthly-digest.schema.json ← Monthly rollup schema
+templates/schemas/rebalance-decision.schema.json ← Rebalance decision schema
+templates/schemas/sector-report.schema.json       ← Sector report schema
+templates/schemas/asset-recommendation.schema.json ← Asset analyst report schema
+templates/schemas/portfolio-recommendation.schema.json ← Portfolio recommendation schema
+templates/schemas/deliberation-transcript.schema.json ← Deliberation transcript schema
+outputs/weekly/YYYY-Wnn.json      ← Weekly rollups (JSON-first)
+outputs/monthly/YYYY-MM.json      ← Monthly rollups (JSON-first)
 
 outputs/daily/YYYY-MM-DD/       ← Folder per day
   DIGEST.md                     ← Master synthesized digest

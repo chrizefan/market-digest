@@ -55,21 +55,35 @@ for SECTOR in $SECTORS; do
   touch "$OUTPUT_DIR/sectors/$SECTOR.md"
 done
 
-# Set up DIGEST.md from template
-cp "templates/master-digest.md" "$OUTPUT_DIR/DIGEST.md"
-sedi "s/{{DATE}}/$DATE/g" "$OUTPUT_DIR/DIGEST.md"
-sedi "s/{{TIMESTAMP}}/$(date '+%Y-%m-%d %H:%M %Z')/g" "$OUTPUT_DIR/DIGEST.md"
+# JSON-first: create snapshot.json scaffold (digest is stored in Supabase DB-first)
+cat > "$OUTPUT_DIR/snapshot.json" << EOF
+{
+  "schema_version": "1.0",
+  "date": "${DATE}",
+  "run_type": "baseline",
+  "baseline_date": null,
+  "regime": {},
+  "market_data": {},
+  "segment_biases": {},
+  "sector_scorecard": [],
+  "theses": [],
+  "portfolio": { "posture": "Neutral", "cash_pct": null, "positions": [], "proposed_positions": [] },
+  "actionable": [],
+  "risks": [],
+  "narrative": {}
+}
+EOF
 
 echo "✅ Created BASELINE directory: $OUTPUT_DIR"
 echo "   _meta.json: type=baseline, week=${WEEK_LABEL}"
-echo "   Files: DIGEST.md + 10 segment files + 11 sector files"
+echo "   Files: snapshot.json + 10 segment files + 11 sector files (legacy archive)"
 echo ""
 echo "📋 PASTE THIS INTO CLAUDE (digiquant-atlas project):"
 echo "=================================================="
 echo "Run the WEEKLY BASELINE digest for $DATE (forced baseline — ${WEEK_LABEL})."
 echo ""
 echo "This is a forced baseline (non-Sunday). Run the full 9-phase pipeline."
-echo "Start by reading skills/SKILL-weekly-baseline.md."
+echo "Start by reading skills/weekly-baseline/SKILL.md."
 echo ""
 echo "Key context:"
 echo "  - Output dir: $OUTPUT_DIR"

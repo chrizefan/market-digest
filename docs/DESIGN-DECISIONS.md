@@ -107,7 +107,7 @@ description: >
 ...template snippets...
 ```
 
-Skills are stored in `skills/` with a naming convention: `SKILL-{name}.md`. Sub-agent skills are nested: `skills/sectors/`, `skills/alternative-data/`, `skills/institutional/`.
+Skills are stored in `skills/<skill-slug>/SKILL.md` packages. Sector and sub-agent skills follow the same convention (e.g. `skills/sector-technology/SKILL.md`, `skills/alt-sentiment-news/SKILL.md`, `skills/inst-institutional-flows/SKILL.md`).
 
 ### Alternatives Considered
 
@@ -532,7 +532,7 @@ Tier 2 (fallback): MCP tool servers
 Both tiers → same JSON output schema
 ```
 
-`SKILL-mcp-data-fetch.md` documents the MCP fallback path. The output format matches `quotes.json` and `macro.json` schemas so downstream skills don't need to know which tier was used.
+`skills/mcp-data-fetch/SKILL.md` documents the MCP fallback path. The output format matches `quotes.json` and `macro.json` schemas so downstream skills don't need to know which tier was used.
 
 ### Trade-offs
 

@@ -13,7 +13,7 @@ sedi() { sed -i.bak "$@" && rm -f "${@: -1}.bak"; }
 YEAR=$(date +%Y)
 WEEK=$(date +%V)
 WEEK_LABEL="${YEAR}-W${WEEK}"
-OUTPUT_FILE="outputs/weekly/${WEEK_LABEL}.md"
+OUTPUT_FILE="outputs/weekly/${WEEK_LABEL}.json"
 
 echo ""
 echo "📅 Weekly Rollup — $WEEK_LABEL"
@@ -79,17 +79,49 @@ if [ -z "$BASELINE_DATE" ] && [ "$DELTA_COUNT" -eq 0 ]; then
   exit 1
 fi
 
-# ── Create the weekly file from template ─────────────────────────────────────
+# ── Create the weekly JSON artifact scaffold ─────────────────────────────────
 mkdir -p "outputs/weekly"
-cp "templates/weekly-digest.md" "$OUTPUT_FILE"
-sedi "s/{{WEEK_LABEL}}/$WEEK_LABEL/g" "$OUTPUT_FILE"
-sedi "s/{{WEEK}}/$WEEK/g" "$OUTPUT_FILE"
-sedi "s/{{YEAR}}/$YEAR/g" "$OUTPUT_FILE"
-sedi "s/{{TIMESTAMP}}/$(date '+%Y-%m-%d %H:%M %Z')/g" "$OUTPUT_FILE"
-
-DATE_RANGE="$BASELINE_DATE to $(echo $DELTA_DATES | tr ' ' '\n' | tail -1 | tr -d '\n')"
-[ -z "$DELTA_DATES" ] && DATE_RANGE="$BASELINE_DATE (baseline only)"
-sedi "s/{{DATE_RANGE}}/$DATE_RANGE/g" "$OUTPUT_FILE"
+DATE_RANGE_START="$BASELINE_DATE"
+DATE_RANGE_END="$(echo $DELTA_DATES | tr ' ' '\n' | tail -1 | tr -d '\n')"
+[ -z "$DATE_RANGE_END" ] && DATE_RANGE_END="$BASELINE_DATE"
+cat > "$OUTPUT_FILE" << EOF
+{
+  "schema_version": "1.0",
+  "doc_type": "weekly_digest",
+  "date": "${DATE_RANGE_END}",
+  "week_label": "${WEEK_LABEL}",
+  "meta": {
+    "generated_at": "$(date '+%Y-%m-%d %H:%M %Z')",
+    "date_range": { "start": "${DATE_RANGE_START}", "end": "${DATE_RANGE_END}" },
+    "sources": {
+      "baseline_date": "${BASELINE_DATE}",
+      "delta_dates": [$(echo $DELTA_DATES | tr ' ' '\n' | awk 'NF{print "\"" $0 "\","}' | sed '$ s/,$//')]
+    },
+    "tags": []
+  },
+  "body": {
+    "executive_summary": "",
+    "daily_bias_shifts": [],
+    "regime_summary": {
+      "growth": { "baseline": "", "friday": "", "weekly_shift": "" },
+      "inflation": { "baseline": "", "friday": "", "weekly_shift": "" },
+      "policy": { "baseline": "", "friday": "", "weekly_shift": "" },
+      "risk_appetite": { "baseline": "", "friday": "", "weekly_shift": "" },
+      "net_change": ""
+    },
+    "asset_class_summary": {
+      "equities": { "weekly_bias": "", "highlights": "" },
+      "crypto": { "weekly_bias": "", "highlights": "" },
+      "bonds": { "weekly_bias": "", "highlights": "" },
+      "commodities": { "weekly_bias": "", "highlights": "" },
+      "forex": { "weekly_bias": "", "highlights": "" }
+    },
+    "thesis_review": [],
+    "next_week_setup": { "key_events": [], "heading_in_bias": "", "primary_watch": "", "positions_to_review": [] },
+    "key_takeaway": ""
+  }
+}
+EOF
 
 echo "✅ Created: $OUTPUT_FILE"
 echo ""
@@ -111,8 +143,7 @@ if [ -n "$DELTA_FILES" ]; then
 fi
 echo "Output template: $OUTPUT_FILE"
 echo ""
-echo "Fill in all sections of the weekly template."
-echo "Add a 'Week Evolution' table showing how bias shifted day by day (see template)."
-echo "Reference outputs/weekly/$WEEK_LABEL.md for structure."
+echo "Fill in the weekly JSON payload (schema: templates/schemas/weekly-digest.schema.json)."
+echo "Return JSON only. Do NOT write markdown."
 echo "==========================================================="
 echo ""

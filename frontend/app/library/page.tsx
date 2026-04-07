@@ -9,6 +9,7 @@ import {
   Calendar, ChevronDown, ChevronRight, Filter, FileText, X,
 } from 'lucide-react';
 import { Doc } from '@/lib/types';
+import { getDocumentContentById } from '@/lib/queries';
 
 /* ── Mini Calendar ── */
 interface MiniCalendarProps {
@@ -96,13 +97,13 @@ const CATEGORIES: Record<string, string[]> = {
                       'consumer-discretionary', 'consumer-staples', 'utilities', 'materials',
                       'real-estate', 'communication-services'],
   'Intelligence':    ['alt-data', 'institutional'],
-  'Digest':          ['digest', 'DIGEST'],
+  'Digest':          ['digest', 'digest-delta', 'DIGEST', 'weekly/', 'monthly/', 'deep-dives/'],
 };
 
-function categorize(filename: string | undefined): string {
-  const lower = (filename || '').toLowerCase();
+function categorize(documentKey: string | undefined): string {
+  const lower = (documentKey || '').toLowerCase();
   for (const [cat, keys] of Object.entries(CATEGORIES)) {
-    if (keys.some(k => lower.includes(k))) return cat;
+    if (keys.some((k) => lower.includes(k.toLowerCase()))) return cat;
   }
   return 'Other';
 }
@@ -112,6 +113,7 @@ export default function LibraryPage() {
   const [cadence, setCadence] = useState<Cadence>('Daily');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [activeFile, setActiveFile] = useState<Doc | null>(null);
+  const [activeLoading, setActiveLoading] = useState(false);
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -254,7 +256,7 @@ export default function LibraryPage() {
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border-subtle bg-bg-secondary">
                   <div className="flex items-center gap-2 text-sm">
                     <FileText size={14} className="text-fin-blue" />
-                    <span className="font-mono">{activeFile.filename}</span>
+                    <span className="font-mono">{activeFile.title || activeFile.filename}</span>
                   </div>
                   <button
                     onClick={() => setActiveFile(null)}
@@ -265,9 +267,13 @@ export default function LibraryPage() {
                   </button>
                 </div>
                 <div className="p-6 prose prose-invert max-w-none text-sm leading-relaxed overflow-auto max-h-[70vh]">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {activeFile.content || '_No content available._'}
-                  </ReactMarkdown>
+                  {activeLoading ? (
+                    <div className="text-text-secondary">Loading document…</div>
+                  ) : (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {activeFile.content || '_No content available._'}
+                    </ReactMarkdown>
+                  )}
                 </div>
               </div>
             ) : (
@@ -281,11 +287,22 @@ export default function LibraryPage() {
                       {files.map((f, i) => (
                         <button
                           key={i}
-                          onClick={() => setActiveFile(f)}
+                          onClick={async () => {
+                            setActiveLoading(true);
+                            setActiveFile({ ...f, content: f.content });
+                            try {
+                              const row = await getDocumentContentById(f.id);
+                              setActiveFile({ ...f, content: row.content || '' });
+                            } catch {
+                              setActiveFile({ ...f, content: '_Failed to load content._' });
+                            } finally {
+                              setActiveLoading(false);
+                            }
+                          }}
                           className="w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02] transition-colors"
                         >
                           <FileText size={14} className="text-fin-blue/60 shrink-0" />
-                          <span className="font-mono text-sm">{f.filename}</span>
+                          <span className="font-mono text-sm">{f.title || f.filename}</span>
                           <span className="ml-auto text-[11px] text-text-muted">{f.phase || ''}</span>
                         </button>
                       ))}

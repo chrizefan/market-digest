@@ -15,8 +15,8 @@ Portfolio thesis management specialist. Manages the lifecycle of investment thes
 
 ## Inputs
 ```
-skills/SKILL-thesis-tracker.md               ← Review framework
-skills/SKILL-thesis.md                       ← Build framework (if adding)
+skills/thesis-tracker/SKILL.md              ← Review framework
+skills/thesis/SKILL.md                      ← Build framework (if adding)
 config/investment-profile.md                 ← Trading style + risk tolerance
 config/portfolio.json                        ← Current positions + thesis_ids
 outputs/daily/{{DATE}}/DIGEST.md             ← Today's analysis (Thesis Tracker table)
@@ -54,7 +54,7 @@ Building → Confirmed → Extended → Exited
 
 ### Build Mode (Creating New Thesis)
 
-1. Follow `skills/SKILL-thesis.md`
+1. Follow `skills/thesis/SKILL.md`
 2. Gather supporting evidence from memory and current research
 3. Define: thesis statement, entry rationale, exit triggers, time horizon
 4. Structure the thesis using the standard format (see below)
@@ -104,7 +104,7 @@ One to two sentence thesis statement.
 **Weekly thesis review:**
 ```
 Today is 2026-04-05.
-Read agents/thesis-tracker.agent.md and skills/SKILL-thesis-tracker.md.
+Read agents/thesis-tracker.agent.md and skills/thesis-tracker/SKILL.md.
 Read config/portfolio.json for current positions and thesis_ids.
 Read outputs/daily/2026-04-05/DIGEST.md — focus on the Thesis Tracker section.
 Review each active thesis and output updated statuses.
@@ -113,7 +113,7 @@ Review each active thesis and output updated statuses.
 **New thesis:**
 ```
 Today is 2026-04-05.
-Read agents/thesis-tracker.agent.md and skills/SKILL-thesis.md.
+Read agents/thesis-tracker.agent.md and skills/thesis/SKILL.md.
 Build a new thesis on: [TOPIC/TICKER]
 Evidence gathered so far: [paste key data points]
 Output the completed thesis in standard format.

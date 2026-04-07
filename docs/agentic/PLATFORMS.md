@@ -73,7 +73,7 @@ MDC files in `.cursor/rules/` support frontmatter for smart rule application:
 | File | Applies When |
 |------|-------------|
 | `.cursor/rules/01-overview.mdc` | Always (`alwaysApply: true`) |
-| `.cursor/rules/02-skills-workflow.mdc` | When editing `skills/**/*.md` |
+| `.cursor/rules/02-skills-workflow.mdc` | When editing `skills/**/SKILL.md` |
 | `.cursor/rules/03-memory-outputs.mdc` | When editing `memory/**/*.md` or `outputs/**/*.md` |
 
 Cursor reads these automatically — no setup needed.
@@ -84,7 +84,7 @@ Cursor reads these automatically — no setup needed.
 
 **Usage patterns in Cursor:**
 - Open Composer (Cmd+I) with `@codebase` for full context
-- Reference skill files directly: "Using @skills/SKILL-macro.md, run today's analysis"
+- Reference skill files directly: "Using @skills/macro/SKILL.md, run today's analysis"
 - Use Agent mode for multi-step pipeline phases
 
 ---
@@ -99,7 +99,7 @@ Windsurf reads `.windsurfrules` from the project root automatically.
 
 **Usage patterns:**
 - Use Cascade (agent mode) for multi-step workflow execution
-- Reference skill files in prompts: "Follow skills/SKILL-equity.md"
+- Reference skill files in prompts: "Follow skills/equity/SKILL.md"
 
 ---
 
@@ -114,7 +114,7 @@ Aider works well with this repo via `--read` flags to load context files:
 aider --read AGENTS.md --read config/watchlist.md --read config/preferences.md
 
 # Run a specific skill
-aider --read skills/SKILL-macro.md --message "Run the macro analysis for today"
+aider --read skills/macro/SKILL.md --message "Run the macro analysis for today"
 ```
 
 **Optional config** `.aider.conf.yml`:

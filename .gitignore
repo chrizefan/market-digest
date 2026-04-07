@@ -24,6 +24,9 @@ frontend/.env.local
 .next/
 out/
 
+# Tooling caches
+.vite/
+
 # Node (if any scripts use it)
 node_modules/
 
