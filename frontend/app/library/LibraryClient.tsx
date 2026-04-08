@@ -143,9 +143,8 @@ function categorizeDoc(d: Doc): string {
   return 'Other';
 }
 
-function LibraryPageInner() {
+function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlDocKey: string | null }) {
   const { data, loading, error } = useDashboard();
-  const searchParams = useSearchParams();
   const [cadence, setCadence] = useState<Cadence>('Daily');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [activeFile, setActiveFile] = useState<Doc | null>(null);
@@ -174,9 +173,6 @@ function LibraryPageInner() {
   }, [activeDocs]);
 
   const effDate = selectedDate && dates.includes(selectedDate) ? selectedDate : dates[0] || null;
-
-  const urlDate = searchParams.get('date');
-  const urlDocKey = searchParams.get('docKey');
 
   const dateDocs = useMemo<Doc[]>(() => {
     let list = activeDocs.filter((d) => d.date === effDate);
@@ -405,13 +401,17 @@ function LibraryPageInner() {
 }
 
 export default function LibraryClient() {
+  const searchParams = useSearchParams();
+  const urlDate = searchParams.get('date');
+  const urlDocKey = searchParams.get('docKey');
+
   // Keep the Suspense boundary *inside* the client component too, so the page
   // can show a fallback quickly during client-side navigation updates.
+  // NOTE: `useSearchParams()` is used within the subtree; this component itself
+  // is wrapped in a server Suspense boundary in `page.tsx` for prerender safety.
   return (
-    <Suspense
-      fallback={<div className="flex items-center justify-center h-screen text-text-secondary">Loading…</div>}
-    >
-      <LibraryPageInner />
+    <Suspense fallback={<div className="flex items-center justify-center h-screen text-text-secondary">Loading…</div>}>
+      <LibraryPageInner urlDate={urlDate} urlDocKey={urlDocKey} />
     </Suspense>
   );
 }

@@ -1,3 +1,8 @@
+---
+name: orchestrator
+description: Master pipeline driver and DB-first publishing entrypoint
+---
+
 # Skill Package — Orchestrator
 
 - **Entry file**: `skills/orchestrator/SKILL.md`

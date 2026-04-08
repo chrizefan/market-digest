@@ -1,3 +1,8 @@
+---
+name: portfolio-manager
+description: Portfolio construction and rebalance decision skill package
+---
+
 # Skill Package — Portfolio Manager
 
 - **Entry file**: `skills/portfolio-manager/SKILL.md`
