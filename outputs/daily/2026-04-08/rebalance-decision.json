@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0",
+  "date": "2026-04-08",
+  "status": "TRIGGERS_FIRED",
+  "triggers": [
+    "DBO_STOP_LOSS: WTI tested $91.11 intraday (stop at WTI ~$95 / DBO ~$18)",
+    "T001_THESIS_BREAK: Iran War geopolitical premium removed by US-Iran-Israel ceasefire",
+    "REGIME_SHIFT: Geopolitical Shock -> Transitional/Unclear"
+  ],
+  "deliberation_conducted": true,
+  "pm_decision": "REBALANCE",
+  "trades": [
+    {
+      "ticker": "XLE",
+      "action": "SELL",
+      "from_weight_pct": 12,
+      "to_weight_pct": 0,
+      "reason": "T-001 energy/geopolitical thesis BROKEN. Ceasefire removes war premium. Full exit per thesis-invalidation rule.",
+      "urgency": "execute_at_open"
+    },
+    {
+      "ticker": "DBO",
+      "action": "SELL",
+      "from_weight_pct": 5,
+      "to_weight_pct": 0,
+      "reason": "Stop loss triggered. WTI $91 intraday (stop was ~$95). T-001 also broken. Mechanical exit.",
+      "urgency": "execute_immediately"
+    },
+    {
+      "ticker": "IAU",
+      "action": "SELL_PARTIAL",
+      "from_weight_pct": 20,
+      "to_weight_pct": 15,
+      "reason": "Partial profit-take at gold ATH ($4,803). War-premium sub-thesis partially unwinds. Dollar-weakness sub-thesis supports 15% hold. Reduce 5%.",
+      "urgency": "execute_at_open"
+    },
+    {
+      "ticker": "BIL",
+      "action": "BUY",
+      "from_weight_pct": 40,
+      "to_weight_pct": 60,
+      "reason": "Cash increase to approach regime playbook 80% target (Transitional/Unclear). Absorbs XLE 12% + DBO 5% + IAU 5% = 22% of proceeds. Final BIL+SHY = 75% cash-equivalent.",
+      "urgency": "execute_at_open"
+    },
+    {
+      "ticker": "XLP",
+      "action": "BUY",
+      "from_weight_pct": 8,
+      "to_weight_pct": 10,
+      "reason": "Modest add. Defensive quality in transitional regime. Lower oil supports consumer staples margins. T-003 thesis intact.",
+      "urgency": "execute_at_open"
+    }
+  ],
+  "post_trade_portfolio": {
+    "BIL": 60,
+    "SHY": 15,
+    "IAU": 15,
+    "XLP": 10,
+    "XLE": 0,
+    "DBO": 0
+  },
+  "cash_equivalent_pct": 75,
+  "regime_playbook_target_pct": 80,
+  "regime_playbook_gap": 5,
+  "next_review_trigger": "April 10 Islamabad peace talks OR ceasefire collapse",
+  "notes": "All analyst recommendations accepted by PM. No overrides. The 5% gap vs 80% playbook target is deliberate — IAU's dollar-weakness sub-thesis and XLP's defensive quality justify the slight deviation. If Islamabad talks succeed and ceasefire is extended, re-evaluate adding broad equity exposure (SPY/QQQ or sector ETFs)."
+}
