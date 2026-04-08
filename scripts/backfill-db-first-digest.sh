@@ -8,6 +8,19 @@
 #
 # Args: baseline Sunday date, then delta dates in order (each delta after the first chains on the previous calendar day).
 set -e
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  echo "Backfill DB-first digest into Supabase."
+  echo ""
+  echo "Usage:"
+  echo "  $0 <baseline-yyyy-mm-dd> <delta-yyyy-mm-dd> [more-delta-dates...]"
+  echo ""
+  echo "Notes:"
+  echo "  - Reads from outputs/daily/<date>/ snapshot.json or DIGEST-DELTA.md"
+  echo "  - Writes to Supabase via scripts/materialize_snapshot.py"
+  exit 0
+fi
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 PY="${ROOT}/.venv/bin/python"
