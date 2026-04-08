@@ -23,6 +23,7 @@ export const metadata = {
   description: 'AI-orchestrated market intelligence dashboard',
   icons: {
     icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
   },
 };
 
