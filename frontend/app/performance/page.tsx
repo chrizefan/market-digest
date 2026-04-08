@@ -347,6 +347,7 @@ export default function PerformancePage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const positions = useMemo(() => data?.positions ?? [], [data]);
+  const positionHistory = useMemo(() => data?.position_history ?? [], [data]);
   const benchmarks = useMemo(() => data?.benchmarks ?? {}, [data]);
   const metrics = data?.calculated;
   const snaps = useMemo(() => data?.portfolio?.snapshots ?? [], [data]);
@@ -358,19 +359,25 @@ export default function PerformancePage() {
     const snapMap: Record<string, number | null> = {};
     snaps.forEach(s => { snapMap[s.date] = s.nav; });
 
+    const inceptionDate = snaps.length ? snaps[0].date : null;
     const dateSet = new Set(snaps.map(s => s.date));
     if (showBenchmarks) {
       selectedBenchmarks.forEach(b => {
-        (benchmarks[b]?.history || []).forEach(h => dateSet.add(h.date));
+        (benchmarks[b]?.history || [])
+          .filter(h => !inceptionDate || h.date >= inceptionDate)
+          .forEach(h => dateSet.add(h.date));
       });
     }
-    const allDates = [...dateSet].sort();
+    const allDates = [...dateSet]
+      .filter(d => !inceptionDate || d >= inceptionDate)
+      .sort();
 
     const bases: Record<string, number> = {};
     if (showBenchmarks) {
       selectedBenchmarks.forEach(b => {
-        const hist = benchmarks[b]?.history || [];
-        if (hist.length) bases[b] = hist[0].price;
+        const hist = (benchmarks[b]?.history || [])
+          .filter(h => !inceptionDate || h.date >= inceptionDate);
+        if (hist.length) bases[b] = hist[0].price; // base=100 at portfolio inception
       });
     }
 
@@ -378,7 +385,9 @@ export default function PerformancePage() {
     if (showBenchmarks) {
       selectedBenchmarks.forEach(b => {
         const m: Record<string, number> = {};
-        (benchmarks[b]?.history || []).forEach(h => { m[h.date] = h.price; });
+        (benchmarks[b]?.history || [])
+          .filter(h => !inceptionDate || h.date >= inceptionDate)
+          .forEach(h => { m[h.date] = h.price; });
         benchMaps[b] = m;
       });
     }
@@ -394,6 +403,20 @@ export default function PerformancePage() {
       return row;
     });
   }, [snaps, benchmarks, showBenchmarks, selectedBenchmarks]);
+
+  const positionWeightChartData = useMemo(() => {
+    if (!positionHistory.length) return [];
+    const tickers = [...new Set(positions.map((p) => p.ticker))];
+    const byDate: Record<string, Record<string, number>> = {};
+    for (const row of positionHistory) {
+      if (!tickers.includes(row.ticker)) continue;
+      if (!byDate[row.date]) byDate[row.date] = {};
+      byDate[row.date][row.ticker] = row.weight_pct;
+    }
+    return Object.keys(byDate)
+      .sort()
+      .map((date) => ({ date, ...byDate[date] }));
+  }, [positionHistory, positions]);
 
   if (loading) return <div className="flex items-center justify-center h-screen text-text-secondary">Loading…</div>;
   if (error || !data || !metrics) return <div className="flex items-center justify-center h-screen text-fin-red">{error || 'Failed to load'}</div>;
@@ -492,6 +515,39 @@ export default function PerformancePage() {
 
         {/* Position P&L Table */}
         <PositionPnlTable positions={positions} />
+
+        {/* Position Weights Over Time */}
+        {positionWeightChartData.length > 1 && positions.length > 0 && (
+          <div className="glass-card p-6">
+            <h3 className="text-lg font-semibold mb-4">Position Weights (History)</h3>
+            <div className="h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={positionWeightChartData}>
+                  <CartesianGrid stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="date" tick={{ fill: '#71717a', fontSize: 11 }} tickFormatter={(d: string) => d?.slice(5)} />
+                  <YAxis tick={{ fill: '#71717a', fontSize: 11 }} domain={[0, 100]} />
+                  <Tooltip
+                    contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px', fontSize: '0.85rem' }}
+                    formatter={(val: number, name: string) => [`${Number(val).toFixed(1)}%`, name]}
+                  />
+                  <Legend />
+                  {positions.map((p, i) => (
+                    <Line
+                      key={p.ticker}
+                      type="monotone"
+                      dataKey={p.ticker}
+                      name={p.ticker}
+                      stroke={['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#06B6D4','#F97316'][i % 7]}
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  ))}
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
 
         {/* Advanced Statistics */}
         <div className="glass-card overflow-hidden">

@@ -173,6 +173,12 @@ export interface DashboardData {
   portfolio: Portfolio;
   positions: Position[];
   portfolio_management: PortfolioManagement;
+  /** Raw position weights over time for performance/analysis views. */
+  position_history: Array<{
+    date: string;
+    ticker: string;
+    weight_pct: number;
+  }>;
   ratios: Array<{ long_ticker: string; short_ticker: string; net_weight: number }>;
   docs: Doc[];
   benchmarks: BenchmarkHistoryMap;
