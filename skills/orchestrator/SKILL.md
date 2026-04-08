@@ -57,7 +57,7 @@ Then load the following. Do NOT summarize to the user — just internalize:
 1. `config/watchlist.md` — full asset universe
 2. `config/investment-profile.md` — investor identity, horizon, risk tolerance, asset preferences, regime playbook
 3. `config/hedge-funds.md` — tracked fund reference
-4. `config/data-sources.md` — tracked signal sources, KOL accounts, Polymarket topics
+4. `docs/ops/data-sources.md` — tracked signal sources, KOL accounts, Polymarket topics
 5. Yesterday's `DIGEST.md` if it exists (for continuity)
 
 **After loading**, internally note:
@@ -460,8 +460,9 @@ Verifies Supabase tables have current data for today's date. **Do not proceed to
 - **Sources Used Today**: Rate every data source accessed (1-5 stars for quality/freshness)
 - **Sources That Failed**: Log any that were unavailable, paywalled, stale, or returned errors
 - **New Sources Discovered**: Record any new X accounts, URLs, or data providers found during research
-- **GUARDRAIL**: Do NOT modify `config/data-sources.md` — only record observations here
-- **Save to**: `outputs/daily/{{DATE}}/evolution/sources.md`
+- **GUARDRAIL**: Do NOT modify `docs/ops/data-sources.md` — only record observations in the JSON artifact
+- **Save to (JSON-first)**: `outputs/evolution/{{DATE}}/sources.json` — schema `templates/schemas/evolution-sources.schema.json`
+- **Scaffold**: `./scripts/scaffold_evolution_day.sh {{DATE}}` if the folder is empty
 
 ### 9B: Quality Post-Mortem
 - **Signal Accuracy**: Check yesterday's actionable items and predictions — were they correct? Mark ✅/❌/⏳
@@ -469,7 +470,7 @@ Verifies Supabase tables have current data for today's date. **Do not proceed to
 - **Data Freshness Issues**: Flag any data that was stale or delayed
 - **Quality Score**: Self-assess today's digest on these 5 dimensions (1-5 scale each):
   - Data completeness | Signal clarity | Actionability | Continuity with prior | Positioning quality
-- **Save to**: `outputs/daily/{{DATE}}/evolution/quality-log.md`
+- **Save to (JSON-first)**: `outputs/evolution/{{DATE}}/quality-log.json` — schema `templates/schemas/evolution-quality-log.schema.json`
 
 ### 9C: Improvement Proposals
 
@@ -482,14 +483,14 @@ Verifies Supabase tables have current data for today's date. **Do not proceed to
    - Output schema/structure (digest snapshot schema `templates/digest-snapshot-schema.json` is immutable)
    - Risk profile or position sizing (`config/investment-profile.md` §4 Risk Constraints)
    - These guardrails themselves
-6. Read `outputs/daily/{{DATE}}/evolution/proposals.md` before filing to avoid duplicates
-- **Save to**: `outputs/daily/{{DATE}}/evolution/proposals.md`
+6. Read `outputs/evolution/{{DATE}}/proposals.json` before filing to avoid duplicates
+- **Save to (JSON-first)**: `outputs/evolution/{{DATE}}/proposals.json` — schema `templates/schemas/evolution-proposals.schema.json`
 
 ### 9D: Document Applied Improvements
 If any previously pending proposals have been approved and applied during this session, document them in `docs/evolution-changelog.md` with:
 - Date applied, proposal ID, category
 - Target file(s) and exact change made
-- Rationale (reference quality-log or sources.md evidence)
+- Rationale (reference quality-log or sources JSON evidence)
 - Expected measurable impact
 - Commit hash
 
@@ -499,7 +500,7 @@ After completing the post-mortem, commit evolution artifacts to a **dedicated br
 
 This script will:
 1. Create a branch named `evolve/YYYY-MM-DD`
-2. Stage `outputs/daily/{{DATE}}/evolution/` and `docs/evolution-changelog.md`
+2. Stage `outputs/evolution/{{DATE}}/` and `docs/evolution-changelog.md`
 3. Push the branch and create a GitHub Pull Request
 4. Switch back to `master` so the repo is clean for the next daily run
 
@@ -507,7 +508,7 @@ This script will:
 
 ### Checkpoint: Phase 9
 Run: `./scripts/validate-phase.sh 9`
-Verifies `outputs/daily/{{DATE}}/evolution/` files exist with content.
+Verifies `outputs/evolution/{{DATE}}/*.json` artifacts exist (see script for details).
 
 ---
 
@@ -535,11 +536,11 @@ Confirm all of the following before ending the session:
 - [ ] Phase 7C: Deliberation complete; transcript in `outputs/daily/{{DATE}}/deliberation.md`; analyst reports in `positions/`
 - [ ] Phase 7D: `portfolio-recommended.md` + `rebalance-decision.md` created; `portfolio.json` proposed_positions updated
 - [ ] Phase 8: `update_tearsheet.py` pushed to Supabase; digest commit created; dashboard live
-- [ ] Phase 9: Post-mortem completed; source scorecard, quality log updated; evolution commit created
+- [ ] Phase 9: Post-mortem completed; `outputs/evolution/{{DATE}}/*.json` updated; optional `./scripts/git-commit.sh --evolution`
 
-**Total output files per day: ~21 segment files + DIGEST.md + deliberation.md + analyst positions/ + portfolio-recommended.md + rebalance-decision.md + 3 evolution files = 29 files**
+**Legacy filesystem-era count was ~29 markdown files under `outputs/daily/`; DB-first runs publish JSON snapshots and documents to Supabase instead.**
 
-Print to user: "✅ Digest complete. Two commits created: digest outputs + pipeline evolution."
+Print to user: "✅ Digest complete. Supabase updated. Evolution JSON optional; run `git-commit.sh --evolution` if you filed proposals."
 
 ---
 

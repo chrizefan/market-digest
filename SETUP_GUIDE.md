@@ -186,10 +186,7 @@ Review `memory/THESES.md` weekly. Close theses that have resolved. This is the d
 
 ### Archiving old outputs
 
-After 30 days of daily files, run:
-```bash
-./scripts/archive.sh         # compresses and archives files older than 30 days
-```
+Daily markdown digests (legacy) are kept under `archive/legacy-outputs/daily/`. New runs are DB-first (Supabase). Do not use destructive filesystem archive scripts.
 
 ---
 

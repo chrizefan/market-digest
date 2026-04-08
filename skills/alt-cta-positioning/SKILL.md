@@ -9,7 +9,7 @@ description: Analyzes CFTC Commitments of Traders (COT) data and systematic/CTA 
 CTAs (Commodity Trading Advisors) and systematic funds move markets mechanically when trends break. Their crowding creates explosive reversals. This skill quantifies their current positioning so we can anticipate forced de-risking or momentum chasing. Run before macro and segment analysis.
 
 ## Inputs
-- `config/data-sources.md` (CFTC, futures positioning sources)
+- `docs/ops/data-sources.md` (CFTC, futures positioning sources)
 - Previous session's CTA output for week-over-week comparison
 
 ---

@@ -787,6 +787,9 @@ def _render_markdown_from_payload(payload: dict) -> str:
 
     if doc_type == "weekly_digest":
         wk = payload.get("week_label") or ""
+        legacy = body.get("full_document_markdown") if isinstance(body, dict) else None
+        if isinstance(legacy, str) and legacy.strip():
+            return legacy.strip() + "\n"
         ex = str(body.get("executive_summary") or "").strip()
         kt = str(body.get("key_takeaway") or "").strip()
         out = [f"# WEEKLY DIGEST — {wk or date}".strip(), "", "## Executive Summary", ex, "", "## Key Takeaway", kt, ""]
@@ -803,6 +806,59 @@ def _render_markdown_from_payload(payload: dict) -> str:
         notes = str(body.get("pm_notes") or "").strip()
         out = [f"# REBALANCE DECISION — {date}".strip(), "", "## PM Notes", notes, ""]
         return "\n".join(out).strip() + "\n"
+
+    if doc_type == "evolution_quality_log":
+        b = body if isinstance(body, dict) else {}
+        title = str(payload.get("title") or "Quality log")
+        lines = [
+            f"# {title}",
+            f"**Date:** {date}",
+            "",
+            "## Summary",
+            str(b.get("summary") or ""),
+            "",
+            "## Triage",
+            str(b.get("triage_notes") or ""),
+            "",
+            f"**Rating:** {b.get('phase_rating') or '—'}",
+            "",
+            "## Strengths",
+            str(b.get("strengths") or ""),
+            "",
+            "## Weaknesses",
+            str(b.get("weaknesses") or ""),
+            "",
+        ]
+        return "\n".join(lines).strip() + "\n"
+
+    if doc_type == "evolution_sources":
+        b = body if isinstance(body, dict) else {}
+        title = str(payload.get("title") or "Sources")
+        parts = [f"# {title}", f"**Date:** {date}", "", "## Notes", str(b.get("notes") or ""), "", "## Ratings"]
+        for row in b.get("source_ratings") or []:
+            if isinstance(row, dict):
+                parts.append(f"- **{row.get('name')}** ({row.get('reliability')}): {row.get('notes')}")
+        return "\n".join(parts).strip() + "\n"
+
+    if doc_type == "evolution_proposals":
+        b = body if isinstance(body, dict) else {}
+        title = str(payload.get("title") or "Proposals")
+        parts = [f"# {title}", f"**Date:** {date}", ""]
+        for prop in b.get("proposals") or []:
+            if not isinstance(prop, dict):
+                continue
+            parts.extend(
+                [
+                    f"### {prop.get('id')}: {prop.get('title')}",
+                    f"**Priority:** {prop.get('priority')} | **Status:** {prop.get('status', 'open')}",
+                    "",
+                    f"**Problem:** {prop.get('problem')}",
+                    "",
+                    f"**Proposal:** {prop.get('proposal')}",
+                    "",
+                ]
+            )
+        return "\n".join(parts).strip() + "\n"
 
     # Default: show payload for audit
     try:
@@ -867,6 +923,9 @@ def _logical_document_key(repo_relative: str) -> str:
     p4 = re.sub(r"^.*outputs/deep-dives/", "deep-dives/", p)
     if p4 != p:
         return p4
+    p5 = re.sub(r"^.*outputs/evolution/", "evolution/", p)
+    if p5 != p:
+        return p5.replace("\\", "/")
     return p.split("/")[-1] if p else "unknown"
 
 
@@ -1077,18 +1136,25 @@ def load_all_markdowns(root):
                 "runType": None,
             })
 
-    # Deep dives: markdown-first, but attach payload for indexing
+    # Deep dives: JSON-first (schema: templates/schemas/deep-dive.schema.json)
     deep_path = root / "outputs" / "deep-dives"
     if deep_path.exists():
-        for md_file in sorted(deep_path.glob("*.md")):
-            if md_file.name.startswith("."):
+        for jf in sorted(deep_path.glob("*.json")):
+            if jf.name.startswith("."):
                 continue
-            content = _read_md(md_file)
-            m = re.match(r"(\d{4}-\d{2}-\d{2})", md_file.stem)
-            file_date = m.group(1) if m else datetime.fromtimestamp(os.path.getmtime(md_file)).strftime("%Y-%m-%d")
-            wrel = str(md_file.relative_to(root))
-            title = md_file.stem.replace("-", " ").title()
-            payload = _payload_from_markdown("deep_dive", file_date, title, content, {})
+            payload = _read_json(jf)
+            if not isinstance(payload, dict):
+                continue
+            if str(payload.get("doc_type") or "") != "deep_dive":
+                continue
+            file_date = str(payload.get("date") or "")
+            if not file_date:
+                m = re.match(r"(\d{4}-\d{2}-\d{2})", jf.stem)
+                file_date = m.group(1) if m else datetime.fromtimestamp(os.path.getmtime(jf)).strftime("%Y-%m-%d")
+                payload["date"] = file_date
+            title = str(payload.get("title") or jf.stem.replace("-", " ").title())
+            content = _render_markdown_from_payload(payload)
+            wrel = str(jf.relative_to(root))
             docs.append({
                 "title": title,
                 "type": "Deep Dive",
@@ -1099,10 +1165,50 @@ def load_all_markdowns(root):
                 "payload": payload,
                 "phase": None,
                 "category": "deep-dive",
-                "segment": md_file.stem,
+                "segment": jf.stem.replace(".json", ""),
                 "sector": None,
                 "runType": None,
             })
+
+    # --- 3. Evolution post-mortem (outputs/evolution/YYYY-MM-DD/*.json) ---
+    evo_root = root / "outputs" / "evolution"
+    if evo_root.exists():
+        for day_dir in sorted(evo_root.iterdir()):
+            if not day_dir.is_dir():
+                continue
+            day_date = day_dir.name
+            if not re.match(r"\d{4}-\d{2}-\d{2}", day_date):
+                continue
+            for jf in sorted(day_dir.glob("*.json")):
+                if jf.name.startswith("."):
+                    continue
+                payload = _read_json(jf)
+                if not isinstance(payload, dict):
+                    continue
+                doc_type = str(payload.get("doc_type") or "")
+                if doc_type not in ("evolution_quality_log", "evolution_sources", "evolution_proposals"):
+                    continue
+                file_date = str(payload.get("date") or day_date)
+                payload["date"] = file_date
+                title = str(payload.get("title") or jf.stem.replace("-", " ").title())
+                content = _render_markdown_from_payload(payload)
+                wrel = str(jf.relative_to(root))
+                docs.append(
+                    {
+                        "title": title,
+                        "type": doc_type.replace("_", " ").title(),
+                        "date": file_date,
+                        "path": wrel,
+                        "document_key": _logical_document_key(wrel),
+                        "content": content,
+                        "payload": payload,
+                        "phase": None,
+                        "category": "evolution",
+                        "segment": jf.stem,
+                        "sector": None,
+                        "runType": None,
+                    }
+                )
 
     return docs
 

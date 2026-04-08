@@ -2,7 +2,7 @@
 name: weekly-baseline
 description: >
   Sunday weekly baseline run. Full 9-phase pipeline that anchors the week for Mon-Sat deltas.
-  Triggers on Sundays, when running new-week.sh, or when the user says "run weekly baseline",
+  Triggers on Sundays (see scripts/new-day.sh), or when the user says "run weekly baseline",
   "baseline run", or "full baseline". In DB-first mode, produces a fully materialized digest
   snapshot JSON and publishes it to Supabase (no outputs/daily writes). Adds a Week Setup preamble
   reviewing prior week evolution and sets the analytical frame for the upcoming week.
@@ -33,7 +33,7 @@ After reading, note internally:
 - **Portfolio health**: Any pending rebalance actions from last week that went unexecuted? Any positions held longer than their thesis time horizon without a confirmation signal?
 
 ### Step 2: Week Ahead Calendar
-Scan `config/data-sources.md` and live web sources for this week's high-impact events:
+Scan `docs/ops/data-sources.md` and live web sources for this week's high-impact events:
 - FOMC meetings or Fed speeches?
 - Major data releases (CPI, NFP, PPI, PCE, retail sales, ISM)?
 - Earnings of tracked companies (from `config/watchlist.md`)?

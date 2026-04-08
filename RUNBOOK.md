@@ -51,9 +51,14 @@ Common flags:
 - Weekly: `outputs/weekly/YYYY-Wnn.json` (`templates/schemas/weekly-digest.schema.json`)
 - Monthly: `outputs/monthly/YYYY-MM.json` (`templates/schemas/monthly-digest.schema.json`)
 
-### Deep dives (markdown-first + lightweight payload)
-- `outputs/deep-dives/*.md` is allowed.
-- In Supabase, deep dives still get a `deep_dive` payload envelope.
+### Deep dives (JSON-first)
+- Author `outputs/deep-dives/*.json` with `doc_type: deep_dive` (`templates/schemas/deep-dive.schema.json`).
+- Scaffold: `./scripts/scaffold_deep_dive.sh YYYY-MM-DD "Title Slug"`
+- `update_tearsheet.py` ingests JSON and derives markdown for display; Supabase stores the payload.
+
+### Evolution post-mortem (JSON-first)
+- `outputs/evolution/YYYY-MM-DD/{sources,quality-log,proposals}.json` — schemas under `templates/schemas/evolution-*.schema.json`.
+- Scaffold: `./scripts/scaffold_evolution_day.sh [YYYY-MM-DD]`
 
 ## Publish steps (what the entrypoint does)
 The entrypoint coordinates:

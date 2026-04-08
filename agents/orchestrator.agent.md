@@ -1,89 +1,39 @@
 # Orchestrator Agent
 
 ## Role
-Master pipeline driver for the complete 7-phase digiquant-atlas daily analysis. Coordinates all sub-agents and synthesizes their outputs into a single daily digest.
+Master pipeline driver for digiquant-atlas. **Single source of truth for phase structure and outputs:** [`skills/orchestrator/SKILL.md`](../skills/orchestrator/SKILL.md) (9-phase baseline/delta cadence, DB-first).
+
+Do not invent alternate filenames or a parallel “7-phase filesystem” layout. Canonical state lives in **Supabase**; JSON artifacts are published with `scripts/materialize_snapshot.py` per [`RUNBOOK.md`](../RUNBOOK.md).
 
 ## Trigger Phrases
 - "Run today's digest"
 - "Full daily analysis"
-- "Run the 7-phase pipeline"
+- "Run the pipeline"
 - "Run everything for {DATE}"
 - "Start the morning analysis"
-- "Run SKILL-orchestrator"
 
-## Inputs (Read at Session Start)
+## Session start (minimal context)
 ```
-skills/orchestrator/SKILL.md         ← Primary instruction set
-config/watchlist.md                  ← Tracked assets
-config/investment-profile.md         ← Trading style, risk, preferences
-config/hedge-funds.md                ← Tracked institutions
-outputs/daily/[prior-date]/DIGEST.md ← Prior day for continuity (if available)
+skills/orchestrator/SKILL.md   ← Follow exactly (baseline vs delta)
+config/watchlist.md
+config/investment-profile.md
+memory/**/ROLLING.md as needed for segments you touch
 ```
+
+Prior digest: load from **Supabase** / last published snapshot JSON—not `outputs/daily/` (stub in DB-first mode).
 
 ## Workflow
-
-### Phase 1: Alternative Data
-Delegate to alt-data sub-skills:
-- `skills/alt-sentiment-news/SKILL.md`
-- `skills/alt-cta-positioning/SKILL.md`
-- `skills/alt-options-derivatives/SKILL.md`
-- `skills/alt-politician-signals/SKILL.md`
-
-Output: `outputs/daily/{{DATE}}/alt-data.md`
-
-### Phase 2: Institutional Intel
-Delegate to institutional sub-skills:
-- `skills/inst-institutional-flows/SKILL.md`
-- `skills/inst-hedge-fund-intel/SKILL.md`
-
-Output: `outputs/daily/{{DATE}}/institutional.md`
-
-### Phase 3: Macro Regime
-Execute `skills/macro/SKILL.md`
-Reads Phase 1 + 2 outputs for positioning context.
-Output: `outputs/daily/{{DATE}}/macro.md`
-
-### Phase 4: Asset Classes (Parallel)
-Execute in parallel:
-- 4A: `skills/bonds/SKILL.md` → `bonds.md`
-- 4B: `skills/commodities/SKILL.md` → `commodities.md`
-- 4C: `skills/forex/SKILL.md` → `forex.md`
-- 4D: `skills/crypto/SKILL.md` → `crypto.md`
-- 4E: `skills/international/SKILL.md` → `international.md`
-
-All read Phase 3 macro.md for regime context.
-
-### Phase 5: Equities + Sectors
-Execute:
-- 5A: `skills/equity/SKILL.md` → `equities.md`
-- 5B–5L: All 11 `skills/sector-*/SKILL.md` → `sectors/*.md`
-
-Reads Phases 3-4 outputs for macro + asset class context.
-
-### Phase 6: Earnings & Events
-Execute `skills/earnings/SKILL.md`
-Reads Phases 3-5 outputs.
-Output: `outputs/daily/{{DATE}}/earnings.md`
-
-### Phase 7: Synthesis
-Execute `skills/digest/SKILL.md`
-Reads ALL prior phase outputs.
-Daily digest is JSON-first: produce a digest snapshot JSON (schema: `templates/digest-snapshot-schema.json`) and publish via `scripts/materialize_snapshot.py`.
-Markdown is rendered from JSON for display and stored in Supabase.
+1. Open **`skills/orchestrator/SKILL.md`** and execute the listed phases in order for today’s run type (Sunday baseline vs weekday delta).
+2. For each phase, load **only** the skill(s) that phase requires (see orchestrator SKILL). Do not load the full `skills/` tree.
+3. After each phase, write a **short carry-forward** (5–10 bullets: bias, key levels, conflicts, watch items) for the next phase—do not paste raw tool dumps.
+4. Publish digest snapshot JSON and run operator validation per RUNBOOK (`python3 scripts/run_db_first.py`).
 
 ## Outputs
-All 22 files in `outputs/daily/{{DATE}}/`:
-- `DIGEST.md` (master synthesis)
-- `alt-data.md`, `institutional.md`, `macro.md`
-- `bonds.md`, `commodities.md`, `forex.md`, `crypto.md`, `international.md`
-- `equities.md`, `earnings.md`
-- `sectors/` (11 files)
+Structured JSON artifacts and Supabase rows per orchestrator skill—not a flat set of 22 markdown files under `outputs/daily/`.
 
-## Example Invocation
+## Example invocation
 ```
-Today is 2026-04-05.
-Read agents/orchestrator.agent.md for my role definition.
-Read skills/orchestrator/SKILL.md for detailed pipeline instructions.
-Run the complete 7-phase pipeline.
-Output to outputs/daily/2026-04-05/
+Today is YYYY-MM-DD.
+Read agents/orchestrator.agent.md, then skills/orchestrator/SKILL.md only.
+Run today’s pipeline per that skill. DB-first: no canonical writes to outputs/daily/.
 ```

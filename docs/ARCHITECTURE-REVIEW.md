@@ -49,7 +49,7 @@
 │  Supabase (PostgreSQL) + Static JSON fallback            │
 ├──────────────────────────────────────────────────────────┤
 │  PRESENTATION LAYER                                      │
-│  React 19 SPA (Vite) + GitHub Pages                      │
+│  Next.js app (frontend/) + Supabase-backed dashboard     │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -175,24 +175,26 @@ Skills are structured Markdown files with YAML frontmatter. They serve as execut
 
 | Script | Language | Purpose | Invoked By |
 |--------|----------|---------|------------|
-| `new-day.sh` | Bash | Create daily output folder + _meta.json | Operator (morning) |
-| `new-week.sh` | Bash | Force baseline mode on any day | Operator (manual) |
+| `run_db_first.py` | Python | DB-first entry: validate, ETL, execute-at-open | Operator (scheduled) |
+| `materialize_snapshot.py` | Python | Publish digest snapshot JSON to Supabase | Operator after agent run |
+| `validate_db_first.py` | Python | Supabase invariant checks | run_db_first.py, status.sh |
+| `validate_artifact.py` | Python | JSON schema validation for on-disk artifacts | run_db_first.py |
+| `execute_at_open.py` | Python | Record position_events at market open | run_db_first.py |
+| `new-day.sh` | Bash | Print baseline/delta Claude prompt | Operator (morning) |
 | `fetch-market-data.sh` | Bash | Orchestrate data fetch (quotes + macro) | Agent (pre-flight) |
 | `fetch-quotes.py` | Python | yfinance OHLCV + pandas-ta technicals | fetch-market-data.sh |
 | `fetch-macro.py` | Python | Yield curve XML + VIX + FX + commodities | fetch-market-data.sh |
 | `preload-history.py` | Python | Seed 2-year OHLCV cache per ticker | fetch-market-data.sh |
-| `validate-phase.sh` | Bash | Gate checks between pipeline phases | Agent (after each phase) |
-| `generate-snapshot.py` | Python | DIGEST.md + portfolio.json → snapshot.json | git-commit.sh |
-| `update-tearsheet.py` | Python | Scan outputs → dashboard-data.json + Supabase ETL | git-commit.sh |
-| `git-commit.sh` | Bash | Commit + push (digest or evolution branch) | Agent (Phase 8) |
-| `run-segment.sh` | Bash | Single-segment prompt printer | Operator (ad-hoc) |
-| `combine-digest.sh` | Bash | Synthesis/materialization prompt | Operator (ad-hoc) |
-| `materialize.sh` | Bash | Delta materialization prompt printer | combine-digest.sh |
-| `status.sh` | Bash | Project health dashboard | Operator (ad-hoc) |
-| `weekly-rollup.sh` | Bash | Weekly synthesis prompt | Operator (Friday) |
-| `monthly-rollup.sh` | Bash | Monthly synthesis prompt | Operator (month-end) |
+| `validate-phase.sh` | Bash | DB-first phase stubs / connectivity | Agent (optional) |
+| `generate-snapshot.py` | Python | Legacy snapshot sidecars | git-commit.sh |
+| `update_tearsheet.py` | Python | Scan artifacts → Supabase ETL | git-commit.sh, run_db_first.py |
+| `git-commit.sh` | Bash | Commit + push (digest or evolution branch) | Operator |
+| `status.sh` | Bash | validate_db_first + brief status | Operator (ad-hoc) |
+| `weekly-rollup.sh` | Bash | Weekly JSON scaffold + synthesis prompt | Operator (Friday) |
+| `monthly-rollup.sh` | Bash | Monthly JSON scaffold + synthesis prompt | Operator (month-end) |
 | `validate-portfolio.sh` | Bash | Validate portfolio.json constraints | Operator / Agent |
-| `archive.sh` | Bash | Archive old daily outputs | Operator (manual) |
+
+Retired filesystem helpers live under `archive/legacy-scripts/` (see README there).
 
 ### 3.3 Configuration Files
 
@@ -201,9 +203,9 @@ Skills are structured Markdown files with YAML frontmatter. They serve as execut
 | `config/watchlist.md` | ~60 ETF tracking universe across all asset classes | Operator |
 | `config/investment-profile.md` | Investor identity, risk tolerance, horizon, regime playbook | Operator (via profile wizard) |
 | `config/portfolio.json` | Live positions + proposed positions + constraints | Agent (Phase 7D) + Operator (trade execution) |
-| `config/data-sources.md` | 30+ X accounts, URLs, MCP servers, FRED series | Agent proposals only |
+| `docs/ops/data-sources.md` | 30+ X accounts, URLs, MCP servers, FRED series | Agent proposals only |
 | `config/hedge-funds.md` | 16 tracked hedge funds (CIK, X handles, style) | Operator |
-| `config/email-research.md` | Gmail setup for research subscriptions | Operator |
+| `docs/ops/email-research.md` | Gmail setup for research subscriptions | Operator |
 
 ### 3.4 Named Agent Roles
 
@@ -604,44 +606,18 @@ Each segment writes a new `## YYYY-MM-DD` entry after every analysis. At the sta
 
 ## 6. Frontend Architecture
 
-### 6.1 Component Tree
+The dashboard is a **Next.js 15** app under `frontend/` (App Router: `frontend/app/`). It reads **Supabase** as the primary data source (`@supabase/supabase-js`). Charts use **Recharts**; markdown uses **react-markdown** + **remark-gfm**. Styling uses **Tailwind CSS** v4.
 
-```
-App.jsx
-├── <canvas id="network-canvas" />     ← Starfield animation (cosmetic)
-├── useStarfield()                      ← Animation hook
-├── Sidebar.jsx                         ← Navigation (5 tabs)
-│   ├── Portfolio
-│   ├── Performance
-│   ├── Strategy
-│   ├── Library (DigestTimeline)
-│   └── Architecture
-├── Layout.jsx                          ← Top bar + page container
-└── Pages
-    ├── Portfolio.jsx                   ← Donut chart, stacked area, positions table, events
-    ├── Performance.jsx                 ← NAV chart, metrics (Sharpe, drawdown), benchmarks
-    ├── Strategy.jsx                    ← Thesis tracker, evolution, invalidation triggers
-    ├── DigestTimeline.jsx              ← Document browser (calendar, filters, markdown viewer)
-    └── Architecture.jsx                ← System overview + diagram
-```
+| Library | Role |
+|---------|------|
+| next | Framework + routing |
+| react / react-dom | UI |
+| @supabase/supabase-js | Database client |
+| recharts | Performance / portfolio charts |
+| react-markdown, remark-gfm | Document rendering |
+| lucide-react | Icons |
 
-### 6.2 Key Libraries
-
-| Library | Version | Purpose |
-|---------|---------|---------|
-| React | 19.2 | UI framework |
-| Vite | 6.x | Build tool + dev server |
-| Chart.js + react-chartjs-2 | 4.5 | Charts (donut, line, stacked area) |
-| @supabase/supabase-js | 2.101 | Database client |
-| marked | 17 | Markdown → HTML rendering |
-| lucide-react | 1.7 | Icon library |
-
-### 6.3 Styling
-
-- **Glass-morphism design** with CSS custom properties
-- Custom properties: `--bg-primary`, `--accent-blue`, `--text-primary`, etc.
-- Mini-calendar component for date navigation
-- Responsive layout with collapsible sidebar
+Older Vite-era component-tree documentation has been removed; follow `frontend/app/` and `frontend/components/` for the live structure.
 
 ---
 
@@ -742,7 +718,7 @@ The system includes explicit guardrails to prevent uncontrolled drift:
 | **Max 2 proposals/session** | Prevents drift from accumulated micro-changes |
 | **Locked sections** | Template structure, risk constraints, and guardrails themselves are immutable |
 | **Branch + PR** | Evolution artifacts go to `evolve/YYYY-MM-DD` branch, require manual merge |
-| **Source observation only** | Agent records source quality but cannot modify `config/data-sources.md` |
+| **Source observation only** | Agent records source quality but cannot modify `docs/ops/data-sources.md` |
 
 ### 9.2 Data Integrity
 

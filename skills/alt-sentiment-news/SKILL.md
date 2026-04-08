@@ -9,7 +9,7 @@ description: Aggregates social sentiment, news flow, key opinion leader analysis
 Run this skill **before** macro and segment analysis. Its output colors how downstream segments interpret ambiguous signals. Sentiment extremes (euphoria/panic) can override technical/fundamental reads.
 
 ## Inputs
-- `config/data-sources.md` — full list of tracked accounts and signal sources
+- `docs/ops/data-sources.md` — full list of tracked accounts and signal sources
 - Previous day's digest snapshot / derived digest markdown (for narrative continuity)
 
 ---

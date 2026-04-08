@@ -1,14 +1,14 @@
 # digiquant-atlas — System Architecture
 
-> **Last updated**: 2025-07
+> **Last updated**: 2026-04
 > **Pipeline version**: v3 — 9-phase orchestrator with three-tier cadence
-> Part of the digiquant ecosystem — modular market intelligence layer.
+> **Operational truth**: [`RUNBOOK.md`](../../RUNBOOK.md) (DB-first, JSON artifacts, Supabase canonical).
 
 ---
 
 ## Overview
 
-digiquant-atlas is an AI-orchestrated daily market intelligence system. A large-language model agent reads configuration files and rolling memory logs, executes structured skill files as instruction sets, writes 28+ output files per session, then appends findings to a 25-file append-only memory system.
+digiquant-atlas is an AI-orchestrated daily market intelligence system. A large-language model agent reads configuration files and rolling memory logs, executes structured skill files as instruction sets, **publishes structured JSON to Supabase**, and appends findings to append-only memory. Legacy markdown-under-`outputs/daily/` workflows are retired; see `archive/legacy-outputs/` for historical samples.
 
 The system operates on a **three-tier cadence**:
 
@@ -275,9 +275,9 @@ The Next.js frontend reads from Supabase (primary) with static JSON fallback —
 
 | Sub-Phase | Action | Output File |
 |-----------|--------|-------------|
-| 9A | Source Scorecard: rate every data source (1–5 stars), log failures, record discoveries | `outputs/daily/YYYY-MM-DD/evolution/sources.md` |
-| 9B | Quality Post-Mortem: check yesterday's predictions (✅/❌/⏳), rate digest on 5 dimensions (1–5 scale each) | `outputs/daily/YYYY-MM-DD/evolution/quality-log.md` |
-| 9C | Improvement Proposals: max 2 per session, each specifying exact target file + change + rationale | `outputs/daily/YYYY-MM-DD/evolution/proposals.md` |
+| 9A | Source Scorecard: rate every data source (1–5 stars), log failures, record discoveries | `outputs/evolution/YYYY-MM-DD/sources.json` |
+| 9B | Quality Post-Mortem: check yesterday's predictions (✅/❌/⏳), rate digest on 5 dimensions (1–5 scale each) | `outputs/evolution/YYYY-MM-DD/quality-log.json` |
+| 9C | Improvement Proposals: max 2 per session, each specifying exact target file + change + rationale | `outputs/evolution/YYYY-MM-DD/proposals.json` |
 | 9D | Document applied proposals (approved in prior PRs) | `docs/evolution-changelog.md` |
 | 9E | Evolution branch + PR | `evolve/YYYY-MM-DD` — requires user approval to merge |
 
@@ -474,67 +474,37 @@ The frontend is a static Next.js export deployed to GitHub Pages. Supabase is th
 
 ```
 digiquant-atlas/
-  CLAUDE.md                          Claude Code entry point
+  RUNBOOK.md                         Single operational entry (DB-first)
+  CLAUDE.md                          Claude Code quick commands
   AGENTS.md                          Cross-platform agent entry point
   CLAUDE_PROJECT_INSTRUCTIONS.md     Claude.ai Projects paste
   config/
     watchlist.md                     Tracked tickers + asset universe
-    preferences.md                   Trading style, risk profile, active theses
-    hedge-funds.md                   16 tracked funds (CIK, X handle, style)
-    data-sources.md                  30+ data URLs, X accounts, calendars
+    investment-profile.md            Policy + preferences
     portfolio.json                   Current positions + proposed_positions
-  skills/
-    SKILL-orchestrator.md            Master 9-phase pipeline driver
-    SKILL-weekly-baseline.md         Sunday full run entry point
-    SKILL-daily-delta.md             Mon-Sat delta run
-    SKILL-monthly-synthesis.md       Month-end synthesis
-    SKILL-macro.md                   Phase 3
-    SKILL-equity.md                  Phase 5A
-    SKILL-bonds.md                   Phase 4A
-    SKILL-commodities.md             Phase 4B
-    SKILL-forex.md                   Phase 4C
-    SKILL-crypto.md                  Phase 4D
-    SKILL-international.md           Phase 4E
-    SKILL-earnings.md                Earnings context
-    SKILL-deep-dive.md               Ad-hoc ticker research
-    SKILL-thesis.md                  Thesis builder
-    SKILL-thesis-tracker.md          Thesis reviewer
-    SKILL-sector-rotation.md         Sector rotation analysis
-    SKILL-sector-heatmap.md          Sector heatmap
-    SKILL-premarket-pulse.md         Pre-market scan
-    sectors/                         11 GICS sector skills (5B-5L)
-    alternative-data/                4 alt-data skills (1A-1D)
-    institutional/                   2 institutional skills (2A-2B)
-  memory/                            25 append-only research logs (see above)
-  templates/                         Output templates (master-digest.md schema is immutable)
+    hedge-funds.md, data-sources.md  Reference lists (see skills for usage)
+  skills/<slug>/SKILL.md             One package per skill (orchestrator, weekly-baseline, daily-delta, …)
+  memory/                            Append-only ROLLING.md logs
+  templates/schemas/                 JSON schemas for artifacts
   scripts/
-    new-day.sh                       Auto-detect Sunday(baseline) vs weekday(delta)
-    new-week.sh                      Force baseline on any day
-    status.sh                        Health check
-    run-segment.sh                   Print single-segment prompt (--delta flag)
-    combine-digest.sh                Synthesis prompt printer
-    materialize.sh                   Build DIGEST.md from baseline + deltas
-    git-commit.sh                    Commit outputs (--evolution for phase 9 branch)
-    update-tearsheet.py              Python dashboard backend
-    publish-update.sh                Push + deploy to GitHub Pages
-    monthly-rollup.sh                Monthly synthesis
-    memory-search.sh                 Grep all 25 ROLLING.md files
+    run_db_first.py                  DB-first entrypoint (validate, ETL, execute-at-open)
+    materialize_snapshot.py          Publish digest snapshot JSON to Supabase
+    update_tearsheet.py              Parse artifacts → Supabase documents + metrics
+    validate_db_first.py             Supabase invariant checks
+    new-day.sh                       Print baseline/delta prompt
+    status.sh                        validate_db_first wrapper + memory count
+    git-commit.sh                    Commit outputs (runs ETL)
+    weekly-rollup.sh / monthly-rollup.sh   JSON scaffolds + prompts
+    fetch-market-data.sh, fetch-*.py, preload-history.py   Market data
+    memory-search.sh                 Search memory ROLLING.md files
+  archive/legacy-scripts/            Retired filesystem-first Bash helpers
+  archive/legacy-outputs/daily/      Historical markdown digests (read-only)
   agents/                            Named agent role definitions
-  frontend/                          React + Vite dashboard (digiquant.io)
-    src/pages/                       Dashboard, Portfolio, Signals, Sectors,
-                                     Architecture, BiasTracker, Config
-    public/dashboard-data.json       Generated by update-tearsheet.py
+  frontend/                          Next.js app (app/, components/, lib/)
   outputs/
-    daily/YYYY-MM-DD/                28+ files on baseline; deltas on weekdays
-    weekly/                          Weekly synthesis outputs
-    monthly/                         Monthly rollup outputs
-    deep-dives/                      Ad-hoc ticker research
-  docs/agentic/                      This documentation suite
-    ARCHITECTURE.md                  This file
-    MEMORY-SYSTEM.md                 Memory format spec
-    PLATFORMS.md                     Platform setup guides
-    SKILLS-CATALOG.md                Complete skill file catalog
-    WORKFLOWS.md                     Operational workflows
+    weekly/, monthly/, deep-dives/   JSON-first artifacts (see RUNBOOK.md)
+    daily/                           Stub only (canonical data in Supabase)
+  docs/agentic/                      Architecture, workflows, platforms
 ```
 
 ---

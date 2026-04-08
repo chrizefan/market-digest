@@ -20,7 +20,7 @@ This is a daily market intelligence system. Every session is either:
 
 ### At the start of every session:
 1. Identify which of the 4 session types this is
-2. Read `config/watchlist.md`, `config/investment-profile.md`, `config/hedge-funds.md`, `config/data-sources.md`
+2. Read `config/watchlist.md`, `config/investment-profile.md`, `config/hedge-funds.md`, `docs/ops/data-sources.md`
 3. Read the most recent `outputs/daily/[latest-date]/DIGEST.md` for prior context (if available)
 4. Do NOT summarize what you've read — just use it
 
@@ -133,8 +133,8 @@ config/watchlist.md              ← Assets to track (edit first)
 config/investment-profile.md     ← Trading style, risk profile, preferences (authoritative)
 config/preferences.md            ← Redirect stub — see investment-profile.md
 config/hedge-funds.md            ← Tracked fund registry with CIK, X handle, style
-config/data-sources.md           ← 30+ X accounts, Polymarket topics, databases
-config/email-research.md         ← Dedicated Gmail setup + subscription list
+docs/ops/data-sources.md         ← 30+ X accounts, Polymarket topics, databases
+docs/ops/email-research.md       ← Dedicated Gmail setup + subscription list
 
 skills/orchestrator/SKILL.md     ← MASTER: pipeline driver
 skills/digest/SKILL.md           ← Pointer → redirects to orchestrator
@@ -161,45 +161,33 @@ templates/schemas/portfolio-recommendation.schema.json ← Portfolio recommendat
 templates/schemas/deliberation-transcript.schema.json ← Deliberation transcript schema
 outputs/weekly/YYYY-Wnn.json      ← Weekly rollups (JSON-first)
 outputs/monthly/YYYY-MM.json      ← Monthly rollups (JSON-first)
+outputs/deep-dives/*.json         ← Deep dives (JSON-first; markdown derived)
+outputs/evolution/YYYY-MM-DD/*.json ← Post-mortem evolution artifacts (JSON-first)
 
-outputs/daily/YYYY-MM-DD/       ← Folder per day
-  DIGEST.md                     ← Master synthesized digest
-  macro.md                      ← Phase 3 output
-  bonds.md / commodities.md / forex.md / crypto.md / international.md
-  equities.md                   ← Phase 5A output
-  alt-data.md                   ← Phase 1 output
-  institutional.md              ← Phase 2 output
-  sectors/technology.md         ← Phase 5B output (11 files)
-  sectors/[...].md
+Supabase                          ← Canonical: daily_snapshots, documents, positions, theses, nav_history
+archive/legacy-outputs/daily/     ← Historical markdown digests (read-only)
 
-outputs/weekly/                 ← YYYY-Wnn.md — weekly rollups
-outputs/monthly/                ← YYYY-MM.md — monthly rollups
-outputs/deep-dives/             ← TICKER-YYYY-MM-DD.md — standalone research
-
-scripts/new-day.sh              ← Create daily folder structure + print start prompt
-scripts/run-segment.sh          ← Run single named segment
-scripts/combine-digest.sh       ← Print synthesis prompt for Phase 7
-scripts/status.sh               ← Project status (all 23 memory files + segments)
-scripts/git-commit.sh           ← Commit outputs to git
-scripts/weekly-rollup.sh        ← Weekly synthesis
-scripts/monthly-rollup.sh       ← Monthly synthesis
-scripts/memory-search.sh        ← Search all 23 ROLLING.md files
-scripts/cowork-daily-prompt.txt  ← Full orchestrator prompt (auto-filled by new-day.sh)
-scripts/archive.sh              ← Archive old daily outputs
+python3 scripts/run_db_first.py   ← Operator entry: validate, ETL, execute-at-open
+scripts/materialize_snapshot.py   ← Publish digest snapshot JSON to Supabase
+scripts/new-day.sh                ← Print baseline/delta prompt (no outputs/daily writes)
+scripts/status.sh                 ← validate_db_first + brief status
+scripts/git-commit.sh             ← Commit outputs (runs ETL)
+scripts/weekly-rollup.sh          ← Weekly JSON scaffold + prompt
+scripts/monthly-rollup.sh         ← Monthly JSON scaffold + prompt
+scripts/memory-search.sh          ← Search ROLLING.md files
+scripts/cowork-daily-prompt.txt   ← Orchestrator prompt text (used by new-day.sh)
 ```
 
 ---
 
-## Daily Workflow (v2)
+## Daily Workflow (DB-first)
 
-1. User runs `./scripts/new-day.sh` → creates folder structure + 22 files + prints start prompt
-2. User pastes start prompt into Claude → full 7-phase pipeline runs
-3. Alternative data (Phase 1) runs FIRST — sentiment and positioning prime macro read
-4. Each phase builds on the previous — macro informs asset classes, asset classes inform sectors
-5. All 23 memory files updated in Phase 6
-6. Phase 7 synthesizes everything into DIGEST.md
-7. User runs `./scripts/git-commit.sh` → commits everything to git
-8. Friday: User runs `./scripts/weekly-rollup.sh` → Claude does weekly synthesis
+1. Operator runs `python3 scripts/run_db_first.py` and follows printed steps (or `./scripts/new-day.sh` for the Claude prompt only).
+2. Agent follows `skills/orchestrator/SKILL.md` (Sunday baseline vs weekday delta per `skills/weekly-baseline` / `skills/daily-delta`).
+3. Publish digest snapshot JSON with `scripts/materialize_snapshot.py`; validate with `scripts/validate_db_first.py`.
+4. Operator runs `./scripts/git-commit.sh` when committing repo artifacts (runs `update_tearsheet.py`).
+5. Weekly/monthly: use rollup scripts to scaffold JSON, fill per schema, publish via ETL.
 
-**Single segment**: `./scripts/run-segment.sh energy` → paste prompt into Claude
-**Combine existing segments**: `./scripts/combine-digest.sh` → paste synthesis prompt
+**Single segment**: open the relevant `skills/<segment>/SKILL.md` and run that phase only; publish JSON per RUNBOOK.
+
+**Synthesis-only**: use WORKFLOWS.md “Phase 7” manual prompt + `scripts/materialize_snapshot.py`.

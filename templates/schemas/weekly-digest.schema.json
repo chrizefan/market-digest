@@ -135,7 +135,12 @@
             "positions_to_review": { "type": "array", "items": { "type": "string", "maxLength": 12 } }
           }
         },
-        "key_takeaway": { "type": "string", "maxLength": 1200 }
+        "key_takeaway": { "type": "string", "maxLength": 1200 },
+        "full_document_markdown": {
+          "type": ["string", "null"],
+          "maxLength": 500000,
+          "description": "Optional: legacy weekly markdown preserved during migration; renderer may prefer this for display."
+        }
       }
     }
   },

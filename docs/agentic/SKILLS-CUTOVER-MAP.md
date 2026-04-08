@@ -57,10 +57,10 @@ This document supports the hard-cutover migration from legacy flat skill files t
 
 The following files currently reference legacy skill paths and must be updated to the **new package paths**:
 
-- **Core instructions**: `AGENTS.md`, `CLAUDE.md`, `CLAUDE_PROJECT_INSTRUCTIONS.md`, `.github/copilot-instructions.md`, `PROJECT-INSTRUCTIONS-PASTE.txt`, `.cursorrules`, `.windsurfrules`
+- **Core instructions**: `AGENTS.md`, `CLAUDE.md`, `CLAUDE_PROJECT_INSTRUCTIONS.md`, `.github/copilot-instructions.md`, `RUNBOOK.md`, `.cursorrules`, `.windsurfrules` (legacy paste doc: `docs/archive/PROJECT-INSTRUCTIONS-PASTE.txt`)
 - **Agent entrypoints**: `agents/orchestrator.agent.md`, `agents/portfolio-manager.agent.md`, `agents/alt-data-analyst.agent.md`, `agents/sector-analyst.agent.md`, `agents/thesis-tracker.agent.md`
-- **Scripts that print prompts / reference skills**: `scripts/run-segment.sh`, `scripts/new-day.sh`, `scripts/new-week.sh`, `scripts/run-daily.sh`, `scripts/thesis.sh`, `scripts/monthly-rollup.sh`, `scripts/fetch-market-data.sh`, `scripts/cowork-daily-prompt.txt`
-- **Docs**: `docs/DAILY-RUN-WALKTHROUGH.md`, `docs/agentic/README.md`, `docs/agentic/ARCHITECTURE.md`, `docs/agentic/WORKFLOWS.md`, `docs/agentic/PROMPTS.md`, `docs/agentic/PLATFORMS.md`
+- **Scripts that print prompts / reference skills**: `scripts/new-day.sh`, `scripts/thesis.sh`, `scripts/monthly-rollup.sh`, `scripts/fetch-market-data.sh`, `scripts/cowork-daily-prompt.txt` (retired: `archive/legacy-scripts/run-segment.sh`, `new-week.sh`, `run-daily.sh`)
+- **Docs**: `docs/agentic/README.md`, `docs/agentic/ARCHITECTURE.md`, `docs/agentic/WORKFLOWS.md`, `docs/agentic/PROMPTS.md`, `docs/agentic/PLATFORMS.md` (archived walkthrough: `docs/archive/DAILY-RUN-WALKTHROUGH.md`)
 - **Cursor rules**: `.cursor/rules/01-overview.mdc`, `.cursor/rules/02-skills-workflow.mdc`
 - **Skill intra-references** (skills referencing other skills): many `skills/SKILL-*.md` files reference other `skills/...` paths and must be updated during migration.
 

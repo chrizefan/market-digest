@@ -27,7 +27,7 @@ All 7 open issues from Session 4 have been resolved. The system now has full arg
 
 ## Fix History (April 6–7, 2026)
 
-**Session 1** — Vite → Next.js migration, Supabase-first data layer, composite indexes, `publish-update.sh`, `git-commit.sh` push, performance page redesign, MCP tool wiring.
+**Session 1** — Vite → Next.js migration, Supabase-first data layer, composite indexes, `git-commit.sh` push, performance page redesign, MCP tool wiring.
 
 **Session 2** — React error boundary, retry logic, atomic writes, tar verification, race guard, XML validation.
 
@@ -119,7 +119,7 @@ The system completes its three-tier cadence (baseline / delta / synthesis) relia
 
 ## Fix History (April 6–7, 2026)
 
-**Session 1** — Vite → Next.js migration, Supabase-first data layer, composite indexes, `publish-update.sh`, `git-commit.sh` push, performance page redesign, MCP tool wiring.
+**Session 1** — Vite → Next.js migration, Supabase-first data layer, composite indexes, `git-commit.sh` push, performance page redesign, MCP tool wiring.
 
 **Session 2** — React error boundary, retry logic, atomic writes, tar verification, race guard, XML validation.
 

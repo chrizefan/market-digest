@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "digiquant-atlas Deep Dive",
-  "description": "Deep-dive research report. Markdown-first, but stored with a lightweight payload for consistent indexing and UI rendering.",
+  "description": "Deep-dive research report. JSON source of truth; body.markdown is canonical prose; rendered markdown is derived for display.",
   "type": "object",
   "additionalProperties": true,
   "required": ["schema_version", "doc_type", "date", "title", "meta", "body"],

@@ -7,14 +7,12 @@
 ## Quick Commands
 
 ```bash
-./scripts/new-day.sh              # Create today's output folder structure + print digest prompt
-./scripts/status.sh               # Project health — segment completion
-./scripts/run-segment.sh energy   # Print focused prompt for single segment
-./scripts/combine-digest.sh       # Print synthesis prompt to combine all segments into DIGEST.md
+python3 scripts/run_db_first.py   # DB-first entrypoint (validate, publish, execute-at-open)
+./scripts/new-day.sh              # Print baseline/delta digest prompt (no outputs/daily writes)
+./scripts/status.sh               # Supabase validation + brief status
 ./scripts/git-commit.sh           # Commit everything with date-stamped message
-./scripts/weekly-rollup.sh        # Generate weekly synthesis (run Fridays)
-./scripts/monthly-rollup.sh       # Generate monthly synthesis
-./scripts/archive.sh              # Archive old daily outputs
+./scripts/weekly-rollup.sh        # Weekly JSON scaffold + synthesis prompt
+./scripts/monthly-rollup.sh       # Monthly JSON scaffold + synthesis prompt
 ./scripts/validate-portfolio.sh    # Validate portfolio.json against investment-profile.md constraints
 ./scripts/validate-portfolio.sh --proposed  # Validate proposed positions
 ./scripts/validate-phase.sh 3     # Validate Phase 3 outputs before proceeding
@@ -55,9 +53,8 @@ supabase/    Schema migrations
 ### When adding a new sector or asset class:
 1. Create `skills/sector-newname/SKILL.md` using schema `templates/schemas/sector-report.schema.json` as the output contract
 2. Add the sector to `skills/orchestrator/SKILL.md` Phase 5 list
-3. Add an empty output file path to `scripts/new-day.sh` SECTORS loop
-4. Add the sector to `scripts/run-segment.sh` case statement
-5. Update `CLAUDE_PROJECT_INSTRUCTIONS.md` skill table
+3. If `scripts/new-day.sh` still lists sectors for prompts, add the slug there
+4. Update `CLAUDE_PROJECT_INSTRUCTIONS.md` skill table
 
 ### When modifying scripts:
 - Scripts use `#!/bin/bash` + `set -e` — keep this pattern

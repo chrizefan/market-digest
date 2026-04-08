@@ -9,7 +9,7 @@ description: Tracks US Congressional STOCK Act trade disclosures, key committee 
 Politicians and regulators move markets — both through what they buy/sell personally and through policy signals. STOCK Act disclosures are legally required to be filed within 45 days of a trade and are public record. Committee chair rhetoric directly moves sector-specific ETFs. Run early in pipeline.
 
 ## Inputs
-- `config/data-sources.md` (sources for congressional trading + official statements)
+- `docs/ops/data-sources.md` (sources for congressional trading + official statements)
 
 ---
 

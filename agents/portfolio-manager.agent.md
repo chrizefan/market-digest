@@ -5,7 +5,8 @@ description: >
   using an anti-anchoring three-phase flow: blinded asset analysts → clean-slate portfolio → comparison
   vs current holdings. Use when: asked to review the portfolio, "should I rebalance", "what should I own",
   "build me a portfolio", or after any full digest session. Can run standalone (uses latest baseline DIGEST.md)
-  or as part of the daily pipeline (after Phase 7 synthesis).
+  or as part of the daily pipeline (after Phase 7 synthesis). For evidence-based sizing rules, consult
+  `skills/research-library/SKILL.md` and `docs/research/LIBRARY.md` (cite 1–3 sources, do not load the entire library).
 tools:
   - read_file
   - write_file

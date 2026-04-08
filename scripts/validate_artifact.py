@@ -37,6 +37,9 @@ def _schema_path_for(doc_type: str) -> Path:
         "portfolio_recommendation": "portfolio-recommendation.schema.json",
         "deliberation_transcript": "deliberation-transcript.schema.json",
         "delta_digest": "delta-digest.schema.json",
+        "evolution_quality_log": "evolution-quality-log.schema.json",
+        "evolution_sources": "evolution-sources.schema.json",
+        "evolution_proposals": "evolution-proposals.schema.json",
     }
     fname = mapping.get(doc_type)
     if not fname:

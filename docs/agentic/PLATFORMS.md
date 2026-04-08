@@ -162,23 +162,20 @@ MCP (Model Context Protocol) servers extend GitHub Copilot's agent mode with liv
 2. Open the Command Palette → **MCP: List Servers** to verify servers are loaded
 3. In Copilot Chat (agent mode), tools from configured MCP servers appear automatically
 
-### Configured Servers
+### Configured Servers (repo)
 
-| Server ID | Data Source | Key Required | Pipeline Phase |
-|-----------|------------|-------------|----------------|
-| `sec-edgar` | SEC EDGAR filings + XBRL financials | No (User-Agent only) | Phase 2 (Institutional) |
-| `fred` | FRED — 800K+ macro series | Yes — [free](https://fred.stlouisfed.org/docs/api/api_key.html) | Phase 3 (Macro) + Phase 4A (Bonds) |
-| `nasdaq-data-link` | Nasdaq Data Link — RTAT, World Bank, OECD | Yes — [free](https://data.nasdaq.com) | Phase 1 (Alt Data) |
-| `crypto-feargreed` | Crypto Fear & Greed Index | No | Phase 1 (Alt Data) |
-| `crypto-sentiment` | Crypto sentiment signals | No | Phase 1 (Alt Data) |
-| `crypto-indicators` | Crypto TA (RSI/MACD/BB) | No | Phase 4D (Crypto) |
-| `polymarket` | Prediction market event probabilities | No | Phase 1 (Alt Data) |
-| `frankfurter-fx` | Live FX rates, 30+ pairs | No | Phase 4C (Forex) |
-| `world-bank` | World Bank global indicators | No | Phase 4E (International) |
-| `coingecko` | 200+ chains, DeFi TVL, volumes | Optional — free tier works w/o key | Phase 4D (Crypto) |
-| `twelve-data` | Real-time stocks/forex/ETFs + TA | Yes — [free, 800 credits/day](https://twelvedata.com) | Phases 4A–4C |
-| `alpha-vantage` | Fundamentals, earnings, news sentiment | Yes — [free, 25 req/day](https://alphavantage.co) | Phase 5 (Equities) |
-| `defi-rates` | DeFi borrow/supply rates (Aave, Morpho…) | No | Phase 4D (Crypto) |
+These match [`.vscode/mcp.json`](../../.vscode/mcp.json). **Optional tools** — canonical prices for the app live in Supabase; use MCPs only when they add research value.
+
+| Server ID | Data Source | Key / notes | Typical use |
+|-----------|------------|-------------|---------------|
+| `sec-edgar` | SEC EDGAR + XBRL, Form 4 | Docker + User-Agent string | Phase 2 (Institutional) |
+| `fred` | FRED macro series | Free API key | Phase 3–4 |
+| `crypto-feargreed` | Fear & Greed | No key | Phase 1 / crypto context |
+| `polymarket` | Event probabilities | No key | Phase 1 (geopolitics) |
+| `frankfurter-fx` | FX rates | No key | Phase 4C (Forex) |
+| `world-bank` | WB indicators | No key | Phase 4E (International) |
+| `coingecko` | Crypto market data | Optional key (public tier ok) | Phase 4D |
+| `alpha-vantage` | Equities fundamentals/news | Key; low daily quota — use sparingly | Phase 5 |
 
 ### Setup Notes
 
@@ -196,7 +193,7 @@ node --version
 API keys are stored securely via VS Code's `inputs` prompt mechanism — never hardcoded. On first
 use of a key-required server, VS Code will prompt once and cache the value for the session.
 
-Full server details and prerequisites: `config/data-sources.md` → "MCP Servers" section.
+Full server details and prerequisites: `docs/ops/data-sources.md` → "MCP Servers" section.
 
 ---
 

@@ -9,7 +9,7 @@ description: Tracks daily ETF in/outflows, dark pool and block trade prints, sho
 Follow the smart money. ETF flows reveal institutional sector rotation in real-time. Dark pool prints and block trades reveal large-scale repositioning that hasn't hit the tape at full size yet. 13D/13G filings reveal activist entries and large fund position changes. Run before macro and segment analysis.
 
 ## Inputs
-- `config/data-sources.md` (ETF flow sources, block trade sources, EDGAR links)
+- `docs/ops/data-sources.md` (ETF flow sources, block trade sources, EDGAR links)
 
 ---
 

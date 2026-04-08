@@ -41,7 +41,7 @@ Rules:
 - MCP tools are available for structured data — use them at their assigned phase instead of web searching:
   `mcp_fred_*` (macro/bonds), `mcp_polymarket_*` (alt-data/sentiment), `mcp_crypto-feargr_*` + `mcp_coingecko_*` (crypto),
   `mcp_frankfurter-f_*` (forex), `mcp_world-bank_*` (international), `mcp_sec-edgar_*` (institutional).
-  See `config/data-sources.md` for full phase→tool mapping and key series/query references.
+  See `docs/ops/data-sources.md` for full phase→tool mapping and key series/query references.
 - Read config/watchlist.md, config/preferences.md, and config/investment-profile.md before any analysis.
 - Read yesterday's DIGEST.md (or this week's baseline) for continuity — prior outputs ARE the memory.
 - Do not skip the portfolio layer — baseline days always run full PM; delta days run threshold monitor.

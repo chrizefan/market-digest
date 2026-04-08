@@ -27,8 +27,8 @@ if [ "$1" == "--evolution" ]; then
     git checkout -b "${BRANCH}"
   fi
 
-  # Stage only evolution-related files
-  git add "outputs/daily/${DATE}/evolution/"
+  # Stage only evolution-related files (DB-first: outputs/evolution/YYYY-MM-DD/*.json)
+  git add "outputs/evolution/${DATE}/"
   git add docs/evolution-changelog.md
 
   # Check if there's anything to commit
@@ -66,13 +66,13 @@ if [ "$1" == "--evolution" ]; then
 This PR contains post-mortem observations and improvement proposals from today's digest run.
 
 ### Files Changed
-- \`outputs/daily/${DATE}/evolution/sources.md\` — Data source ratings
-- \`outputs/daily/${DATE}/evolution/quality-log.md\` — Quality self-assessment
-- \`outputs/daily/${DATE}/evolution/proposals.md\` — New improvement proposals
+- \`outputs/evolution/${DATE}/sources.json\` — Data source ratings
+- \`outputs/evolution/${DATE}/quality-log.json\` — Quality self-assessment
+- \`outputs/evolution/${DATE}/proposals.json\` — New improvement proposals
 - \`docs/evolution-changelog.md\` — Applied improvements log
 
 ### Review Instructions
-1. Review the proposals in \`outputs/daily/${DATE}/evolution/proposals.md\`
+1. Review the proposals in \`outputs/evolution/${DATE}/proposals.json\`
 2. Approve/reject each proposal
 3. Merge this PR to apply the evolution artifacts to master
 

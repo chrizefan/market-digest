@@ -1,6 +1,8 @@
 # Skills Catalog
 
-Complete index of all skill files in the `skills/` directory.
+**Canonical list:** `skills/**/SKILL.md` on disk. This page is a **compact index**—if it drifts, trust the filesystem.
+
+Complete index of skill packages under `skills/`.
 
 ## How Skill Files Work
 
@@ -83,6 +85,7 @@ All as packages:
 | `thesis-tracker/SKILL.md` | thesis-tracker | Reviewing + scoring active theses |
 | `sector-rotation/SKILL.md` | sector-rotation | Identifying rotation between sectors |
 | `sector-heatmap/SKILL.md` | sector-heatmap | Generating sector strength heatmap |
+| `research-library/SKILL.md` | research-library | Citing `docs/research/` doctrine for PM / allocation |
 
 ---
 
@@ -94,8 +97,8 @@ All as packages:
 | Sector | 11 |
 | Alternative data | 4 |
 | Institutional | 2 |
-| Specialized | 5 |
-| **Total** | **33** |
+| Specialized | 6 |
+| **Total** | **34** |
 
 ---
 
@@ -131,7 +134,7 @@ Read config/watchlist.md for relevant tracked assets.
 Write JSON artifacts for recurring outputs; follow the appropriate schema in `templates/schemas/`.
 
 ## Output Format
-File: `outputs/daily/{{DATE}}/{output-filename}.md`
+JSON artifacts validated against `templates/schemas/*.schema.json`; publish per `RUNBOOK.md` (DB-first).
 
 ## Memory Update
 Append to `memory/{domain}/ROLLING.md`:

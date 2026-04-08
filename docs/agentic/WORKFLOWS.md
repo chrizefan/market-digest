@@ -43,14 +43,7 @@ Update all memory files when complete.
 
 ## Single Segment Run
 
-Run just one phase or segment without the full pipeline.
-
-```bash
-./scripts/run-segment.sh macro
-./scripts/run-segment.sh bonds
-./scripts/run-segment.sh crypto
-./scripts/run-segment.sh technology   # sector
-```
+Run just one phase or segment without the full pipeline (no dedicated Bash printer; use prompts below).
 
 **Manual prompt pattern:**
 ```
@@ -66,12 +59,7 @@ Append findings to memory/{segment}/ROLLING.md
 
 ## Phase 7 Synthesis (Digest Only)
 
-After running phases 1-6 manually or partially:
-
-```bash
-./scripts/combine-digest.sh
-# → prints synthesis prompt
-```
+After running phases 1-6 manually or partially, use this prompt (DB-first):
 
 **Manual synthesis prompt:**
 ```
@@ -241,20 +229,16 @@ CI/CD in `.github/workflows/deploy.yml` publishes the tearsheet on push to maste
 
 ## Archive Old Outputs
 
-```bash
-./scripts/archive.sh
-# → moves outputs older than 30 days to archive/
-```
+Legacy daily markdown lives under `archive/legacy-outputs/daily/`. Do not use filesystem archive scripts; the old `archive.sh` helper is retired (see `archive/legacy-scripts/README.md`).
 
 ---
 
 ## Error Recovery
 
-**If an output file is incomplete:**
+**If a published snapshot or document is incomplete:**
 ```
-Read the existing partial file at outputs/daily/{DATE}/{segment}.md
-Continue from where it left off, following the appropriate `skills/{segment}/SKILL.md` (or segment-specific package).
-Do not restart from scratch — append to the file.
+Re-run or patch the digest snapshot JSON, then republish with scripts/materialize_snapshot.py.
+Validate with: python3 scripts/validate_db_first.py --date YYYY-MM-DD
 ```
 
 **If memory is corrupted (entries got rewritten):**

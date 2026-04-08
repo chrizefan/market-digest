@@ -11,6 +11,19 @@ The world's best investors — both fundamental and systematic — leave signal 
 ## Inputs
 - `config/hedge-funds.md` — master fund reference with sources and investment style
 
+## Workflow (from registry — keep in sync)
+
+1. Scan EDGAR for any 13D/G/F filings in the last 7 days for tracked CIKs
+2. Check X accounts for any direct fund communications (where listed)
+3. Search for recent media coverage of each fund
+4. Synthesize into a **HF Consensus** signal per asset class
+
+**HF Consensus Signal**: Bullish / Bearish / Mixed / No Signal
+- **Bullish**: 3+ funds with recent buys or positive commentary
+- **Bearish**: 3+ funds with recent sells, shorts, or negative commentary
+- **Mixed**: funds disagree
+- **No Signal**: no material intelligence available
+
 ---
 
 ## Research Steps

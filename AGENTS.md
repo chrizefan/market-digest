@@ -26,23 +26,21 @@ python3 scripts/run_db_first.py
 ```
 Read: skills/weekly-baseline/SKILL.md
 Follow: All 9 phases in order
-Output: outputs/daily/YYYY-MM-DD/DIGEST.md  (complete digest)
+Publish: digest snapshot JSON → Supabase via scripts/materialize_snapshot.py (see RUNBOOK.md)
 ```
 
 ### Mon–Sat — Daily Delta
 ```
 Read: skills/daily-delta/SKILL.md
-Load: outputs/daily/[baseline-date]/DIGEST.md
-Write: outputs/daily/YYYY-MM-DD/deltas/*.delta.md → Materialize DIGEST.md
+Load prior baseline snapshot from Supabase (or last published JSON)
+Output: delta-request JSON → operator runs scripts/materialize_snapshot.py
 ```
 
 ### Key scripts
 ```bash
 python3 scripts/run_db_first.py # DB-first entrypoint (baseline/delta + publish + validate)
-./scripts/run-segment.sh [x]    # Single segment prompt (--delta flag supported)
-./scripts/combine-digest.sh     # Synthesis prompt (auto-detects mode)
 ./scripts/git-commit.sh         # Commit + push (runs ETL first)
-./scripts/monthly-rollup.sh     # Monthly synthesis
+./scripts/monthly-rollup.sh     # Monthly JSON scaffold + synthesis prompt
 ```
 
 ---

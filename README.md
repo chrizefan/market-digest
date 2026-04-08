@@ -1,142 +1,65 @@
 # digiquant-atlas
 
-A daily market intelligence system with a 7-phase AI-orchestrated pipeline. Produces structured research across all asset classes: equities, macro, crypto, bonds, commodities, forex, international markets, and all 11 S&P sectors. Outputs are version-controlled and 24 append-only rolling memory files compound research across sessions.
+Daily market intelligence with an AI-orchestrated pipeline. **Canonical state is DB-first (Supabase)**; JSON artifacts are the source of truth and markdown is derived.
 
-## Quick Start
+## Start here
+
+| Doc | Purpose |
+|-----|---------|
+| **[RUNBOOK.md](RUNBOOK.md)** | **Authoritative** operator steps (env, publish, validate) |
+| [AGENTS.md](AGENTS.md) | Agent behavior + `python3 scripts/run_db_first.py` |
+| [docs/agentic/WORKFLOWS.md](docs/agentic/WORKFLOWS.md) | Procedures (baseline, delta, rollups) |
+| [docs/agentic/PLATFORMS.md](docs/agentic/PLATFORMS.md) | IDE / platform setup |
+| [cowork/](cowork/) | Cloud Cowork / scheduled-task copy-paste |
+
+## One command
 
 ```bash
-python3 scripts/run_db_first.py  # DB-first: publish JSON artifacts to Supabase
-./scripts/status.sh         # Project health check
-./scripts/git-commit.sh     # Commit all outputs
+python3 scripts/run_db_first.py
 ```
 
-Paste the output of `new-day.sh` into Claude Code, Claude.ai, Cursor, or any AI platform.
-
-## 7-Phase Pipeline
-
-| Phase | Description | Output |
-|-------|-------------|--------|
-| 1 | Alternative Data (sentiment, CTA, options flow, politician trades) | `alt-data.md` |
-| 2 | Institutional Intel (dark pools, hedge fund moves, 13F) | `institutional.md` |
-| 3 | Macro Regime (rates, dollar, risk-on/off) | `macro.md` |
-| 4 | Asset Classes (bonds, commodities, forex, crypto, international) | 5 segment files |
-| 5 | Equities + 11 Sectors (each as independent sub-agent) | `equities.md` + 11 sector files |
-| 6 | Earnings & Events | `earnings.md` |
-| 7 | Synthesis | `DIGEST.md` |
-
-## Project Structure
+## Repository layout (high level)
 
 ```
-digiquant-atlas/
-├── CLAUDE.md                    ← Claude Code entry point (auto-read)
-├── AGENTS.md                    ← Cross-platform agent entry point
-│
-├── config/
-│   ├── watchlist.md             ← Tracked tickers, sectors, assets
-│   ├── preferences.md           ← Trading style, risk profile, active theses
-│   ├── hedge-funds.md           ← Tracked institutional players
-│   ├── data-sources.md          ← Data and research feed catalog
-│   └── email-research.md        ← Newsletter + research sources
-│
-├── skills/
-│   ├── SKILL-orchestrator.md    ← Master 7-phase pipeline driver
-│   ├── SKILL-macro.md           ← Phase 3
-│   ├── SKILL-equity.md          ← Phase 5A
-│   ├── SKILL-bonds.md           ← Phase 4A
-│   ├── SKILL-commodities.md     ← Phase 4B
-│   ├── SKILL-forex.md           ← Phase 4C
-│   ├── SKILL-crypto.md          ← Phase 4D
-│   ├── SKILL-international.md   ← Phase 4E
-│   ├── SKILL-earnings.md        ← Phase 6
-│   ├── SKILL-digest.md          ← Phase 7
-│   ├── SKILL-premarket-pulse.md ← Phase 1 premarket
-│   ├── SKILL-deep-dive.md       ← Ad-hoc ticker research
-│   ├── SKILL-thesis.md          ← Thesis builder
-│   ├── SKILL-thesis-tracker.md  ← Thesis review
-│   ├── SKILL-sector-rotation.md ← Rotation analysis
-│   ├── SKILL-sector-heatmap.md  ← Sector heatmap
-│   ├── sectors/                 ← 11 sector sub-agent skills
-│   ├── alternative-data/        ← 4 alt-data skills (Phase 1)
-│   └── institutional/           ← 2 institutional skills (Phase 2)
-│
-├── memory/
-│   ├── BIAS-TRACKER.md          ← 14-column daily cross-asset bias table
-│   ├── THESES.md                ← Active portfolio theses
-│   ├── macro/ROLLING.md
-│   ├── bonds/ROLLING.md
-│   ├── commodities/ROLLING.md
-│   ├── forex/ROLLING.md
-│   ├── crypto/ROLLING.md
-│   ├── equity/ROLLING.md
-│   ├── sectors/{11 dirs}/ROLLING.md
-│   ├── alternative-data/{4 dirs}/ROLLING.md
-│   ├── institutional/{2 dirs}/ROLLING.md
-│   └── international/ROLLING.md
-│
-├── templates/                   ← Output templates with {{PLACEHOLDER}} syntax
-├── agents/                      ← Named agent role definitions
-├── docs/agentic/                ← Full agentic documentation suite
-├── scripts/                     ← Bash utility scripts
-└── outputs/
-    ├── daily/YYYY-MM-DD/        ← 22 files per day
-    ├── weekly/                  ← Weekly syntheses
-    ├── monthly/                 ← Monthly rollups
-    └── deep-dives/              ← Ad-hoc ticker research
+config/           Runtime inputs: watchlist, portfolio, investment profile
+skills/<slug>/    Instruction packages (orchestrator, macro, sector-*, …)
+templates/schemas/JSON schemas for artifacts
+scripts/          Automation (run_db_first.py, materialize_snapshot.py, …)
+outputs/          JSON artifacts (weekly, monthly, deep-dives, evolution); daily/ is a stub
+archive/          Legacy scripts + legacy daily markdown outputs
+memory/           Append-only ROLLING.md research logs
+docs/research/    Curated research doctrine (see skills/research-library)
+frontend/         Next.js dashboard
+supabase/         SQL migrations
 ```
 
-## AI Platform Setup
+## Skills
 
-| Platform | Config File | Auto-read? |
-|----------|------------|-----------|
-| Claude Code | `CLAUDE.md` | Yes — run `claude` from repo root |
-| Claude.ai Projects | `CLAUDE_PROJECT_INSTRUCTIONS.md` | Paste into Project Instructions |
-| GitHub Copilot | `.github/copilot-instructions.md` | Yes |
-| Cursor | `.cursor/rules/` (v2) or `.cursorrules` | Yes |
-| Windsurf | `.windsurfrules` | Yes |
-| OpenHands / Devin | `AGENTS.md` | Provide as context |
+Skills live in **`skills/<skill-slug>/SKILL.md`**. Load **only** the skill for the phase you are running (see `skills/orchestrator/SKILL.md`).
 
-Full setup guide: `docs/agentic/PLATFORMS.md`
+## Scripts (common)
 
-## Setup Checklist
+```bash
+python3 scripts/run_db_first.py   # DB-first entry
+./scripts/new-day.sh               # Print baseline/delta prompt for Claude
+./scripts/status.sh                # Supabase validation
+./scripts/weekly-rollup.sh         # Weekly JSON scaffold + prompt
+./scripts/monthly-rollup.sh       # Monthly JSON scaffold + prompt
+./scripts/scaffold_evolution_day.sh  # Post-mortem JSON scaffolds
+./scripts/git-commit.sh            # Commit (runs ETL)
+```
 
-- [ ] Edit `config/watchlist.md` with your tickers, sectors, and crypto
-- [ ] Edit `config/preferences.md` with your trading style and risk profile
-- [ ] Edit `config/hedge-funds.md` with institutions you track
-- [ ] Push to a private GitHub repo
-- [ ] Run `./scripts/new-day.sh` to begin your first session
-
-## Memory System
-
-24 append-only `ROLLING.md` files track evolving research across sessions. Each is read before its corresponding analysis runs, then appended with new findings. This creates compounding intelligence — each session builds on all prior sessions.
-
-Memory files are **never rewritten** — only appended. The git history is a timeline of your research evolution.
-
-See `docs/agentic/MEMORY-SYSTEM.md` for the complete 24-file inventory.
-
-## Documentation
+## Documentation index
 
 | File | Contents |
 |------|----------|
-| `CLAUDE.md` | Claude Code reference |
-| `AGENTS.md` | Cross-platform behavioral rules |
-| `docs/agentic/README.md` | Agentic docs entry point |
-| `docs/agentic/ARCHITECTURE.md` | System design + data flows |
-| `docs/agentic/PLATFORMS.md` | Per-platform setup guide |
-| `docs/agentic/WORKFLOWS.md` | Daily/weekly/monthly workflows |
-| `docs/agentic/MEMORY-SYSTEM.md` | Memory file reference |
-| `docs/agentic/SKILLS-CATALOG.md` | All 33+ skills indexed |
-| `docs/agentic/PROMPTS.md` | Copy-paste prompt patterns |
+| `CLAUDE.md` | Claude Code quick commands |
+| `docs/agentic/ARCHITECTURE.md` | System design |
+| `docs/agentic/MEMORY-SYSTEM.md` | Memory format |
+| `docs/agentic/SKILLS-CATALOG.md` | Skill index (keep short; filesystem is source of truth) |
+| `docs/ops/` | Sourcing / email ops (non-runtime reference) |
 
-## Scripts
+## Legacy / archive
 
-```bash
-./scripts/new-day.sh              # Create daily folder + print digest prompt
-./scripts/status.sh               # Project health check
-./scripts/run-segment.sh {name}   # Print single segment prompt
-./scripts/combine-digest.sh       # Print Phase 7 synthesis prompt
-./scripts/git-commit.sh           # Commit outputs + memory
-./scripts/weekly-rollup.sh        # Weekly synthesis prompt
-./scripts/memory-search.sh "BTC"  # Search all 24 rolling memory files
-./scripts/thesis.sh add "name"    # Add new thesis
-./scripts/thesis.sh review        # Review active theses
-```
+- Stale paste docs: `docs/archive/`
+- Retired filesystem scripts: `archive/legacy-scripts/`

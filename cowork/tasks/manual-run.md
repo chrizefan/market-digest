@@ -1,5 +1,7 @@
 # Manual Run — Operator Steps (DB-first)
 
+See also [`cowork/PROJECT.md`](../PROJECT.md) and [`RUNBOOK.md`](../../RUNBOOK.md).
+
 ## 1) Ensure environment
 - `pip install -r requirements.txt`
 - `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` set (service role)
