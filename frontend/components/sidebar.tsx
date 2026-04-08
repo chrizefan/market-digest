@@ -65,7 +65,7 @@ export default function Sidebar() {
             <circle stroke="white" strokeWidth="2" cx="16.5007" cy="33.4992" r="5.0328" />
             <path stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" d="M45.5,24A21.5,21.5,0,1,0,24,45.5H45.5Z" />
           </svg>
-          <span className="text-base font-medium tracking-tight">digiquant-atlas</span>
+          <span className="text-base font-medium tracking-tight">Atlas</span>
         </div>
 
         {/* Nav links */}

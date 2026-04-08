@@ -93,10 +93,12 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     'id' | 'date' | 'title' | 'doc_type' | 'phase' | 'category' | 'segment' | 'sector' | 'run_type' | 'document_key'
   >[] = docsRes.data ?? [];
 
-  const latestPosDate = allPositions.length ? allPositions[0].date : null;
-  const currentPositions = latestPosDate
-    ? allPositions.filter((p) => p.date === latestPosDate)
-    : [];
+  const posDates = [...new Set(allPositions.map((p) => p.date))];
+  const latestPosDate = posDates.length ? posDates[0] : null;
+  const prevPosDate = posDates.length > 1 ? posDates[1] : null;
+  const currentPositions = latestPosDate ? allPositions.filter((p) => p.date === latestPosDate) : [];
+  const prevPositions = prevPosDate ? allPositions.filter((p) => p.date === prevPosDate) : [];
+  const prevWeightByTicker = new Map(prevPositions.map((p) => [p.ticker, Number(p.weight_pct ?? 0)]));
 
   const latestThesisDate = allTheses.length ? allTheses[0].date : null;
   const currentTheses = latestThesisDate
@@ -136,6 +138,10 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     name: p.name ?? p.ticker,
     type: 'LONG' as const,
     weight_actual: Number(p.weight_pct ?? 0),
+    weight_delta:
+      latestPosDate && prevPosDate
+        ? Number(p.weight_pct ?? 0) - (prevWeightByTicker.get(p.ticker) ?? 0)
+        : null,
     current_price: p.current_price != null ? Number(p.current_price) : null,
     entry_price: p.entry_price != null ? Number(p.entry_price) : null,
     entry_date: p.entry_date ?? null,

@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "doc_type": "evolution_quality_log",
+  "date": "2026-04-08",
+  "title": "Pipeline quality — 2026-04-08 (Delta #2, Regime Shift Day)",
+  "meta": { "generated_at": "2026-04-08T00:00:00Z", "tags": ["delta", "regime_shift", "thesis_break", "rebalance"] },
+  "body": {
+    "summary": "Regime shift day: US-Iran-Israel 2-week ceasefire removed the Geopolitical Shock regime. T-001 energy thesis broken. DBO stop triggered. Full rebalance executed (EXIT XLE+DBO, reduce IAU, add BIL+XLP). 8 segments updated. 2 deep dives produced. All phases passed except Phase 8 (Supabase unreachable, sandbox proxy 403).",
+    "segments_updated": ["macro", "us_equities", "crypto", "bonds", "commodities", "forex", "international", "alt_data"],
+    "segments_carried_forward": ["institutional", "all 11 sector-level individual analyses"],
+    "triage_notes": "Excellent accuracy. Ceasefire event qualified all 8 updated segments as material. No false positives. Alt-data update (F&G 17 rising from 11) correctly flagged as regime-transition signal.",
+    "materialization_notes": "DIGEST.md reads cleanly as a full daily digest. TOP LINE section ensures portfolio actions are front-and-center. Decision tables clear. Deliberation.md documents full PM challenge/defense cycle.",
+    "data_quality_notes": "WebSearch (multiple sources triangulated), FRED API (10Y 4.34%, 2Y 3.84% confirmed April 6 closes), Alpha Vantage (SPY $659.22 April 7 confirmed). AV rate-limited after 2 queries. WebSearch estimates used for ETF prices (XLE, IAU, DBO, XLP) — adequate for delta, not precision-level.",
+    "phase_rating": "9/10",
+    "strengths": "Regime shift correctly identified and documented. High-quality deliberation with PM challenge/defense cycle. Iran peace deal probability tree deep dive is portfolio-actionable with explicit thresholds. Thorough T-001 forensics. Excellent source triangulation on ceasefire data.",
+    "weaknesses": "ETF price precision limited by AV rate limits. Tearsheet/Supabase blocked (environment IP-001). No individual sector-by-sector analysis (handled at triage level — adequate for delta day but sub-optimal). git-commit.sh requires manual bypass due to IP-008."
+  }
+}

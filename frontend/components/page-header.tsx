@@ -17,7 +17,7 @@ export default function PageHeader({ title }: PageHeaderProps) {
       <div className="min-w-0 flex-1">
         <h1 className="text-2xl font-semibold tracking-tight max-md:text-lg max-md:truncate">{title}</h1>
         <p className="text-text-muted text-sm mt-1 max-md:hidden">
-          {meta?.name ?? 'digiquant-atlas'} &bull; {meta?.base_currency ?? '—'} &bull; Inception {meta?.inception_date ?? '—'}
+          {meta?.name ?? 'Atlas'} &bull; {meta?.base_currency ?? '—'} &bull; Inception {meta?.inception_date ?? '—'}
         </p>
       </div>
       <div className="flex items-center gap-2 text-text-muted text-sm shrink-0">

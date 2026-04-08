@@ -936,6 +936,41 @@ def load_all_markdowns(root):
     """
     docs = []
 
+    def _doc_type_label(payload_doc_type: str | None, fallback: str) -> str:
+        """
+        documents.doc_type is constrained by chk_documents_doc_type.
+        Keep labels within the allowed set to avoid batch upsert failure.
+        """
+        dt = str(payload_doc_type or "").strip()
+        if dt == "weekly_digest":
+            return "Weekly Rollup"
+        if dt == "monthly_digest":
+            return "Monthly Summary"
+        if dt == "deep_dive":
+            return "Deep Dive"
+        if dt == "delta_request":
+            return "Daily Delta"
+        return fallback
+
+    def _category_label(payload_doc_type: str | None, fallback: str) -> str:
+        """
+        documents.category is constrained by chk_documents_category.
+        """
+        dt = str(payload_doc_type or "").strip()
+        if dt == "rebalance_decision":
+            return "portfolio"
+        if dt == "portfolio_recommendation":
+            return "portfolio"
+        if dt == "deliberation_transcript":
+            return "portfolio"
+        if dt == "asset_recommendation":
+            return "portfolio"
+        if dt == "delta_request":
+            return "delta"
+        if dt.startswith("evolution_"):
+            return "output"
+        return fallback
+
     # --- 1. Daily output folders (baseline + delta files) ---
     daily_path = root / "outputs" / "daily"
     if daily_path.exists():
@@ -958,6 +993,9 @@ def load_all_markdowns(root):
                 # Ignore snapshot.json here; it is stored via daily_snapshots/documents(digest)
                 if jf.name == "snapshot.json":
                     continue
+                # Ignore legacy meta (not a publishable research doc)
+                if jf.name == "_meta.json":
+                    continue
                 doc_type = str(payload.get("doc_type") or "")
                 file_date = str(payload.get("date") or day_date)
                 payload["date"] = file_date
@@ -965,14 +1003,14 @@ def load_all_markdowns(root):
                 docs.append(
                     {
                         "title": str(payload.get("title") or jf.stem.replace("-", " ").title()),
-                        "type": doc_type or "JSON Artifact",
+                        "type": _doc_type_label(doc_type, "Daily Digest"),
                         "date": file_date,
                         "path": rel,
                         "document_key": _logical_document_key(rel),
                         "content": _render_markdown_from_payload(payload),
                         "payload": payload,
                         "phase": None,
-                        "category": "output",
+                        "category": _category_label(doc_type, "output"),
                         "segment": jf.stem,
                         "sector": None,
                         "runType": run_type,
@@ -1123,7 +1161,7 @@ def load_all_markdowns(root):
             wrel = str(jf.relative_to(root))
             docs.append({
                 "title": title,
-                "type": label,
+                "type": _doc_type_label(str(payload.get("doc_type") or ""), label),
                 "date": file_date,
                 "path": wrel,
                 "document_key": _logical_document_key(wrel),
@@ -1157,7 +1195,7 @@ def load_all_markdowns(root):
             wrel = str(jf.relative_to(root))
             docs.append({
                 "title": title,
-                "type": "Deep Dive",
+                "type": _doc_type_label("deep_dive", "Deep Dive"),
                 "date": file_date,
                 "path": wrel,
                 "document_key": _logical_document_key(wrel),
@@ -1196,15 +1234,15 @@ def load_all_markdowns(root):
                 docs.append(
                     {
                         "title": title,
-                        "type": doc_type.replace("_", " ").title(),
+                        "type": _doc_type_label("evolution_quality_log", "Daily Digest"),
                         "date": file_date,
                         "path": wrel,
                         "document_key": _logical_document_key(wrel),
                         "content": content,
                         "payload": payload,
                         "phase": None,
-                        "category": "evolution",
-                        "segment": jf.stem,
+                        "category": "output",
+                        "segment": "evolution",
                         "sector": None,
                         "runType": None,
                     }

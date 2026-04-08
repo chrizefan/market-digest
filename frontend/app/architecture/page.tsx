@@ -68,7 +68,7 @@ export default function ArchitecturePage() {
         {/* Intro */}
         <div className="glass-card p-6">
           <p className="text-sm text-text-secondary leading-relaxed max-w-3xl">
-            <strong className="text-white">digiquant-atlas</strong> is a daily market intelligence system driven by a
+            <strong className="text-white">Atlas</strong> is a daily market intelligence system driven by a
             multi-phase AI-orchestrated pipeline. Skills (markdown instruction files) define each analysis step,
             and named agents execute them. The system covers all global asset classes, producing 20+ structured
             research files per run.

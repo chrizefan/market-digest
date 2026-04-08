@@ -16,6 +16,7 @@ It does not read or write outputs/daily/.
 import argparse
 import json
 import os
+import re
 import sys
 from copy import deepcopy
 from datetime import datetime
@@ -186,6 +187,40 @@ def apply_ops(base: Dict[str, Any], ops: List[Dict[str, Any]]) -> Dict[str, Any]
     return doc
 
 
+def _normalize_sector_scorecard(snapshot: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Backwards-compatible adapter for delta ops.
+
+    Older snapshots stored `sector_scorecard` as a list of rows:
+      [{"sector":"Energy","etf":"XLE",...}, ...]
+
+    Newer delta ops address it as an object keyed by slug:
+      /sector_scorecard/energy
+      /sector_scorecard/consumer_staples
+    """
+    sc = snapshot.get("sector_scorecard")
+    if not isinstance(sc, list):
+        return snapshot
+
+    def _slug(s: str) -> str:
+        s = s.strip().lower()
+        s = s.replace("&", "and")
+        s = re.sub(r"[^a-z0-9]+", "_", s)
+        s = re.sub(r"_+", "_", s).strip("_")
+        return s
+
+    out: Dict[str, Any] = {}
+    for row in sc:
+        if not isinstance(row, dict):
+            continue
+        sector = row.get("sector")
+        if isinstance(sector, str) and sector.strip():
+            out[_slug(sector)] = row
+
+    snapshot["sector_scorecard"] = out
+    return snapshot
+
+
 def render_digest_markdown(snapshot: Dict[str, Any]) -> str:
     # Keep this intentionally deterministic and minimal. The UI can render JSON directly,
     # but a markdown view helps with auditing and a “Library” experience.
@@ -221,7 +256,14 @@ def render_digest_markdown(snapshot: Dict[str, Any]) -> str:
     lines.append("## Sector Scorecard")
     lines.append("| Sector | ETF | Bias | Confidence | Key Driver |")
     lines.append("|---|---|---|---|---|")
-    for row in snapshot.get("sector_scorecard", []):
+    sc = snapshot.get("sector_scorecard", [])
+    if isinstance(sc, dict):
+        rows = list(sc.values())
+    else:
+        rows = sc
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
         lines.append(
             f"| {row.get('sector','')} | {row.get('etf','')} | {row.get('bias','')} | {row.get('confidence','')} | {row.get('key_driver','')} |"
         )
@@ -520,6 +562,7 @@ def main() -> None:
         baseline = _fetch_daily_snapshot(args.baseline_date)
         if not baseline:
             raise RuntimeError(f"Baseline snapshot not found in Supabase for {args.baseline_date}")
+        baseline = _normalize_sector_scorecard(baseline)
         if args.ops_json:
             ops_payload = json.loads(args.ops_json)
         else:

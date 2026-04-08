@@ -26,6 +26,8 @@ export interface Position {
   name: string;
   type: 'LONG' | 'SHORT';
   weight_actual: number;
+  /** Change vs previous positions date (percentage points). */
+  weight_delta?: number | null;
   current_price: number | null;
   entry_price: number | null;
   entry_date: string | null;

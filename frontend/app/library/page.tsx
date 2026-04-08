@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useDashboard } from '@/lib/dashboard-context';
 import PageHeader from '@/components/page-header';
+import { useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -90,26 +91,43 @@ function MiniCalendar({ dates, selected, onSelect }: MiniCalendarProps) {
 const CADENCES = ['Daily', 'Weekly', 'Monthly'] as const;
 type Cadence = typeof CADENCES[number];
 
-const CATEGORIES: Record<string, string[]> = {
-  'Market Analysis': ['macro', 'bonds', 'commodities', 'forex', 'crypto', 'international'],
-  'Equities':        ['us-equities', 'equities'],
-  'Sectors':         ['sector', 'technology', 'healthcare', 'financials', 'energy', 'industrials',
-                      'consumer-discretionary', 'consumer-staples', 'utilities', 'materials',
-                      'real-estate', 'communication-services'],
-  'Intelligence':    ['alt-data', 'institutional'],
-  'Digest':          ['digest', 'digest-delta', 'DIGEST', 'weekly/', 'monthly/', 'deep-dives/'],
-};
+const CATEGORY_ORDER = [
+  'Digest',
+  'Portfolio',
+  'Positions',
+  'Deep Dives',
+  'Weekly / Monthly',
+  'Evolution',
+  'Market Analysis',
+  'Equities',
+  'Sectors',
+  'Intelligence',
+  'Other',
+] as const;
 
-function categorize(documentKey: string | undefined): string {
-  const lower = (documentKey || '').toLowerCase();
-  for (const [cat, keys] of Object.entries(CATEGORIES)) {
-    if (keys.some((k) => lower.includes(k.toLowerCase()))) return cat;
-  }
+function categorizeDoc(d: Doc): string {
+  const key = (d.path || d.filename || '').toLowerCase();
+  const seg = (d.segment || '').toLowerCase();
+  const type = (d.type || '').toLowerCase();
+
+  if (key === 'digest') return 'Digest';
+  if (key.startsWith('weekly/') || key.startsWith('monthly/')) return 'Weekly / Monthly';
+  if (key.startsWith('deep-dives/')) return 'Deep Dives';
+  if (key.startsWith('evolution/')) return 'Evolution';
+  if (seg.includes('rebalance') || seg.includes('deliberation') || seg.includes('portfolio') || seg.includes('opportunity')) return 'Portfolio';
+  if (key.startsWith('positions/') || seg.includes('position')) return 'Positions';
+  if (type.includes('weekly') || type.includes('monthly')) return 'Weekly / Monthly';
+  if (type.includes('deep dive')) return 'Deep Dives';
+  if (seg.includes('macro') || seg.includes('bonds') || seg.includes('commodities') || seg.includes('forex') || seg.includes('crypto') || seg.includes('international')) return 'Market Analysis';
+  if (seg.includes('equities') || seg.includes('us-equities')) return 'Equities';
+  if (d.category?.toLowerCase() === 'sector' || seg.includes('sector')) return 'Sectors';
+  if (seg.includes('alt') || seg.includes('institutional')) return 'Intelligence';
   return 'Other';
 }
 
 export default function LibraryPage() {
   const { data, loading, error } = useDashboard();
+  const searchParams = useSearchParams();
   const [cadence, setCadence] = useState<Cadence>('Daily');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [activeFile, setActiveFile] = useState<Doc | null>(null);
@@ -141,25 +159,53 @@ export default function LibraryPage() {
     ? selectedDate
     : dates[0] || null;
 
+  const urlDate = searchParams.get('date');
+  const urlDocKey = searchParams.get('docKey');
+
   const dateDocs = useMemo<Doc[]>(() => {
     let list = activeDocs.filter(d => d.date === effDate);
-    if (filterCat) list = list.filter(d => categorize(d.filename) === filterCat);
+    if (filterCat) list = list.filter(d => categorizeDoc(d) === filterCat);
     return list;
   }, [activeDocs, effDate, filterCat]);
 
   const grouped = useMemo<[string, Doc[]][]>(() => {
     const map: Record<string, Doc[]> = {};
     dateDocs.forEach(d => {
-      const cat = categorize(d.filename);
+      const cat = categorizeDoc(d);
       (map[cat] = map[cat] || []).push(d);
     });
-    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
+    return Object.entries(map).sort(([a], [b]) => {
+      const ia = CATEGORY_ORDER.indexOf(a as (typeof CATEGORY_ORDER)[number]);
+      const ib = CATEGORY_ORDER.indexOf(b as (typeof CATEGORY_ORDER)[number]);
+      if (ia !== -1 || ib !== -1) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+      return a.localeCompare(b);
+    });
   }, [dateDocs]);
 
   const categoryList = useMemo<string[]>(() => {
-    const set = new Set(activeDocs.filter(d => d.date === effDate).map(d => categorize(d.filename)));
-    return [...set].sort();
+    const set = new Set(activeDocs.filter(d => d.date === effDate).map(d => categorizeDoc(d)));
+    const list = [...set];
+    return list.sort((a, b) => {
+      const ia = CATEGORY_ORDER.indexOf(a as (typeof CATEGORY_ORDER)[number]);
+      const ib = CATEGORY_ORDER.indexOf(b as (typeof CATEGORY_ORDER)[number]);
+      if (ia !== -1 || ib !== -1) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+      return a.localeCompare(b);
+    });
   }, [activeDocs, effDate]);
+
+  useEffect(() => {
+    if (urlDate && dates.includes(urlDate)) {
+      setSelectedDate(urlDate);
+      setActiveFile(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlDate, dates.join('|')]);
+
+  useEffect(() => {
+    if (!urlDocKey) return;
+    const match = activeDocs.find((d) => d.date === effDate && d.path === urlDocKey);
+    if (match) setActiveFile(match);
+  }, [urlDocKey, activeDocs, effDate]);
 
   if (loading) return <div className="flex items-center justify-center h-screen text-text-secondary">Loading…</div>;
   if (error || !data) return <div className="flex items-center justify-center h-screen text-fin-red">{error}</div>;

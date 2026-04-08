@@ -19,8 +19,11 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata = {
-  title: 'digiquant-atlas',
+  title: 'Atlas',
   description: 'AI-orchestrated market intelligence dashboard',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

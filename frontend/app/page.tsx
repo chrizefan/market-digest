@@ -6,6 +6,7 @@ import {
   TrendingUp, DollarSign, PieChart, Activity, AlertTriangle,
   ArrowUpRight, Target, Shield,
 } from 'lucide-react';
+import Link from 'next/link';
 import { StatCard, Badge, formatPct, pnlColor } from '@/components/ui';
 
 const REGIME_COLORS: Record<string, string> = {
@@ -18,13 +19,27 @@ const REGIME_COLORS: Record<string, string> = {
 export default function OverviewPage() {
   const { data, loading, error } = useDashboard();
 
-  if (loading) return <div className="flex items-center justify-center h-screen text-text-secondary text-lg">initializing digiquant-atlas_</div>;
+  if (loading) return <div className="flex items-center justify-center h-screen text-text-secondary text-lg">initializing Atlas_</div>;
   if (error || !data) return <div className="flex items-center justify-center h-screen text-fin-red">{error || 'Failed to load'}</div>;
 
-  const { portfolio, positions, calculated: metrics } = data;
+  const { portfolio, positions, calculated: metrics, docs } = data;
   const { strategy } = portfolio;
   const regimeLabel = strategy.regime_label || 'neutral';
   const regimeStyle = REGIME_COLORS[regimeLabel] || REGIME_COLORS.neutral;
+
+  const latestDate = portfolio.meta.last_updated || null;
+  const latestDeepDives = docs
+    .filter((d) => d.type === 'Deep Dive')
+    .slice(0, 3);
+  const latestRunDocs = latestDate
+    ? docs.filter((d) => d.date === latestDate)
+    : [];
+  const latestRunDocByKey = new Map(latestRunDocs.map((d) => [d.path, d]));
+  const quickLinks = [
+    { label: 'Digest', docKey: 'digest' },
+    { label: 'Deliberation', docKey: 'deliberation.md' },
+    { label: 'Rebalance', docKey: 'rebalance-decision.json' },
+  ].filter((x) => latestRunDocByKey.has(x.docKey));
 
   return (
     <>
@@ -94,9 +109,16 @@ export default function OverviewPage() {
                     <Badge variant="blue">{p.ticker}</Badge>
                     <span className="text-sm text-text-secondary truncate max-w-[160px]">{p.name}</span>
                   </div>
-                  <span className="text-sm font-mono font-semibold tabular-nums">
-                    {p.weight_actual?.toFixed(1)}%
-                  </span>
+                  <div className="text-right">
+                    <span className="text-sm font-mono font-semibold tabular-nums">
+                      {p.weight_actual?.toFixed(1)}%
+                    </span>
+                    {typeof p.weight_delta === 'number' && p.weight_delta !== 0 && (
+                      <div className={`text-[11px] font-mono tabular-nums ${p.weight_delta > 0 ? 'text-fin-green' : 'text-fin-red'}`}>
+                        {p.weight_delta > 0 ? '+' : ''}{p.weight_delta.toFixed(1)}pp
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
               {positions.length === 0 && (
@@ -107,6 +129,43 @@ export default function OverviewPage() {
 
           {/* Actionable + Risks */}
           <div className="space-y-4">
+            {(quickLinks.length > 0 || latestDeepDives.length > 0) && (
+              <div className="glass-card p-5">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <h3 className="text-sm font-semibold">Latest Research</h3>
+                  <Link href="/library" className="text-xs text-fin-blue hover:underline">Open Library</Link>
+                </div>
+                {quickLinks.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {quickLinks.map((l) => (
+                      <Link
+                        key={l.docKey}
+                        href={`/library?date=${encodeURIComponent(String(latestDate || ''))}&docKey=${encodeURIComponent(l.docKey)}`}
+                        className="text-xs px-3 py-1 rounded-md bg-fin-blue/10 text-fin-blue hover:bg-fin-blue/20 transition-colors"
+                      >
+                        {l.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                {latestDeepDives.length > 0 && (
+                  <div>
+                    <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2">Deep dives</p>
+                    <div className="space-y-1">
+                      {latestDeepDives.map((d) => (
+                        <Link
+                          key={d.id}
+                          href={`/library?date=${encodeURIComponent(d.date)}&docKey=${encodeURIComponent(d.path)}`}
+                          className="block text-sm text-text-secondary hover:text-white truncate"
+                        >
+                          {d.title}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="glass-card p-5">
               <div className="flex items-center gap-2 mb-3">
                 <ArrowUpRight size={16} className="text-fin-green" />
