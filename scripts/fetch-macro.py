@@ -21,10 +21,10 @@ from datetime import datetime, date
 from pathlib import Path
 from xml.etree import ElementTree
 
-import numpy as np
-import pandas as pd
-import requests
-import yfinance as yf
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover
+    import pandas as pd
 
 ROOT = Path(__file__).parent.parent
 
@@ -92,6 +92,9 @@ def fetch_treasury_yield_curve_yfinance() -> dict:
         "30Y": "^TYX",
     }
     try:
+        import pandas as pd
+        import yfinance as yf
+
         syms = list(yield_symbols.values())
         raw = yf.download(syms, period="5d", progress=False, threads=True)["Close"]
         yields = {}
@@ -148,6 +151,8 @@ def fetch_treasury_yield_curve(target_date_str: str) -> dict:
     for yyyymm in months_to_try:
         url = TREASURY_XML_URL.format(yyyymm=yyyymm)
         try:
+            import requests
+
             resp = requests.get(url, timeout=15)
             resp.raise_for_status()
         except Exception as e:
@@ -250,6 +255,9 @@ def inversion_flags(spreads: dict) -> list[str]:
 # ── yfinance macro series ─────────────────────────────────────────────────────
 
 def safe_float(val, decimals: int = 2):
+    import numpy as np
+    import pandas as pd
+
     try:
         f = float(val)
         if pd.isna(f) or not np.isfinite(f):
@@ -264,6 +272,9 @@ def fetch_macro_series() -> dict:
     symbols = list(MACRO_SYMBOLS.values())
     # Download last 5 trading days to ensure we get today's close + prior
     try:
+        import pandas as pd
+        import yfinance as yf
+
         raw = yf.download(symbols, period="5d", progress=False, threads=True)["Close"]
     except Exception as e:
         print(f"  ⚠️  yfinance macro download failed: {e}")

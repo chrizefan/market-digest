@@ -12,6 +12,8 @@ Usage:
     python3 scripts/preload-history.py --refresh        # re-fetch tickers whose cache is >7d stale
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import re
@@ -20,8 +22,10 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
-import pandas as pd
-import yfinance as yf
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover
+    import pandas as pd
 
 ROOT = Path(__file__).parent.parent
 CACHE_DIR = ROOT / "data" / "price-history"
@@ -61,6 +65,8 @@ def cache_path(ticker: str) -> Path:
 
 def cache_is_stale(ticker: str, max_age_days: int = 7) -> bool:
     """True if cache file doesn't exist or its most recent data row is older than max_age_days."""
+    import pandas as pd
+
     p = cache_path(ticker)
     if not p.exists():
         return True
@@ -149,6 +155,9 @@ def upsert_to_supabase(ticker: str, df: pd.DataFrame) -> int:
 def download_full_history(tickers: list[str], period: str = "2y",
                           batch_size: int = 25) -> dict[str, pd.DataFrame]:
     """Download OHLCV for tickers in batches. Returns dict ticker → DataFrame."""
+    import pandas as pd
+    import yfinance as yf
+
     batches = [tickers[i:i + batch_size] for i in range(0, len(tickers), batch_size)]
     result: dict[str, pd.DataFrame] = {}
 
