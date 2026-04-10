@@ -22,10 +22,8 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import pandas as pd
 from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:  # pragma: no cover
-    import pandas as pd
 
 ROOT = Path(__file__).parent.parent
 CACHE_DIR = ROOT / "data" / "price-history"
