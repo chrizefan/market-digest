@@ -171,18 +171,16 @@ def refresh_event_cumulative(sb, as_of: str) -> int:
 
 
 def refresh_nav_point(sb, as_of: str) -> None:
-    """Append/update indexed NAV for `as_of` using prior day weights and returns."""
-    res = (
-        sb.table("positions")
-        .select("*")
-        .eq("date", as_of)
-        .execute()
-    )
-    pos_rows = getattr(res, "data", None) or []
-    prev_d = _prev_trading_date(sb, "SPY", as_of)
-    if not prev_d or not pos_rows:
-        print("⚠️  NAV skip: no prior day or no positions for", as_of)
-        return
+    """Append/update indexed NAV for `as_of`.
+
+    On non-trading days (weekends / holidays) price_history carries forward the
+    prior close, so every position's return is 0 and NAV stays flat — giving the
+    portfolio page a continuous daily series with no gaps.
+
+    If there is no positions snapshot for `as_of` (common on non-trading days),
+    the most recent prior snapshot is used for weights.
+    """
+    # Fetch the most recent NAV before as_of (needed whether trading day or not)
     nav_res = (
         sb.table("nav_history")
         .select("date, nav")
@@ -193,6 +191,40 @@ def refresh_nav_point(sb, as_of: str) -> None:
     )
     nav_data = getattr(nav_res, "data", None) or []
     prev_nav = float(nav_data[0]["nav"]) if nav_data else 100.0
+
+    # Try exact-date positions snapshot first; fall back to most recent prior snapshot.
+    pos_res = sb.table("positions").select("*").eq("date", as_of).execute()
+    pos_rows = getattr(pos_res, "data", None) or []
+    if not pos_rows:
+        # No snapshot for as_of — find the most recent one
+        snap_res = (
+            sb.table("positions")
+            .select("date")
+            .lt("date", as_of)
+            .order("date", desc=True)
+            .limit(1)
+            .execute()
+        )
+        snap_data = getattr(snap_res, "data", None) or []
+        if snap_data:
+            snap_date = str(snap_data[0]["date"])[:10]
+            all_res = sb.table("positions").select("*").eq("date", snap_date).execute()
+            pos_rows = getattr(all_res, "data", None) or []
+
+    # Get previous day's price date (will be yesterday for every calendar day now
+    # that price_history is forward-filled; on non-trading days p0 == p1 → dr=0)
+    prev_d = _prev_trading_date(sb, "SPY", as_of)
+
+    if not prev_d or not pos_rows:
+        # No price history at all or no positions anywhere — just carry forward
+        ts = datetime.utcnow().isoformat() + "Z"
+        sb.table("nav_history").upsert(
+            {"date": as_of, "nav": round(prev_nav, 6), "updated_at": ts},
+            on_conflict="date",
+        ).execute()
+        print(f"✅ nav_history {as_of}: nav={prev_nav:.4f} (carried forward — no data)")
+        return
+
     dr = 0.0
     for r in pos_rows:
         t = r.get("ticker")
@@ -203,6 +235,7 @@ def refresh_nav_point(sb, as_of: str) -> None:
         c_now_map = _fetch_closes(sb, t, [as_of])
         p0 = c_prev_map.get(prev_d)
         p1 = c_now_map.get(as_of)
+        # On non-trading days price_history ffill means p0 == p1, so dr stays 0
         if p0 and p1 and p0 > 0:
             dr += w * (p1 - p0) / p0
     new_nav = prev_nav * (1.0 + dr)

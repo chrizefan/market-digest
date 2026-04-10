@@ -274,8 +274,14 @@ def fetch_prices(tickers, start_date, price_field="Close"):
 
 
 def fetch_ohlc_matrix(tickers, start_date):
-    """Return dict with 'Open' and 'Close' DataFrames (columns = tickers), forward-filled."""
-    empty = {"Open": pd.DataFrame(), "Close": pd.DataFrame()}
+    """Return dict with 'Open', 'Close' DataFrames (columns=tickers) and 'trading_days' set.
+
+    Prices are forward-filled over the full calendar date range so every day has
+    an entry for the portfolio NAV chart.  'trading_days' is the set of dates
+    when exchanges were actually open (from yfinance); use it to filter returns
+    when computing annualised stats (Sharpe, alpha, volatility).
+    """
+    empty = {"Open": pd.DataFrame(), "Close": pd.DataFrame(), "trading_days": set()}
     if not _HAS_YFINANCE or not tickers:
         return empty
 
@@ -293,16 +299,26 @@ def fetch_ohlc_matrix(tickers, start_date):
     if raw is None or (hasattr(raw, "empty") and raw.empty):
         return empty
 
+    # Capture the raw yfinance trading-day index before any reindexing.
+    trading_days: set = set(raw.index.normalize())
+
     def _frame_for(field: str) -> pd.DataFrame:
         try:
             part = raw[field]
         except (KeyError, TypeError):
             return pd.DataFrame()
         if isinstance(part, pd.Series):
-            return part.to_frame(name=tickers[0]).ffill()
-        return part.ffill()
+            frame = part.to_frame(name=tickers[0]).ffill()
+        else:
+            frame = part.ffill()
+        # Expand to full calendar range: every calendar day carries the last known price.
+        # Non-trading days get the same price as the prior trading close (return = 0).
+        if not frame.empty:
+            full_range = pd.date_range(frame.index.min(), frame.index.max(), freq="D")
+            frame = frame.reindex(full_range).ffill()
+        return frame
 
-    return {"Open": _frame_for("Open"), "Close": _frame_for("Close")}
+    return {"Open": _frame_for("Open"), "Close": _frame_for("Close"), "trading_days": trading_days}
 
 def compute_technicals_for_tickers(tickers: list) -> dict:
     """Compute RSI, MACD signal, SMA50/200 position, ATR for a list of tickers.
@@ -422,6 +438,7 @@ def simulate_portfolio(digests):
     ohlc = fetch_ohlc_matrix(all_symbols, start_date)
     opens = ohlc.get("Open", pd.DataFrame())
     closes = ohlc.get("Close", pd.DataFrame())
+    trading_days: set = ohlc.get("trading_days", set())
 
     if opens.empty:
         return [], [], {}, digests[-1] if digests else None
@@ -479,7 +496,11 @@ def simulate_portfolio(digests):
 
         portfolio_history.append({
             "date": date.strftime("%Y-%m-%d"),
-            "nav": float(nav)
+            "nav": float(nav),
+            # Tag whether this is a real trading day so callers can filter for
+            # annualised stats (Sharpe, alpha) without inflating denominator
+            # with zero-return weekend/holiday observations.
+            "is_trading_day": date.normalize() in trading_days,
         })
 
     # If there are digests published on a weekend/holiday AFTER the last trading day, apply the newest one
@@ -1683,20 +1704,30 @@ def main():
         idx = pd.to_datetime([h["date"] for h in history])
         navs = pd.Series([h["nav"] for h in history], index=idx)
         returns = navs.pct_change().dropna()
-        if not returns.empty and returns.std() != 0:
-            vol = float(returns.std() * np.sqrt(252))
+
+        # Drawdown uses the full calendar series (includes flat weekends) so the
+        # chart is continuous.  Sharpe/vol/alpha must use only trading-day returns
+        # to avoid deflating annualised stats with 104 zero-return weekend days/yr.
+        td_mask = pd.Series(
+            [h.get("is_trading_day", True) for h in history], index=idx, dtype=bool
+        )
+        trading_returns = returns[td_mask.reindex(returns.index, fill_value=True)]
+
+        if not trading_returns.empty and trading_returns.std() != 0:
+            vol = float(trading_returns.std() * np.sqrt(252))
             volatility = vol if not np.isnan(vol) else 0.0
-            
+
             risk_free = 0.00  # Default to 0 for simplicity
-            sh = float((returns.mean() * 252 - risk_free) / volatility)
+            sh = float((trading_returns.mean() * 252 - risk_free) / volatility)
             sharpe = sh if not np.isnan(sh) else 0.0
-        
+
         cum_max = navs.cummax()
         drawdowns = (navs - cum_max) / cum_max
         m_dd = float(drawdowns.min())
         max_dd = m_dd if not np.isnan(m_dd) else 0.0
-        
-        # Alpha vs SPY: same trading dates as NAV (open-to-open), not mismatched tail slices
+
+        # Alpha vs SPY: filter both series to trading days only so the 252-day
+        # annualisation factor and mean return comparison are apple-to-apple.
         if b_hist and "SPY" in b_hist and len(history) > 1:
             spy_pts = {
                 pd.Timestamp(x["date"]): x["price"] for x in b_hist["SPY"]["history"]
@@ -1705,10 +1736,11 @@ def main():
                 [spy_pts.get(ts) for ts in idx], index=idx
             ).ffill().bfill()
             spy_ret = spy_series.pct_change().dropna()
-            common = returns.index.intersection(spy_ret.index)
-            common = common[~(returns.loc[common].isna() | spy_ret.loc[common].isna())]
+            # Intersect on trading days only
+            common = trading_returns.index.intersection(spy_ret.index)
+            common = common[~(trading_returns.loc[common].isna() | spy_ret.loc[common].isna())]
             if len(common) > 5:
-                pr = returns.loc[common]
+                pr = trading_returns.loc[common]
                 sr = spy_ret.loc[common]
                 a = float((pr.mean() - sr.mean()) * 252)
                 alpha = a if not np.isnan(a) else 0.0
