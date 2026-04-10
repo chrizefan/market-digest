@@ -124,16 +124,29 @@ def upsert_to_supabase(ticker: str, df: pd.DataFrame) -> int:
     col_map = {c: c.capitalize() for c in df.columns}
     df = df.rename(columns=col_map)
 
+    # Remember which dates had actual market data before expanding to calendar days.
+    # The local CSV cache stays as trading-days-only (used for TA); Supabase gets
+    # every calendar day so the portfolio page has a continuous series.
+    trading_day_dates: set = set(df.index.normalize())
+
+    # Expand to full calendar range and forward-fill prices.
+    full_range = pd.date_range(df.index.min(), df.index.max(), freq="D")
+    df = df.reindex(full_range).ffill()
+    df.index.name = "Date"
+
     rows = []
     for date_idx, row in df.iterrows():
+        is_td = date_idx.normalize() in trading_day_dates
         rows.append({
-            "date": date_idx.strftime("%Y-%m-%d") if hasattr(date_idx, "strftime") else str(date_idx)[:10],
+            "date": date_idx.strftime("%Y-%m-%d"),
             "ticker": ticker,
             "open": float(row["Open"]) if "Open" in row and pd.notna(row["Open"]) else None,
             "high": float(row["High"]) if "High" in row and pd.notna(row["High"]) else None,
             "low": float(row["Low"]) if "Low" in row and pd.notna(row["Low"]) else None,
             "close": float(row["Close"]) if "Close" in row and pd.notna(row["Close"]) else None,
-            "volume": int(row["Volume"]) if "Volume" in row and pd.notna(row["Volume"]) else None,
+            # Volume is zero on non-trading days (prices are carried forward, no activity)
+            "volume": int(row["Volume"]) if is_td and "Volume" in row and pd.notna(row["Volume"]) else 0,
+            "is_trading_day": is_td,
         })
         # Drop rows where close is None (required column)
     rows = [r for r in rows if r["close"] is not None]
