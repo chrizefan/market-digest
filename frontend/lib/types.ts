@@ -230,6 +230,8 @@ export interface DashboardData {
   /** Per trading day: paths touched by delta-request.json (when published). */
   delta_request_meta_by_date: Record<string, DeltaRequestMeta>;
   benchmarks: BenchmarkHistoryMap;
+  /** Distinct tickers in price_history (view); sorted with majors first. */
+  price_history_tickers: string[];
   calculated: CalculatedMetrics;
 }
 

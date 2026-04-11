@@ -17,7 +17,7 @@ import type {
 } from './types';
 import { renderDigestMarkdownFromSnapshot, type DigestSnapshot } from './render-digest-from-snapshot';
 import { renderDocumentMarkdownFromPayload } from './render-document-from-payload';
-import { DASHBOARD_BENCHMARK_TICKERS } from './benchmark-tickers';
+import { DASHBOARD_BENCHMARK_TICKERS, sortTickerUniverse } from './benchmark-tickers';
 
 type SB = SupabaseClient<Database>;
 
@@ -109,7 +109,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
 
   const [
     snapshotRes, positionsRes, thesesRes, navRes,
-    benchRes, metricsRes, docsRes, deltaDocsRes, eventsRes,
+    benchRes, metricsRes, docsRes, deltaDocsRes, eventsRes, tickerViewRes,
   ] = await Promise.all([
     supabase.from('daily_snapshots').select('*').order('date', { ascending: false }).limit(1).single(),
     supabase.from('positions').select('*').order('date', { ascending: false }).limit(1000),
@@ -138,6 +138,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
       )
       .order('date', { ascending: false })
       .limit(200),
+    supabase.from('price_history_tickers').select('ticker'),
   ]);
 
   if (docsRes.error) {
@@ -158,6 +159,9 @@ export async function getFullDashboardData(): Promise<DashboardData> {
   }
   if (eventsRes.error) {
     console.error('Supabase position_events query:', eventsRes.error);
+  }
+  if (tickerViewRes.error) {
+    console.warn('Supabase price_history_tickers view (apply migration 018 if missing):', tickerViewRes.error);
   }
 
   const snapshot: TableRow<'daily_snapshots'> = snapshotRes.data ?? ({} as TableRow<'daily_snapshots'>);
@@ -244,6 +248,21 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     if (bData.history.length) {
       bData.current = bData.history[bData.history.length - 1].price;
     }
+  }
+
+  const tickerViewRows = (tickerViewRes.data ?? []) as { ticker: string }[];
+  let price_history_tickers: string[] = [];
+  if (!tickerViewRes.error && tickerViewRows.length > 0) {
+    price_history_tickers = sortTickerUniverse(tickerViewRows.map((r) => r.ticker));
+  } else {
+    const fb = new Set<string>();
+    for (const row of benchRows) {
+      fb.add(row.ticker);
+    }
+    for (const t of DASHBOARD_BENCHMARK_TICKERS) {
+      fb.add(t);
+    }
+    price_history_tickers = sortTickerUniverse([...fb]);
   }
 
   const theses: Thesis[] = currentTheses.map((t) => ({
@@ -513,6 +532,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     docs,
     delta_request_meta_by_date,
     benchmarks,
+    price_history_tickers,
     server_portfolio_metrics,
     calculated: {
       portfolio_pnl: metrics.pnl_pct != null ? Number(metrics.pnl_pct) : 0,
@@ -530,6 +550,60 @@ export async function getFullDashboardData(): Promise<DashboardData> {
       alpha: metrics.alpha != null ? Number(metrics.alpha) : 0,
     },
   };
+}
+
+const COMPARABLE_PAGE = 1000;
+const COMPARABLE_MAX_ROWS = 80000;
+
+/**
+ * Load close prices from price_history for NAV comparables (date window inclusive).
+ * Paginates past PostgREST default row limits.
+ */
+export async function fetchComparablePriceHistory(
+  tickers: string[],
+  minDate: string,
+  maxDate: string
+): Promise<BenchmarkHistoryMap> {
+  if (!isSupabaseConfigured() || !supabase || tickers.length === 0) return {};
+  const norm = [...new Set(tickers.map((t) => String(t).toUpperCase().trim()).filter(Boolean))];
+  if (norm.length === 0) return {};
+
+  type Ph = Pick<TableRow<'price_history'>, 'date' | 'ticker' | 'close'>;
+  const all: Ph[] = [];
+  let offset = 0;
+  while (offset < COMPARABLE_MAX_ROWS) {
+    const { data, error } = await supabase
+      .from('price_history')
+      .select('date, ticker, close')
+      .in('ticker', norm)
+      .gte('date', minDate)
+      .lte('date', maxDate)
+      .order('date', { ascending: true })
+      .range(offset, offset + COMPARABLE_PAGE - 1);
+
+    if (error) {
+      console.error('fetchComparablePriceHistory:', error);
+      break;
+    }
+    const chunk = (data ?? []) as Ph[];
+    all.push(...chunk);
+    if (chunk.length < COMPARABLE_PAGE) break;
+    offset += COMPARABLE_PAGE;
+  }
+
+  const out: BenchmarkHistoryMap = {};
+  for (const row of all) {
+    if (!out[row.ticker]) {
+      out[row.ticker] = { current: null, history: [] };
+    }
+    out[row.ticker].history.push({ date: row.date, price: Number(row.close) });
+  }
+  for (const bData of Object.values(out)) {
+    if (bData.history.length) {
+      bData.current = bData.history[bData.history.length - 1].price;
+    }
+  }
+  return out;
 }
 
 /** Resolve markdown + structured view for the Research Library. */

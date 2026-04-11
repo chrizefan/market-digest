@@ -14,3 +14,37 @@ export const DASHBOARD_BENCHMARK_TICKERS = [
   'GLD',
   'IBIT',
 ] as const;
+
+/** Shown first in comparable picker (major ETFs / names users expect). */
+export const PRIORITY_COMPARABLE_TICKERS: string[] = [
+  'SPY',
+  'QQQ',
+  'IWM',
+  'EEM',
+  'VOO',
+  'VTI',
+  'DIA',
+  'GLD',
+  'TLT',
+  'IBIT',
+  'BITO',
+  'XLE',
+  'XLF',
+  'XLK',
+  'ACWI',
+  'EFA',
+  'AGG',
+  'MSFT',
+  'AAPL',
+  'GOOGL',
+  'NVDA',
+];
+
+/** Sort universe: priority tickers first (if present), then A–Z. */
+export function sortTickerUniverse(tickers: string[]): string[] {
+  const upper = tickers.map((t) => String(t).toUpperCase().trim()).filter(Boolean);
+  const set = new Set(upper);
+  const priority = PRIORITY_COMPARABLE_TICKERS.filter((t) => set.has(t));
+  const rest = [...set].filter((t) => !PRIORITY_COMPARABLE_TICKERS.includes(t)).sort();
+  return [...priority, ...rest];
+}

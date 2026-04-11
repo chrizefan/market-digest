@@ -179,7 +179,13 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['macro_series_observations']['Insert']>;
       };
     };
-    Views: Record<string, never>;
+    Views: {
+      price_history_tickers: {
+        Row: {
+          ticker: string;
+        };
+      };
+    };
     Functions: Record<string, never>;
     Enums: Record<string, never>;
   };

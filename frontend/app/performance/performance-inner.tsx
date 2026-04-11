@@ -1,17 +1,18 @@
 'use client';
 
-import { useMemo, useState, useCallback, Suspense } from 'react';
+import { useMemo, useState, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useDashboard } from '@/lib/dashboard-context';
 import PageHeader from '@/components/page-header';
 import { StatCard, formatPct, pnlColor } from '@/components/ui';
 import { TrendingUp, BarChart3, Activity, Target, ChevronDown, ChevronUp } from 'lucide-react';
-import type { NavChartPoint, PerfChartPoint } from '@/lib/types';
+import type { BenchmarkHistoryMap, NavChartPoint, PerfChartPoint } from '@/lib/types';
 import { PositionPnlTable } from '@/components/portfolio/position-pnl-table';
 import { AdvancedStatsPanel } from '@/components/portfolio/advanced-stats-panel';
 import { PerformanceDateRange } from '@/components/portfolio/performance-date-range';
 import { ServerMetricsStrip } from '@/components/portfolio/server-metrics-strip';
 import { PerformanceChartWorkspace } from '@/components/portfolio/performance-chart-workspace';
+import { fetchComparablePriceHistory } from '@/lib/queries';
 import {
   filterByDateRange,
   parseDateRangeKey,
@@ -21,6 +22,8 @@ import {
   type DateRangeKey,
   type PerformanceChartView,
 } from '@/lib/performance-series';
+
+const MAX_COMPARABLES = 8;
 
 function fmtNav(v: number | null | undefined): string {
   if (v == null) return '—';
@@ -69,28 +72,71 @@ function PerformanceContent() {
   );
 
   const { data, loading, error } = useDashboard();
-  /** When null, comparables default to SPY+QQQ (or first two with data). */
   const [comparableOverride, setComparableOverride] = useState<string[] | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [comparableHistory, setComparableHistory] = useState<BenchmarkHistoryMap>({});
+  const [comparableLoading, setComparableLoading] = useState(false);
+  const [comparableError, setComparableError] = useState<string | null>(null);
 
   const positions = useMemo(() => data?.positions ?? [], [data]);
   const benchmarks = useMemo(() => data?.benchmarks ?? {}, [data]);
   const metrics = data?.calculated;
   const serverMetrics = data?.server_portfolio_metrics ?? null;
   const allSnaps = useMemo(() => data?.portfolio?.snapshots ?? [], [data]);
+  const tickerUniverse = useMemo(() => data?.price_history_tickers ?? [], [data]);
 
   const snaps = useMemo(() => filterByDateRange(allSnaps, range), [allSnaps, range]);
 
-  const availBenchmarks = useMemo(() => Object.keys(benchmarks).sort(), [benchmarks]);
-
   const defaultComparableSelection = useMemo(() => {
-    const withData = availBenchmarks.filter((b) => (benchmarks[b]?.history?.length ?? 0) > 1);
-    if (withData.length === 0) return [];
-    const preferred = ['SPY', 'QQQ'].filter((b) => withData.includes(b));
-    return preferred.length > 0 ? preferred : withData.slice(0, Math.min(2, withData.length));
-  }, [availBenchmarks, benchmarks]);
+    if (!tickerUniverse.length) return [];
+    if (tickerUniverse.includes('SPY')) return ['SPY'];
+    return [tickerUniverse[0]];
+  }, [tickerUniverse]);
 
-  const selectedBenchmarks = comparableOverride ?? defaultComparableSelection;
+  const selectedComparables = comparableOverride ?? defaultComparableSelection;
+  const comparableKey = selectedComparables.join('|');
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!snaps.length || selectedComparables.length === 0) {
+        if (!cancelled) {
+          setComparableHistory({});
+          setComparableLoading(false);
+          setComparableError(null);
+        }
+        return;
+      }
+      const minD = snaps[0].date;
+      const maxD = snaps[snaps.length - 1].date;
+      setComparableLoading(true);
+      setComparableError(null);
+      try {
+        const map = await fetchComparablePriceHistory(selectedComparables, minD, maxD);
+        if (cancelled) return;
+        setComparableHistory(map);
+        const sparse = selectedComparables.filter((b) => (map[b]?.history?.length ?? 0) < 2);
+        if (sparse.length) {
+          setComparableError(
+            `Sparse or missing rows in price_history for this range: ${sparse.join(', ')}. Preload those tickers or widen the window.`
+          );
+        } else {
+          setComparableError(null);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setComparableHistory({});
+          setComparableError(e instanceof Error ? e.message : 'Failed to load comparables');
+        }
+      } finally {
+        if (!cancelled) setComparableLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- comparableKey encodes selectedComparables
+  }, [snaps, comparableKey]);
 
   const latestNav = snaps.length ? snaps[snaps.length - 1].nav : 100;
   const dailyRet = dayReturn(snaps);
@@ -108,8 +154,8 @@ function PerformanceContent() {
     const firstNav = snaps[0].nav;
     const dateSet = new Set(snaps.map((s) => s.date));
 
-    selectedBenchmarks.forEach((b) => {
-      (benchmarks[b]?.history || [])
+    selectedComparables.forEach((b) => {
+      (comparableHistory[b]?.history || [])
         .filter((h) => h.date >= inceptionDate)
         .forEach((h) => dateSet.add(h.date));
     });
@@ -117,15 +163,15 @@ function PerformanceContent() {
     const allDates = [...dateSet].filter((d) => d >= inceptionDate).sort();
 
     const bases: Record<string, number> = {};
-    selectedBenchmarks.forEach((b) => {
-      const hist = (benchmarks[b]?.history || []).filter((h) => h.date >= inceptionDate);
+    selectedComparables.forEach((b) => {
+      const hist = (comparableHistory[b]?.history || []).filter((h) => h.date >= inceptionDate);
       if (hist.length) bases[b] = hist[0].price;
     });
 
     const benchMaps: Record<string, Record<string, number>> = {};
-    selectedBenchmarks.forEach((b) => {
+    selectedComparables.forEach((b) => {
       const m: Record<string, number> = {};
-      (benchmarks[b]?.history || [])
+      (comparableHistory[b]?.history || [])
         .filter((h) => h.date >= inceptionDate)
         .forEach((h) => {
           m[h.date] = h.price;
@@ -140,22 +186,35 @@ function PerformanceContent() {
         portfolio:
           rawNav != null && firstNav > 0 ? +((rawNav / firstNav) * 100).toFixed(2) : null,
       };
-      selectedBenchmarks.forEach((b) => {
+      selectedComparables.forEach((b) => {
         const p = benchMaps[b]?.[d];
         row[b] = p != null && bases[b] ? +((p / bases[b]) * 100).toFixed(2) : null;
       });
       return row;
     });
-  }, [snaps, benchmarks, selectedBenchmarks]);
+  }, [snaps, comparableHistory, selectedComparables]);
 
   const drawdownData = useMemo(() => buildDrawdownSeries(snaps), [snaps]);
   const rollingData = useMemo(() => buildRollingSharpeVol(snaps, 21), [snaps]);
 
-  const toggleBenchmark = useCallback(
-    (b: string) => {
+  const onAddComparable = useCallback(
+    (t: string) => {
+      const u = String(t).toUpperCase().trim();
+      if (!u) return;
       setComparableOverride((prev) => {
         const cur = prev ?? defaultComparableSelection;
-        return cur.includes(b) ? cur.filter((x) => x !== b) : [...cur, b];
+        if (cur.includes(u) || cur.length >= MAX_COMPARABLES) return cur;
+        return [...cur, u];
+      });
+    },
+    [defaultComparableSelection]
+  );
+
+  const onRemoveComparable = useCallback(
+    (t: string) => {
+      setComparableOverride((prev) => {
+        const cur = prev ?? defaultComparableSelection;
+        return cur.filter((x) => x !== t);
       });
     },
     [defaultComparableSelection]
@@ -182,8 +241,8 @@ function PerformanceContent() {
       <div className="p-10 max-w-[1400px] mx-auto w-full space-y-6 max-md:p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-text-muted">
-            Pick one chart below; date range applies to all series. Comparables match the same window (indexed to
-            100 at window start).
+            NAV comparables load from <code className="text-text-secondary">price_history</code> for the date range.
+            Pick symbols from the full ticker list (majors listed first). Up to {MAX_COMPARABLES} overlays.
           </p>
           <PerformanceDateRange value={range} onChange={setRange} />
         </div>
@@ -224,11 +283,13 @@ function PerformanceContent() {
           view={view}
           onViewChange={setView}
           chartData={chartData}
-          selectedBenchmarks={selectedBenchmarks}
-          onToggleBenchmark={toggleBenchmark}
-          availBenchmarks={availBenchmarks}
+          selectedComparables={selectedComparables}
+          onAddComparable={onAddComparable}
+          onRemoveComparable={onRemoveComparable}
+          tickerUniverse={tickerUniverse}
+          comparableLoading={comparableLoading}
+          comparableError={comparableError}
           snaps={snaps}
-          benchmarks={benchmarks}
           drawdownData={drawdownData}
           rollingData={rollingData}
           positions={positions}
