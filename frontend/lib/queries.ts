@@ -11,7 +11,9 @@ import type {
   Thesis,
   Doc,
   BenchmarkHistoryMap,
+  DeltaRequestMeta,
 } from './types';
+import { getJsonAtPointer, stringifyJsonish } from './json-pointer';
 import { renderDigestMarkdownFromSnapshot, type DigestSnapshot } from './render-digest-from-snapshot';
 import { renderDocumentMarkdownFromPayload } from './render-document-from-payload';
 import { DASHBOARD_BENCHMARK_TICKERS } from './benchmark-tickers';
@@ -44,6 +46,56 @@ async function querySupabase<T>(
   throw lastError;
 }
 
+function parseDeltaPayload(payload: unknown): DeltaRequestMeta {
+  const empty: DeltaRequestMeta = { changed_paths: [], baseline_date: null, op_paths: [] };
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return empty;
+  const o = payload as Record<string, unknown>;
+  const cp = o.changed_paths;
+  const changed_paths = Array.isArray(cp) ? cp.filter((x): x is string => typeof x === 'string') : [];
+  const baseline_date = typeof o.baseline_date === 'string' ? o.baseline_date : null;
+  const op_paths: string[] = [];
+  const ops = o.ops;
+  if (Array.isArray(ops)) {
+    for (const op of ops) {
+      if (op && typeof op === 'object' && typeof (op as Record<string, unknown>).path === 'string') {
+        op_paths.push(String((op as Record<string, unknown>).path));
+      }
+    }
+  }
+  return { changed_paths, baseline_date, op_paths };
+}
+
+export type LibraryDocumentView =
+  | 'markdown'
+  | 'rebalance'
+  | 'delta_request'
+  | 'deliberation'
+  | 'evolution_sources';
+
+export interface LibraryDocumentResult {
+  id: string;
+  date: string;
+  document_key: string;
+  view: LibraryDocumentView;
+  markdown: string;
+  payload: Record<string, unknown> | null;
+}
+
+function resolveLibraryDocumentView(document_key: string, payload: unknown): LibraryDocumentView {
+  const key = (document_key || '').toLowerCase();
+  const p =
+    payload && typeof payload === 'object' && !Array.isArray(payload)
+      ? (payload as Record<string, unknown>)
+      : null;
+  const dt = String(p?.doc_type || '');
+
+  if (key === 'rebalance-decision.json' || dt === 'rebalance_decision') return 'rebalance';
+  if (key === 'delta-request.json' || dt === 'delta_request') return 'delta_request';
+  if (key.includes('deliberation') || dt === 'deliberation_transcript') return 'deliberation';
+  if (dt === 'evolution_sources') return 'evolution_sources';
+  return 'markdown';
+}
+
 /**
  * Load the complete dashboard data assembled from Supabase tables.
  */
@@ -56,7 +108,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
 
   const [
     snapshotRes, positionsRes, thesesRes, navRes,
-    benchRes, metricsRes, docsRes,
+    benchRes, metricsRes, docsRes, deltaDocsRes,
   ] = await Promise.all([
     supabase.from('daily_snapshots').select('*').order('date', { ascending: false }).limit(1).single(),
     supabase.from('positions').select('*').order('date', { ascending: false }).limit(1000),
@@ -72,10 +124,26 @@ export async function getFullDashboardData(): Promise<DashboardData> {
       .select('id, date, title, doc_type, phase, category, segment, sector, run_type, document_key')
       .order('date', { ascending: false })
       .limit(500),
+    supabase
+      .from('documents')
+      .select('date, payload')
+      .eq('document_key', 'delta-request.json')
+      .order('date', { ascending: false })
+      .limit(400),
   ]);
 
   if (docsRes.error) {
     console.error('Supabase documents query:', docsRes.error);
+  }
+  if (deltaDocsRes.error) {
+    console.error('Supabase delta-request documents query:', deltaDocsRes.error);
+  }
+
+  const delta_request_meta_by_date: Record<string, DeltaRequestMeta> = {};
+  const deltaRows = (deltaDocsRes.data ?? []) as Pick<TableRow<'documents'>, 'date' | 'payload'>[];
+  for (const row of deltaRows) {
+    if (!row?.date) continue;
+    delta_request_meta_by_date[row.date] = parseDeltaPayload(row.payload);
   }
   if (benchRes.error) {
     console.error('Supabase price_history (benchmarks) query:', benchRes.error);
@@ -390,6 +458,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     })),
     ratios: [],
     docs,
+    delta_request_meta_by_date,
     benchmarks,
     calculated: {
       portfolio_pnl: metrics.pnl_pct != null ? Number(metrics.pnl_pct) : 0,
@@ -409,9 +478,8 @@ export async function getFullDashboardData(): Promise<DashboardData> {
   };
 }
 
-export async function getDocumentContentById(
-  id: string
-): Promise<Pick<TableRow<'documents'>, 'id' | 'content'>> {
+/** Resolve markdown + structured view for the Research Library. */
+export async function getLibraryDocumentById(id: string): Promise<LibraryDocumentResult> {
   if (!isSupabaseConfigured() || !supabase) {
     throw new Error(
       'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
@@ -433,6 +501,10 @@ export async function getDocumentContentById(
   if (!row) throw new Error('Document not found');
 
   const doc = row as DocPick;
+  const payload =
+    doc.payload != null && typeof doc.payload === 'object' && !Array.isArray(doc.payload)
+      ? (doc.payload as Record<string, unknown>)
+      : null;
 
   let md = doc.content?.trim() ? doc.content : '';
 
@@ -461,7 +533,117 @@ export async function getDocumentContentById(
     }
   }
 
-  return { id: doc.id, content: md || '_No content available._' };
+  const view = resolveLibraryDocumentView(doc.document_key, doc.payload);
+  const markdown = md || '_No content available._';
+
+  return {
+    id: doc.id,
+    date: doc.date,
+    document_key: doc.document_key,
+    view,
+    markdown,
+    payload,
+  };
+}
+
+export async function getDocumentContentById(
+  id: string
+): Promise<Pick<TableRow<'documents'>, 'id' | 'content'>> {
+  const r = await getLibraryDocumentById(id);
+  return { id: r.id, content: r.markdown };
+}
+
+/** Snapshot JSON diff for a day that has delta-request.json (baseline vs target date). */
+export async function getLibrarySnapshotDiff(targetDate: string): Promise<{
+  compareDate: string;
+  targetDate: string;
+  paths: string[];
+  diffs: Array<{ path: string; beforeText: string; afterText: string }>;
+} | null> {
+  if (!isSupabaseConfigured() || !supabase) {
+    throw new Error(
+      'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
+    );
+  }
+
+  const { data: deltaRow, error: deltaErr } = await supabase
+    .from('documents')
+    .select('payload')
+    .eq('date', targetDate)
+    .eq('document_key', 'delta-request.json')
+    .maybeSingle();
+
+  if (deltaErr) throw deltaErr;
+  const deltaPick = deltaRow as Pick<TableRow<'documents'>, 'payload'> | null;
+  if (!deltaPick?.payload) return null;
+
+  const meta = parseDeltaPayload(deltaPick.payload);
+  const pathSet = new Set<string>([...meta.changed_paths, ...meta.op_paths]);
+  const paths = [...pathSet].filter(Boolean);
+  if (!paths.length) return null;
+
+  let compareDate = meta.baseline_date;
+  if (!compareDate || compareDate === targetDate) {
+    const { data: prev } = await supabase
+      .from('daily_snapshots')
+      .select('date')
+      .lt('date', targetDate)
+      .order('date', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    compareDate = (prev as Pick<TableRow<'daily_snapshots'>, 'date'> | null)?.date ?? '';
+  }
+  if (!compareDate) return null;
+
+  const { data: snaps, error: snapErr } = await supabase
+    .from('daily_snapshots')
+    .select('date, snapshot')
+    .in('date', [targetDate, compareDate]);
+
+  if (snapErr) throw snapErr;
+  const byDate: Record<string, unknown> = {};
+  const snapRows = (snaps ?? []) as Pick<TableRow<'daily_snapshots'>, 'date' | 'snapshot'>[];
+  for (const s of snapRows) {
+    if (s?.date) byDate[s.date] = s.snapshot;
+  }
+
+  const beforeObj = byDate[compareDate];
+  const afterObj = byDate[targetDate];
+  if (afterObj == null || (typeof afterObj !== 'object' && typeof afterObj !== 'string')) {
+    return null;
+  }
+
+  function parseSnap(v: unknown): unknown {
+    if (v == null) return {};
+    if (typeof v === 'string') {
+      try {
+        return JSON.parse(v) as unknown;
+      } catch {
+        return {};
+      }
+    }
+    return typeof v === 'object' ? v : {};
+  }
+
+  const beforeParsed = parseSnap(beforeObj);
+  const afterParsed = parseSnap(afterObj);
+
+  const diffs = paths.map((path) => {
+    const b = getJsonAtPointer(beforeParsed, path);
+    const a = getJsonAtPointer(afterParsed, path);
+    return {
+      path,
+      beforeText: stringifyJsonish(b === undefined ? undefined : b),
+      afterText: stringifyJsonish(a === undefined ? undefined : a),
+    };
+  });
+
+  return {
+    compareDate,
+    targetDate,
+    paths,
+    diffs,
+  };
 }
 
 export async function getDailySnapshots(

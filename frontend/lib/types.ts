@@ -150,6 +150,13 @@ export interface CalculatedMetrics {
   alpha: number;
 }
 
+/** Parsed delta-request.json envelope for library badges and diff scoping. */
+export interface DeltaRequestMeta {
+  changed_paths: string[];
+  baseline_date: string | null;
+  op_paths: string[];
+}
+
 /** A document record as returned to the Research Library. */
 export interface Doc {
   id: string;
@@ -181,6 +188,8 @@ export interface DashboardData {
   }>;
   ratios: Array<{ long_ticker: string; short_ticker: string; net_weight: number }>;
   docs: Doc[];
+  /** Per trading day: paths touched by delta-request.json (when published). */
+  delta_request_meta_by_date: Record<string, DeltaRequestMeta>;
   benchmarks: BenchmarkHistoryMap;
   calculated: CalculatedMetrics;
 }

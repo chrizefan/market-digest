@@ -1,0 +1,106 @@
+import type { Doc } from './types';
+
+/** Library filter tabs: default Research hides portfolio machine artifacts and evolution. */
+export type LibraryScope = 'research' | 'portfolio' | 'evolution' | 'all';
+
+export type DocLibraryTier = 'research' | 'portfolio' | 'evolution';
+
+const PORTFOLIO_KEYS = new Set(
+  [
+    'rebalance-decision.json',
+    'deliberation.json',
+    'deliberation-transcript.json',
+    'opportunity-screener.json',
+    'portfolio-recommendation.json',
+  ].map((k) => k.toLowerCase())
+);
+
+function pathKey(path: string): string {
+  return (path || '').toLowerCase().split('/').pop() || '';
+}
+
+/** Primary tier for routing docs into Research vs Portfolio vs Evolution lists. */
+export function getDocLibraryTier(d: Pick<Doc, 'path' | 'segment' | 'type'>): DocLibraryTier {
+  const p = (d.path || '').toLowerCase();
+  if (p.startsWith('evolution/')) return 'evolution';
+  const file = pathKey(p);
+  if (PORTFOLIO_KEYS.has(file)) return 'portfolio';
+  const seg = (d.segment || '').toLowerCase();
+  if (
+    seg.includes('deliberation') ||
+    seg.includes('rebalance') ||
+    seg.includes('portfolio') ||
+    seg.includes('opportunity')
+  ) {
+    return 'portfolio';
+  }
+  const typ = (d.type || '').toLowerCase();
+  if (typ.includes('rebalance') || typ.includes('deliberation')) return 'portfolio';
+  return 'research';
+}
+
+export function docMatchesLibraryScope(
+  d: Pick<Doc, 'path' | 'segment' | 'type'>,
+  scope: LibraryScope
+): boolean {
+  if (scope === 'all') return true;
+  const tier = getDocLibraryTier(d);
+  const file = pathKey(d.path);
+
+  if (scope === 'research') {
+    if (tier !== 'research') return false;
+    // Machine artifacts: hide from research (surfaced via structured views / Portfolio / delta panel)
+    if (file === 'delta-request.json') return false;
+    return true;
+  }
+  if (scope === 'portfolio') {
+    return tier === 'portfolio';
+  }
+  if (scope === 'evolution') {
+    return tier === 'evolution';
+  }
+  return true;
+}
+
+/** True if evolution_sources payload has no meaningful content (draft outline). */
+export function isEvolutionSourcesEmpty(payload: unknown): boolean {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return true;
+  const p = payload as Record<string, unknown>;
+  if (String(p.doc_type || '') !== 'evolution_sources') return false;
+  const body = p.body;
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return true;
+  const b = body as Record<string, unknown>;
+  const notes = String(b.notes || '').trim();
+  const ratings = b.source_ratings;
+  const hasRatings = Array.isArray(ratings) && ratings.some((r) => r && typeof r === 'object');
+  return !notes && !hasRatings;
+}
+
+/** Whether a changed_paths entry likely relates to a document_key (for delta touched badge). */
+export function docAffectedByDeltaPaths(docPath: string, changedPaths: string[]): boolean {
+  if (!changedPaths.length) return false;
+  const key = (docPath || '').toLowerCase();
+  const file = pathKey(key);
+
+  const digestPrefixes = (p: string) =>
+    p.startsWith('/regime') ||
+    p.startsWith('/market_data') ||
+    p.startsWith('/actionable') ||
+    p.startsWith('/risks') ||
+    p.startsWith('/segments') ||
+    p.startsWith('/portfolio') ||
+    p.startsWith('/digest') ||
+    p === '/';
+
+  if (file === 'digest' || key === 'digest') {
+    return changedPaths.some(digestPrefixes);
+  }
+
+  const stem = file.replace(/\.json$/i, '').replace(/\.md$/i, '');
+  if (!stem || stem === 'delta-request') return false;
+
+  return changedPaths.some((p) => {
+    const low = p.toLowerCase();
+    return low.includes(stem.replace(/-/g, '')) || low.includes(stem.replace(/-/g, '_')) || low.includes(`/${stem}`) || low.includes(`/${stem.replace(/-/g, '_')}`);
+  });
+}

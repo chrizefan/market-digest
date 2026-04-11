@@ -2,13 +2,18 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { Calendar, ChevronDown, ChevronRight, Filter, FileText, X } from 'lucide-react';
 
 import PageHeader from '@/components/page-header';
+import DeltaDaySummary from '@/components/library/DeltaDaySummary';
+import LibraryDocumentBody from '@/components/library/LibraryDocumentBody';
 import { useDashboard } from '@/lib/dashboard-context';
-import { getDocumentContentById } from '@/lib/queries';
+import {
+  docAffectedByDeltaPaths,
+  docMatchesLibraryScope,
+  type LibraryScope,
+} from '@/lib/library-doc-tier';
+import { getLibraryDocumentById, type LibraryDocumentResult } from '@/lib/queries';
 import type { Doc } from '@/lib/types';
 
 /* ── Mini Calendar ── */
@@ -143,27 +148,40 @@ function categorizeDoc(d: Doc): string {
   return 'Other';
 }
 
+const LIBRARY_SCOPES: LibraryScope[] = ['research', 'portfolio', 'evolution', 'all'];
+
 function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlDocKey: string | null }) {
   const { data, loading, error } = useDashboard();
   const [cadence, setCadence] = useState<Cadence>('Daily');
+  const [libraryScope, setLibraryScope] = useState<LibraryScope>('research');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [activeFile, setActiveFile] = useState<Doc | null>(null);
+  const [libraryDoc, setLibraryDoc] = useState<LibraryDocumentResult | null>(null);
   const [activeLoading, setActiveLoading] = useState(false);
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
   const docs = useMemo<Doc[]>(() => data?.docs || [], [data]);
+  const deltaMetaByDate = useMemo(
+    () => data?.delta_request_meta_by_date ?? {},
+    [data?.delta_request_meta_by_date]
+  );
+
+  const scopedDocs = useMemo(
+    () => docs.filter((d) => docMatchesLibraryScope(d, libraryScope)),
+    [docs, libraryScope]
+  );
 
   const cadenceDocs = useMemo<Record<Cadence, Doc[]>>(() => {
     const map: Record<Cadence, Doc[]> = { Daily: [], Weekly: [], Monthly: [] };
-    docs.forEach((d) => {
+    scopedDocs.forEach((d) => {
       const c = (d.cadence || 'daily').toLowerCase();
       if (c === 'weekly') map.Weekly.push(d);
       else if (c === 'monthly') map.Monthly.push(d);
       else map.Daily.push(d);
     });
     return map;
-  }, [docs]);
+  }, [scopedDocs]);
 
   const activeDocs = useMemo<Doc[]>(() => cadenceDocs[cadence] || [], [cadenceDocs, cadence]);
 
@@ -174,11 +192,16 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
 
   const effDate = selectedDate && dates.includes(selectedDate) ? selectedDate : dates[0] || null;
 
+  const docsForEffDate = useMemo<Doc[]>(
+    () => (effDate ? activeDocs.filter((d) => d.date === effDate) : []),
+    [activeDocs, effDate]
+  );
+
   const dateDocs = useMemo<Doc[]>(() => {
-    let list = activeDocs.filter((d) => d.date === effDate);
+    let list = docsForEffDate;
     if (filterCat) list = list.filter((d) => categorizeDoc(d) === filterCat);
     return list;
-  }, [activeDocs, effDate, filterCat]);
+  }, [docsForEffDate, filterCat]);
 
   const grouped = useMemo<[string, Doc[]][]>(() => {
     const map: Record<string, Doc[]> = {};
@@ -194,8 +217,20 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
     });
   }, [dateDocs]);
 
+  const deltaPathsForDate = useMemo(() => {
+    if (!effDate) return [] as string[];
+    const m = deltaMetaByDate[effDate];
+    if (!m) return [];
+    return [...new Set([...m.changed_paths, ...m.op_paths])];
+  }, [deltaMetaByDate, effDate]);
+
+  const digestDocForDate = useMemo(
+    () => docsForEffDate.find((d) => (d.path || '').toLowerCase() === 'digest') ?? null,
+    [docsForEffDate]
+  );
+
   const categoryList = useMemo<string[]>(() => {
-    const set = new Set(activeDocs.filter((d) => d.date === effDate).map((d) => categorizeDoc(d)));
+    const set = new Set(docsForEffDate.map((d) => categorizeDoc(d)));
     const list = [...set];
     return list.sort((a, b) => {
       const ia = CATEGORY_ORDER.indexOf(a as (typeof CATEGORY_ORDER)[number]);
@@ -203,7 +238,7 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
       if (ia !== -1 || ib !== -1) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
       return a.localeCompare(b);
     });
-  }, [activeDocs, effDate]);
+  }, [docsForEffDate]);
 
   useEffect(() => {
     if (urlDate && dates.includes(urlDate)) {
@@ -216,7 +251,24 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
   useEffect(() => {
     if (!urlDocKey) return;
     const match = activeDocs.find((d) => d.date === effDate && d.path === urlDocKey);
-    if (match) setActiveFile(match);
+    if (match) {
+      setActiveFile(match);
+      setLibraryDoc(null);
+      setActiveLoading(true);
+      getLibraryDocumentById(match.id)
+        .then(setLibraryDoc)
+        .catch(() =>
+          setLibraryDoc({
+            id: match.id,
+            date: match.date,
+            document_key: match.path,
+            view: 'markdown',
+            markdown: '_Failed to load document._',
+            payload: null,
+          })
+        )
+        .finally(() => setActiveLoading(false));
+    }
   }, [urlDocKey, activeDocs, effDate]);
 
   if (loading)
@@ -240,6 +292,7 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                     setCadence(c);
                     setSelectedDate(null);
                     setActiveFile(null);
+                    setLibraryDoc(null);
                   }}
                   className={[
                     'flex-1 text-xs py-2 rounded-md font-medium transition-colors',
@@ -251,12 +304,37 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
               ))}
             </div>
 
+            <div className="glass-card p-2 space-y-1">
+              <p className="text-[10px] text-text-muted uppercase tracking-wider px-1">Library scope</p>
+              <div className="flex flex-col gap-0.5">
+                {LIBRARY_SCOPES.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => {
+                      setLibraryScope(s);
+                      setSelectedDate(null);
+                      setActiveFile(null);
+                      setLibraryDoc(null);
+                    }}
+                    className={[
+                      'text-left text-xs px-2 py-1.5 rounded-md capitalize transition-colors',
+                      s === libraryScope ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:text-white',
+                    ].join(' ')}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <MiniCalendar
               dates={dates}
               selected={effDate}
               onSelect={(d) => {
                 setSelectedDate(d);
                 setActiveFile(null);
+                setLibraryDoc(null);
               }}
             />
 
@@ -308,6 +386,7 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                   onClick={() => {
                     setSelectedDate(d);
                     setActiveFile(null);
+                    setLibraryDoc(null);
                   }}
                   className={`block w-full text-left text-xs px-2 py-1 rounded font-mono ${
                     d === effDate ? 'text-fin-blue bg-fin-blue/10 font-semibold' : 'text-text-muted hover:text-white'
@@ -330,6 +409,32 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
               </span>
             </div>
 
+            {libraryScope === 'research' && effDate && deltaMetaByDate[effDate] ? (
+              <DeltaDaySummary
+                date={effDate}
+                meta={deltaMetaByDate[effDate]}
+                digestAvailable={!!digestDocForDate}
+                onOpenDigest={() => {
+                  if (!digestDocForDate) return;
+                  setActiveFile(digestDocForDate);
+                  setActiveLoading(true);
+                  getLibraryDocumentById(digestDocForDate.id)
+                    .then(setLibraryDoc)
+                    .catch(() =>
+                      setLibraryDoc({
+                        id: digestDocForDate.id,
+                        date: digestDocForDate.date,
+                        document_key: digestDocForDate.path,
+                        view: 'markdown',
+                        markdown: '_Failed to load digest._',
+                        payload: null,
+                      })
+                    )
+                    .finally(() => setActiveLoading(false));
+                }}
+              />
+            ) : null}
+
             {/* Viewer */}
             {activeFile ? (
               <div className="glass-card p-0 overflow-hidden">
@@ -339,20 +444,25 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                     <span className="font-mono">{activeFile.title || activeFile.filename}</span>
                   </div>
                   <button
-                    onClick={() => setActiveFile(null)}
+                    onClick={() => {
+                      setActiveFile(null);
+                      setLibraryDoc(null);
+                    }}
                     className="text-text-muted hover:text-white"
                     aria-label="Close document"
                   >
                     <X size={16} />
                   </button>
                 </div>
-                <div className="p-6 prose prose-invert max-w-none text-sm leading-relaxed overflow-auto max-h-[70vh]">
-                  {activeLoading ? (
+                <div className="p-6 max-w-none text-sm leading-relaxed overflow-auto max-h-[70vh]">
+                  {activeLoading || !libraryDoc ? (
                     <div className="text-text-secondary">Loading document…</div>
                   ) : (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {activeFile.content || '_No content available._'}
-                    </ReactMarkdown>
+                    <LibraryDocumentBody
+                      view={libraryDoc.view}
+                      markdown={libraryDoc.markdown}
+                      payload={libraryDoc.payload}
+                    />
                   )}
                 </div>
               </div>
@@ -363,28 +473,52 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                     <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">{cat}</h3>
                   </div>
                   <div className="divide-y divide-border-subtle">
-                    {files.map((f, i) => (
-                      <button
-                        key={i}
-                        onClick={async () => {
-                          setActiveLoading(true);
-                          setActiveFile({ ...f, content: f.content });
-                          try {
-                            const row = await getDocumentContentById(f.id);
-                            setActiveFile({ ...f, content: row.content || '' });
-                          } catch {
-                            setActiveFile({ ...f, content: '_Failed to load content._' });
-                          } finally {
-                            setActiveLoading(false);
-                          }
-                        }}
-                        className="w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02] transition-colors"
-                      >
-                        <FileText size={14} className="text-fin-blue/60 shrink-0" />
-                        <span className="font-mono text-sm">{f.title || f.filename}</span>
-                        <span className="ml-auto text-[11px] text-text-muted">{f.phase || ''}</span>
-                      </button>
-                    ))}
+                    {files.map((f, i) => {
+                      const touched =
+                        effDate && deltaPathsForDate.length
+                          ? docAffectedByDeltaPaths(f.path, deltaPathsForDate)
+                          : false;
+                      return (
+                        <button
+                          key={i}
+                          onClick={async () => {
+                            setActiveLoading(true);
+                            setActiveFile(f);
+                            setLibraryDoc(null);
+                            try {
+                              const row = await getLibraryDocumentById(f.id);
+                              setLibraryDoc(row);
+                            } catch {
+                              setLibraryDoc({
+                                id: f.id,
+                                date: f.date,
+                                document_key: f.path,
+                                view: 'markdown',
+                                markdown: '_Failed to load content._',
+                                payload: null,
+                              });
+                            } finally {
+                              setActiveLoading(false);
+                            }
+                          }}
+                          className="w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02] transition-colors"
+                        >
+                          <span className="relative flex h-2 w-2 shrink-0">
+                            {touched ? (
+                              <span
+                                className="absolute inset-0 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]"
+                                title="Touched by delta this day"
+                              />
+                            ) : (
+                              <span className="absolute inset-0 rounded-full bg-transparent" />
+                            )}
+                          </span>
+                          <FileText size={14} className="text-fin-blue/60 shrink-0" />
+                          <span className="font-mono text-sm">{f.title || f.filename}</span>
+                          <span className="ml-auto text-[11px] text-text-muted">{f.phase ?? ''}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ))
