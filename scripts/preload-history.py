@@ -157,10 +157,31 @@ def upsert_to_supabase(ticker: str, df: pd.DataFrame) -> int:
     if not rows:
         return 0
 
-    # Upsert in chunks of 500
+    # Upsert in chunks of 500.  If the is_trading_day column doesn't exist yet
+    # (migration 013 pending), fall back to omitting it so the upsert still works.
     CHUNK = 500
+    _has_trading_day_col: bool | None = None  # None = unknown until first attempt
+
+    def _upsert_chunk(chunk: list[dict]) -> None:
+        nonlocal _has_trading_day_col
+        if _has_trading_day_col is False:
+            chunk = [{k: v for k, v in r.items() if k != "is_trading_day"} for r in chunk]
+        try:
+            sb.table("price_history").upsert(chunk).execute()
+            if _has_trading_day_col is None:
+                _has_trading_day_col = True
+        except Exception as exc:
+            if _has_trading_day_col is None and "is_trading_day" in str(exc):
+                # Column not yet present — retry without it
+                _has_trading_day_col = False
+                print("    ℹ️  is_trading_day column not found — run migration 013; upserting without it")
+                stripped = [{k: v for k, v in r.items() if k != "is_trading_day"} for r in chunk]
+                sb.table("price_history").upsert(stripped).execute()
+            else:
+                raise
+
     for i in range(0, len(rows), CHUNK):
-        sb.table("price_history").upsert(rows[i:i + CHUNK]).execute()
+        _upsert_chunk(rows[i:i + CHUNK])
     return len(rows)
 
 
