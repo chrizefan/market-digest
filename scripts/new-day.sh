@@ -1,7 +1,7 @@
 #!/bin/bash
 # new-day.sh — Supabase-first daily entry (replaces markdown tree scaffolding)
 #
-# Historical behavior created outputs/daily/ with DIGEST.md placeholders. Canonical
+# Historical behavior used a local daily markdown tree. Canonical
 # flow is JSON → materialize_snapshot / publish_document → Supabase; this script
 # only runs the DB-first entrypoint so operators keep the same command name.
 #

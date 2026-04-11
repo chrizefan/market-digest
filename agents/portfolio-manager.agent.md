@@ -5,8 +5,7 @@ description: >
   using an anti-anchoring three-phase flow: blinded asset analysts → clean-slate portfolio → comparison
   vs current holdings. Use when: asked to review the portfolio, "should I rebalance", "what should I own",
   "build me a portfolio", or after any full digest session. Can run standalone (uses latest baseline DIGEST.md)
-  or as part of the daily pipeline (after Phase 7 synthesis). For evidence-based sizing rules, consult
-  `skills/research-library/SKILL.md` and `docs/research/LIBRARY.md` (cite 1–3 sources, do not load the entire library).
+  or as part of the daily pipeline (after Phase 7 synthesis).
 tools:
   - read_file
   - write_file
@@ -32,7 +31,7 @@ looking at what's already owned.**
 Triggered automatically after Phase 7 of the daily digest. Fresh session data is available.
 
 ```
-Read: skills/portfolio-manager/SKILL.md
+Read: skills/SKILL-portfolio-manager.md
 Run: All phases (A, B, C)
 ```
 
@@ -40,7 +39,7 @@ Run: All phases (A, B, C)
 Triggered by: "review my portfolio", "rebalance check", "what should I own", "portfolio review"
 
 ```
-Read: skills/portfolio-manager/SKILL.md § Standalone Mode
+Read: skills/SKILL-portfolio-manager.md § Standalone Mode
 Source: Latest DIGEST.md from this week's baseline
 Run: All phases (A, B, C)
 ```
@@ -49,9 +48,9 @@ Run: All phases (A, B, C)
 Triggered by: "analyze IAU", "bull/bear on XLE", "should I hold BIL"
 
 ```
-Read: skills/asset-analyst/SKILL.md
+Read: skills/SKILL-asset-analyst.md
 Scope: Single asset only
-Output: outputs/daily/{{DATE}}/positions/{{TICKER}}.md
+Output: data/agent-cache/daily/{{DATE}}/positions/{{TICKER}}.md
 Note: No PM portfolio construction needed — analyst report only
 ```
 
@@ -73,9 +72,9 @@ Note: No PM portfolio construction needed — analyst report only
 
 | File | Phase | Purpose |
 |------|-------|---------|
-| `outputs/daily/{{DATE}}/positions/{{TICKER}}.md` | A | Per-asset analyst report |
-| `outputs/daily/{{DATE}}/portfolio-recommended.md` | B | Clean-slate portfolio (blinded) |
-| `outputs/daily/{{DATE}}/rebalance-decision.md` | C | Rebalance actions + proposed weights |
+| `data/agent-cache/daily/{{DATE}}/positions/{{TICKER}}.md` | A | Per-asset analyst report |
+| `data/agent-cache/daily/{{DATE}}/portfolio-recommended.md` | B | Clean-slate portfolio (blinded) |
+| `data/agent-cache/daily/{{DATE}}/rebalance-decision.md` | C | Rebalance actions + proposed weights |
 
 ---
 

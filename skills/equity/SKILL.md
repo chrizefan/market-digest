@@ -19,7 +19,6 @@ description: Run US equity market overview analysis. In the orchestrator pipelin
 > Use them as the authoritative price and technical source. Web-search only for qualitative context.
 
 1. DB-first: use Supabase `price_history` + `price_technicals` as the authoritative source for prices/technicals.
-   Legacy archive (if reviewing history): `archive/legacy-outputs/daily/{{DATE}}/data/quotes-summary.md` contains a precomputed summary for that date.
    - **Current prices and 1D%** for every watchlist ticker — do NOT web-browse individual prices
    - **Trend** (UPTREND / DOWNTREND / NEUTRAL) — pre-classified from SMA50/200 relationship
    - **RSI(14)** — overbought (≥70 ⚠️) / oversold (≤35 🟡) flags already shown
@@ -39,7 +38,7 @@ description: Run US equity market overview analysis. In the orchestrator pipelin
    - McClellan Oscillator, breadth divergences
    - Sector ETF flows (not price — ETF.com for flow data)
 
-> DB-first: do not require `outputs/daily`. If you need refreshed numbers, run `./scripts/fetch-market-data.sh` (writes legacy archive summaries) or use MCP sources.
+> DB-first: do not require `data/agent-cache/daily`. If you need refreshed numbers, run `./scripts/fetch-market-data.sh` (writes legacy archive summaries) or use MCP sources.
 > If that fails (sandbox), follow `skills/mcp-data-fetch/SKILL.md` for MCP-based data fetch.
 
 ## Research Steps

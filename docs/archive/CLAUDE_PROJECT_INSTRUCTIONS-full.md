@@ -2,7 +2,7 @@
 
 > This file is the master instruction set for this Claude Project.
 > It tells Claude exactly how to behave in every session.
-> **DB-first**: 9-phase orchestrated pipeline; canonical state in **Supabase**; JSON artifacts under `outputs/daily/`; markdown is derived.
+> **DB-first**: 9-phase orchestrated pipeline; canonical state in **Supabase**; JSON artifacts under `data/agent-cache/daily/`; markdown is derived.
 
 ---
 
@@ -23,7 +23,7 @@ This is a daily market intelligence system. Every session is either:
 ### At the start of every session:
 1. Identify session type (full digest, Track A, Track B, segment, thesis, rollup)
 2. Read `config/watchlist.md`, `docs/ops/data-sources.md`; add `config/preferences.md` + `config/investment-profile.md` only for **Track B** / portfolio work
-3. For prior context: latest digest from **Supabase** or `outputs/daily/[date]/snapshot.json` — not legacy `DIGEST.md` unless in archive
+3. For prior context: latest digest from **Supabase** or `data/agent-cache/daily/[date]/snapshot.json` — not legacy `DIGEST.md` unless in archive
 4. Do NOT summarize what you've read — just use it
 
 ### Tone and style:
@@ -62,7 +62,7 @@ Full digest: `skills/orchestrator/SKILL.md` / `weekly-baseline` / `daily-delta`.
 | 7 | Digest | `snapshot.json` / `delta-request.json` → `daily_snapshots` + `documents.digest` |
 | 8–9 | Portfolio | screener, deliberation, PM → `rebalance-decision.json`, etc. |
 
-**Output**: Supabase canonical; markdown derived. Legacy `.md` tree: `archive/legacy-outputs/daily/`.
+**Output**: Supabase canonical; markdown derived. Optional local scratch: `data/agent-cache/` (gitignored).
 
 ---
 
@@ -162,17 +162,16 @@ templates/schemas/sector-report.schema.json       ← Sector report schema
 templates/schemas/asset-recommendation.schema.json ← Asset analyst report schema
 templates/schemas/portfolio-recommendation.schema.json ← Portfolio recommendation schema
 templates/schemas/deliberation-transcript.schema.json ← Deliberation transcript schema
-outputs/weekly/YYYY-Wnn.json      ← Weekly rollups (JSON-first)
-outputs/monthly/YYYY-MM.json      ← Monthly rollups (JSON-first)
-outputs/deep-dives/*.json         ← Deep dives (JSON-first; markdown derived)
-outputs/evolution/YYYY-MM-DD/*.json ← Post-mortem evolution artifacts (JSON-first)
+data/agent-cache/weekly/YYYY-Wnn.json      ← Weekly rollups (JSON-first)
+data/agent-cache/monthly/YYYY-MM.json      ← Monthly rollups (JSON-first)
+data/agent-cache/deep-dives/*.json         ← Deep dives (JSON-first; markdown derived)
+data/agent-cache/evolution/YYYY-MM-DD/*.json ← Post-mortem evolution artifacts (JSON-first)
 
 Supabase                          ← Canonical: daily_snapshots, documents, positions, theses, nav_history
-archive/legacy-outputs/daily/     ← Historical markdown digests (read-only)
 
 python3 scripts/run_db_first.py   ← Operator entry: validate, ETL, execute-at-open
 scripts/materialize_snapshot.py   ← Publish digest snapshot JSON to Supabase
-scripts/new-day.sh                ← Print baseline/delta prompt (no outputs/daily writes)
+scripts/new-day.sh                ← Print baseline/delta prompt (no data/agent-cache/daily writes)
 scripts/status.sh                 ← validate_db_first + brief status
 scripts/git-commit.sh             ← Commit outputs (runs ETL)
 scripts/weekly-rollup.sh          ← Weekly JSON scaffold + prompt

@@ -4,7 +4,7 @@
 
 ## Preconditions
 
-Research for the **as-of date** is available in **Supabase** — portfolio **digest** snapshot and/or at least one **`research_delta`** row in `documents` (any `research-delta/…` key). If this session **just** published Track A research, you may proceed once that row exists. **Do not** depend on local `outputs/` for canonical state.
+Research for the **as-of date** is available in **Supabase** — portfolio **digest** snapshot and/or at least one **`research_delta`** row in `documents` (any `research-delta/…` key). If this session **just** published Track A research, you may proceed once that row exists. **Do not** depend on local `data/agent-cache/` for canonical state.
 
 ## Objective
 

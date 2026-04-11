@@ -4,7 +4,7 @@ description: >
   Sunday weekly baseline run. Full 9-phase pipeline that anchors the week for Mon-Sat deltas.
   Triggers on Sundays (see scripts/new-day.sh → run_db_first), or when the user says "run weekly baseline",
   "baseline run", or "full baseline". In DB-first mode, produces a fully materialized digest
-  snapshot JSON and publishes it to Supabase (no outputs/daily writes). Adds a Week Setup preamble
+  snapshot JSON and publishes it to Supabase (no data/agent-cache/daily writes). Adds a Week Setup preamble
   reviewing prior week evolution and sets the analytical frame for the upcoming week.
 ---
 

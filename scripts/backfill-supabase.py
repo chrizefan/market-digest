@@ -30,7 +30,7 @@ def main():
         print("❌ Supabase not configured. Set SUPABASE_URL and SUPABASE_SERVICE_KEY env vars.")
         sys.exit(1)
 
-    print("📊 Backfilling Supabase from all existing daily outputs...")
+    print("📊 Backfilling Supabase from digest files found under data/agent-cache/daily/ (recovery path)...")
 
     digest_files = mod.get_digest_files()
     if not digest_files:

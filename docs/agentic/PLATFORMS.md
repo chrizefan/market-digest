@@ -48,17 +48,17 @@ claude -p "Search memory for any notes on NVDA"
 
 ## Claude.ai Projects
 
-**Primary paste**: `cowork/PROJECT-PROMPT.md` — keep this block in Project Instructions (aligned with Co-work, DB-first, Track A/B).
+**Config file**: `CLAUDE_PROJECT_INSTRUCTIONS.md`
 
-**Stub / pointers**: `CLAUDE_PROJECT_INSTRUCTIONS.md` at repo root links to `AGENTS.md`, `RUNBOOK.md`, and `docs/agentic/SKILLS-CATALOG.md` so you do not maintain duplicate long tables in two places.
+Copy the full contents of this file and paste into the Project Instructions field in your Claude.ai Project settings.
 
 **Setup steps:**
 1. Open claude.ai → Projects → New Project (or your existing project)
 2. Go to Project Settings → Project Instructions
-3. Paste contents of `cowork/PROJECT-PROMPT.md` (and optionally append the short stub from `CLAUDE_PROJECT_INSTRUCTIONS.md`)
-4. Attach or sync: `config/watchlist.md`, `config/investment-profile.md` (Track B), `cowork/PROJECT.md` as needed
+3. Paste contents of `CLAUDE_PROJECT_INSTRUCTIONS.md`
+4. Attach relevant files: `config/watchlist.md`, `config/preferences.md`
 
-**Historical long paste** (skill tables, file map): `docs/archive/CLAUDE_PROJECT_INSTRUCTIONS-full.md`
+**Current config**: `CLAUDE_PROJECT_INSTRUCTIONS.md` ✅
 
 ---
 
@@ -73,8 +73,8 @@ MDC files in `.cursor/rules/` support frontmatter for smart rule application:
 | File | Applies When |
 |------|-------------|
 | `.cursor/rules/01-overview.mdc` | Always (`alwaysApply: true`) |
-| `.cursor/rules/02-skills-workflow.mdc` | When editing `skills/**/SKILL.md` |
-| `.cursor/rules/03-memory-outputs.mdc` | When editing `memory/**/*.md` or `outputs/**/*.md` |
+| `.cursor/rules/02-skills-workflow.mdc` | When editing `skills/**/*.md` |
+| `.cursor/rules/03-memory-outputs.mdc` | When editing `memory/**/*.md` |
 
 Cursor reads these automatically — no setup needed.
 
@@ -84,7 +84,7 @@ Cursor reads these automatically — no setup needed.
 
 **Usage patterns in Cursor:**
 - Open Composer (Cmd+I) with `@codebase` for full context
-- Reference skill files directly: "Using @skills/macro/SKILL.md, run today's analysis"
+- Reference skill files directly: "Using @skills/SKILL-macro.md, run today's analysis"
 - Use Agent mode for multi-step pipeline phases
 
 ---
@@ -99,7 +99,7 @@ Windsurf reads `.windsurfrules` from the project root automatically.
 
 **Usage patterns:**
 - Use Cascade (agent mode) for multi-step workflow execution
-- Reference skill files in prompts: "Follow skills/equity/SKILL.md"
+- Reference skill files in prompts: "Follow skills/SKILL-equity.md"
 
 ---
 
@@ -114,7 +114,7 @@ Aider works well with this repo via `--read` flags to load context files:
 aider --read AGENTS.md --read config/watchlist.md --read config/preferences.md
 
 # Run a specific skill
-aider --read skills/macro/SKILL.md --message "Run the macro analysis for today"
+aider --read skills/SKILL-macro.md --message "Run the macro analysis for today"
 ```
 
 **Optional config** `.aider.conf.yml`:
@@ -162,20 +162,23 @@ MCP (Model Context Protocol) servers extend GitHub Copilot's agent mode with liv
 2. Open the Command Palette → **MCP: List Servers** to verify servers are loaded
 3. In Copilot Chat (agent mode), tools from configured MCP servers appear automatically
 
-### Configured Servers (repo)
+### Configured Servers
 
-These match [`.vscode/mcp.json`](../../.vscode/mcp.json). **Optional tools** — canonical prices for the app live in Supabase; use MCPs only when they add research value.
-
-| Server ID | Data Source | Key / notes | Typical use |
-|-----------|------------|-------------|---------------|
-| `sec-edgar` | SEC EDGAR + XBRL, Form 4 | Docker + User-Agent string | Phase 2 (Institutional) |
-| `fred` | FRED macro series | Free API key | Phase 3–4 |
-| `crypto-feargreed` | Fear & Greed | No key | Phase 1 / crypto context |
-| `polymarket` | Event probabilities | No key | Phase 1 (geopolitics) |
-| `frankfurter-fx` | FX rates | No key | Phase 4C (Forex) |
-| `world-bank` | WB indicators | No key | Phase 4E (International) |
-| `coingecko` | Crypto market data | Optional key (public tier ok) | Phase 4D |
-| `alpha-vantage` | Equities fundamentals/news | Key; low daily quota — use sparingly | Phase 5 |
+| Server ID | Data Source | Key Required | Pipeline Phase |
+|-----------|------------|-------------|----------------|
+| `sec-edgar` | SEC EDGAR filings + XBRL financials | No (User-Agent only) | Phase 2 (Institutional) |
+| `fred` | FRED — 800K+ macro series | Yes — [free](https://fred.stlouisfed.org/docs/api/api_key.html) | Phase 3 (Macro) + Phase 4A (Bonds) |
+| `nasdaq-data-link` | Nasdaq Data Link — RTAT, World Bank, OECD | Yes — [free](https://data.nasdaq.com) | Phase 1 (Alt Data) |
+| `crypto-feargreed` | Crypto Fear & Greed Index | No | Phase 1 (Alt Data) |
+| `crypto-sentiment` | Crypto sentiment signals | No | Phase 1 (Alt Data) |
+| `crypto-indicators` | Crypto TA (RSI/MACD/BB) | No | Phase 4D (Crypto) |
+| `polymarket` | Prediction market event probabilities | No | Phase 1 (Alt Data) |
+| `frankfurter-fx` | Live FX rates, 30+ pairs | No | Phase 4C (Forex) |
+| `world-bank` | World Bank global indicators | No | Phase 4E (International) |
+| `coingecko` | 200+ chains, DeFi TVL, volumes | Optional — free tier works w/o key | Phase 4D (Crypto) |
+| `twelve-data` | Real-time stocks/forex/ETFs + TA | Yes — [free, 800 credits/day](https://twelvedata.com) | Phases 4A–4C |
+| `alpha-vantage` | Fundamentals, earnings, news sentiment | Yes — [free, 25 req/day](https://alphavantage.co) | Phase 5 (Equities) |
+| `defi-rates` | DeFi borrow/supply rates (Aave, Morpho…) | No | Phase 4D (Crypto) |
 
 ### Setup Notes
 
@@ -193,7 +196,7 @@ node --version
 API keys are stored securely via VS Code's `inputs` prompt mechanism — never hardcoded. On first
 use of a key-required server, VS Code will prompt once and cache the value for the session.
 
-Full server details and prerequisites: `docs/ops/data-sources.md` → "MCP Servers" section.
+Full server details and prerequisites: `config/data-sources.md` → "MCP Servers" section.
 
 ---
 

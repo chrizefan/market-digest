@@ -87,8 +87,8 @@ Phase 7D — Portfolio Manager (clean-slate build → rebalance diff)           
 Phase 8  — Web Dashboard Update (update-tearsheet.py + git commit)
 Phase 9  — Post-Mortem & Evolution (source scorecard, quality log, proposals → evolution PR)
 
-Validate after each phase: ./scripts/validate-phase.sh [phase]
-Validate all at once: ./scripts/validate-phase.sh --all
+Validate after each phase: ./scripts/validate_db_first.py [phase]
+Validate all at once: ./scripts/validate_db_first.py --all
 
 ════════════════════════════════════════
 RULES — apply to every session
@@ -104,14 +104,14 @@ ALWAYS:
 - Flag anything that contradicts the user's active theses (listed in config/preferences.md)
 - End every section with an implication or action — not just a description
 - On delta days: materialize a complete DIGEST.md (the dashboard reads DIGEST.md, not DIGEST-DELTA.md)
-- Run validate-phase.sh after each pipeline phase before proceeding
+- Run validate_db_first.py after each pipeline phase before proceeding
 
 NEVER:
 - Use training data for current prices, yields, rates, or news — always search
 - Skip the portfolio layer — baseline days always run full PM; delta days run threshold monitor
 - Produce hedge-everything vague analysis — if evidence is mixed say "Conflicted" and explain both sides
 - Give explicit buy/sell recommendations — provide signals and let the user decide
-- Modify outputs/daily/ files directly — these are agent-generated
+- Modify data/agent-cache/daily/ files directly — these are agent-generated
 
 ════════════════════════════════════════
 KEY FILES
@@ -128,12 +128,12 @@ templates/master-digest.md     → baseline DIGEST.md template
 templates/delta-digest.md      → delta DIGEST-DELTA.md template
 templates/sector-report.md     → sector sub-agent output template
 
-outputs/daily/YYYY-MM-DD/      → one folder per day (segment files + DIGEST.md)
-outputs/weekly/                 → weekly rollups
-outputs/monthly/                → monthly syntheses
+data/agent-cache/daily/YYYY-MM-DD/      → one folder per day (segment files + DIGEST.md)
+data/agent-cache/weekly/                 → weekly rollups
+data/agent-cache/monthly/                → monthly syntheses
 
 scripts/new-day.sh             → creates daily folder + detects baseline vs delta
-scripts/validate-phase.sh      → validates outputs after each pipeline phase
+scripts/validate_db_first.py      → validates outputs after each pipeline phase
 scripts/update-tearsheet.py    → regenerates dashboard-data.json for the web frontend
 scripts/git-commit.sh          → commits outputs with date-stamped message
 

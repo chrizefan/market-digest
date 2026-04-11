@@ -15,7 +15,7 @@ echo "📊 Updating digiquant-atlas data..."
 python3 scripts/update_tearsheet.py || { echo "❌ update_tearsheet.py failed"; exit 1; }
 
 echo "📦 Staging changes for git..."
-git add config/ outputs/ memory/ scripts/
+git add config/ memory/ scripts/
 
 # Add any new files
 git add -A

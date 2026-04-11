@@ -14,7 +14,7 @@ DATE=${1:-$(date +%Y-%m-%d)}
 YEAR=$(date +%Y)
 WEEK=$(date +%V)
 WEEK_LABEL="${YEAR}-W${WEEK}"
-OUTPUT_DIR="outputs/daily/$DATE"
+OUTPUT_DIR="data/agent-cache/daily/$DATE"
 
 echo ""
 echo "📅 New Week Baseline — $DATE"

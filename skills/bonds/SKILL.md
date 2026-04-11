@@ -12,7 +12,7 @@ description: Run bond market and interest rates analysis as part of the daily di
 
 ## Data Layer
 
-> DB-first: read the latest relevant snapshot data from Supabase (daily_snapshots.snapshot / documents.payload). Legacy filesystem summaries (if present) live under `archive/legacy-outputs/daily/{{DATE}}/data/`.
+> DB-first: read the latest relevant snapshot data from Supabase (`daily_snapshots.snapshot` / `documents.payload`).
 
 Supplement with `mcp_fred_*` tools for data not in the fetch files:
 - **TIPS breakevens**: `mcp_fred_fred_series_observations` with `T10YIE` (10Y), `T5YIE` (5Y)

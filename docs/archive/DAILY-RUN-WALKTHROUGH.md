@@ -1,3 +1,5 @@
+> **Historical — markdown-on-disk pipeline (retired).** Commands below that invoke `validate_db_first.py` with a “phase” argument are obsolete; that script only supports `--date` and `--mode`. Use [`RUNBOOK.md`](../../RUNBOOK.md) for the current DB-first flow.
+
 # digiquant-atlas — Daily Run Walkthrough
 
 > Step-by-step documentation of a complete daily pipeline run, from morning start
@@ -63,11 +65,11 @@ new-day.sh execution:
     │                 │
     ▼                 ▼
   Create:            Find this week's
-  outputs/daily/     baseline by scanning
+  data/agent-cache/daily/     baseline by scanning
     YYYY-MM-DD/      backwards up to 6 days
     _meta.json       │
     DIGEST.md        Create:
-    macro.md         outputs/daily/YYYY-MM-DD/
+    macro.md         data/agent-cache/daily/YYYY-MM-DD/
     bonds.md           _meta.json (type: delta,
     ...etc             baseline: YYYY-MM-DD)
     sectors/           deltas/
@@ -171,7 +173,7 @@ Data Layer Decision Tree:
 
 **Expected output files after data fetch:**
 ```
-outputs/daily/YYYY-MM-DD/data/
+data/agent-cache/daily/YYYY-MM-DD/data/
 ├── quotes.json          (~200KB, all ticker OHLCV + technicals)
 ├── quotes-summary.md    (~5KB, human-readable table)
 ├── macro.json           (~50KB, yield curve + VIX + FX + commodities)
@@ -181,11 +183,11 @@ outputs/daily/YYYY-MM-DD/data/
 ### Step 2.4: Pre-Flight Validation
 
 ```bash
-./scripts/validate-phase.sh preflight
+# (retired markdown gate) After Supabase publish: python3 scripts/validate_db_first.py --date YYYY-MM-DD --mode full
 ```
 
 **Checks performed:**
-- [x] Output directory exists (`outputs/daily/YYYY-MM-DD/`)
+- [x] Output directory exists (`data/agent-cache/daily/YYYY-MM-DD/`)
 - [x] `_meta.json` exists
 - [x] `config/watchlist.md` exists (≥3 lines)
 - [x] `config/preferences.md` exists (≥3 lines)
@@ -214,7 +216,7 @@ outputs/daily/YYYY-MM-DD/data/
 
 ### Gate Check
 ```bash
-./scripts/validate-phase.sh 1
+# (retired markdown gate) After Supabase publish: python3 scripts/validate_db_first.py --date YYYY-MM-DD --mode full
 # Checks: All 4 files exist with ≥5 lines each
 ```
 
@@ -234,7 +236,7 @@ outputs/daily/YYYY-MM-DD/data/
 
 ### Gate Check
 ```bash
-./scripts/validate-phase.sh 2
+# (retired markdown gate) After Supabase publish: python3 scripts/validate_db_first.py --date YYYY-MM-DD --mode full
 ```
 
 ---
@@ -277,7 +279,7 @@ outputs/daily/YYYY-MM-DD/data/
 
 ### Gate Check
 ```bash
-./scripts/validate-phase.sh 3
+# (retired markdown gate) After Supabase publish: python3 scripts/validate_db_first.py --date YYYY-MM-DD --mode full
 # CRITICAL GATE: This regime anchors Phases 4-5
 ```
 
@@ -318,7 +320,7 @@ Each segment file (e.g., `bonds.md`) includes:
 
 ### Gate Check
 ```bash
-./scripts/validate-phase.sh 4
+# (retired markdown gate) After Supabase publish: python3 scripts/validate_db_first.py --date YYYY-MM-DD --mode full
 # Checks: bonds.md, commodities.md, forex.md, crypto.md, international.md
 # All must exist with ≥5 lines
 ```
@@ -392,7 +394,7 @@ Aggregate into: **Net Equity Bias** (Bullish / Bearish / Neutral / Conflicted)
 
 ### Gate Check
 ```bash
-./scripts/validate-phase.sh 5
+# (retired markdown gate) After Supabase publish: python3 scripts/validate_db_first.py --date YYYY-MM-DD --mode full
 # Checks: us-equities.md + 11 sector files (≥10 lines each)
 ```
 
@@ -466,7 +468,7 @@ Written alongside DIGEST.md for machine consumption:
 
 ### Gate Check
 ```bash
-./scripts/validate-phase.sh 7
+# (retired markdown gate) After Supabase publish: python3 scripts/validate_db_first.py --date YYYY-MM-DD --mode full
 # Checks: DIGEST.md ≥50 lines + contains "Market Regime", "Thesis Tracker",
 #          "Actionable Summary", "Risk Radar" sections
 ```
@@ -547,9 +549,9 @@ PHASE C — Comparison (NOW load current weights)
 
 ### Gate Checks
 ```bash
-./scripts/validate-phase.sh 7b   # opportunity-screen.md exists
-./scripts/validate-phase.sh 7c   # deliberation.md + positions/*.md exist
-./scripts/validate-phase.sh 7d   # portfolio-recommended.md + rebalance-decision.md + proposed_positions
+# (retired markdown gate) After Supabase publish: python3 scripts/validate_db_first.py --date YYYY-MM-DD --mode full
+# (retired markdown gate) After Supabase publish: python3 scripts/validate_db_first.py --date YYYY-MM-DD --mode full
+# (retired markdown gate) After Supabase publish: python3 scripts/validate_db_first.py --date YYYY-MM-DD --mode full
 ```
 
 ---
@@ -569,7 +571,7 @@ PHASE 8 EXECUTION
   │  python3 scripts/generate-snapshot.py     │
   │                                           │
   │  Reads: DIGEST.md + portfolio.json        │
-  │  Writes: outputs/daily/YYYY-MM-DD/        │
+  │  Writes: data/agent-cache/daily/YYYY-MM-DD/        │
   │          snapshot.json                     │
   │                                           │
   │  Extracts via regex:                      │
@@ -587,7 +589,7 @@ PHASE 8 EXECUTION
   ┌──────────────────────────────────────────┐
   │  python3 scripts/update-tearsheet.py      │
   │                                           │
-  │  1. Scan ALL outputs/daily/*/DIGEST.md    │
+  │  1. Scan ALL data/agent-cache/daily/*/DIGEST.md    │
   │  2. Parse each digest → extract data      │
   │  3. Enrich positions with portfolio.json  │
   │     (category, thesis_ids, entry_date)    │
@@ -611,7 +613,7 @@ PHASE 8 EXECUTION
   ┌──────────────────────────────────────────┐
   │  ./scripts/git-commit.sh                  │
   │                                           │
-  │  1. git add outputs/ config/              │
+  │  1. git add data/agent-cache/ config/              │
   │  2. git commit -m "digest(YYYY-MM-DD):    │
   │     daily market analysis..."             │
   │  3. git push origin master                │
@@ -627,7 +629,7 @@ PHASE 8 EXECUTION
 
 ### Gate Check
 ```bash
-./scripts/validate-phase.sh 8
+# (retired markdown gate) After Supabase publish: python3 scripts/validate_db_first.py --date YYYY-MM-DD --mode full
 # Checks:
 #   - dashboard-data.json exists, valid JSON, recently updated
 #   - Supabase tables have data (if configured)
@@ -646,7 +648,7 @@ For each data source used today:
   ├── Flag failures (unavailable, paywalled, stale)
   └── Record new sources discovered
 
-Output: outputs/daily/YYYY-MM-DD/evolution/sources.md
+Output: data/agent-cache/daily/YYYY-MM-DD/evolution/sources.md
 GUARDRAIL: Agent CANNOT modify config/data-sources.md
 ```
 
@@ -664,7 +666,7 @@ QUALITY SCORECARD (1-5 scale):
   └── Review yesterday's actionable items
       Mark each: ✅ Correct / ❌ Wrong / ⏳ Pending
 
-Output: outputs/daily/YYYY-MM-DD/evolution/quality-log.md
+Output: data/agent-cache/daily/YYYY-MM-DD/evolution/quality-log.md
 ```
 
 ### 9C: Improvement Proposals (max 2)
@@ -682,7 +684,7 @@ LOCKED SECTIONS (cannot propose changes to):
   ├── Risk constraints (config/investment-profile.md §4)
   └── These guardrails themselves
 
-Output: outputs/daily/YYYY-MM-DD/evolution/proposals.md
+Output: data/agent-cache/daily/YYYY-MM-DD/evolution/proposals.md
 ```
 
 ### 9E: Evolution Branch & PR
@@ -708,7 +710,7 @@ Output: outputs/daily/YYYY-MM-DD/evolution/proposals.md
 ## 12. Final Validation & Session Close
 
 ```bash
-./scripts/validate-phase.sh --all
+# (retired markdown gate) After Supabase publish: python3 scripts/validate_db_first.py --date YYYY-MM-DD --mode full
 ```
 
 This runs every phase check in sequence. All must pass.
@@ -854,7 +856,7 @@ DELTA DAY TIMELINE
 |---------|---------|---------|
 | **Session timeout** | Agent stops mid-pipeline | Re-paste prompt; agent reads existing output files and resumes from last incomplete phase |
 | **Data fetch failure** | `fetch-market-data.sh` exits with error | Fall back to MCP data fetch (`SKILL-mcp-data-fetch.md`); or agent uses web search |
-| **Validation gate fails** | `validate-phase.sh N` reports FAIL | Agent must fix the missing/short output file and re-run validation before proceeding |
+| **Validation gate fails** | (historical) on-disk segment check failed | Fix artifacts, publish JSON to Supabase, then `python3 scripts/validate_db_first.py --date … --mode full` |
 | **Supabase push failure** | `update-tearsheet.py` reports 0 rows | Check: (1) snapshot.json exists with populated arrays, (2) `SUPABASE_URL` and `SUPABASE_KEY` in environment |
 | **Git push failure** | `git push origin master` fails | Usually auth issue. Agent prints warning; operator runs `git push` manually |
 | **Evolution PR failure** | `gh pr create` fails | Usually `gh` not installed or not authenticated. Branch is pushed; create PR manually on GitHub |
@@ -869,8 +871,8 @@ If the agent session ends mid-pipeline:
   1. Operator starts a new session
   2. Pastes the same prompt
   3. Agent reads _meta.json → determines run type
-  4. Agent reads existing output files in outputs/daily/YYYY-MM-DD/
-  5. Agent runs ./scripts/validate-phase.sh --summary
+  4. Agent reads existing output files in data/agent-cache/daily/YYYY-MM-DD/
+  5. Agent runs ./scripts/validate_db_first.py --summary
   6. Identifies the first FAILED phase
   7. Resumes from that phase (existing complete outputs are kept)
 ```

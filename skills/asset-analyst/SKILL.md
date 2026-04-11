@@ -25,9 +25,8 @@ manager (Phase B/C of `skills/portfolio-manager/SKILL.md`) handles the compariso
 ## Inputs
 
 1. **Ticker and category** — provided by the PM agent that invoked this skill
-2. **Session segment files** — already produced earlier in the current session. Pull data FROM THESE FILES rather than initiating new web searches (data was already gathered in Phases 1–5). Relevant files by asset type:
+2. **Session segment files** — already produced earlier in the current session. Pull data FROM THESE FILES rather than initiating new web searches (data was already gathered in Phases 1–5). Relevant sources:
    - **DB-first**: use Supabase `daily_snapshots.snapshot` + relevant `documents.payload` artifacts for the same date.
-   - **Legacy archive (only if needed for history)**: use `archive/legacy-outputs/daily/{{DATE}}/` equivalents.
 3. **Active theses** Note which thesis IDs are relevant to this asset.
 4. **Macro regime** — from Supabase `daily_snapshots.regime` / `daily_snapshots.segment_biases`
 5. **Research library** — `docs/research/LIBRARY.md`. Load once per session before forming bull/bear arguments. Cite at least one paper per argument. Use the Quick Reference tables (bottom) for per-asset signal rules. For macro regime framing, apply the Ilmanen 4-quadrant model (Section 5.4).
@@ -82,7 +81,7 @@ Justify the weight choice in 1-2 sentences. Do not default to the current weight
 
 ### Step 6: Write Output
 Write the completed report as **JSON** (schema: `templates/schemas/asset-recommendation.schema.json`).
-Save to: `outputs/daily/{{DATE}}/positions/{{TICKER}}.json`
+Save to: `data/agent-cache/daily/{{DATE}}/positions/{{TICKER}}.json`
 
 Create the `positions/` subdirectory if it doesn't exist.
 

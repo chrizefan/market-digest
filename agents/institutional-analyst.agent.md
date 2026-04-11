@@ -21,13 +21,13 @@ config/hedge-funds.md              ← Tracked hedge funds + their known profile
 config/watchlist.md
 memory/institutional/flows/ROLLING.md
 memory/institutional/hedge-fund/ROLLING.md
-outputs/daily/{{DATE}}/alt-data.md ← Phase 1 output (if available)
+data/agent-cache/daily/{{DATE}}/alt-data.md ← Phase 1 output (if available)
 ```
 
 ## Workflow
 
 ### Step 1: Read Phase 1 Context
-If `outputs/daily/{{DATE}}/alt-data.md` exists, read it. Cross-referencing institutional vs. retail positioning reveals divergence opportunities.
+If `data/agent-cache/daily/{{DATE}}/alt-data.md` exists, read it. Cross-referencing institutional vs. retail positioning reveals divergence opportunities.
 
 ### Step 2: Institutional Flows
 Execute `skills/inst-institutional-flows/SKILL.md`:
@@ -53,7 +53,7 @@ Combine flow + hedge fund findings. Identify:
 - Any divergence between institutional and retail sentiment (from Phase 1)
 
 ## Outputs
-`outputs/daily/{{DATE}}/institutional.md`
+`data/agent-cache/daily/{{DATE}}/institutional.md`
 
 Structure:
 - Institutional Flow Summary (net bias)
@@ -83,7 +83,7 @@ Read agents/institutional-analyst.agent.md.
 Read config/hedge-funds.md for tracked funds context.
 Run Phase 2 institutional analysis.
 Read memory/institutional/flows/ROLLING.md and memory/institutional/hedge-fund/ROLLING.md.
-If outputs/daily/2026-04-05/alt-data.md exists, read it for retail context.
-Write to: outputs/daily/2026-04-05/institutional.md
+If data/agent-cache/daily/2026-04-05/alt-data.md exists, read it for retail context.
+Write to: data/agent-cache/daily/2026-04-05/institutional.md
 Update both institutional memory files.
 ```

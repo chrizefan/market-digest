@@ -98,9 +98,9 @@ Produce a clear research note conclusion:
 
 ## Output Note
 
-Save deep dives to: `outputs/deep-dives/[DATE]-[ASSET].md`
+Save deep dives to: `data/agent-cache/deep-dives/[DATE]-[ASSET].md`
 
 Flag if this deep dive changes or validates any thesis in `config/preferences.md`.
 
-Deep dives in `outputs/deep-dives/` are persistent research notes — they accumulate across sessions as a living research library. When starting a deep dive, check if a recent one (within 7 days) already exists for this subject before running a new one.
+Deep dives in `data/agent-cache/deep-dives/` are persistent research notes — they accumulate across sessions as a living research library. When starting a deep dive, check if a recent one (within 7 days) already exists for this subject before running a new one.
 

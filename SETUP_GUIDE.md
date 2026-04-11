@@ -135,7 +135,7 @@ Read it. The first one is calibration — if anything is wrong in focus, tone, o
 # → paste prompt into Claude Project
 # → Claude runs digest (takes 5-10 min)
 # → read the digest
-./scripts/git-commit.sh     # commits all outputs and memory updates
+./scripts/git-commit.sh     # commits config and memory updates
 ```
 
 ### Every Friday
@@ -184,9 +184,9 @@ Prompt to use: *"Summarize and compress memory/equity/ROLLING.md — keep all ke
 
 Review `memory/THESES.md` weekly. Close theses that have resolved. This is the discipline that makes the system valuable over time.
 
-### Archiving old outputs
+### Archiving / migration
 
-Daily markdown digests (legacy) are kept under `archive/legacy-outputs/daily/`. New runs are DB-first (Supabase). Do not use destructive filesystem archive scripts.
+New runs are DB-first (Supabase). Retired markdown-era shell helpers are under `archive/legacy-scripts/` for reference; see [`RUNBOOK.md`](RUNBOOK.md) for migration and backfill.
 
 ---
 

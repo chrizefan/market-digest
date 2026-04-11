@@ -8,7 +8,7 @@ Copy-paste prompts for every task type. Replace `{DATE}` with today's date (YYYY
 - **Track A (blind research):** paste from [`scripts/cowork-research-prompt.txt`](../../scripts/cowork-research-prompt.txt).
 - **Track B (portfolio):** paste from [`scripts/cowork-daily-prompt.txt`](../../scripts/cowork-daily-prompt.txt).
 
-Sections below use **legacy filesystem paths** (`*.md` under `outputs/daily/`) where teams still run markdown-first; for production, emit **JSON** and publish per [`RUNBOOK.md`](../../RUNBOOK.md).
+Sections below use **legacy filesystem paths** (`*.md` under `data/agent-cache/daily/`) where teams still run markdown-first; for production, emit **JSON** and publish per [`RUNBOOK.md`](../../RUNBOOK.md).
 
 ---
 
@@ -21,7 +21,7 @@ Read skills/orchestrator/SKILL.md and run the complete pipeline (9 phases; see d
 
 Setup:
 - Read config/watchlist.md; for portfolio layer read config/preferences.md and config/investment-profile.md
-- outputs/daily/{DATE}/ may exist after ./scripts/new-day.sh
+- data/agent-cache/daily/{DATE}/ may exist after ./scripts/new-day.sh
 
 Execute phases; produce JSON artifacts and publish to Supabase (materialize_snapshot.py, update_tearsheet.py — RUNBOOK.md).
 Update memory files at end of session.
@@ -39,7 +39,7 @@ First read memory/macro/ROLLING.md for prior context.
 Read config/preferences.md only if this run feeds portfolio (Track B).
 
 Run the macro analysis.
-Write JSON (and/or segment artifact paths per skill); if legacy: outputs/daily/{DATE}/macro.md
+Write JSON (and/or segment artifact paths per skill); if legacy: data/agent-cache/daily/{DATE}/macro.md
 Append findings to: memory/macro/ROLLING.md
 ```
 
@@ -55,7 +55,7 @@ Read memory/crypto/ROLLING.md for prior context.
 Read config/watchlist.md for tracked crypto assets.
 
 Run crypto analysis.
-Write to: outputs/daily/{DATE}/crypto.md
+Write to: data/agent-cache/daily/{DATE}/crypto.md
 Append to: memory/crypto/ROLLING.md
 ```
 
@@ -70,9 +70,9 @@ Read skills/sector-{SECTOR}/SKILL.md (replace {SECTOR} with: technology, healthc
 consumer-disc, consumer-staples, industrials, materials, utilities, real-estate, or comms)
 
 Read memory/sectors/{SECTOR}/ROLLING.md for prior research.
-Read today's macro.md if available: outputs/daily/{DATE}/macro.md
+Read today's macro.md if available: data/agent-cache/daily/{DATE}/macro.md
 
-Write to: outputs/daily/{DATE}/sectors/{SECTOR}.md
+Write to: data/agent-cache/daily/{DATE}/sectors/{SECTOR}.md
 Append to: memory/sectors/{SECTOR}/ROLLING.md
 ```
 
@@ -87,7 +87,7 @@ Macro context: [paste key points from macro.md or describe regime]
 Run all 11 sector analyses in parallel. For each sector:
 - Read: skills/sector-{sector}/SKILL.md
 - Read: memory/sectors/{sector}/ROLLING.md
-- Write: outputs/daily/{DATE}/sectors/{sector}.md
+- Write: data/agent-cache/daily/{DATE}/sectors/{sector}.md
 - Append: memory/sectors/{sector}/ROLLING.md
 
 Sectors: technology, healthcare, financials, energy, consumer-disc,
@@ -108,7 +108,7 @@ Run Phase 1 alternative data analysis:
 4. Read skills/alt-politician-signals/SKILL.md → politician/official signals
 
 Read each corresponding memory file in memory/alternative-data/ for prior context.
-Write combined output to: outputs/daily/{DATE}/alt-data.md
+Write combined output to: data/agent-cache/daily/{DATE}/alt-data.md
 Update each memory/alternative-data/*/ROLLING.md
 ```
 
@@ -125,7 +125,7 @@ Run Phase 2 institutional analysis:
 3. Read config/hedge-funds.md for tracked hedge funds
 
 Read memory/institutional/flows/ROLLING.md and memory/institutional/hedge-fund/ROLLING.md.
-Write to: outputs/daily/{DATE}/institutional.md
+Write to: data/agent-cache/daily/{DATE}/institutional.md
 Update both institutional memory files.
 ```
 
@@ -138,19 +138,19 @@ Use this after phases 1-6 are complete:
 ```
 Today is {DATE}.
 
-All segment analyses are complete in outputs/daily/{DATE}/.
+All segment analyses are complete in data/agent-cache/daily/{DATE}/.
 Read ALL of the following:
-- outputs/daily/{DATE}/alt-data.md
-- outputs/daily/{DATE}/institutional.md
-- outputs/daily/{DATE}/macro.md
-- outputs/daily/{DATE}/bonds.md
-- outputs/daily/{DATE}/commodities.md
-- outputs/daily/{DATE}/forex.md
-- outputs/daily/{DATE}/crypto.md
-- outputs/daily/{DATE}/international.md
-- outputs/daily/{DATE}/equities.md
-- outputs/daily/{DATE}/earnings.md
-- All files in outputs/daily/{DATE}/sectors/
+- data/agent-cache/daily/{DATE}/alt-data.md
+- data/agent-cache/daily/{DATE}/institutional.md
+- data/agent-cache/daily/{DATE}/macro.md
+- data/agent-cache/daily/{DATE}/bonds.md
+- data/agent-cache/daily/{DATE}/commodities.md
+- data/agent-cache/daily/{DATE}/forex.md
+- data/agent-cache/daily/{DATE}/crypto.md
+- data/agent-cache/daily/{DATE}/international.md
+- data/agent-cache/daily/{DATE}/equities.md
+- data/agent-cache/daily/{DATE}/earnings.md
+- All files in data/agent-cache/daily/{DATE}/sectors/
 
 Produce a digest snapshot JSON (schema: templates/digest-snapshot-schema.json) and publish via scripts/materialize_snapshot.py.
 Read memory/BIAS-TRACKER.md for prior bias context.
@@ -179,7 +179,7 @@ Produce a structured research note covering:
 - Risk factors
 - Thesis / conclusion
 
-Write to: outputs/deep-dives/{TICKER}-{DATE}.md
+Write to: data/agent-cache/deep-dives/{TICKER}-{DATE}.md
 ```
 
 ---
@@ -193,7 +193,7 @@ Read memory/THESES.md for all active theses.
 Read config/preferences.md for portfolio positioning and risk tolerance.
 Read memory/BIAS-TRACKER.md (last 5 rows) for recent bias trends.
 
-Load today's digest from Supabase or snapshot JSON for {DATE}; legacy path: outputs/daily/{DATE}/DIGEST.md or archive.
+Load today's digest from Supabase or snapshot JSON for {DATE}; legacy path: data/agent-cache/daily/{DATE}/DIGEST.md or archive.
 
 For each active thesis:
 - Assess current evidence For vs Against
@@ -210,12 +210,11 @@ Append your review to memory/THESES.md under today's date.
 ```
 Week ending: {DATE}
 
-Read this week's digests from Supabase (documents / daily_snapshots) or JSON under outputs/daily/*/snapshot.json.
-Legacy: outputs/daily/*/DIGEST.md or archive/legacy-outputs/daily/.
+Read this week's digests from Supabase (documents / daily_snapshots) or JSON under data/agent-cache/daily/*/snapshot.json.
 
 Read memory/BIAS-TRACKER.md entries for this week.
 Write weekly JSON (schema: templates/schemas/weekly-digest.schema.json).
-Write to: outputs/weekly/{YYYY}-W{WW}.json
+Write to: data/agent-cache/weekly/{YYYY}-W{WW}.json
 Do NOT update memory files — read-only synthesis.
 ```
 
@@ -276,8 +275,8 @@ Important conventions for this project:
 - Memory files (memory/**/ROLLING.md) are APPEND-ONLY. Never rewrite existing content.
 - macOS sed: use sed -i "" not sed -i (BSD)
 - Skill YAML frontmatter name:/description: — changes need cascading updates
-- outputs/daily/ JSON and snapshots are agent-generated — do not hand-edit canonical JSON
-- Prefer Supabase + JSON; markdown under outputs/ is legacy or derived
+- data/agent-cache/daily/ JSON and snapshots are agent-generated — do not hand-edit canonical JSON
+- Prefer Supabase + JSON; markdown under data/agent-cache/ is legacy or derived
 - Use {DATE} / YYYY-MM-DD in paths, never hardcoded dates
 - find memory/ -name "ROLLING.md" for memory discovery
 ```

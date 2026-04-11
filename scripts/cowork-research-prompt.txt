@@ -9,7 +9,7 @@ Step 1: Read skills/research-daily/SKILL.md and produce one JSON object (doc_typ
 
 Step 2: Choose a unique RUN_SUFFIX for this publish (e.g. compact UTC from published_at: 20260411T143022Z, or a short UUID). Never reuse the same document_key on the same date.
 
-Step 3: Validate and publish to Supabase (stdin — no outputs/ path required):
+Step 3: Validate and publish to Supabase (stdin — no data/agent-cache/ path required):
 
   python3 scripts/validate_artifact.py - <<'EOF'
   <paste full JSON on one object>

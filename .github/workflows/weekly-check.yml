@@ -1,7 +1,7 @@
 name: Weekly Rollup Reminder
 
 # Reminder only: canonical weekly rollups live in Supabase (`documents`), not in git.
-# `outputs/` is gitignored — do not rely on a tracked filesystem artifact in CI.
+# Scratch trees are gitignored — do not rely on a tracked filesystem rollup in CI.
 
 on:
   schedule:

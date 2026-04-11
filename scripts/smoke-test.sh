@@ -79,7 +79,8 @@ for script in \
   scripts/run_db_first.py \
   scripts/update_tearsheet.py \
   scripts/validate_artifact.py \
-  scripts/validate_db_first.py; do
+  scripts/validate_db_first.py \
+  scripts/verify_supabase_canonical.py; do
   run_check "$(basename $script)" "$PYTHON" "$script" --help
 done
 

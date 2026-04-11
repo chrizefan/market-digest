@@ -35,7 +35,7 @@ if [ -z "$SEGMENT" ]; then
 fi
 
 # ── Detect run mode ───────────────────────────────────────────────────────────
-META_FILE="outputs/daily/$DATE/_meta.json"
+META_FILE="data/agent-cache/daily/$DATE/_meta.json"
 RUN_TYPE="baseline"
 BASELINE_DATE=""
 if [ -f "$META_FILE" ]; then
@@ -49,62 +49,62 @@ fi
 case "$SEGMENT" in
   macro)
     SKILL="skills/macro/SKILL.md"
-    OUTPUT="outputs/daily/$DATE/macro.md"
-    DELTA_OUTPUT="outputs/daily/$DATE/deltas/macro.delta.md"
+    OUTPUT="data/agent-cache/daily/$DATE/macro.md"
+    DELTA_OUTPUT="data/agent-cache/daily/$DATE/deltas/macro.delta.md"
     MEMORY="memory/macro/ROLLING.md"
     ;;
   bonds)
     SKILL="skills/bonds/SKILL.md"
-    OUTPUT="outputs/daily/$DATE/bonds.md"
-    DELTA_OUTPUT="outputs/daily/$DATE/deltas/bonds.delta.md"
+    OUTPUT="data/agent-cache/daily/$DATE/bonds.md"
+    DELTA_OUTPUT="data/agent-cache/daily/$DATE/deltas/bonds.delta.md"
     MEMORY="memory/bonds/ROLLING.md"
     ;;
   commodities)
     SKILL="skills/commodities/SKILL.md"
-    OUTPUT="outputs/daily/$DATE/commodities.md"
-    DELTA_OUTPUT="outputs/daily/$DATE/deltas/commodities.delta.md"
+    OUTPUT="data/agent-cache/daily/$DATE/commodities.md"
+    DELTA_OUTPUT="data/agent-cache/daily/$DATE/deltas/commodities.delta.md"
     MEMORY="memory/commodities/ROLLING.md"
     ;;
   forex)
     SKILL="skills/forex/SKILL.md"
-    OUTPUT="outputs/daily/$DATE/forex.md"
-    DELTA_OUTPUT="outputs/daily/$DATE/deltas/forex.delta.md"
+    OUTPUT="data/agent-cache/daily/$DATE/forex.md"
+    DELTA_OUTPUT="data/agent-cache/daily/$DATE/deltas/forex.delta.md"
     MEMORY="memory/forex/ROLLING.md"
     ;;
   crypto)
     SKILL="skills/crypto/SKILL.md"
-    OUTPUT="outputs/daily/$DATE/crypto.md"
-    DELTA_OUTPUT="outputs/daily/$DATE/deltas/crypto.delta.md"
+    OUTPUT="data/agent-cache/daily/$DATE/crypto.md"
+    DELTA_OUTPUT="data/agent-cache/daily/$DATE/deltas/crypto.delta.md"
     MEMORY="memory/crypto/ROLLING.md"
     ;;
   international)
     SKILL="skills/international/SKILL.md"
-    OUTPUT="outputs/daily/$DATE/international.md"
-    DELTA_OUTPUT="outputs/daily/$DATE/deltas/international.delta.md"
+    OUTPUT="data/agent-cache/daily/$DATE/international.md"
+    DELTA_OUTPUT="data/agent-cache/daily/$DATE/deltas/international.delta.md"
     MEMORY="memory/international/ROLLING.md"
     ;;
   us-equities|equities)
     SKILL="skills/equity/SKILL.md"
-    OUTPUT="outputs/daily/$DATE/us-equities.md"
-    DELTA_OUTPUT="outputs/daily/$DATE/deltas/us-equities.delta.md"
+    OUTPUT="data/agent-cache/daily/$DATE/us-equities.md"
+    DELTA_OUTPUT="data/agent-cache/daily/$DATE/deltas/us-equities.delta.md"
     MEMORY="memory/equity/ROLLING.md"
     ;;
   alt-data|alternative-data|sentiment)
     SKILL="skills/alt-sentiment-news/SKILL.md + skills/alt-cta-positioning/SKILL.md + skills/alt-options-derivatives/SKILL.md + skills/alt-politician-signals/SKILL.md"
-    OUTPUT="outputs/daily/$DATE/alt-data.md"
-    DELTA_OUTPUT="outputs/daily/$DATE/deltas/alt-data.delta.md"
+    OUTPUT="data/agent-cache/daily/$DATE/alt-data.md"
+    DELTA_OUTPUT="data/agent-cache/daily/$DATE/deltas/alt-data.delta.md"
     MEMORY="memory/alternative-data/{sentiment,cta-positioning,options,politician}/ROLLING.md"
     ;;
   institutional)
     SKILL="skills/inst-institutional-flows/SKILL.md + skills/inst-hedge-fund-intel/SKILL.md"
-    OUTPUT="outputs/daily/$DATE/institutional.md"
-    DELTA_OUTPUT="outputs/daily/$DATE/deltas/institutional.delta.md"
+    OUTPUT="data/agent-cache/daily/$DATE/institutional.md"
+    DELTA_OUTPUT="data/agent-cache/daily/$DATE/deltas/institutional.delta.md"
     MEMORY="memory/institutional/{flows,hedge-funds}/ROLLING.md"
     ;;
   technology|healthcare|energy|financials|consumer-staples|consumer-disc|industrials|utilities|materials|real-estate|comms)
     SKILL="skills/sector-$SEGMENT/SKILL.md"
-    OUTPUT="outputs/daily/$DATE/sectors/$SEGMENT.md"
-    DELTA_OUTPUT="outputs/daily/$DATE/sectors/$SEGMENT.delta.md"
+    OUTPUT="data/agent-cache/daily/$DATE/sectors/$SEGMENT.md"
+    DELTA_OUTPUT="data/agent-cache/daily/$DATE/sectors/$SEGMENT.delta.md"
     case "$SEGMENT" in
       consumer-staples|consumer-disc) MEMORY="memory/sectors/consumer/ROLLING.md" ;;
       real-estate) MEMORY="memory/sectors/real-estate/ROLLING.md" ;;
@@ -131,14 +131,14 @@ if [ "$RUN_TYPE" = "delta" ]; then
   echo ""
   echo "Date: $DATE"
   echo "Mode: Delta (compare against baseline — only write delta file if material change)"
-  echo "Baseline: outputs/daily/${BASELINE_DATE:-'[find via _meta.json]'}"
+  echo "Baseline: data/agent-cache/daily/${BASELINE_DATE:-'[find via _meta.json]'}"
   echo "Skill: $SKILL"
   echo "Delta output: JSON ops only (schema: templates/schemas/delta-segment.schema.json OR templates/delta-request-schema.json for full snapshot ops)"
   echo "Update memory: $MEMORY"
   echo ""
   echo "Instructions:"
   echo "1. Read $MEMORY (last entry for context)"
-  echo "2. Read baseline: outputs/daily/${BASELINE_DATE:-'[baseline]'}/${SEGMENT}.md (or equivalent)"
+  echo "2. Read baseline: data/agent-cache/daily/${BASELINE_DATE:-'[baseline]'}/${SEGMENT}.md (or equivalent)"
   echo "3. Fetch today's live data for $SEGMENT"
   echo "4. Compare: did anything change materially vs baseline?"
   echo "5. If yes: emit a delta JSON (preferred: Delta Request JSON; fallback: delta-segment JSON ops)"

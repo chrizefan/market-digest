@@ -107,7 +107,7 @@ description: >
 ...template snippets...
 ```
 
-Skills are stored in `skills/<skill-slug>/SKILL.md` packages. Sector and sub-agent skills follow the same convention (e.g. `skills/sector-technology/SKILL.md`, `skills/alt-sentiment-news/SKILL.md`, `skills/inst-institutional-flows/SKILL.md`).
+Skills are stored in `skills/` with a naming convention: `SKILL-{name}.md`. Sub-agent skills are nested: `skills/sectors/`, `skills/alternative-data/`, `skills/institutional/`.
 
 ### Alternatives Considered
 
@@ -146,18 +146,17 @@ Running phases out of order or skipping phases produces incoherent analysis.
 
 ### Decision
 
-Enforce strict sequential execution with mandatory validation gates between phases.
+Enforce strict sequential execution with mandatory validation after publish.
 
 ```
-Phase N → validate-phase.sh N → Phase N+1
+Phase N → publish JSON to Supabase → validate_db_first.py (full pipeline) → Phase N+1
               │
-         FAIL → Block. Fix output. Re-validate.
+         FAIL → Block. Fix data in DB or artifacts. Re-validate.
 ```
 
 Each gate checks:
-- Output file(s) exist
-- Content exceeds minimum line count
-- Required sections present (for key files like DIGEST.md)
+- Required Supabase rows and document payloads exist for the run date
+- Schema-valid JSON was materialized (`validate_artifact.py` on disk when used locally)
 
 ### Alternatives Considered
 
@@ -532,7 +531,7 @@ Tier 2 (fallback): MCP tool servers
 Both tiers → same JSON output schema
 ```
 
-`skills/mcp-data-fetch/SKILL.md` documents the MCP fallback path. The output format matches `quotes.json` and `macro.json` schemas so downstream skills don't need to know which tier was used.
+`SKILL-mcp-data-fetch.md` documents the MCP fallback path. The output format matches `quotes.json` and `macro.json` schemas so downstream skills don't need to know which tier was used.
 
 ### Trade-offs
 

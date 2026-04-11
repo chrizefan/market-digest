@@ -1,6 +1,8 @@
 # digiquant-atlas — Architecture Review
 
 > **Archived reference** (moved from `docs/ARCHITECTURE-REVIEW.md`). For day-to-day operation use [`RUNBOOK.md`](../../RUNBOOK.md) and [`docs/agentic/ARCHITECTURE.md`](../agentic/ARCHITECTURE.md). This file keeps extended component inventory, frontend/deploy notes, and technical debt; update only when those sections change.
+>
+> **Note:** Any per-phase `validate_db_first.py` wording in diagrams is **historical**; the real script only supports `--date` and `--mode`.
 
 > Last updated: 2026-04-06
 
@@ -92,17 +94,16 @@
 │                       │                                                │
 │                       ▼                                                │
 │  ┌───────────────────────────────────────────────┐                     │
-│  │          VALIDATION GATES                      │                     │
-│  │  validate-phase.sh {preflight,1,2,3,4,5,      │                     │
-│  │                      7,7b,7c,7d,8,9}          │                     │
-│  │  Each gate blocks pipeline until all checks    │                     │
-│  │  pass — no skipping allowed                    │                     │
+│  │          POST-PUBLISH VALIDATION                │                     │
+│  │  JSON → Supabase; then run_db_first.py          │                     │
+│  │  → validate_db_first.py (--mode full|research|pm)│                     │
+│  │  No per-phase shell gates in the current flow  │                     │
 │  └───────────────────────────────────────────────┘                     │
 └────────────────────────────────────────────────────────────────────────┘
           │
           ▼   Writes 29 files per baseline day
 ┌────────────────────────────────────────────────────────────────────────┐
-│                    outputs/daily/YYYY-MM-DD/                           │
+│                    data/agent-cache/daily/YYYY-MM-DD/                           │
 │                                                                        │
 │  _meta.json          ← Run type (baseline/delta)                      │
 │  DIGEST.md           ← Master synthesized output                      │
@@ -130,7 +131,7 @@
 │ snapshot.py  │  │ tearsheet.py │  │                      │
 │              │  │              │  │ Commits + pushes     │
 │ DIGEST.md +  │  │ Scans all    │  │ to origin/master     │
-│ portfolio.json│ │ outputs →    │  │                      │
+│ portfolio.json│ │ scratch →    │  │                      │
 │ → snapshot   │  │ dashboard-   │  │ Triggers GitHub      │
 │   .json      │  │ data.json    │  │ Pages redeploy       │
 └──────┬───────┘  │ + Supabase   │  └──────────────────────┘
@@ -187,7 +188,7 @@ Skills are structured Markdown files with YAML frontmatter. They serve as execut
 | `fetch-quotes.py` | Python | yfinance OHLCV + pandas-ta technicals | fetch-market-data.sh |
 | `fetch-macro.py` | Python | Yield curve XML + VIX + FX + commodities | fetch-market-data.sh |
 | `preload-history.py` | Python | Seed 2-year OHLCV cache per ticker | fetch-market-data.sh |
-| `validate-phase.sh` | Bash | DB-first phase stubs / connectivity | Agent (optional) |
+| `validate_db_first.py` | Bash | DB-first phase stubs / connectivity | Agent (optional) |
 | `generate-snapshot.py` | Python | Legacy snapshot sidecars | git-commit.sh |
 | `update_tearsheet.py` | Python | Scan artifacts → Supabase ETL | git-commit.sh, run_db_first.py |
 | `git-commit.sh` | Bash | Commit + push (digest or evolution branch) | Operator |
@@ -271,25 +272,25 @@ Retired filesystem helpers live under `archive/legacy-scripts/` (see README ther
 │  ├─ Load config: watchlist, investment-profile, hedge-funds, data-sources│
 │  ├─ Load prior day's DIGEST.md (continuity)                             │
 │  ├─ Data Layer: fetch-market-data.sh OR MCP fallback                    │
-│  └─ validate-phase.sh preflight ✓                                       │
+│  └─ (historical) on-disk segment outputs ✓
 │                                                                          │
 │  PHASE 1 — ALTERNATIVE DATA ──────────────────────────────────────────  │
 │  ├─ 1A: Sentiment & News → sentiment-news.md                           │
 │  ├─ 1B: CTA Positioning → cta-positioning.md                           │
 │  ├─ 1C: Options & Derivatives → options-derivatives.md                  │
 │  ├─ 1D: Politician Signals → politician-signals.md                      │
-│  └─ validate-phase.sh 1 ✓                                               │
+│  └─ (historical) on-disk segment outputs ✓
 │                                                                          │
 │  PHASE 2 — INSTITUTIONAL INTELLIGENCE ────────────────────────────────  │
 │  ├─ 2A: ETF Flows → institutional-flows.md                             │
 │  ├─ 2B: Hedge Fund Intel → hedge-fund-intel.md                         │
-│  └─ validate-phase.sh 2 ✓                                               │
+│  └─ (historical) on-disk segment outputs ✓
 │                                                                          │
 │  PHASE 3 — MACRO REGIME CLASSIFICATION ───────────────────────────────  │
 │  ├─ 4-factor classification: Growth / Inflation / Policy / Risk Appetite│
 │  ├─ Cross-references Phase 1 signals (confirm or contradict?)           │
 │  ├─ → macro.md                                                          │
-│  └─ validate-phase.sh 3 ✓ ← CRITICAL GATE: anchors all downstream     │
+│  └─ (historical) on-disk segment outputs ✓
 │                                                                          │
 │  PHASE 4 — ASSET CLASS DEEP DIVES ────────────────────────────────────  │
 │  ├─ 4A: Bonds & Rates → bonds.md        (reads macro regime)           │
@@ -297,7 +298,7 @@ Retired filesystem helpers live under `archive/legacy-scripts/` (see README ther
 │  ├─ 4C: Forex → forex.md                (reads macro + bonds)          │
 │  ├─ 4D: Crypto → crypto.md              (reads macro + inst. flows)    │
 │  ├─ 4E: International → international.md (reads macro + DXY from forex)│
-│  └─ validate-phase.sh 4 ✓                                               │
+│  └─ (historical) on-disk segment outputs ✓
 │                                                                          │
 │  PHASE 5 — US EQUITIES ──────────────────────────────────────────────   │
 │  ├─ 5A: Overview (breadth, factors, index levels) → us-equities.md     │
@@ -307,18 +308,18 @@ Retired filesystem helpers live under `archive/legacy-scripts/` (see README ther
 │  │   ├─ Industrials  ├─ Utilities     ├─ Materials                      │
 │  │   ├─ Real Estate  └─ Communications                                  │
 │  ├─ 5M: Sector Scorecard synthesis                                      │
-│  └─ validate-phase.sh 5 ✓                                               │
+│  └─ (historical) on-disk segment outputs ✓
 │                                                                          │
 │  PHASE 7 — MASTER SYNTHESIS ─────────────────────────────────────────   │
 │  ├─ 7A: Compile DIGEST.md from all phases                               │
 │  ├─ 7A: Write snapshot.json (structured sidecar)                        │
-│  └─ validate-phase.sh 7 ✓                                               │
+│  └─ (historical) on-disk segment outputs ✓
 │                                                                          │
 │  PHASE 7B — OPPORTUNITY SCREEN ──────────────────────────────────────   │
 │  ├─ Score all ~60 watchlist tickers: regime + signals + sector bias     │
 │  ├─ Rank and filter: holdings mandatory + top 3-5 non-held              │
 │  ├─ → opportunity-screen.md                                             │
-│  └─ validate-phase.sh 7b ✓                                              │
+│  └─ (historical) on-disk segment outputs ✓
 │                                                                          │
 │  PHASE 7C — ANALYST-PM DELIBERATION ─────────────────────────────────   │
 │  ├─ Round 1: Per-ticker analyst reports → positions/{TICKER}.md         │
@@ -326,20 +327,20 @@ Retired filesystem helpers live under `archive/legacy-scripts/` (see README ther
 │  ├─ Round 2: Analysts defend or revise                                  │
 │  ├─ PM Decision: Accept / Override / Escalate                           │
 │  ├─ → deliberation.md                                                   │
-│  └─ validate-phase.sh 7c ✓                                              │
+│  └─ (historical) on-disk segment outputs ✓
 │                                                                          │
 │  PHASE 7D — PORTFOLIO MANAGER REVIEW ────────────────────────────────   │
 │  ├─ Phase B: Clean-slate portfolio construction (blinded to weights)    │
 │  ├─ Phase C: Diff recommended vs current → rebalance table             │
 │  ├─ → portfolio-recommended.md, rebalance-decision.md                   │
 │  ├─ → config/portfolio.json (proposed_positions[] updated)              │
-│  └─ validate-phase.sh 7d ✓                                              │
+│  └─ (historical) on-disk segment outputs ✓
 │                                                                          │
 │  PHASE 8 — WEB DASHBOARD + SUPABASE ────────────────────────────────   │
 │  ├─ 8A: generate-snapshot.py (structured JSON from DIGEST + portfolio)  │
 │  ├─ 8B: update-tearsheet.py (dashboard-data.json + Supabase ETL)       │
 │  ├─ 8C: git-commit.sh (commit + push → GitHub Pages redeploy)          │
-│  └─ validate-phase.sh 8 ✓                                               │
+│  └─ (historical) on-disk segment outputs ✓
 │                                                                          │
 │  PHASE 9 — POST-MORTEM & EVOLUTION ──────────────────────────────────   │
 │  ├─ 9A: Source Scorecard → evolution/sources.md                         │
@@ -347,9 +348,9 @@ Retired filesystem helpers live under `archive/legacy-scripts/` (see README ther
 │  ├─ 9C: Improvement Proposals → evolution/proposals.md (max 2)         │
 │  ├─ 9D: Document applied improvements → docs/evolution-changelog.md    │
 │  ├─ 9E: git-commit.sh --evolution (branch + PR for review)             │
-│  └─ validate-phase.sh 9 ✓                                               │
+│  └─ (historical) on-disk segment outputs ✓
 │                                                                          │
-│  FINAL: validate-phase.sh --all                                          │
+│  FINAL: python3 scripts/validate_db_first.py --mode full (current)
 │                                                                          │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
@@ -399,7 +400,7 @@ Retired filesystem helpers live under `archive/legacy-scripts/` (see README ther
 Every phase has a mandatory validation checkpoint. The pipeline **cannot proceed** until the gate passes.
 
 ```
-validate-phase.sh architecture:
+validate_db_first.py architecture:
 
   ┌─────────────┐     ┌──────────────┐     ┌──────────────┐
   │  Phase N    │────▷│ validate-    │────▷│  Phase N+1   │
@@ -439,7 +440,7 @@ Checks per phase:
                         │                   │
                         ▼                   ▼
               ┌─────────────────────────────────────┐
-              │    outputs/daily/YYYY-MM-DD/data/    │
+              │    data/agent-cache/daily/YYYY-MM-DD/data/    │
               │    quotes.json   quotes-summary.md   │
               │    macro.json    macro-summary.md     │
               └──────────────────┬──────────────────┘

@@ -45,7 +45,7 @@ const PHASES: AnalysisPhase[] = [
   { n: '4D',  name: 'Crypto',               output: 'segment JSON → Supabase', desc: 'BTC, ETH, on-chain, alt rotation' },
   { n: '4E',  name: 'International',        output: 'segment JSON → Supabase', desc: 'EFA, EEM, country risk' },
   { n: '5A',  name: 'US Equities',          output: 'segment JSON → Supabase', desc: 'SPY, QQQ, breadth, factors' },
-  { n: '5B–L', name: '11 GICS Sectors',     output: 'sectors/*.json',     desc: 'Per-sector JSON under outputs/daily/{date}/' },
+  { n: '5B–L', name: '11 GICS Sectors',     output: 'sectors/*.json',     desc: 'Per-sector JSON → Supabase or optional data/agent-cache/daily/{date}/sectors/' },
   { n: 7,     name: 'Digest Synthesis',     output: 'snapshot.json + daily_snapshots', desc: 'Canonical digest JSON; documents.digest; markdown derived for UI' },
 ];
 

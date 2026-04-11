@@ -11,7 +11,7 @@ Each **scheduled task** in Claude Cowork should:
 
 - **Reads:** Supabase MCP (or SQL) is appropriate for live prices, snapshots, and `documents` when analyzing state.
 - **Writes:** Publish JSON artifacts with **`scripts/publish_document.py`** or batch paths in **`scripts/update_tearsheet.py`** — not raw MCP SQL for large payloads. These scripts use `SUPABASE_URL` + `SUPABASE_SERVICE_KEY`.
-- **No committed `outputs/`:** The repo ignores generated trees under `outputs/`; **canonical payloads live in Supabase**. Validate with `python3 scripts/validate_artifact.py -` and publish with `python3 scripts/publish_document.py --payload -` (stdin). A run is **not complete** until **`documents`** holds the payload; confirm with `python3 scripts/validate_db_first.py --mode research` (Track A) or equivalent checks after monthly publish.
+- **No committed `data/agent-cache/`:** The repo ignores generated trees under `data/agent-cache/`; **canonical payloads live in Supabase**. Validate with `python3 scripts/validate_artifact.py -` and publish with `python3 scripts/publish_document.py --payload -` (stdin). A run is **not complete** until **`documents`** holds the payload; confirm with `python3 scripts/validate_db_first.py --mode research` (Track A) or equivalent checks after monthly publish.
 
 In **Cloud desktop**, with **Supabase MCP** connected, use the DB for prices/technicals/portfolio state when researching; other MCPs (FRED, CoinGecko, etc.) are optional enrichments — see `cowork/PROJECT.md` → “MCP toolkit”.
 

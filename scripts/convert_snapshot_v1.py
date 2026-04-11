@@ -2,7 +2,7 @@
 """
 convert_snapshot_v1.py
 
-Converts legacy outputs/daily/<date>/snapshot.json (schema 1.0 sidecar) into the
+Converts legacy `data/agent-cache/daily/<date>/snapshot.json` (schema 1.0 sidecar) into the
 new DB-first digest snapshot schema (templates/digest-snapshot-schema.json).
 
 This is a one-time bridge to bootstrap baselines into Supabase for the new flow.

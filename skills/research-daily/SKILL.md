@@ -23,7 +23,7 @@ Track A is **project-level** (shared across users). Operators may schedule it **
 
 ## Outputs (Supabase only — no committed repo paths)
 
-Produce one JSON object that validates as **`research_delta`**. **Do not** treat `outputs/` as the system of record; hosted runs may have no writable project tree.
+Produce one JSON object that validates as **`research_delta`**. **Do not** treat `data/agent-cache/` as the system of record; hosted runs may have no writable project tree.
 
 - Schema: `templates/schemas/research-delta.schema.json`  
 - `doc_type` must be `research_delta`  
@@ -47,7 +47,7 @@ python3 scripts/publish_document.py \
   --doc-type-label "Research Delta"
 ```
 
-If your environment only supports a scratch file, you may write a **local temp** path, validate/publish that file, then delete it — **do not** rely on `outputs/` in git or in production layout.
+If your environment only supports a scratch file, you may write a **local temp** path, validate/publish that file, then delete it — **do not** rely on `data/agent-cache/` in git or in production layout.
 
 **Daily snapshot row:** If you do **not** run a full digest, ensure `daily_snapshots` has a row for `date` (e.g. upsert via `materialize_snapshot.py` from an empty delta, or operator backfills). `validate_db_first.py --mode research` allows a row with nullable `snapshot` when at least one `research_delta` document exists for that date.
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 # archive.sh — Move outputs older than N days to the archive folder
-# Keeps the outputs/daily/ folder clean while preserving history in archive/
+# Keeps the data/agent-cache/daily/ folder clean while preserving history in archive/
 # Usage: ./scripts/archive.sh [days]   (default: 30)
 
 set -e
@@ -8,7 +8,7 @@ set -e
 
 DAYS_TO_KEEP=${1:-30}  # Default: keep last 30 days, pass arg to override
 ARCHIVE_DIR="archive"
-DAILY_DIR="outputs/daily"
+DAILY_DIR="data/agent-cache/daily"
 
 echo ""
 echo "🗄️  Archiving outputs older than $DAYS_TO_KEEP days"

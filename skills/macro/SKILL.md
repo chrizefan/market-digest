@@ -17,14 +17,7 @@ description: Run global macro analysis as part of the daily digest. Covers econo
 > **Read before analysis** — these files contain systematic, source-of-truth numbers fetched via
 > free public APIs before the pipeline started. Use them for all numerical lookups.
 
-1. DB-first: read the latest macro levels from Supabase (`daily_snapshots.market_data` / `documents.payload`). If you are reviewing legacy archives, read `archive/legacy-outputs/daily/{{DATE}}/data/macro-summary.md` for:
-   - **Yield curve** (1M–30Y): use these as the live rates — do NOT web-browse for TNX/2Y/30Y levels
-   - **Key spreads** (2s10s, 3m10y): inversion flags are pre-computed
-   - **VIX + SKEW**: use these levels directly
-   - **Commodities**: WTI, Brent, Gold, Silver, Natural Gas, Copper prices
-   - **FX**: USD/CAD, EUR/USD, USD/JPY, GBP/USD, DXY
-   - **Credit proxies**: HYG, LQD, JNK, TLT 1D% changes
-   - **Crypto**: BTC, ETH prices and 1D%
+1. DB-first: read the latest macro levels from Supabase (`daily_snapshots.market_data` / `documents.payload`). Prefer embedded `market_data` / snapshot fields for **yield curve** (1M–30Y), **key spreads** (2s10s, 3m10y), **VIX + SKEW**, **commodities**, **FX**, **credit proxies**, and **crypto** — do not web-browse for numbers that already exist there.
 
 2. **Web search for** (not in the data files):
    - News catalysts explaining *why* things moved
@@ -35,7 +28,7 @@ description: Run global macro analysis as part of the daily digest. Covers econo
    - Inflation breakevens (TIPS) and real yields — use `mcp_fred_fred_series_observations` with series `T10YIE` (10Y breakeven), `T5YIE` (5Y breakeven), `DFII10` (10Y TIPS real yield)
    - Additional FRED series via `mcp_fred_*`: `CPIAUCSL` (CPI), `PCEPI` (PCE), `UNRATE`, `GDP`, `T10Y2Y` (2s10s spread), `T10Y3M` (3m10y spread), `VIXCLS`
 
-> DB-first: do not require `outputs/daily`. If you need fresh numbers, run `./scripts/fetch-market-data.sh` (writes to legacy archive paths only) or use MCP sources.
+> DB-first: do not require `data/agent-cache/daily`. If you need fresh numbers, run `./scripts/fetch-market-data.sh` (writes to legacy archive paths only) or use MCP sources.
 
 ## Research Steps
 

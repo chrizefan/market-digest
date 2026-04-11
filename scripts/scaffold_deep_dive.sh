@@ -1,5 +1,5 @@
 #!/bin/bash
-# scaffold_deep_dive.sh — Create outputs/deep-dives/<stem>.json skeleton (deep_dive schema)
+# scaffold_deep_dive.sh — Create data/agent-cache/deep-dives/<stem>.json skeleton (deep_dive schema)
 # Usage: ./scripts/scaffold_deep_dive.sh YYYY-MM-DD "Short Title Slug"
 # Example: ./scripts/scaffold_deep_dive.sh 2026-04-10 "Oil-Hormuz-Risk"
 
@@ -9,10 +9,10 @@ set -e
 DATE="${1:?date YYYY-MM-DD}"
 TITLE="${2:?title slug}"
 STEM="${DATE}-${TITLE// /-}"
-OUT="outputs/deep-dives/${STEM}.json"
+OUT="data/agent-cache/deep-dives/${STEM}.json"
 GEN=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-mkdir -p outputs/deep-dives
+mkdir -p data/agent-cache/deep-dives
 cat > "$OUT" << EOF
 {
   "schema_version": "1.0",

@@ -9,7 +9,7 @@ skills/<slug>/        ← Skill packages (SKILL.md per folder)
 config/               ← watchlist.md, preferences.md, hedge-funds.md
 memory/               ← append-only ROLLING.md files + BIAS-TRACKER.md
 templates/            ← JSON schemas + templates
-outputs/daily/        ← JSON artifacts per date (legacy .md in archive/)
+data/agent-cache/     ← Optional gitignored scratch (never source of truth)
 scripts/              ← Bash + Python (run_db_first.py, ETL)
 docs/agentic/         ← Architecture, workflows
 agents/               ← Named agent role definitions
@@ -40,9 +40,9 @@ When starting a session:
 - macOS sed: MUST use `sed -i ""` not `sed -i` (GNU vs BSD incompatibility)
 - All paths relative to repo root
 
-### Output Files (outputs/daily/)
-- Do NOT manually edit — these are agent-generated
-- Structure: `outputs/daily/YYYY-MM-DD/` with `sectors/` subfolder
+### Artifacts (Supabase + optional scratch)
+- Canonical rows live in Supabase (`daily_snapshots`, `documents`, …)
+- Optional local JSON under `data/agent-cache/daily/{{DATE}}/` is gitignored — use for validation or migration only
 
 ### Markdown Standards
 - Never skip heading levels (# → ## → ### only)
@@ -62,7 +62,7 @@ When starting a session:
 Track A blind research: `skills/research-daily/SKILL.md`. Track B: preferences + `rebalance-decision.json`. See `RUNBOOK.md`.
 
 ## What NOT To Do
-- Do NOT modify `outputs/daily/` files — agent-generated
+- Do NOT treat gitignored scratch trees as source of truth — Supabase is canonical
 - Do NOT rewrite `memory/*/ROLLING.md` history — append only
 - Do NOT change skill frontmatter `name:` without updating all references
 - Do NOT modify `.github/workflows/deploy.yml` or `weekly-check.yml`

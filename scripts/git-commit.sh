@@ -1,7 +1,7 @@
 #!/bin/bash
-# git-commit.sh — Commit digest outputs OR evolution improvements
+# git-commit.sh — Commit config/memory OR evolution JSON (Supabase-first digest)
 # Usage:
-#   ./scripts/git-commit.sh              → commits digest outputs + memory to master
+#   ./scripts/git-commit.sh              → commits config/memory (and optional evolution scratch) to master
 #   ./scripts/git-commit.sh --evolution   → creates a feature branch, commits evolution
 #                                           artifacts, pushes, and opens a PR for approval
 
@@ -28,7 +28,7 @@ if [ "$1" == "--evolution" ]; then
   fi
 
   # Stage only evolution-related files
-  git add "outputs/daily/${DATE}/evolution/"
+  git add "data/agent-cache/daily/${DATE}/evolution/"
   git add docs/evolution-changelog.md
 
   # Check if there's anything to commit
@@ -66,13 +66,13 @@ if [ "$1" == "--evolution" ]; then
 This PR contains post-mortem observations and improvement proposals from today's digest run.
 
 ### Files Changed
-- \`outputs/daily/${DATE}/evolution/sources.md\` — Data source ratings
-- \`outputs/daily/${DATE}/evolution/quality-log.md\` — Quality self-assessment
-- \`outputs/daily/${DATE}/evolution/proposals.md\` — New improvement proposals
+- \`data/agent-cache/daily/${DATE}/evolution/sources.json\` — Data source ratings
+- \`data/agent-cache/daily/${DATE}/evolution/quality-log.json\` — Quality self-assessment
+- \`data/agent-cache/daily/${DATE}/evolution/proposals.json\` — New improvement proposals
 - \`docs/evolution-changelog.md\` — Applied improvements log
 
 ### Review Instructions
-1. Review the proposals in \`outputs/daily/${DATE}/evolution/proposals.md\`
+1. Review the proposals in \`data/agent-cache/daily/${DATE}/evolution/proposals.json\`
 2. Approve/reject each proposal
 3. Merge this PR to apply the evolution artifacts to master
 
@@ -97,7 +97,7 @@ else
   echo ""
   echo "📦 Committing digiquant-atlas repo changes — $DATE"
   echo "=================================================="
-  echo "   (Digest data lives in Supabase; outputs/ is gitignored — no markdown ETL here.)"
+  echo "   (Digest data lives in Supabase; data/agent-cache/ is gitignored scratch only.)"
   echo ""
 
   echo "🔄 Refreshing performance metrics through $DATE..."

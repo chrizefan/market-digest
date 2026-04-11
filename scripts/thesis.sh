@@ -71,7 +71,7 @@ case "$ACTION" in
     echo ""
     echo "PASTE THIS INTO CLAUDE:"
     echo "-------------------------------------------"
-    echo "Run a thesis review for $DATE per skills/thesis-tracker/SKILL.md."
+    echo "Run a thesis review for $DATE per skills/SKILL-thesis-tracker.md."
     echo "Read config/preferences.md for active theses."
     echo "Read all memory/*/ROLLING.md files for recent context."
     echo "Score each thesis and give me a portfolio-level summary."

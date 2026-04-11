@@ -9,7 +9,7 @@ set -e
 [[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
 
 DATE=${1:-$(date +%Y-%m-%d)}
-OUTPUT_DIR="outputs/daily/$DATE"
+OUTPUT_DIR="data/agent-cache/daily/$DATE"
 META_FILE="$OUTPUT_DIR/_meta.json"
 DIGEST_FILE="$OUTPUT_DIR/DIGEST.md"
 

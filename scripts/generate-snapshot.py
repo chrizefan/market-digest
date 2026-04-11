@@ -18,7 +18,7 @@ from pathlib import Path
 from datetime import datetime
 
 ROOT = Path(__file__).parent.parent
-DAILY_DIR = ROOT / "outputs" / "daily"
+DAILY_DIR = ROOT / "data" / "agent-cache" / "daily"
 PORTFOLIO_JSON = ROOT / "config" / "portfolio.json"
 
 SCHEMA_PATH = ROOT / "templates" / "snapshot-schema.json"

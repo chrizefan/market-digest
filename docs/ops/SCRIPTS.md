@@ -6,12 +6,13 @@ Operator truth for **when to run what** remains [`RUNBOOK.md`](../../RUNBOOK.md)
 
 | Script | Role |
 |--------|------|
-| [`scripts/run_db_first.py`](../../scripts/run_db_first.py) | Entry: validate optional `outputs/daily/<date>/*.json` → **`refresh_performance_metrics.py`** (default) or `--legacy-markdown-tearsheet` → `update_tearsheet.py` → `execute_at_open.py` (optional) → `validate_db_first.py` |
+| [`scripts/run_db_first.py`](../../scripts/run_db_first.py) | After publish: validate optional `data/agent-cache/daily/<date>/**/*.json` → **`refresh_performance_metrics.py`** → `execute_at_open.py` (unless `--skip-execute`) → **`validate_db_first.py`** |
 | [`scripts/validate_db_first.py`](../../scripts/validate_db_first.py) | Supabase row checks (`--mode full\|research\|pm`) |
+| [`scripts/verify_supabase_canonical.py`](../../scripts/verify_supabase_canonical.py) | Read-only: no `documents.document_key` containing legacy `outputs/`; optional `--date` requires `daily_snapshots` row |
 | [`scripts/validate_artifact.py`](../../scripts/validate_artifact.py) | JSON schema validation (snapshot, delta-request, `doc_type` payloads) |
 | [`scripts/materialize_snapshot.py`](../../scripts/materialize_snapshot.py) | Apply delta / upsert `daily_snapshots` + digest document |
 | [`scripts/publish_document.py`](../../scripts/publish_document.py) | Upsert one `documents` row from JSON file path or **`--payload -`** (stdin) |
-| [`scripts/update_tearsheet.py`](../../scripts/update_tearsheet.py) | **Legacy:** scan `outputs/daily/*.md` (+ snapshot.json) → upsert Supabase / optional dashboard JSON |
+| [`scripts/update_tearsheet.py`](../../scripts/update_tearsheet.py) | **Recovery / migration:** rescan `data/agent-cache/daily/` (markdown + JSON when present) → refresh Supabase documents / metrics / optional dashboard JSON |
 | [`scripts/execute_at_open.py`](../../scripts/execute_at_open.py) | `position_events` from rebalance + `price_history.open` |
 | [`scripts/backfill_execution_prices.py`](../../scripts/backfill_execution_prices.py) | Fill null execution prices after opens exist |
 
@@ -44,14 +45,14 @@ Operator truth for **when to run what** remains [`RUNBOOK.md`](../../RUNBOOK.md)
 |--------|------|
 | [`scripts/convert_snapshot_v1.py`](../../scripts/convert_snapshot_v1.py) | Older snapshot shape → digest schema |
 | [`scripts/legacy_delta_to_ops.py`](../../scripts/legacy_delta_to_ops.py) | `DIGEST-DELTA.md` → `delta-request.json` (schema-aligned ops) |
-| [`scripts/retrofit_delta_requests.py`](../../scripts/retrofit_delta_requests.py) | Batch: discover `DIGEST-DELTA.md` → write `delta-request.json` (+ optional `outputs/daily/` mirror) |
+| [`scripts/retrofit_delta_requests.py`](../../scripts/retrofit_delta_requests.py) | Batch: discover `DIGEST-DELTA.md` under `data/agent-cache/daily/` → write colocated `delta-request.json` |
 | [`scripts/migrate_md_outputs_to_json.py`](../../scripts/migrate_md_outputs_to_json.py) | Markdown → JSON artifacts |
 | [`scripts/backfill-db-first-digest.sh`](../../scripts/backfill-db-first-digest.sh) | Chains conversion + materialize for backfills (rich `snapshot.json`, else `delta-request.json`, else `DIGEST-DELTA.md`) |
-| [`scripts/backfill-historical-daily-to-supabase.sh`](../../scripts/backfill-historical-daily-to-supabase.sh) | Copy `archive/legacy-outputs/daily/*` → `outputs/daily/`, run digest backfill for a date range, then `update_tearsheet.py` |
+| [`scripts/backfill-historical-daily-to-supabase.sh`](../../scripts/backfill-historical-daily-to-supabase.sh) | Copy from **`LEGACY_ROOT`** (required unless `SKIP_COPY=1`) into `data/agent-cache/daily/`, run digest backfill for a date range, then `update_tearsheet.py` |
 
 ## Operator shell
 
-[`scripts/new-day.sh`](../../scripts/new-day.sh) (wrapper → `run_db_first.py`), [`scripts/status.sh`](../../scripts/status.sh), [`scripts/git-commit.sh`](../../scripts/git-commit.sh) (config/memory — not `outputs/`), [`scripts/weekly-rollup.sh`](../../scripts/weekly-rollup.sh) / [`scripts/monthly-rollup.sh`](../../scripts/monthly-rollup.sh) (Supabase JSON prompts), [`scripts/validate-phase.sh`](../../scripts/validate-phase.sh) (legacy markdown checkpoints), [`scripts/smoke-test.sh`](../../scripts/smoke-test.sh) — see `--help` where supported.
+[`scripts/new-day.sh`](../../scripts/new-day.sh) (wrapper → `run_db_first.py`), [`scripts/status.sh`](../../scripts/status.sh), [`scripts/git-commit.sh`](../../scripts/git-commit.sh) (config/memory; scratch under `data/agent-cache/` stays gitignored), [`scripts/weekly-rollup.sh`](../../scripts/weekly-rollup.sh) / [`scripts/monthly-rollup.sh`](../../scripts/monthly-rollup.sh) (Supabase JSON prompts), [`scripts/smoke-test.sh`](../../scripts/smoke-test.sh) — see `--help` where supported. Invoke [`scripts/validate_db_first.py`](../../scripts/validate_db_first.py) directly or via `run_db_first.py`.
 
 ## Co-work prompts
 

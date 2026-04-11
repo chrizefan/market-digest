@@ -33,8 +33,13 @@ except ImportError:
     pass
 
 ROOT = Path(__file__).parent.parent
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+from lib.scratch_paths import AGENT_CACHE_ROOT  # noqa: E402
+
 OUTPUT_JSON = ROOT / "frontend" / "public" / "dashboard-data.json"
-DAILY_DIR = ROOT / "outputs" / "daily"
+DAILY_DIR = AGENT_CACHE_ROOT / "daily"
 PORTFOLIO_JSON = ROOT / "config" / "portfolio.json"
 
 # Benchmarks for comparison
@@ -248,7 +253,7 @@ def _load_prefetched_prices(root):
 
     Used as fallback when yfinance is unavailable (CI/sandbox).
     """
-    daily_dir = root / "outputs" / "daily"
+    daily_dir = root / "data" / "agent-cache" / "daily"
     if not daily_dir.exists():
         return {}
     # Find the newest day folder with data/quotes.json
@@ -743,14 +748,14 @@ def _detect_run_type(day_dir):
 
 
 def load_all_markdowns(root):
-    """Scan outputs for the timeline view.
+    """Scan agent-cache daily tree for the timeline view.
 
     Returns enriched doc objects with phase, category, segment, sector, and runType metadata.
     """
     docs = []
 
     # --- 1. Daily output folders (baseline + delta files) ---
-    daily_path = root / "outputs" / "daily"
+    daily_path = root / "data" / "agent-cache" / "daily"
     if daily_path.exists():
         for day_dir in sorted(daily_path.iterdir()):
             if not day_dir.is_dir():
@@ -845,12 +850,12 @@ def load_all_markdowns(root):
                     })
 
     # --- 2. Weekly / Monthly / Deep-dive rollups ---
-    for rel_path, label, category in [
-        ("outputs/weekly",     "Weekly Rollup",   "rollup"),
-        ("outputs/monthly",    "Monthly Summary", "rollup"),
-        ("outputs/deep-dives", "Deep Dive",       "deep-dive"),
+    for sub, label, category in [
+        ("weekly", "Weekly Rollup", "rollup"),
+        ("monthly", "Monthly Summary", "rollup"),
+        ("deep-dives", "Deep Dive", "deep-dive"),
     ]:
-        path = root / rel_path
+        path = root / "data" / "agent-cache" / sub
         if not path.exists():
             continue
         for md_file in sorted(path.glob("*.md")):
@@ -1163,9 +1168,8 @@ def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_position
 
 def main():
     parser = argparse.ArgumentParser(
-        description="update_tearsheet.py — LEGACY: parse outputs/daily/DIGEST.md (+ snapshot.json) and upsert Supabase.",
-        epilog="Supabase-first default path: python3 scripts/run_db_first.py (uses refresh_performance_metrics). "
-        "Use this script only when replaying a local markdown tree (migration / recovery). "
+        description="update_tearsheet.py — Parse data/agent-cache/daily/*/DIGEST.md (+ snapshot.json) and upsert Supabase (recovery tool).",
+        epilog="Normal operations use run_db_first.py + materialize_snapshot. "
         "Add --json to also write frontend/public/dashboard-data.json."
     )
     parser.add_argument(
@@ -1180,7 +1184,7 @@ def main():
     
     digest_files = get_digest_files()
     if not digest_files:
-        print("   ❌ No daily digest outputs found. Ensure outputs/daily/ contains markdown files.")
+        print("   ❌ No daily digest files found under data/agent-cache/daily/ (markdown recovery path).")
         sys.exit(1)
         
     print(f"   Found {len(digest_files)} daily digests.")

@@ -1,7 +1,7 @@
 # Research Assistant Agent
 
 ## Role
-Ad-hoc research agent for deep dives on individual tickers, macroeconomic topics, or market themes. Searches existing memory for prior notes, synthesizes structured research, and optionally writes to `outputs/deep-dives/`.
+Ad-hoc research agent for deep dives on individual tickers, macroeconomic topics, or market themes. Searches existing memory for prior notes, synthesizes structured research, and optionally writes to `data/agent-cache/deep-dives/`.
 
 ## Trigger Phrases
 - "What do we know about {TICKER}?"
@@ -13,11 +13,11 @@ Ad-hoc research agent for deep dives on individual tickers, macroeconomic topics
 
 ## Inputs
 ```
-skills/deep-dive/SKILL.md                    ← Research framework
+skills/SKILL-deep-dive.md                    ← Research framework
 config/watchlist.md                          ← Is it a tracked position?
 config/investment-profile.md                 ← Trading style, risk tolerance
-outputs/daily/[latest-date]/DIGEST.md        ← Current thesis tracker + recent analysis
-outputs/daily/[latest-date]/sectors/{sector}.md ← Recent sector context if relevant
+data/agent-cache/daily/[latest-date]/DIGEST.md        ← Current thesis tracker + recent analysis
+data/agent-cache/daily/[latest-date]/sectors/{sector}.md ← Recent sector context if relevant
 ```
 
 ## Workflow
@@ -32,10 +32,10 @@ Summarize what the system already knows before adding new analysis.
 ### Step 2: Context Setup
 - Check `config/watchlist.md` — is this a tracked position? At what size?
 - Check `config/investment-profile.md` — any stated preference or risk factor?
-- Read the most recent sector output from `outputs/daily/[latest-date]/sectors/{sector}.md`
+- Read the most recent sector output from `data/agent-cache/daily/[latest-date]/sectors/{sector}.md`
 
 ### Step 3: Execute Deep Dive
-Follow `skills/deep-dive/SKILL.md`:
+Follow `skills/SKILL-deep-dive.md`:
 - Business fundamentals (if equity)
 - Technical setup (price structure, key levels)
 - Upcoming catalysts (earnings, events, data)
@@ -49,10 +49,10 @@ After analysis is complete:
 
 ### Step 5: Output
 If the research is significant enough to save:
-- Write to `outputs/deep-dives/{TICKER}-{{DATE}}.md`
+- Write to `data/agent-cache/deep-dives/{TICKER}-{{DATE}}.md`
 
 ## Outputs
-- `outputs/deep-dives/{TICKER}-{DATE}.md` (if saving)
+- `data/agent-cache/deep-dives/{TICKER}-{DATE}.md` (if saving)
 
 ## When NOT to Save
 For quick informational queries that don't surface new insight beyond what's already in memory — no need to write a file. Respond in-session only.
@@ -92,9 +92,9 @@ Search all memory files and summarize existing notes. No need to write output.
 **Full deep dive:**
 ```
 Today is 2026-04-05.
-Read agents/research-assistant.agent.md and skills/deep-dive/SKILL.md.
+Read agents/research-assistant.agent.md and skills/SKILL-deep-dive.md.
 Run a full deep dive on NVDA.
 Search all memory for prior notes.
 Check config/watchlist.md for current position size.
-Write to: outputs/deep-dives/NVDA-2026-04-05.md
+Write to: data/agent-cache/deep-dives/NVDA-2026-04-05.md
 ```

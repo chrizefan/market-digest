@@ -65,7 +65,3 @@ The following files currently reference legacy skill paths and must be updated t
 - **Docs**: `docs/agentic/README.md`, `docs/agentic/ARCHITECTURE.md`, `docs/agentic/WORKFLOWS.md`, `docs/agentic/PROMPTS.md`, `docs/agentic/PLATFORMS.md` (archived walkthrough: `docs/archive/DAILY-RUN-WALKTHROUGH.md`)
 - **Cursor rules**: `.cursor/rules/01-overview.mdc`, `.cursor/rules/02-skills-workflow.mdc`
 - **Skill intra-references** (skills referencing other skills): many `skills/SKILL-*.md` files reference other `skills/...` paths and must be updated during migration.
-
-Notes:
-- References inside `archive/legacy-outputs/**` are historical artifacts and are **not run-critical**; we will leave them as-is unless a tool/validator depends on them (it shouldn’t).
-

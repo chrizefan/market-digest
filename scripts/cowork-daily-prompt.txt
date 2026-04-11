@@ -5,7 +5,7 @@ Step 0: Data layer
     (GitHub Daily Price Update loads most of this automatically).
   - Optional local cache for the agent session only:
       ./scripts/fetch-market-data.sh
-    (writes under outputs/daily/$(date +%Y-%m-%d)/data/ — gitignored scratch, not canonical).
+    (writes under data/agent-cache/daily/$(date +%Y-%m-%d)/data/ — gitignored scratch, not canonical).
   - If scripts fail: `skills/mcp-data-fetch/SKILL.md` (MCP tools).
 
 Step 1: Run mode
@@ -17,7 +17,7 @@ Step 1: Run mode
 Step 2: Execute the skill pipeline
   - Publish JSON with `scripts/validate_artifact.py` + `scripts/publish_document.py --payload -`
     (stdin) or `scripts/materialize_snapshot.py` for the digest snapshot.
-  - Do not write outputs/daily/*.md or rely on validate-phase.sh filesystem checkpoints.
+  - Do not write data/agent-cache/daily/*.md or rely on retired per-phase filesystem checkpoint scripts.
 
 Step 3: Portfolio layer (JSON documents in Supabase)
   - Opportunity screener, deliberation, portfolio recommendation, rebalance_decision:
@@ -26,7 +26,7 @@ Step 3: Portfolio layer (JSON documents in Supabase)
 
 Step 4: Operator close-out
   - `python3 scripts/run_db_first.py`  (metrics refresh, execute_at_open, validate_db_first)
-  - Optional: `./scripts/git-commit.sh` for config/memory/repo-only commits (not outputs/).
+  - Optional: `./scripts/git-commit.sh` for config/memory/repo-only commits (not data/agent-cache/).
 
 Step 5: Phase 9 / evolution
   - Publish evolution JSON to `documents` (schemas under templates/schemas/evolution-*.schema.json)

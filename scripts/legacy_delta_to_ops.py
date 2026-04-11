@@ -246,7 +246,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Convert legacy DIGEST-DELTA.md to delta request ops JSON")
     ap.add_argument("--date", required=True, help="Target date (YYYY-MM-DD)")
     ap.add_argument("--baseline-date", required=True, help="Baseline date (YYYY-MM-DD)")
-    ap.add_argument("--delta-md", required=True, help="Path to outputs/daily/<date>/DIGEST-DELTA.md")
+    ap.add_argument("--delta-md", required=True, help="Path to DIGEST-DELTA.md (e.g. under data/agent-cache/daily/<date>/)")
     ap.add_argument("--out", required=True, help="Output path for delta request JSON")
     args = ap.parse_args()
 

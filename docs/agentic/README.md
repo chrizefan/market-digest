@@ -6,7 +6,7 @@ Central reference for running the digiquant-atlas pipeline on any AI platform.
 
 - **Supabase + JSON** are the source of truth; markdown in the app is **derived**.
 - **Operator steps:** [`RUNBOOK.md`](../../RUNBOOK.md) — env, publish, validation, GitHub vs Co-work, Track A/B.
-- **One CLI entrypoint:** `python3 scripts/run_db_first.py` (after JSON artifacts exist under `outputs/daily/{DATE}/` when applicable).
+- **One CLI entrypoint:** `python3 scripts/run_db_first.py` (after JSON artifacts exist under `data/agent-cache/daily/{DATE}/` when applicable).
 
 ## What is digiquant-atlas?
 

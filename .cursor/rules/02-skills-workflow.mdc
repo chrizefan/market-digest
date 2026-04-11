@@ -26,9 +26,9 @@ Each skill must contain these sections in order:
 5. `## Memory Update` — REQUIRED — which ROLLING.md to append + format spec
 
 ## Output Path Convention
-- Always use `{{DATE}}` placeholder: `outputs/daily/{{DATE}}/segment.md`
+- Always use `{{DATE}}` placeholder: `data/agent-cache/daily/{{DATE}}/segment.md`
 - Never hardcode actual dates in skill files
-- Sector outputs go in subfolder: `outputs/daily/{{DATE}}/sectors/technology.md`
+- Sector outputs go in subfolder: `data/agent-cache/daily/{{DATE}}/sectors/technology.md`
 
 ## Step Numbering
 - Format: `### 1. Step Title` (with period after number)

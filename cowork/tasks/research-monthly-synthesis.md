@@ -4,7 +4,7 @@
 
 ## Objective
 
-Month-end **long-horizon** synthesis: roll baselines + deltas + weekly artifacts into one **`monthly_digest`** JSON, then **publish to Supabase**. Do **not** rely on committed `outputs/` paths.
+Month-end **long-horizon** synthesis: roll baselines + deltas + weekly artifacts into one **`monthly_digest`** JSON, then **publish to Supabase**. Do **not** rely on committed `data/agent-cache/` paths.
 
 Schedule on the **last trading day of the month** or the first session after month-end, per operator preference.
 

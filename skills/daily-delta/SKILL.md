@@ -4,7 +4,7 @@ description: >
   Mon–Sat daily delta analysis. Triggers on weekday digest runs, "run delta", "daily delta",
   or when the operator ran ./scripts/new-day.sh (wraps run_db_first). In DB-first mode, loads the current
   week's baseline snapshot from Supabase, emits a small delta request JSON (ops), then
-  materializes a full snapshot and upserts to Supabase (no outputs/daily writes).
+  materializes a full snapshot and upserts to Supabase (no data/agent-cache/daily writes).
 ---
 
 # digiquant-atlas — Daily Delta Skill
@@ -22,7 +22,7 @@ Estimated token savings vs full run: **~70%** on a typical day.
 ## Pre-Flight: Delta Context Load
 
 ### Step 0: Confirm delta mode (Supabase, not `_meta.json`)
-There is **no** `outputs/daily/{{DATE}}/_meta.json` in the Supabase-first pipeline.
+There is **no** `data/agent-cache/daily/{{DATE}}/_meta.json` in the Supabase-first pipeline.
 
 - **Weekday (Mon–Sat)** → you are in **delta** mode unless the user explicitly asked for a full baseline rerun.
 - Load the **latest baseline date** from Supabase: most recent `daily_snapshots.date` where `run_type = 'baseline'` and `date <= {{DATE}}`. Treat that as `{{BASELINE_DATE}}`.

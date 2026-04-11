@@ -290,7 +290,7 @@ Every digest must:
 The active thesis register is maintained in the **Thesis Tracker** table in each day's `DIGEST.md`
 and tracked via `thesis_ids` on positions in `config/portfolio.json`.
 
-See: `outputs/daily/[latest-date]/DIGEST.md` → Thesis Tracker section
+See: `data/agent-cache/daily/[latest-date]/DIGEST.md` → Thesis Tracker section
 
 ---
 

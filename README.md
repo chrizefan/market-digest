@@ -25,8 +25,8 @@ config/           Runtime inputs: watchlist, portfolio, investment profile
 skills/<slug>/    Instruction packages (orchestrator, macro, sector-*, …)
 templates/schemas/JSON schemas for artifacts
 scripts/          Automation (run_db_first.py, materialize_snapshot.py, …)
-outputs/          Not committed (see outputs/README.md); optional local scratch — **Supabase** is canonical
-archive/          `legacy-scripts/` (reference); `legacy-outputs/` bulk samples not in git (see archive/legacy-outputs/README.md)
+data/agent-cache/ Optional local scratch (gitignored except `.gitkeep`); **Supabase** is canonical — see [RUNBOOK.md](RUNBOOK.md)
+archive/          `legacy-scripts/` (retired markdown-era reference only)
 memory/           Append-only ROLLING.md research logs
 docs/research/    Curated research doctrine (see skills/research-library)
 frontend/         Next.js dashboard

@@ -1,7 +1,7 @@
 #!/bin/bash
 # weekly-rollup.sh — Weekly rollup (Supabase-first)
 #
-# Canonical artifact: JSON weekly_digest in Supabase `documents` (not outputs/weekly/*.md).
+# Canonical artifact: JSON weekly_digest in Supabase `documents` (not local weekly markdown).
 # This script prints the operator prompt and stable document_key only.
 #
 # Usage: ./scripts/weekly-rollup.sh [--help]

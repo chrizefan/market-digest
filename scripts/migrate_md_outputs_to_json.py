@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-One-time / occasional helper: migrate legacy markdown weekly + deep-dive files
-to JSON-first artifacts under outputs/weekly and outputs/deep-dives.
-Moves *.md to archive/legacy-outputs/weekly|deep-dives/.
+One-time / occasional helper: migrate markdown weekly + deep-dive files next to
+`data/agent-cache/weekly` and `data/agent-cache/deep-dives` into JSON artifacts.
+Moves *.md into `data/agent-cache/_migrated_md/{weekly,deep-dives}/`.
 """
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+AGENT_CACHE = ROOT / "data" / "agent-cache"
 
 
 def _weekly_from_md(md_path: Path) -> dict:
@@ -133,8 +134,8 @@ def _deep_dive_from_md(md_path: Path) -> dict:
 
 
 def main() -> int:
-    weekly_dir = ROOT / "outputs" / "weekly"
-    arch_weekly = ROOT / "archive" / "legacy-outputs" / "weekly"
+    weekly_dir = AGENT_CACHE / "weekly"
+    arch_weekly = AGENT_CACHE / "_migrated_md" / "weekly"
     arch_weekly.mkdir(parents=True, exist_ok=True)
     for md in sorted(weekly_dir.glob("*.md")):
         data = _weekly_from_md(md)
@@ -143,8 +144,8 @@ def main() -> int:
         shutil.move(str(md), arch_weekly / md.name)
         print("weekly:", md.name, "->", out.name)
 
-    deep_dir = ROOT / "outputs" / "deep-dives"
-    arch_deep = ROOT / "archive" / "legacy-outputs" / "deep-dives"
+    deep_dir = AGENT_CACHE / "deep-dives"
+    arch_deep = AGENT_CACHE / "_migrated_md" / "deep-dives"
     arch_deep.mkdir(parents=True, exist_ok=True)
     for md in sorted(deep_dir.glob("*.md")):
         data = _deep_dive_from_md(md)

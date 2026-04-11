@@ -22,14 +22,15 @@ Usage:
     python3 scripts/compute-technicals.py --supabase         # upsert to Supabase
 """
 
-from __future__ import annotations
-
 import argparse
 import os
 import re
 import sys
 import time
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
 
 ROOT = Path(__file__).parent.parent
 CACHE_DIR = ROOT / "data" / "price-history"
@@ -57,9 +58,6 @@ def _ta():
 
 def safe_float(val, decimals: int = 4):
     """Return a rounded Python float, or None for NaN / inf."""
-    import numpy as np
-    import pandas as pd
-
     try:
         f = float(val)
         return None if (pd.isna(f) or not np.isfinite(f)) else round(f, decimals)
@@ -93,9 +91,6 @@ def compute_indicators(df: pd.DataFrame) -> pd.DataFrame:
     Returns a new DataFrame with one row per date and all indicator columns.
     NaN where insufficient history exists.
     """
-    import numpy as np
-    import pandas as pd
-
     ta = _ta()
 
     df = df.copy()
@@ -269,8 +264,6 @@ def main():
     parser.add_argument("--dry-run", action="store_true",
                         help="Compute but do not write to Supabase")
     args = parser.parse_args()
-
-    import pandas as pd
 
     print("╔══════════════════════════════════════════════╗")
     print("║  compute-technicals.py — TA Indicator Engine ║")

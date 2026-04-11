@@ -15,8 +15,6 @@ Usage:
     python3 scripts/fetch-quotes.py 2026-04-06       # specific date
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 import re
@@ -25,10 +23,9 @@ import time
 from datetime import datetime, date, timedelta
 from pathlib import Path
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:  # pragma: no cover
-    import pandas as pd
+import numpy as np
+import pandas as pd
+import yfinance as yf
 
 ROOT = Path(__file__).parent.parent
 CACHE_DIR = ROOT / "data" / "price-history"
@@ -79,9 +76,6 @@ def compute_trend(row: dict) -> str:
 
 def safe_float(val, decimals: int = 2):
     """Convert pandas scalar to a plain Python float, or None if NaN/inf."""
-    import numpy as np
-    import pandas as pd
-
     try:
         f = float(val)
         if pd.isna(f) or not np.isfinite(f):
@@ -99,8 +93,6 @@ def _cache_path(ticker: str) -> Path:
 
 def load_cached(ticker: str) -> pd.DataFrame | None:
     """Load cached OHLCV CSV for *ticker*. Returns None when no cache exists."""
-    import pandas as pd
-
     p = _cache_path(ticker)
     if not p.exists():
         return None
@@ -115,8 +107,6 @@ def load_cached(ticker: str) -> pd.DataFrame | None:
 
 def save_cached(ticker: str, df: pd.DataFrame) -> None:
     """Persist (or update) the cache CSV for *ticker*."""
-    import pandas as pd
-
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     df = df.sort_index()
     df.columns = [c.capitalize() for c in df.columns]
@@ -175,9 +165,6 @@ def incremental_fetch(tickers: list[str]) -> dict[str, pd.DataFrame]:
             fetch_tickers = [t for t, _, _ in to_fetch]
             earliest_start = min(s for _, _, s in to_fetch)
             try:
-                import pandas as pd
-                import yfinance as yf
-
                 raw = yf.download(
                     fetch_tickers,
                     start=earliest_start,
@@ -220,9 +207,6 @@ def fetch_batch(tickers: list[str], period: str = "3mo") -> dict[str, pd.DataFra
     if not tickers:
         return {}
     try:
-        import pandas as pd
-        import yfinance as yf
-
         raw = yf.download(tickers, period=period, progress=False, threads=True)
         result = {}
         if isinstance(raw.columns, pd.MultiIndex):
@@ -245,8 +229,6 @@ def fetch_batch(tickers: list[str], period: str = "3mo") -> dict[str, pd.DataFra
 
 def build_snapshot(ticker: str, df: pd.DataFrame) -> dict:
     """Compute technicals for a single ticker's OHLCV DataFrame."""
-    import pandas as pd
-
     if df is None or df.empty or len(df) < 5:
         return {"ticker": ticker, "error": "insufficient_data"}
 
@@ -444,7 +426,7 @@ def main():
     target_date = args.date
     fetched_at = datetime.now().strftime("%Y-%m-%d %H:%M ET")
 
-    out_dir = ROOT / "outputs" / "daily" / target_date / "data"
+    out_dir = ROOT / "data" / "agent-cache" / "daily" / target_date / "data"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"fetch-quotes.py — {target_date}")

@@ -6,7 +6,7 @@
 
 ## What This Repo Is
 
-Daily market intelligence system. Three-tier cadence (**Supabase-first**, no `outputs/daily` markdown tree):
+Daily market intelligence system. Three-tier cadence (**Supabase-first**, no `data/agent-cache/daily` markdown tree):
 - **Weekly Baseline** (Sunday) — Full digest snapshot JSON → `materialize_snapshot.py`
 - **Daily Delta** (Mon–Sat) — Delta-request JSON → materialize (~70% token savings vs full rewrite)
 - **Monthly Synthesis** (month end) — `monthly_digest` JSON → `documents`
@@ -31,7 +31,7 @@ Operator close-out: python3 scripts/run_db_first.py
 ```bash
 ./scripts/new-day.sh              # Same as run_db_first.py (no folder scaffold)
 python3 scripts/run_db_first.py   # Metrics refresh + execute_at_open + validate_db_first
-./scripts/git-commit.sh           # Commit config/memory (not outputs/)
+./scripts/git-commit.sh           # Commit config/memory (not data/agent-cache/)
 ./scripts/weekly-rollup.sh        # Prints weekly JSON → Supabase prompt
 ./scripts/monthly-rollup.sh      # Prints monthly JSON → Supabase prompt
 ```

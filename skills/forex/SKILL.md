@@ -13,7 +13,7 @@ description: Run forex and currency analysis as part of the daily digest. Covers
 
 ## Data Layer
 
-> DB-first: read FX levels from Supabase (`daily_snapshots.market_data` / `documents.payload`). Legacy archive (if needed): `archive/legacy-outputs/daily/{{DATE}}/data/macro-summary.md`.
+> DB-first: read FX levels from Supabase (`daily_snapshots.market_data` / `documents.payload`).
 
 For live rates, cross-currency calculations, and historical comparisons use the `mcp_frankfurter-f_*` tools:
 - `mcp_frankfurter-f_get_latest_exchange_rates` — live rates for any base currency (e.g. base=USD for all pairs)

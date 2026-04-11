@@ -8,7 +8,7 @@ set -e
 [[ "${1:-}" == '--help' || "${1:-}" == '-h' ]] && { grep '^#' "$0" | tail -n +2 | sed 's/^#[[:space:]]\{0,1\}//'; exit 0; }
 
 TARGET_DATE=${1:-$(date +%Y-%m-%d)}
-OUTPUT_DIR="outputs/daily/$TARGET_DATE"
+OUTPUT_DIR="data/agent-cache/daily/$TARGET_DATE"
 META_FILE="$OUTPUT_DIR/_meta.json"
 
 echo ""
@@ -34,7 +34,7 @@ if [ "$META_TYPE" = "baseline" ]; then
   echo "ℹ️  $TARGET_DATE is a BASELINE — DIGEST.md is already the materialized version."
   echo "   No materialization needed."
   echo ""
-  echo "   To re-read or verify: outputs/daily/$TARGET_DATE/DIGEST.md"
+  echo "   To re-read or verify: data/agent-cache/daily/$TARGET_DATE/DIGEST.md"
   exit 0
 fi
 
@@ -60,15 +60,15 @@ echo "Target:      $TARGET_DATE"
 echo ""
 
 # Validate baseline exists
-if [ ! -f "outputs/daily/$BASELINE_DATE/DIGEST.md" ]; then
-  echo "❌ Baseline DIGEST.md not found: outputs/daily/$BASELINE_DATE/DIGEST.md"
+if [ ! -f "data/agent-cache/daily/$BASELINE_DATE/DIGEST.md" ]; then
+  echo "❌ Baseline DIGEST.md not found: data/agent-cache/daily/$BASELINE_DATE/DIGEST.md"
   echo "   Cannot materialize — run the baseline for $BASELINE_DATE first."
   exit 1
 fi
 
 # Find all delta DIGEST-DELTA.md files from baseline to target date (inclusive)
 DELTA_FILES=""
-for dir in $(find outputs/daily -mindepth 1 -maxdepth 1 -type d | sort); do
+for dir in $(find data/agent-cache/daily -mindepth 1 -maxdepth 1 -type d | sort); do
   DIR_DATE=$(basename "$dir")
   DIR_META="$dir/_meta.json"
   # Only include dates strictly after baseline and up to (inclusive) target
@@ -87,7 +87,7 @@ echo "=========================="
 echo "Materialize a complete DIGEST.md for $TARGET_DATE."
 echo ""
 echo "Step 1 — Read the baseline:"
-echo "  outputs/daily/${BASELINE_DATE}/DIGEST.md"
+echo "  data/agent-cache/daily/${BASELINE_DATE}/DIGEST.md"
 echo ""
 if [ -n "$DELTA_FILES" ]; then
   echo "Step 2 — Apply deltas in order (each CHANGED section overrides baseline):"

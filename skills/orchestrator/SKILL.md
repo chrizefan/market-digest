@@ -4,7 +4,7 @@ description: >
   Master orchestrator for the comprehensive daily market analysis pipeline. Triggers when the user says
   "run today's digest", "daily analysis", "morning brief", "market update", or pastes the new-day prompt.
   Supabase-first: phases produce JSON artifacts (publish_document / materialize_snapshot); no
-  outputs/daily markdown tree. Sundays use weekly-baseline; Mon–Sat use daily-delta.
+  local markdown trees. Sundays use weekly-baseline; Mon–Sat use daily-delta.
 ---
 
 # digiquant-atlas — Master Orchestrator
@@ -15,7 +15,7 @@ This is the primary entry point for every comprehensive daily digest session.
 
 ## Supabase-first contract (mandatory)
 
-- **Do not** create `outputs/daily/` markdown trees, `_meta.json`, `DIGEST.md`, or segment `.md` files.
+- **Do not** create local markdown segment trees or filesystem “digest” folders; scratch JSON under `data/agent-cache/` is optional and gitignored.
 - **Do** load prior state from Supabase (`daily_snapshots`, `documents`, `price_technicals`, `macro_series_observations`).
 - **Do** publish structured JSON: `scripts/materialize_snapshot.py` for the digest snapshot;
   `scripts/publish_document.py --payload -` (stdin) for segment docs, portfolio layer, rollups
@@ -25,9 +25,7 @@ This is the primary entry point for every comprehensive daily digest session.
 Section headings below that mention file paths describe **logical outputs** — implement them as JSON
 documents in Supabase, not as repo files.
 
-**Phase checkpoints:** Commands like `./scripts/validate-phase.sh N` below assume a **legacy markdown**
-tree. In Supabase-first runs, skip them; instead confirm each phase’s JSON is **validated and published**
-(`validate_artifact.py`, `publish_document.py`) before moving on.
+**Between phases:** confirm each phase’s JSON is **validated and published** (`validate_artifact.py`, `publish_document.py`) before moving on.
 
 ---
 
@@ -97,7 +95,7 @@ read local files, run:
 # or separately:
 python3 scripts/fetch-quotes.py && python3 scripts/fetch-macro.py
 ```
-This writes `outputs/daily/{{DATE}}/data/quotes.json` and `macro.json`.
+This writes `data/agent-cache/daily/{{DATE}}/data/quotes.json` and `macro.json`.
 If the files already exist, announce their presence — numerical grounding is available.
 
 **Option C — MCP fallback (sandbox/restricted environments)**
@@ -115,7 +113,6 @@ Skills that consume the data layer:
 Announce to user: "Context loaded. Starting Phase 1 of 9."
 
 ### Checkpoint: Pre-Flight
-Run: `./scripts/validate-phase.sh preflight`
 All checks must pass before proceeding. If any check fails, fix the issue (e.g., run `./scripts/new-day.sh`, create missing config) and re-run until clean.
 
 ---
@@ -126,22 +123,21 @@ All checks must pass before proceeding. If any check fails, fix the issue (e.g.,
 
 ### 1A: Sentiment & News Intelligence
 Follow `skills/alt-sentiment-news/SKILL.md` completely.
-Save output to: `outputs/daily/{{DATE}}/sentiment-news.md`
+Save output to: `data/agent-cache/daily/{{DATE}}/sentiment-news.md`
 
 ### 1B: CTA & Systematic Positioning
 Follow `skills/alt-cta-positioning/SKILL.md` completely.
-Save output to: `outputs/daily/{{DATE}}/cta-positioning.md`
+Save output to: `data/agent-cache/daily/{{DATE}}/cta-positioning.md`
 
 ### 1C: Options & Derivatives Intelligence
 Follow `skills/alt-options-derivatives/SKILL.md` completely.
-Save output to: `outputs/daily/{{DATE}}/options-derivatives.md`
+Save output to: `data/agent-cache/daily/{{DATE}}/options-derivatives.md`
 
 ### 1D: Politician & Official Signals
 Follow `skills/alt-politician-signals/SKILL.md` completely.
-Save output to: `outputs/daily/{{DATE}}/politician-signals.md`
+Save output to: `data/agent-cache/daily/{{DATE}}/politician-signals.md`
 
 ### Checkpoint: Phase 1
-Run: `./scripts/validate-phase.sh 1`
 Verifies all 4 alt-data files exist and have substantive content. **Do not proceed to Phase 2 until all checks pass.**
 
 ---
@@ -152,14 +148,13 @@ Verifies all 4 alt-data files exist and have substantive content. **Do not proce
 
 ### 2A: Institutional Flows
 Follow `skills/inst-institutional-flows/SKILL.md` completely.
-Save output to: `outputs/daily/{{DATE}}/institutional-flows.md`
+Save output to: `data/agent-cache/daily/{{DATE}}/institutional-flows.md`
 
 ### 2B: Hedge Fund Intelligence
 Follow `skills/inst-hedge-fund-intel/SKILL.md` completely.
-Save output to: `outputs/daily/{{DATE}}/hedge-fund-intel.md`
+Save output to: `data/agent-cache/daily/{{DATE}}/hedge-fund-intel.md`
 
 ### Checkpoint: Phase 2
-Run: `./scripts/validate-phase.sh 2`
 Verifies both institutional files exist with content. **Do not proceed to Phase 3 until all checks pass.**
 
 ---
@@ -180,10 +175,9 @@ Classify the 4-factor macro regime:
 - **Risk Appetite**: Risk-on / Risk-off / Mixed
 
 This regime classification anchors all subsequent analysis. Save explicitly.
-Save output to: `outputs/daily/{{DATE}}/macro.md`
+Save output to: `data/agent-cache/daily/{{DATE}}/macro.md`
 
 ### Checkpoint: Phase 3
-Run: `./scripts/validate-phase.sh 3`
 Verifies macro.md exists with regime classification. The macro regime anchors all Phase 4–5 analysis — **do not proceed until validated.**
 
 ---
@@ -194,26 +188,25 @@ Verifies macro.md exists with regime classification. The macro regime anchors al
 
 ### 4A: Bonds & Rates
 Follow `skills/bonds/SKILL.md` — reference today's macro regime.
-Save output to: `outputs/daily/{{DATE}}/bonds.md`
+Save output to: `data/agent-cache/daily/{{DATE}}/bonds.md`
 
 ### 4B: Commodities
 Follow `skills/commodities/SKILL.md` — reference macro regime + bonds/yield output.
-Save output to: `outputs/daily/{{DATE}}/commodities.md`
+Save output to: `data/agent-cache/daily/{{DATE}}/commodities.md`
 
 ### 4C: Forex
 Follow `skills/forex/SKILL.md` — reference macro regime + bonds.
-Save output to: `outputs/daily/{{DATE}}/forex.md`
+Save output to: `data/agent-cache/daily/{{DATE}}/forex.md`
 
 ### 4D: Crypto & Digital Assets
 Follow `skills/crypto/SKILL.md` — reference macro regime + institutional flow data (IBIT/BTC ETF flows).
-Save output to: `outputs/daily/{{DATE}}/crypto.md`
+Save output to: `data/agent-cache/daily/{{DATE}}/crypto.md`
 
 ### 4E: International & Emerging Markets
 Follow `skills/international/SKILL.md` — reference macro regime + DXY from forex output.
-Save output to: `outputs/daily/{{DATE}}/international.md`
+Save output to: `data/agent-cache/daily/{{DATE}}/international.md`
 
 ### Checkpoint: Phase 4
-Run: `./scripts/validate-phase.sh 4`
 Verifies all 5 asset-class files (bonds, commodities, forex, crypto, international) exist with content. **Do not proceed to Phase 5 until all checks pass.**
 
 ---
@@ -228,7 +221,7 @@ Follow `skills/equity/SKILL.md` with these additions:
 - Factor performance today: check value (VTV), growth (VUG), momentum (MTUM), quality (QUAL), small cap (IWM) vs large cap (SPY)
 - Note the overall market technical trend
 - Do NOT do full sector analysis here — that's done in 5B through 5L
-Save output to: `outputs/daily/{{DATE}}/us-equities.md`
+Save output to: `data/agent-cache/daily/{{DATE}}/us-equities.md`
 
 ### 5B–5L: Sector Sub-Agents (All 11 GICS Sectors)
 
@@ -257,7 +250,7 @@ Run each sector skill (Full) or compressed summary (Compressed) sequentially. Ea
 | 5K | `skills/sector-real-estate/SKILL.md` | `sectors/real-estate.md` |
 | 5L | `skills/sector-comms/SKILL.md` | `sectors/comms.md` |
 
-All sector outputs saved under `outputs/daily/{{DATE}}/sectors/`
+All sector outputs saved under `data/agent-cache/daily/{{DATE}}/sectors/`
 
 ### 5M: Sector Synthesis
 After all 11 sectors, produce a sector scorecard:
@@ -273,19 +266,18 @@ SECTOR SCORECARD — {{DATE}}
 Aggregate into: Net Equity Bias (Bullish / Bearish / Neutral / Conflicted) with rationale.
 
 ### Checkpoint: Phase 5
-Run: `./scripts/validate-phase.sh 5`
 Verifies us-equities.md + all 11 sector files exist with content (≥10 lines each). **Do not proceed to Phase 7 until all checks pass.**
 
 ---
 
-## Phase 7 — Master Synthesis: DIGEST.md
+## Phase 7 — Master synthesis (digest snapshot JSON)
 
 > Now that all 20+ segment outputs exist, synthesize them into the final master digest. This is NOT a regurgitation — it is a synthesis. Pull the most important signals across all phases and generate a coherent, actionable daily brief.
 
 In DB-first mode, the master synthesis is the **digest snapshot JSON** (schema: `templates/digest-snapshot-schema.json`).
 The operator publishes it via `python3 scripts/materialize_snapshot.py` which stores the JSON in Supabase and renders markdown for display.
 
-**DIGEST.md must include all of the following:**
+**The digest snapshot JSON must cover the following (as structured fields / narrative blocks):**
 
 1. **Market Regime Snapshot** — Overall risk-on/risk-off. What is the SINGLE dominant force today?
 
@@ -313,7 +305,7 @@ The operator publishes it via `python3 scripts/materialize_snapshot.py` which st
 
 10. **Risk Radar** — What could break the current bias in the next 24-72 hours?
 
-**Quality Standards for DIGEST.md:**
+**Quality standards:**
 - Be direct. State the bias. Don't hedge everything into meaningless mush.
 - Synthesis > repetition. Don't copy-paste segment outputs — extract the key insight from each.
 - Contradictions must be flagged explicitly (e.g., "Options show panic, but CTA positioning is still net long — this is a tug-of-war that hasn't resolved.")
@@ -328,7 +320,7 @@ The operator will upsert it to Supabase using `scripts/materialize_snapshot.py`.
 
 **Schema**: See `templates/snapshot-schema.json` for the canonical field definitions.
 
-Write `outputs/daily/{{DATE}}/snapshot.json` with:
+Write `data/agent-cache/daily/{{DATE}}/snapshot.json` with:
 - `schema_version`: `"1.0"`
 - `date`: `"{{DATE}}"`
 - `run_type`: `"baseline"` or `"delta"` (from `_meta.json`)
@@ -349,8 +341,7 @@ Positions weights must sum to approximately 100%. Use the data already gathered 
 this step should be a simple marshaling of existing analysis, not new research.
 
 ### Checkpoint: Phase 7
-Run: `./scripts/validate-phase.sh 7`
-Verifies DIGEST.md exists with ≥50 lines and contains required sections (Market Regime, Thesis Tracker, Actionable Summary, Risk Radar). **Do not proceed to Phase 7B until validated.**
+Validate the snapshot JSON (`validate_artifact.py`) and ensure required logical sections exist (regime, theses, actionable, risks). **Do not proceed to Phase 7B until validated.**
 
 ---
 
@@ -365,14 +356,13 @@ Follow `skills/opportunity-screener/SKILL.md` completely:
 1. Load `config/watchlist.md` (full ~60 ticker universe) + today's segment outputs + macro regime
 2. Score every ticker: regime alignment + signal scan (flows, options, CTA, thesis, sector bias)
 3. Rank and filter: current holdings are mandatory; top 3-5 non-held tickers with Total ≥ +2 become opportunity candidates
-4. Save to: `outputs/daily/{{DATE}}/opportunity-screen.md`
+4. Save to: `data/agent-cache/daily/{{DATE}}/opportunity-screen.md`
 
 The screener output defines the **analyst roster** for Phase 7C deliberation.
 
 Announce: "Screen complete. [N] tickers scanned, [M] opportunities identified. Analyst roster: [list]"
 
 ### Checkpoint: Phase 7B
-Run: `./scripts/validate-phase.sh 7b`
 Verifies opportunity-screen.md exists. **Do not proceed to Phase 7C until validated.**
 
 ---
@@ -386,17 +376,16 @@ Verifies opportunity-screen.md exists. **Do not proceed to Phase 7C until valida
 Follow `skills/portfolio-manager/SKILL.md` **Phase A** completely. Phase A now routes to
 `skills/deliberation/SKILL.md` which runs the full deliberation protocol:
 
-1. Read `outputs/daily/{{DATE}}/opportunity-screen.md` for the analyst roster (current holdings + screener-selected candidates)
+1. Read `data/agent-cache/daily/{{DATE}}/opportunity-screen.md` for the analyst roster (current holdings + screener-selected candidates)
 2. **Round 1**: Each analyst presents per `skills/asset-analyst/SKILL.md` → `positions/{{TICKER}}.md`
 4. **PM Review**: Identify challenges (conflicted bias, damaged thesis, regime contradiction, etc.)
 5. **Round 2**: Challenged analysts defend, revise, or concede
 6. **PM Decision**: Accept / Override / Escalate for each position
-7. Save deliberation transcript to: `outputs/daily/{{DATE}}/deliberation.md`
+7. Save deliberation transcript to: `data/agent-cache/daily/{{DATE}}/deliberation.md`
 
 Announce after completing: "Deliberation complete. [N] resolved, [M] challenged, [K] revised."
 
 ### Checkpoint: Phase 7C
-Run: `./scripts/validate-phase.sh 7c`
 Verifies deliberation.md transcript and analyst position files in `positions/`. **Do not proceed to Phase 7D until validated.**
 
 ---
@@ -409,20 +398,19 @@ Verifies deliberation.md transcript and analyst position files in `positions/`. 
 Follow `skills/portfolio-manager/SKILL.md` **Phases B and C** completely:
 
 **Phase B (Clean-Slate — still blinded to weights):**
-1. Read all analyst outputs from `outputs/daily/{{DATE}}/positions/`
+1. Read all analyst outputs from `data/agent-cache/daily/{{DATE}}/positions/`
 2. Apply theme caps and weight constraints from `config/preferences.md`
 3. Build ideal target portfolio
-4. Save to: `outputs/daily/{{DATE}}/portfolio-recommended.md`
+4. Save to: `data/agent-cache/daily/{{DATE}}/portfolio-recommended.md`
 
 **Phase C (Comparison — NOW load current weights):**
 1. Load `config/portfolio.json` positions with weights
 2. Diff recommended vs current; apply ≥5% threshold
 3. Produce rebalance table with actions (Hold/Add/Trim/Exit/New)
-4. Save to: `outputs/daily/{{DATE}}/rebalance-decision.md`
+4. Save to: `data/agent-cache/daily/{{DATE}}/rebalance-decision.md`
 5. Update `config/portfolio.json` → `proposed_positions[]`
 
 ### Checkpoint: Phase 7D
-Run: `./scripts/validate-phase.sh 7d`
 Verifies portfolio-recommended.md, rebalance-decision.md, and portfolio.json proposed_positions. **Do not proceed to Phase 8 until validated.**
 
 ---
@@ -433,26 +421,19 @@ Verifies portfolio-recommended.md, rebalance-decision.md, and portfolio.json pro
 
 ### 8A: Generate snapshot.json (if not already written by Phase 7)
 Run: `python3 scripts/generate-snapshot.py`
-This extracts structured data from DIGEST.md + portfolio.json into `outputs/daily/{{DATE}}/snapshot.json`. The snapshot.json is the primary data source for the Supabase ETL.
+Produce the digest snapshot JSON (schema `templates/digest-snapshot-schema.json`) and publish with `materialize_snapshot.py` — Supabase is canonical.
 
-### 8B: Push to Supabase
-Run: `python3 scripts/update_tearsheet.py`
-Wait for it to confirm:
-1. Supabase push complete — core tables upserted (daily_snapshots, positions, theses, position_events, documents, nav_history, portfolio_metrics). Benchmark chart series come from `price_history` (SPY, QQQ, TLT, GLD), not a separate benchmark table.
+### 8B: Metrics + DB validation
+After `materialize_snapshot.py` / `publish_document.py` have run, execute:
+`python3 scripts/run_db_first.py`  
+This refreshes performance metrics, runs `execute_at_open.py` when appropriate, and `validate_db_first.py`.
 
-The frontend reads directly from Supabase at runtime — no static JSON file or redeployment is needed. The dashboard updates as soon as the Supabase push completes.
-
-If Supabase push reports 0 rows for positions or nav_history, check:
-- `snapshot.json` exists and has a populated `positions[]` array
-- `yfinance` is installed in the venv (needed for NAV simulation)
-- `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` are set in `config/supabase.env`
+The frontend reads from Supabase at runtime. If validation fails, check `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` and that today’s snapshot row exists in `daily_snapshots`.
 
 ### 8C: Commit and push
-Run: `./scripts/git-commit.sh`
-This commits outputs to `origin/master` for version control. The web dashboard is already live from step 8B — the git push is for archival, not deployment.
+Run: `./scripts/git-commit.sh` to commit **config / memory / docs** changes only. Digest data is already in Supabase.
 
 ### Checkpoint: Phase 8
-Run: `./scripts/validate-phase.sh 8`
 Verifies Supabase tables have current data for today's date. **Do not proceed to Phase 9 until validated.**
 
 ---
@@ -468,7 +449,7 @@ Verifies Supabase tables have current data for today's date. **Do not proceed to
 - **Sources That Failed**: Log any that were unavailable, paywalled, stale, or returned errors
 - **New Sources Discovered**: Record any new X accounts, URLs, or data providers found during research
 - **GUARDRAIL**: Do NOT modify `docs/ops/data-sources.md` — only record observations in the JSON artifact
-- **Save to (JSON-first)**: `outputs/evolution/{{DATE}}/sources.json` — schema `templates/schemas/evolution-sources.schema.json`
+- **Save to (JSON-first)**: `data/agent-cache/evolution/{{DATE}}/sources.json` — schema `templates/schemas/evolution-sources.schema.json`
 - **Scaffold**: `./scripts/scaffold_evolution_day.sh {{DATE}}` if the folder is empty
 
 ### 9B: Quality Post-Mortem
@@ -477,7 +458,7 @@ Verifies Supabase tables have current data for today's date. **Do not proceed to
 - **Data Freshness Issues**: Flag any data that was stale or delayed
 - **Quality Score**: Self-assess today's digest on these 5 dimensions (1-5 scale each):
   - Data completeness | Signal clarity | Actionability | Continuity with prior | Positioning quality
-- **Save to (JSON-first)**: `outputs/evolution/{{DATE}}/quality-log.json` — schema `templates/schemas/evolution-quality-log.schema.json`
+- **Save to (JSON-first)**: `data/agent-cache/evolution/{{DATE}}/quality-log.json` — schema `templates/schemas/evolution-quality-log.schema.json`
 
 ### 9C: Improvement Proposals
 
@@ -490,8 +471,8 @@ Verifies Supabase tables have current data for today's date. **Do not proceed to
    - Output schema/structure (digest snapshot schema `templates/digest-snapshot-schema.json` is immutable)
    - Risk profile or position sizing (`config/investment-profile.md` §4 Risk Constraints)
    - These guardrails themselves
-6. Read `outputs/evolution/{{DATE}}/proposals.json` before filing to avoid duplicates
-- **Save to (JSON-first)**: `outputs/evolution/{{DATE}}/proposals.json` — schema `templates/schemas/evolution-proposals.schema.json`
+6. Read `data/agent-cache/evolution/{{DATE}}/proposals.json` before filing to avoid duplicates
+- **Save to (JSON-first)**: `data/agent-cache/evolution/{{DATE}}/proposals.json` — schema `templates/schemas/evolution-proposals.schema.json`
 
 ### 9D: Document Applied Improvements
 If any previously pending proposals have been approved and applied during this session, document them in `docs/evolution-changelog.md` with:
@@ -507,25 +488,24 @@ After completing the post-mortem, commit evolution artifacts to a **dedicated br
 
 This script will:
 1. Create a branch named `evolve/YYYY-MM-DD`
-2. Stage `outputs/evolution/{{DATE}}/` and `docs/evolution-changelog.md`
+2. Stage `data/agent-cache/evolution/{{DATE}}/` and `docs/evolution-changelog.md`
 3. Push the branch and create a GitHub Pull Request
 4. Switch back to `master` so the repo is clean for the next daily run
 
 **The PR requires manual user approval before merging into master.** This ensures no pipeline changes are applied without explicit review. Approved proposals will only take effect once the PR is merged and the next session pulls the latest master.
 
 ### Checkpoint: Phase 9
-Run: `./scripts/validate-phase.sh 9`
-Verifies `outputs/evolution/{{DATE}}/*.json` artifacts exist (see script for details).
+Verifies `data/agent-cache/evolution/{{DATE}}/*.json` artifacts exist (see script for details).
 
 ---
 
-## Final Validation
+## Final validation
 
-Run the full pipeline validation:
 ```bash
-./scripts/validate-phase.sh --all
+python3 scripts/validate_db_first.py --validate-mode full
 ```
-This runs every phase check in sequence and reports a consolidated pass/fail. All phases must pass before announcing session complete. If any phase fails, go back and fix the missing output, then re-run `--all`.
+
+Fix any reported gaps in Supabase rows before ending the session.
 
 ---
 
@@ -538,14 +518,14 @@ Confirm all of the following before ending the session:
 - [ ] Phase 3: `macro.md` created
 - [ ] Phase 4: `bonds.md`, `commodities.md`, `forex.md`, `crypto.md`, `international.md` created
 - [ ] Phase 5: `us-equities.md` + 11 sector files in `sectors/` created
-- [ ] Phase 7: `DIGEST.md` created
-- [ ] Phase 7B: Opportunity screen complete; `outputs/daily/{{DATE}}/opportunity-screen.md` saved; analyst roster determined
-- [ ] Phase 7C: Deliberation complete; transcript in `outputs/daily/{{DATE}}/deliberation.md`; analyst reports in `positions/`
-- [ ] Phase 7D: `portfolio-recommended.md` + `rebalance-decision.md` created; `portfolio.json` proposed_positions updated
-- [ ] Phase 8: `update_tearsheet.py` pushed to Supabase; digest commit created; dashboard live
-- [ ] Phase 9: Post-mortem completed; `outputs/evolution/{{DATE}}/*.json` updated; optional `./scripts/git-commit.sh --evolution`
+- [ ] Phase 7: Digest snapshot published (`materialize_snapshot.py`)
+- [ ] Phase 7B: Opportunity screen JSON published (`documents`); analyst roster determined
+- [ ] Phase 7C: Deliberation + analyst outputs published as JSON documents
+- [ ] Phase 7D: Portfolio recommendation + `rebalance_decision` published; `portfolio.json` updated when approved
+- [ ] Phase 8: `run_db_first.py` completed; `validate_db_first.py` clean
+- [ ] Phase 9: Post-mortem completed; `data/agent-cache/evolution/{{DATE}}/*.json` updated; optional `./scripts/git-commit.sh --evolution`
 
-**Legacy filesystem-era count was ~29 markdown files under `outputs/daily/`; DB-first runs publish JSON snapshots and documents to Supabase instead.**
+**All segment and portfolio artifacts publish as JSON into Supabase `documents` (and `daily_snapshots` for the digest).**
 
 Print to user: "✅ Digest complete. Supabase updated. Evolution JSON optional; run `git-commit.sh --evolution` if you filed proposals."
 

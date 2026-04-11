@@ -2,7 +2,8 @@
 -- digiquant-atlas: Documents DB-first (Migration 009)
 -- - Logical document keys (not repo paths) in column renamed from file_path.
 -- - Optional JSON payload (digest snapshot) for structured Library rendering.
--- - Normalizes legacy rows that stored outputs/daily/... paths.
+-- - Normalizes legacy rows whose document_key stored old filesystem path prefixes.
+--   (UPDATE patterns below match historical DB values only — not an active repo path.)
 -- ============================================================================
 
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS payload jsonb;

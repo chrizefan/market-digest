@@ -13,7 +13,7 @@ description: Run crypto market analysis as part of the daily digest. Covers BTC,
 
 ## Data Layer
 
-> DB-first: read crypto levels from Supabase (`daily_snapshots.market_data` / `documents.payload`). Legacy archive (if needed): `archive/legacy-outputs/daily/{{DATE}}/data/macro-summary.md`.
+> DB-first: read crypto levels from Supabase (`daily_snapshots.market_data` / `documents.payload`).
 
 For richer crypto data use MCP tools:
 - **Fear & Greed Index**: `mcp_crypto-feargr_get_current_fng_tool` (current value) · `mcp_crypto-feargr_analyze_fng_trend` (trend over N days) · `mcp_crypto-feargr_get_historical_fng_tool` (historical values)

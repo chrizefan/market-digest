@@ -32,9 +32,9 @@ Load all of the following (already in session context after synthesis):
 1. **`config/watchlist.md`** — Full ETF universe with categories (~60 tickers)
 2. **Supabase digest** — `documents` row for `document_key='digest'` (payload is canonical; markdown is derived)
 3. **Supabase macro regime** — `daily_snapshots.regime` / `daily_snapshots.segment_biases`
-4. **Systematic technicals** — Supabase `price_technicals` / `price_history` (preferred) OR legacy archive `archive/legacy-outputs/daily/{{DATE}}/data/quotes-summary.md` if reviewing history
+4. **Systematic technicals** — Supabase `price_technicals` / `price_history`
 5. **`config/portfolio.json`** — Current holdings (ticker list only — NOT weights)
-6. **Segment outputs** already produced this session (DB-first: Supabase documents/payloads; legacy archive only for historical review)
+6. **Segment outputs** already produced this session (DB-first: Supabase documents/payloads)
 
 **Do NOT read `weight_pct` from portfolio.json.** Screener is blinded to current sizing.
 

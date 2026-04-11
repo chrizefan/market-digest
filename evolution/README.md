@@ -9,6 +9,6 @@ python3 scripts/publish_document.py --payload - --document-key …
 
 (pipe JSON on stdin for each artifact)
 
-Scaffold (optional local scratch): `./scripts/scaffold_evolution_day.sh [YYYY-MM-DD]` — still end by **publishing** via `publish_document.py`; do not rely on committed `outputs/` (that tree is gitignored).
+Scaffold (optional local scratch): `./scripts/scaffold_evolution_day.sh [YYYY-MM-DD]` — still end by **publishing** via `publish_document.py`; do not rely on committed `data/agent-cache/` (that tree is gitignored).
 
 The narrative `quality-log.md` in this folder is optional human-readable notes only.

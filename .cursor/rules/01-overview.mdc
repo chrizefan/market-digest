@@ -30,8 +30,8 @@ A daily market intelligence system producing structured research across equities
 - **Always** read `config/` files at session start
 - **Always** read corresponding `memory/*/ROLLING.md` before writing research
 - **Never** delete or rewrite memory file history
-- **Never** edit `outputs/daily/` files manually
-- Output paths: `outputs/daily/{{DATE}}/` — use `{{DATE}}` placeholder
+- **Never** hand-edit canonical rows in Supabase; use `publish_document.py` / `materialize_snapshot.py`
+- Optional local scratch: `data/agent-cache/daily/{{DATE}}/` (gitignored) — use `{{DATE}}` placeholder when documenting file names only
 
 ## macOS Critical
 Use `sed -i ""` not `sed -i` — macOS BSD sed requires the extension argument.

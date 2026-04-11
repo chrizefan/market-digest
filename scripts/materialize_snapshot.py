@@ -10,7 +10,7 @@ Supports:
   today's full snapshot.
 
 This script is the replacement for filesystem-based DIGEST.md materialization.
-It does not read or write outputs/daily/.
+It does not read or write the local agent scratch tree (see `data/agent-cache/`).
 """
 
 import argparse

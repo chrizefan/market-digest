@@ -204,7 +204,7 @@ Compile the deliberation outcome:
 ## Output
 
 Save the full deliberation transcript as **JSON** (schema: `templates/schemas/deliberation-transcript.schema.json`):
-`outputs/daily/{{DATE}}/deliberation.json`
+`data/agent-cache/daily/{{DATE}}/deliberation.json`
 
 After deliberation completes, hand off the resolved summary table to
 `skills/portfolio-manager/SKILL.md` **Phase B** (clean-slate construction) and **Phase C** (comparison).

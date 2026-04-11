@@ -131,7 +131,7 @@ Write the full monthly synthesis as **JSON** using schema `templates/schemas/mon
 - **`date`** in the payload must be the **month-ending** calendar date (YYYY-MM-DD) per the schema.
 - Add a **Cumulative Regime Shifts** block and a **Delta Efficiency Summary** block (see schema narrative guidance).
 
-**Canonical delivery is Supabase** — validate and publish **via stdin** (no `outputs/` path required for hosted runs):
+**Canonical delivery is Supabase** — validate and publish **via stdin** (no `data/agent-cache/` path required for hosted runs):
 
 ```bash
 python3 scripts/validate_artifact.py - <<'EOF'

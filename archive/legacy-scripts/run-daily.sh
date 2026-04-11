@@ -105,9 +105,9 @@ else
   echo "  → skills/daily-delta/SKILL.md"
 fi
 echo ""
-echo "  Phase validation:  ./scripts/validate-phase.sh <phase>"
-echo "  Full validation:   ./scripts/validate-phase.sh --all"
-echo "  Quick summary:     ./scripts/validate-phase.sh --summary"
+echo "  Phase validation:  ./scripts/validate_db_first.py <phase>"
+echo "  Full validation:   ./scripts/validate_db_first.py --all"
+echo "  Quick summary:     ./scripts/validate_db_first.py --summary"
 echo "  Cowork prompt:     scripts/cowork-daily-prompt.txt"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""

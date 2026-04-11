@@ -16,34 +16,34 @@ Specialized analyst for individual or multi-sector research. Identifies relative
 ```
 config/watchlist.md                            ← Tracked sector names
 config/investment-profile.md                   ← Sector preferences
-outputs/daily/{{DATE}}/macro.md                ← Today's macro if available
-outputs/daily/[prior-date]/sectors/{sector}.md ← Prior sector output for continuity
+data/agent-cache/daily/{{DATE}}/macro.md                ← Today's macro if available
+data/agent-cache/daily/[prior-date]/sectors/{sector}.md ← Prior sector output for continuity
 ```
 
 ## Supported Sectors
 
 | Sector | Skill |
 |--------|-------|
-| Technology | `skills/sector-technology/SKILL.md` |
-| Healthcare | `skills/sector-healthcare/SKILL.md` |
-| Financials | `skills/sector-financials/SKILL.md` |
-| Energy | `skills/sector-energy/SKILL.md` |
-| Consumer Discretionary | `skills/sector-consumer-disc/SKILL.md` |
-| Consumer Staples | `skills/sector-consumer-staples/SKILL.md` |
-| Industrials | `skills/sector-industrials/SKILL.md` |
-| Materials | `skills/sector-materials/SKILL.md` |
-| Utilities | `skills/sector-utilities/SKILL.md` |
-| Real Estate | `skills/sector-real-estate/SKILL.md` |
-| Communication | `skills/sector-comms/SKILL.md` |
+| Technology | `skills/sectors/technology.md` |
+| Healthcare | `skills/sectors/healthcare.md` |
+| Financials | `skills/sectors/financials.md` |
+| Energy | `skills/sectors/energy.md` |
+| Consumer Discretionary | `skills/sectors/consumer-discretionary.md` |
+| Consumer Staples | `skills/sectors/consumer-staples.md` |
+| Industrials | `skills/sectors/industrials.md` |
+| Materials | `skills/sectors/materials.md` |
+| Utilities | `skills/sectors/utilities.md` |
+| Real Estate | `skills/sectors/real-estate.md` |
+| Communication | `skills/sectors/communication.md` |
 
 ## Workflow
 
 ### Single Sector Mode
-1. Read `skills/sector-{sector}/SKILL.md`
+1. Read `skills/sectors/{sector}.md`
 2. Read prior sector output for continuity if available
 3. Read macro context if available
 4. Execute the skill steps
-5. Write `outputs/daily/{{DATE}}/sectors/{sector}.md`
+5. Write `data/agent-cache/daily/{{DATE}}/sectors/{sector}.md`
 
 ### Multi-Sector / All-Sectors Mode
 1. Read macro.md for regime context
@@ -53,12 +53,12 @@ outputs/daily/[prior-date]/sectors/{sector}.md ← Prior sector output for conti
 
 ### Rotation Analysis Mode
 1. Read prior sector outputs from the most recent baseline for trend context
-2. Execute `skills/sector-rotation/SKILL.md`
+2. Execute `skills/SKILL-sector-rotation.md`
 3. Identify leading vs. lagging sectors within the current macro regime
 
 ## Outputs
-- Per sector: `outputs/daily/{{DATE}}/sectors/{sector}.md`
-- Rotation note (optional): `outputs/daily/{{DATE}}/sector-rotation.md`
+- Per sector: `data/agent-cache/daily/{{DATE}}/sectors/{sector}.md`
+- Rotation note (optional): `data/agent-cache/daily/{{DATE}}/sector-rotation.md`
 
 ## Example Invocations
 
@@ -67,8 +67,8 @@ outputs/daily/[prior-date]/sectors/{sector}.md ← Prior sector output for conti
 Today is 2026-04-05.
 Read agents/sector-analyst.agent.md.
 Run a technology sector analysis.
-Read outputs/daily/2026-04-05/macro.md for macro backdrop.
-Write to: outputs/daily/2026-04-05/sectors/technology.md
+Read data/agent-cache/daily/2026-04-05/macro.md for macro backdrop.
+Write to: data/agent-cache/daily/2026-04-05/sectors/technology.md
 ```
 
 **All sectors:**
@@ -77,5 +77,5 @@ Today is 2026-04-05.
 Read agents/sector-analyst.agent.md.
 Run all 11 sector analyses.
 Macro context: [paste macro.md summary here]
-Write each to outputs/daily/2026-04-05/sectors/{name}.md
+Write each to data/agent-cache/daily/2026-04-05/sectors/{name}.md
 ```

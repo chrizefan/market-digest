@@ -32,7 +32,7 @@ layer, every agent reads the same source-of-truth JSON/Markdown files fetched ri
 | `scripts/preload-history.py` | **One-time / weekly**: bulk-downloads 2yr OHLCV for all watchlist tickers and caches them as CSV files in `data/price-history/`. Run once to seed the cache; re-run with `--refresh` to update stale tickers. |
 | `scripts/fetch-quotes.py [date]` | **Daily**: loads cached history, fetches only the latest missing days, appends to cache, then computes RSI(14), MACD, SMA20/50/200, ATR(14), Bollinger Bands via pandas-ta. Falls back to 3-month bulk download if no cache exists. |
 | `scripts/fetch-macro.py [date]` | Fetches full US yield curve (US Treasury public XML API, no auth) + VIX, SKEW, crude, gold, NatGas, BTC, ETH, FX pairs via yfinance |
-| `scripts/fetch-market-data.sh [date]` | Orchestrator — auto-seeds cache on first run, then runs both fetch scripts, validates outputs, prints summary. Pass `--preload` to force a full cache rebuild. |
+| `scripts/fetch-market-data.sh [date]` | Orchestrator — auto-seeds cache on first run, then runs both fetch scripts, validates scratch JSON under `data/agent-cache/daily/.../data/`, prints summary. Pass `--preload` to force a full cache rebuild. |
 
 ---
 
@@ -143,7 +143,7 @@ WHERE ticker = 'SPY' ORDER BY filing_date DESC LIMIT 10;
 
 ## Local fetch cache (gitignored)
 
-When you run fetch scripts locally, they may write under `outputs/daily/YYYY-MM-DD/data/` (not committed). Prefer **Supabase** `price_history` / `price_technicals` when available.
+When you run fetch scripts locally, they may write under `data/agent-cache/daily/YYYY-MM-DD/data/` (not committed). Prefer **Supabase** `price_history` / `price_technicals` when available.
 
 Files (when present on disk):
 

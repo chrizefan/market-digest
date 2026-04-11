@@ -11,7 +11,7 @@
 - **DB-first** market intelligence: agents produce **JSON artifacts** → publish to **Supabase** (`daily_snapshots`, `documents`, `positions`, …). UI markdown is **derived**.
 - **Three-tier cadence:** Sunday **baseline**, Mon–Sat **delta**, month-end rollup (see `RUNBOOK.md`).
 - **Two runnable tracks:**
-  - **Track A — Research only:** positioning-blind; produce `research_delta` JSON and publish with **`validate_artifact.py -`** + **`publish_document.py --payload -`** (stdin). Unique `document_key` under `research-delta/…` (see `skills/research-daily/SKILL.md`). No `preferences` / `investment-profile` / `portfolio.json`. The repo **does not commit** `outputs/`; Supabase is canonical.
+  - **Track A — Research only:** positioning-blind; produce `research_delta` JSON and publish with **`validate_artifact.py -`** + **`publish_document.py --payload -`** (stdin). Unique `document_key` under `research-delta/…` (see `skills/research-daily/SKILL.md`). No `preferences` / `investment-profile` / `portfolio.json`. The repo **does not commit** `data/agent-cache/`; Supabase is canonical.
   - **Track B — Portfolio / analyst:** uses preferences + profile; `rebalance-decision.json` and related portfolio JSON.
 - **Combined flow:** full digest + PM in one session (see `scripts/cowork-daily-prompt.txt`).
 
@@ -28,7 +28,7 @@ Evening job details: `RUNBOOK.md` → Schedules table.
 
 **In Cloud desktop:** if **Supabase MCP** is connected, treat the database as the first-class source for **prices** (`price_history`), **technicals** (`price_technicals`), and **portfolio-facing tables** (e.g. `positions`, `daily_snapshots`, `documents`, `nav_history`, metrics) when you need current or historical state for analysis. Prefer MCP **reads** over inferring from stale local files or training data.
 
-**Writes:** upsert artifacts with **`scripts/publish_document.py`** (use **`--payload -`** with JSON on stdin when no disk path exists). Optional **`scripts/update_tearsheet.py`** for local dashboard mirrors only. A run is done when **`documents`** / related tables are updated — not when files land under `outputs/`. Avoid hand-written MCP SQL for large JSON payloads. See `cowork/tasks/README.md` → “Supabase-first writes”.
+**Writes:** upsert artifacts with **`scripts/publish_document.py`** (use **`--payload -`** with JSON on stdin when no disk path exists). Optional **`scripts/update_tearsheet.py`** for local dashboard mirrors only. A run is done when **`documents`** / related tables are updated — not when files land under `data/agent-cache/`. Avoid hand-written MCP SQL for large JSON payloads. See `cowork/tasks/README.md` → “Supabase-first writes”.
 
 ---
 
@@ -99,7 +99,7 @@ Each modular task file stays short; the router delegates to them.
 
 ## Guardrails
 
-- Do **not** treat **`outputs/`** or **`archive/legacy-outputs/`** as product state — both are **gitignored** (except README / `.gitkeep`). Canonical data is in **Supabase**.
+- Do **not** treat **`data/agent-cache/`** as product state — it is **gitignored** scratch. Canonical data is in **Supabase**.
 - **Track A:** never load `config/preferences.md`, `config/investment-profile.md`, or `config/portfolio.json`.
 - If `validate_db_first.py` fails, fix artifacts or Supabase rows, then re-run validation for the date (`RUNBOOK.md`).
 - Pre-market runs may record **null** execution prices until opens exist; then `python3 scripts/backfill_execution_prices.py --date YYYY-MM-DD` (`RUNBOOK.md`).

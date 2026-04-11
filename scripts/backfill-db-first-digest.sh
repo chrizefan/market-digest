@@ -1,6 +1,6 @@
 #!/bin/bash
 # Re-materialize a week into Supabase using the DB-first pipeline:
-# - Sunday baseline + Mon delta: legacy outputs/daily/<date>/snapshot.json → convert_snapshot_v1 → materialize_snapshot
+# - Sunday baseline + Mon delta: data/agent-cache/daily/<date>/snapshot.json → convert_snapshot_v1 → materialize_snapshot
 # - Later weekdays with empty snapshot.json: legacy DIGEST-DELTA.md → legacy_delta_to_ops → materialize (ops on prior day)
 #
 # Usage (from repo root):
@@ -34,7 +34,7 @@ fi
 
 BASELINE="$1"
 shift
-BASE_JSON="${ROOT}/outputs/daily/${BASELINE}/snapshot.json"
+BASE_JSON="${ROOT}/data/agent-cache/daily/${BASELINE}/snapshot.json"
 if [[ ! -f "$BASE_JSON" ]]; then
   echo "Missing ${BASE_JSON}" >&2
   exit 1
@@ -46,8 +46,8 @@ echo "== Baseline ${BASELINE} (convert + push)"
 
 PREV="$BASELINE"
 for D in "$@"; do
-  SNAP="${ROOT}/outputs/daily/${D}/snapshot.json"
-  DELTA_JSON="${ROOT}/outputs/daily/${D}/delta-request.json"
+  SNAP="${ROOT}/data/agent-cache/daily/${D}/snapshot.json"
+  DELTA_JSON="${ROOT}/data/agent-cache/daily/${D}/delta-request.json"
   # Prefer a rich snapshot.json; stub files (regime shell only) should not beat delta-request.json.
   if [[ -f "$SNAP" ]] && "$PY" -c "
 import json,sys
@@ -70,19 +70,19 @@ sys.exit(0 if rich else 1)
       --baseline-date "$PREV" \
       --ops "$DELTA_JSON"
   else
-    DELTA_MD="${ROOT}/outputs/daily/${D}/DIGEST-DELTA.md"
+    DELTA_MD="${ROOT}/data/agent-cache/daily/${D}/DIGEST-DELTA.md"
     if [[ ! -f "$DELTA_MD" ]]; then
       echo "No rich snapshot, no delta-request.json, and no DIGEST-DELTA.md for ${D}" >&2
       exit 1
     fi
     echo "== Delta ${D} (legacy DIGEST-DELTA.md ops; load snapshot row ${PREV})"
-    OUT_OPS="${ROOT}/outputs/daily/${D}/delta-request.json"
+    OUT_OPS="${ROOT}/data/agent-cache/daily/${D}/delta-request.json"
     "$PY" scripts/legacy_delta_to_ops.py \
       --date "$D" \
       --baseline-date "$BASELINE" \
       --delta-md "$DELTA_MD" \
       --out "${TMP}/delta-request-${D}.json"
-    mkdir -p "${ROOT}/outputs/daily/${D}"
+    mkdir -p "${ROOT}/data/agent-cache/daily/${D}"
     cp "${TMP}/delta-request-${D}.json" "$OUT_OPS"
     echo "   → wrote $OUT_OPS (for update_tearsheet + Research Library)"
     "$PY" scripts/materialize_snapshot.py \

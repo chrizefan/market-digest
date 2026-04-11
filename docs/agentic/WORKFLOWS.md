@@ -32,7 +32,7 @@ Step-by-step procedures for every recurring workflow.
 ```bash
 # 2. Agent: follow skills/orchestrator/SKILL.md (baseline) or skills/daily-delta/SKILL.md (weekday).
 #    Publish JSON only: materialize_snapshot.py + publish_document.py (stdin).
-#    Optional scratch files under outputs/ are gitignored — not canonical.
+#    Optional scratch files under data/agent-cache/ are gitignored — not canonical.
 python3 scripts/run_db_first.py
 #    Flags: --skip-execute / --validate-mode research|pm|full / --legacy-markdown-tearsheet — RUNBOOK.md
 ```
@@ -44,7 +44,6 @@ Read skills/orchestrator/SKILL.md (or weekly-baseline / daily-delta per day type
 Read config/watchlist.md; for portfolio work also preferences + investment-profile.
 Read relevant memory/*/ROLLING.md for prior context.
 DB-first: JSON → materialize_snapshot.py / publish_document.py; close with run_db_first.py.
-Legacy markdown samples (migration only): archive/legacy-outputs/daily/
 ```
 
 ```bash
@@ -78,13 +77,8 @@ After running phases 1-6 manually or partially, use this prompt (DB-first):
 
 **Manual synthesis prompt:**
 ```
-If reviewing legacy output history, read files under archive: `archive/legacy-outputs/daily/{DATE}/`
-- alt-data.md, institutional.md, macro.md
-- bonds.md, commodities.md, forex.md, crypto.md, international.md
-- equities.md, all sectors/*.md, earnings.md
-
-Daily digest is DB-first: produce a digest snapshot JSON (schema: `templates/digest-snapshot-schema.json`) and publish via `scripts/materialize_snapshot.py`. Markdown is rendered from JSON.
-Read memory/BIAS-TRACKER.md for prior bias context.
+Daily digest is DB-first: load prior context from Supabase (`daily_snapshots`, `documents`) and memory/BIAS-TRACKER.md.
+Produce a digest snapshot JSON (schema: `templates/digest-snapshot-schema.json`) and publish via `scripts/materialize_snapshot.py`. Markdown is rendered from JSON.
 
 Synthesize into snapshot JSON and publish via `scripts/materialize_snapshot.py` (see RUNBOOK.md)
 Update memory/BIAS-TRACKER.md with today's row.
@@ -105,11 +99,10 @@ Update memory/BIAS-TRACKER.md with today's row.
 **Manual prompt:**
 ```
 Read this week's research from Supabase (documents / daily_snapshots) or from
-outputs/daily/{DATE}/ JSON and digest payloads — NOT legacy DIGEST.md unless
-you are explicitly mining archive/legacy-outputs/daily/.
+local `data/agent-cache/daily/{DATE}/` JSON when you intentionally mirror artifacts to disk.
 Read memory/BIAS-TRACKER.md for the week's bias history.
 Write a weekly JSON artifact (schema: templates/schemas/weekly-digest.schema.json).
-Synthesize into outputs/weekly/{YYYY}-W{WW}.json
+Synthesize into data/agent-cache/weekly/{YYYY}-W{WW}.json
 Do NOT update memory files — read-only synthesis.
 ```
 
@@ -127,11 +120,11 @@ Do NOT update memory files — read-only synthesis.
 
 **Manual prompt:**
 ```
-Read all outputs/weekly/ files from this month.
+Read all data/agent-cache/weekly/ files from this month.
 Read memory/BIAS-TRACKER.md for the month's entries.
 Read each memory/*/ROLLING.md and summarize the month's key observations per domain.
 Write a monthly JSON artifact (schema: `templates/schemas/monthly-digest.schema.json`).
-Write to `outputs/monthly/{YYYY-MM}.json`
+Write to `data/agent-cache/monthly/{YYYY-MM}.json`
 ```
 
 ---
@@ -163,7 +156,7 @@ Append the completed thesis to memory/THESES.md with today's date.
 ```
 Read skills/thesis-tracker/SKILL.md.
 Read memory/THESES.md for all active theses.
-Read today's digest from Supabase or outputs/daily/{DATE}/ snapshot JSON — not legacy DIGEST.md unless from archive.
+Read today's digest from Supabase or data/agent-cache/daily/{DATE}/ snapshot JSON — not legacy DIGEST.md unless from archive.
 Score each thesis: [Building | Confirmed | Extended | At Risk | Exited]
 Append your review to memory/THESES.md under today's date.
 ```
@@ -180,7 +173,7 @@ Read skills/deep-dive/SKILL.md.
 Run a deep dive on: {TICKER or TOPIC}
 Read memory/equity/ROLLING.md and relevant sector ROLLING.md for prior notes.
 Read config/watchlist.md to see if it's a tracked position.
-Output: prefer outputs/deep-dives/{slug}.json (schema: templates/schemas/deep-dive.schema.json); markdown is derived.
+Output: prefer data/agent-cache/deep-dives/{slug}.json (schema: templates/schemas/deep-dive.schema.json); markdown is derived.
 ```
 
 ---
@@ -234,9 +227,9 @@ Shows:
 # After any session with outputs
 ./scripts/git-commit.sh
 
-# Manual commit format (JSON outputs + memory + config as needed)
-git add outputs/ memory/ config/
-git commit -m "$(date +%Y-%m-%d): Daily digest + memory update"
+# Manual commit (memory + config only — scratch under data/agent-cache/ is gitignored)
+git add memory/ config/
+git commit -m "$(date +%Y-%m-%d): memory + config update"
 git push
 ```
 
@@ -244,9 +237,9 @@ CI/CD in `.github/workflows/deploy.yml` publishes the tearsheet on push to maste
 
 ---
 
-## Archive Old Outputs
+## Disk migration (rare)
 
-Legacy daily markdown lives under `archive/legacy-outputs/daily/`. Do not use filesystem archive scripts; the old `archive.sh` helper is retired (see `archive/legacy-scripts/README.md`).
+One-off backfills from disk exports: see [`RUNBOOK.md`](../../RUNBOOK.md) (`backfill-historical-daily-to-supabase.sh`, **`LEGACY_ROOT`** or **`SKIP_COPY=1`**). Retired shell helpers live under `archive/legacy-scripts/` for reference only.
 
 ---
 

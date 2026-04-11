@@ -61,7 +61,7 @@ def main() -> int:
     ap.add_argument(
         "--payload",
         required=True,
-        help="Path to artifact JSON file, or '-' to read JSON from stdin (hosted / no local outputs/).",
+        help="Path to artifact JSON file, or '-' to read JSON from stdin (hosted / no repo-local files).",
     )
     ap.add_argument("--document-key", required=True, help="Stable key (e.g. 'weekly/2026-W15.json')")
     ap.add_argument("--title", required=True, help="Document title")

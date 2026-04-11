@@ -1,10 +1,10 @@
 #!/bin/bash
-# scaffold_evolution_day.sh — Create outputs/evolution/YYYY-MM-DD/*.json scaffolds (JSON-first post-mortem)
+# scaffold_evolution_day.sh — Create data/agent-cache/evolution/YYYY-MM-DD/*.json scaffolds (post-mortem)
 # Usage: ./scripts/scaffold_evolution_day.sh [YYYY-MM-DD]
 
 set -e
 DATE="${1:-$(date +%Y-%m-%d)}"
-DIR="outputs/evolution/${DATE}"
+DIR="data/agent-cache/evolution/${DATE}"
 mkdir -p "$DIR"
 
 gen_ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")

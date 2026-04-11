@@ -2,7 +2,7 @@
 """
 retrofit_delta_requests.py
 
-Scan legacy (and optional outputs) daily trees for DIGEST-DELTA.md and write
+Scan `data/agent-cache/daily/` for DIGEST-DELTA.md and write
 delta-request.json in the current schema (templates/delta-request-schema.json).
 
 Skips days that already have delta-request.json unless --force.
@@ -34,7 +34,7 @@ def _load_legacy_module():
 
 def _discover_delta_md_dirs() -> Iterator[Tuple[str, Path]]:
     """Yield (YYYY-MM-DD, path_to_DIGEST-DELTA.md)."""
-    bases = [ROOT / "archive" / "legacy-outputs" / "daily", ROOT / "outputs" / "daily"]
+    bases = [ROOT / "data" / "agent-cache" / "daily"]
     seen_dates: set[str] = set()
     for base in bases:
         if not base.is_dir():
@@ -56,11 +56,6 @@ def _discover_delta_md_dirs() -> Iterator[Tuple[str, Path]]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument(
-        "--also-copy-to-outputs",
-        action="store_true",
-        help="Also write outputs/daily/<date>/delta-request.json (mkdir as needed)",
-    )
     ap.add_argument("--force", action="store_true", help="Overwrite existing delta-request.json")
     ap.add_argument("--dry-run", action="store_true", help="Print actions only")
     args = ap.parse_args()
@@ -87,8 +82,6 @@ def main() -> int:
         text = json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
 
         targets: list[Path] = [primary]
-        if args.also_copy_to_outputs:
-            targets.append(ROOT / "outputs" / "daily" / date_str / "delta-request.json")
 
         if args.dry_run:
             print(f"Would write {date_str} ({len(payload['ops'])} ops) → {[str(t) for t in targets]}")

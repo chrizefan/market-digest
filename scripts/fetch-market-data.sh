@@ -1,5 +1,5 @@
 #!/bin/bash
-# fetch-market-data.sh — Run both fetch scripts and validate outputs
+# fetch-market-data.sh — Run both fetch scripts and validate scratch JSON
 # Fetches quotes (technicals) and macro data (yield curve, VIX, FX) for a given date.
 # Both scripts are free / no API keys — all yfinance + US Treasury public XML.
 #
@@ -8,7 +8,7 @@
 #   ./scripts/fetch-market-data.sh 2026-04-06   # specific date
 #   ./scripts/fetch-market-data.sh --preload    # force full 2yr cache rebuild
 #
-# Outputs (in outputs/daily/YYYY-MM-DD/data/):
+# Scratch files (gitignored, under data/agent-cache/daily/YYYY-MM-DD/data/):
 #   quotes.json         quotes-summary.md
 #   macro.json          macro-summary.md
 
@@ -17,7 +17,7 @@ set -e
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DATE="${1:-$(date +%Y-%m-%d)}"
-DATA_DIR="$REPO_ROOT/outputs/daily/$DATE/data"
+DATA_DIR="$REPO_ROOT/data/agent-cache/daily/$DATE/data"
 CACHE_DIR="$REPO_ROOT/data/price-history"
 
 # ── flags ────────────────────────────────────────────────────────────────────
@@ -109,7 +109,7 @@ echo "[ Phase 2/2: Macro Data (Yield Curve, VIX, FX, Commodities, Crypto) ]"
 "$PYTHON" scripts/fetch-macro.py "$DATE"
 echo ""
 
-# ── validate outputs ─────────────────────────────────────────────────────────
+# ── validate scratch files ───────────────────────────────────────────────────
 echo "[ Validation ]"
 ERRORS=0
 
@@ -160,7 +160,7 @@ except Exception:
 echo "✅ fetch-market-data.sh complete — $DATE"
 echo "   Quotes:      $TICKER_COUNT tickers with technicals"
 echo "   Yield Curve: $YIELD_STATUS"
-echo "   Output dir:  outputs/daily/$DATE/data/"
+echo "   Scratch dir: data/agent-cache/daily/$DATE/data/"
 echo ""
-echo "  → Agent: read outputs/daily/$DATE/data/quotes-summary.md and macro-summary.md"
+echo "  → Agent: read quotes-summary.md and macro-summary.md in that folder (or prefer Supabase price_technicals)"
 echo "    before web-searching for prices or yields."

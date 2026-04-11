@@ -141,12 +141,6 @@ def main() -> int:
         default="full",
         help="Passed to validate_db_first.py (default: full).",
     )
-    ap.add_argument(
-        "--legacy-markdown-tearsheet",
-        action="store_true",
-        help="After validation, run update_tearsheet.py (reads outputs/daily/*.md). "
-        "Default is Supabase-only: refresh_performance_metrics for the run date.",
-    )
     args = ap.parse_args()
 
     d = args.date
@@ -173,7 +167,7 @@ def main() -> int:
     # After the agent publishes to Supabase, this CLI refreshes metrics and validates DB state.
     # 1) Validate artifacts on disk (if present)
     artifacts: list[Path] = []
-    day_dir = ROOT / "outputs" / "daily" / d
+    day_dir = ROOT / "data" / "agent-cache" / "daily" / d
     if day_dir.exists():
         artifacts.extend(day_dir.glob("*.json"))
         artifacts.extend((day_dir / "sectors").glob("*.json"))
@@ -184,24 +178,19 @@ def main() -> int:
         if rc != 0:
             return rc
 
-    # 2) Metrics / NAV alignment (default: Supabase-only — no outputs/daily markdown)
-    if args.legacy_markdown_tearsheet:
-        rc = _run([sys.executable, "scripts/update_tearsheet.py"], dry_run=args.dry_run)
-        if rc != 0:
-            return rc
-    else:
-        rc = _run(
-            [
-                sys.executable,
-                "scripts/refresh_performance_metrics.py",
-                "--supabase",
-                "--fill-calendar-through",
-                d,
-            ],
-            dry_run=args.dry_run,
-        )
-        if rc != 0:
-            return rc
+    # 2) Metrics / NAV alignment (Supabase)
+    rc = _run(
+        [
+            sys.executable,
+            "scripts/refresh_performance_metrics.py",
+            "--supabase",
+            "--fill-calendar-through",
+            d,
+        ],
+        dry_run=args.dry_run,
+    )
+    if rc != 0:
+        return rc
 
     # 2.5) Record market-open execution events (best-effort)
     if not args.skip_execute:

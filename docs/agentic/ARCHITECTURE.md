@@ -1,23 +1,14 @@
 # digiquant-atlas — System Architecture
 
-> **Last updated**: 2026-04
+> **Last updated**: 2025-07
 > **Pipeline version**: v3 — 9-phase orchestrator with three-tier cadence
-> **Operational truth**: [`RUNBOOK.md`](../../RUNBOOK.md) (DB-first, JSON artifacts, Supabase canonical).
-
-**Orientation**
-
-| Topic | Doc |
-|--------|-----|
-| Publish / validate / schedules | [`RUNBOOK.md`](../../RUNBOOK.md) |
-| Track A (blind research) vs Track B (portfolio) | [`../../AGENTS.md`](../../AGENTS.md), [`../../skills/research-daily/SKILL.md`](../../skills/research-daily/SKILL.md) |
-| Baseline + daily deltas without duplicating full docs | [`COMPILED-RESEARCH-VIEW.md`](COMPILED-RESEARCH-VIEW.md) |
-| Extended inventory (frontend, deploy, security, debt) | [`../archive/ARCHITECTURE-REVIEW.md`](../archive/ARCHITECTURE-REVIEW.md) (archived reference) |
+> Part of the digiquant ecosystem — modular market intelligence layer.
 
 ---
 
 ## Overview
 
-digiquant-atlas is an AI-orchestrated daily market intelligence system. A large-language model agent reads configuration files and rolling memory logs, executes structured skill files as instruction sets, **publishes structured JSON to Supabase**, and appends findings to append-only memory. Legacy markdown-under-`outputs/daily/` workflows are retired; see `archive/legacy-outputs/` for historical samples.
+digiquant-atlas is an AI-orchestrated daily market intelligence system. A large-language model agent reads configuration files and rolling memory logs, executes structured skill files as instruction sets, writes 28+ output files per session, then appends findings to a 25-file append-only memory system.
 
 The system operates on a **three-tier cadence**:
 
@@ -35,13 +26,13 @@ The system operates on a **three-tier cadence**:
 
 ### Sunday — Weekly Baseline
 
-The full pipeline. Every segment is re-analyzed from scratch. The baseline becomes the week's analytical anchor. Many segment JSON artifacts plus digest snapshot / delta materialization (see `RUNBOOK.md`).
+The full pipeline. Every segment is re-analyzed from scratch. The baseline becomes the week's analytical anchor. All 28+ output files are written.
 
-Entry point: `skills/weekly-baseline/SKILL.md` → `skills/orchestrator/SKILL.md`
+Entry point: `skills/SKILL-weekly-baseline.md` → `skills/SKILL-orchestrator.md`
 
 ### Mon–Sat — Daily Delta
 
-The delta skill (`skills/daily-delta/SKILL.md`) loads the week's baseline and any prior deltas, then runs a triage protocol:
+The delta skill (`skills/SKILL-daily-delta.md`) loads the week's baseline and any prior deltas, then runs a triage protocol:
 
 | Priority | Segments | Threshold to Trigger Delta |
 |----------|----------|---------------------------|
@@ -54,7 +45,7 @@ Output: `.delta.md` files for changed segments + a fully materialized `DIGEST.md
 
 ### Month-End — Monthly Synthesis
 
-Entry point: `skills/monthly-synthesis/SKILL.md`
+Entry point: `skills/SKILL-monthly-synthesis.md`
 Script: `./scripts/monthly-rollup.sh`
 
 Collects all weekly baselines + daily deltas, produces a `DIGEST-MONTHLY.md` with cumulative regime shifts, thesis win/loss record, and portfolio evolution.
@@ -82,10 +73,10 @@ Before any phase executes, the agent performs a structured context load:
 
 | Sub-Phase | Skill | Output |
 |-----------|-------|--------|
-| 1A | `skills/alt-sentiment-news/SKILL.md` | `alt-data/sentiment-news.md` |
-| 1B | `skills/alt-cta-positioning/SKILL.md` | `alt-data/cta-positioning.md` |
-| 1C | `skills/alt-options-derivatives/SKILL.md` | `alt-data/options-derivatives.md` |
-| 1D | `skills/alt-politician-signals/SKILL.md` | `alt-data/politician-signals.md` |
+| 1A | `skills/alternative-data/SKILL-sentiment-news.md` | `alt-data/sentiment-news.md` |
+| 1B | `skills/alternative-data/SKILL-cta-positioning.md` | `alt-data/cta-positioning.md` |
+| 1C | `skills/alternative-data/SKILL-options-derivatives.md` | `alt-data/options-derivatives.md` |
+| 1D | `skills/alternative-data/SKILL-politician-signals.md` | `alt-data/politician-signals.md` |
 
 Memory updates: `memory/alternative-data/{sentiment,cta-positioning,options,politician}/ROLLING.md`
 
@@ -103,8 +94,8 @@ Memory updates: `memory/alternative-data/{sentiment,cta-positioning,options,poli
 
 | Sub-Phase | Skill | Output |
 |-----------|-------|--------|
-| 2A | `skills/inst-institutional-flows/SKILL.md` | `institutional-flows.md` |
-| 2B | `skills/inst-hedge-fund-intel/SKILL.md` | `hedge-fund-intel.md` |
+| 2A | `skills/institutional/SKILL-institutional-flows.md` | `institutional-flows.md` |
+| 2B | `skills/institutional/SKILL-hedge-fund-intel.md` | `hedge-fund-intel.md` |
 
 Memory updates: `memory/institutional/{flows,hedge-funds}/ROLLING.md`
 
@@ -119,8 +110,8 @@ Memory updates: `memory/institutional/{flows,hedge-funds}/ROLLING.md`
 > The analytical anchor for all downstream work.
 > Every asset class analysis in Phases 4–5 must reference this regime.
 
-Skill: `skills/macro/SKILL.md`
-Output: `outputs/daily/{{DATE}}/macro.md`
+Skill: `skills/SKILL-macro.md`
+Output: `data/agent-cache/daily/{{DATE}}/macro.md`
 Memory: `memory/macro/ROLLING.md`
 
 **4-Factor Regime Model:**
@@ -142,11 +133,11 @@ Output: a regime label (e.g., `Growth Slowing / Inflation Sticky / Policy Tighte
 
 | Sub-Phase | Skill | Output |
 |-----------|-------|--------|
-| 4A | `skills/bonds/SKILL.md` | `bonds.md` |
-| 4B | `skills/commodities/SKILL.md` | `commodities.md` |
-| 4C | `skills/forex/SKILL.md` | `forex.md` |
-| 4D | `skills/crypto/SKILL.md` | `crypto.md` |
-| 4E | `skills/international/SKILL.md` | `international.md` |
+| 4A | `skills/SKILL-bonds.md` | `bonds.md` |
+| 4B | `skills/SKILL-commodities.md` | `commodities.md` |
+| 4C | `skills/SKILL-forex.md` | `forex.md` |
+| 4D | `skills/SKILL-crypto.md` | `crypto.md` |
+| 4E | `skills/SKILL-international.md` | `international.md` |
 
 Memory updates: `memory/{bonds,commodities,forex,crypto,international}/ROLLING.md`
 
@@ -165,18 +156,18 @@ Memory updates: `memory/{bonds,commodities,forex,crypto,international}/ROLLING.m
 
 | Sub-Phase | Skill | Output |
 |-----------|-------|--------|
-| 5A | `skills/equity/SKILL.md` | `us-equities.md` |
-| 5B | `skills/sector-technology/SKILL.md` | `sectors/technology.md` |
-| 5C | `skills/sector-healthcare/SKILL.md` | `sectors/healthcare.md` |
-| 5D | `skills/sector-energy/SKILL.md` | `sectors/energy.md` |
-| 5E | `skills/sector-financials/SKILL.md` | `sectors/financials.md` |
-| 5F | `skills/sector-consumer-staples/SKILL.md` | `sectors/consumer-staples.md` |
-| 5G | `skills/sector-consumer-disc/SKILL.md` | `sectors/consumer-disc.md` |
-| 5H | `skills/sector-industrials/SKILL.md` | `sectors/industrials.md` |
-| 5I | `skills/sector-utilities/SKILL.md` | `sectors/utilities.md` |
-| 5J | `skills/sector-materials/SKILL.md` | `sectors/materials.md` |
-| 5K | `skills/sector-real-estate/SKILL.md` | `sectors/real-estate.md` |
-| 5L | `skills/sector-comms/SKILL.md` | `sectors/comms.md` |
+| 5A | `skills/SKILL-equity.md` | `us-equities.md` |
+| 5B | `skills/sectors/SKILL-sector-technology.md` | `sectors/technology.md` |
+| 5C | `skills/sectors/SKILL-sector-healthcare.md` | `sectors/healthcare.md` |
+| 5D | `skills/sectors/SKILL-sector-energy.md` | `sectors/energy.md` |
+| 5E | `skills/sectors/SKILL-sector-financials.md` | `sectors/financials.md` |
+| 5F | `skills/sectors/SKILL-sector-consumer-staples.md` | `sectors/consumer-staples.md` |
+| 5G | `skills/sectors/SKILL-sector-consumer-disc.md` | `sectors/consumer-disc.md` |
+| 5H | `skills/sectors/SKILL-sector-industrials.md` | `sectors/industrials.md` |
+| 5I | `skills/sectors/SKILL-sector-utilities.md` | `sectors/utilities.md` |
+| 5J | `skills/sectors/SKILL-sector-materials.md` | `sectors/materials.md` |
+| 5K | `skills/sectors/SKILL-sector-real-estate.md` | `sectors/real-estate.md` |
+| 5L | `skills/sectors/SKILL-sector-comms.md` | `sectors/comms.md` |
 | 5M | *(orchestrator synthesis)* | Sector Scorecard (compiled into `DIGEST.md`) |
 
 Memory updates: `memory/equity/ROLLING.md` + all 11 `memory/sectors/{sector}/ROLLING.md`
@@ -210,13 +201,13 @@ SECTOR SCORECARD — {{DATE}}
 
 ---
 
-### Phase 7 — Master Synthesis: Digest Snapshot (JSON)
+### Phase 7 — Master Synthesis: DIGEST.md
 
 > Synthesis, not regurgitation. Pull the most important signals across all phases
 > into a coherent, actionable brief.
 
-Schema: `templates/digest-snapshot-schema.json` (immutable)
-Output: Supabase `daily_snapshots.snapshot` (jsonb) + Supabase `documents` row with `payload` + derived markdown `content`.
+Skill: `templates/master-digest.md` (structure template — immutable schema)
+Output: `data/agent-cache/daily/{{DATE}}/DIGEST.md`
 
 **Required DIGEST.md sections:**
 1. **Market Regime Snapshot** — single dominant force today
@@ -240,7 +231,7 @@ Output: Supabase `daily_snapshots.snapshot` (jsonb) + Supabase `documents` row w
 - For each ticker in `config/portfolio.json`, produces an independent conviction score
 - Also identifies 1–2 new opportunity candidates from the session's research
 
-Output: `outputs/daily/{{DATE}}/positions/{{TICKER}}.md` (one file per position)
+Output: `data/agent-cache/daily/{{DATE}}/positions/{{TICKER}}.md` (one file per position)
 
 ---
 
@@ -253,13 +244,13 @@ Output: `outputs/daily/{{DATE}}/positions/{{TICKER}}.md` (one file per position)
 - Reads all analyst outputs from `positions/`
 - Applies theme caps and weight constraints from `config/preferences.md`
 - Builds ideal target portfolio
-- Output: `outputs/daily/{{DATE}}/portfolio-recommended.md`
+- Output: `data/agent-cache/daily/{{DATE}}/portfolio-recommended.md`
 
 **Phase C — Comparison (weights unlocked):**
 - Loads `config/portfolio.json` with current weights
 - Diffs recommended vs current; applies ≥5% threshold to filter noise
 - Produces rebalance table: Hold / Add / Trim / Exit / New
-- Output: `outputs/daily/{{DATE}}/rebalance-decision.md`
+- Output: `data/agent-cache/daily/{{DATE}}/rebalance-decision.md`
 - Updates `config/portfolio.json` → `proposed_positions[]`
 - Appends to `memory/portfolio/ROLLING.md`
 
@@ -269,7 +260,7 @@ Output: `outputs/daily/{{DATE}}/positions/{{TICKER}}.md` (one file per position)
 
 ```bash
 python3 scripts/update-tearsheet.py   # recalculates NAV, writes dashboard-data.json
-./scripts/git-commit.sh               # digest commit (outputs + memory updates)
+./scripts/git-commit.sh               # commit config + memory (digest data lives in Supabase)
 ```
 
 The Python backend reads all `DIGEST.md` files chronologically, extracts Target Allocation statements via regex, fetches historical closes from Yahoo Finance (`yfinance`), simulates daily NAV tracking from the first entry date, computes performance metrics and drawdown, then writes `frontend/public/dashboard-data.json`.
@@ -284,14 +275,14 @@ The Next.js frontend reads from Supabase (primary) with static JSON fallback —
 
 | Sub-Phase | Action | Output File |
 |-----------|--------|-------------|
-| 9A | Source Scorecard: rate every data source (1–5 stars), log failures, record discoveries | `outputs/evolution/YYYY-MM-DD/sources.json` |
-| 9B | Quality Post-Mortem: check yesterday's predictions (✅/❌/⏳), rate digest on 5 dimensions (1–5 scale each) | `outputs/evolution/YYYY-MM-DD/quality-log.json` |
-| 9C | Improvement Proposals: max 2 per session, each specifying exact target file + change + rationale | `outputs/evolution/YYYY-MM-DD/proposals.json` |
+| 9A | Source Scorecard: rate every data source (1–5 stars), log failures, record discoveries | `data/agent-cache/daily/YYYY-MM-DD/evolution/sources.md` |
+| 9B | Quality Post-Mortem: check yesterday's predictions (✅/❌/⏳), rate digest on 5 dimensions (1–5 scale each) | `data/agent-cache/daily/YYYY-MM-DD/evolution/quality-log.md` |
+| 9C | Improvement Proposals: max 2 per session, each specifying exact target file + change + rationale | `data/agent-cache/daily/YYYY-MM-DD/evolution/proposals.md` |
 | 9D | Document applied proposals (approved in prior PRs) | `docs/evolution-changelog.md` |
 | 9E | Evolution branch + PR | `evolve/YYYY-MM-DD` — requires user approval to merge |
 
 **Guardrails — Phase 9 may NEVER propose changes to:**
-- Output schema / `templates/digest-snapshot-schema.json` (immutable)
+- Output schema / `templates/master-digest.md` section structure (immutable)
 - Risk profile or position sizing in `config/investment-profile.md` §4
 - These guardrails themselves
 
@@ -301,18 +292,14 @@ The Next.js frontend reads from Supabase (primary) with static JSON fallback —
 
 ---
 
-## Daily output layout
+## Daily Output File Map
 
-**Current (DB-first):** canonical artifacts are **`snapshot.json`**, **`delta-request.json`**, segment JSON under `outputs/daily/{DATE}/` (and `sectors/*.json`), portfolio JSON (`rebalance-decision.json`, etc.), then **`materialize_snapshot.py`** / **`update_tearsheet.py`** → Supabase. Markdown is derived for display.
-
-**Legacy filesystem tree** (historical reference; samples under `archive/legacy-outputs/daily/`):
-
-### Sunday baseline — legacy markdown layout
+### Sunday Baseline — 28+ output files
 
 ```
-outputs/daily/YYYY-MM-DD/
+data/agent-cache/daily/YYYY-MM-DD/
   _meta.json                        {"type":"baseline","week":"YYYY-Wnn"}
-  DIGEST.md                         Legacy master brief (Phase 7)
+  DIGEST.md                         Master synthesized brief (Phase 7)
   alt-data/
     sentiment-news.md               Phase 1A
     cta-positioning.md              Phase 1B
@@ -348,7 +335,7 @@ outputs/daily/YYYY-MM-DD/
 ### Mon–Sat Delta
 
 ```
-outputs/daily/YYYY-MM-DD/
+data/agent-cache/daily/YYYY-MM-DD/
   _meta.json                        {"type":"delta","baseline":"YYYY-MM-DD","delta_number":N}
   DIGEST.md                         Fully materialized digest (always present)
   DIGEST-DELTA.md                   Delta-only changes summary
@@ -472,7 +459,7 @@ React app at digiquant.io
 ```
 
 The Python parser:
-1. Scans all `outputs/daily/*/DIGEST.md` files chronologically
+1. Scans all `data/agent-cache/daily/*/DIGEST.md` files chronologically
 2. Extracts Target Allocation tables via regex → portfolio weights per date
 3. Fetches historical daily closes from Yahoo Finance (`yfinance`)
 4. Simulates NAV tracking from first entry date
@@ -487,37 +474,67 @@ The frontend is a static Next.js export deployed to GitHub Pages. Supabase is th
 
 ```
 digiquant-atlas/
-  RUNBOOK.md                         Single operational entry (DB-first)
-  CLAUDE.md                          Claude Code quick commands
+  CLAUDE.md                          Claude Code entry point
   AGENTS.md                          Cross-platform agent entry point
-  CLAUDE_PROJECT_INSTRUCTIONS.md     Claude.ai Projects pointers (paste: cowork/PROJECT-PROMPT.md)
+  CLAUDE_PROJECT_INSTRUCTIONS.md     Claude.ai Projects paste
   config/
     watchlist.md                     Tracked tickers + asset universe
-    investment-profile.md            Policy + preferences
+    preferences.md                   Trading style, risk profile, active theses
+    hedge-funds.md                   16 tracked funds (CIK, X handle, style)
+    data-sources.md                  30+ data URLs, X accounts, calendars
     portfolio.json                   Current positions + proposed_positions
-    hedge-funds.md, data-sources.md  Reference lists (see skills for usage)
-  skills/<slug>/SKILL.md             One package per skill (orchestrator, weekly-baseline, daily-delta, …)
-  memory/                            Append-only ROLLING.md logs
-  templates/schemas/                 JSON schemas for artifacts
+  skills/
+    SKILL-orchestrator.md            Master 9-phase pipeline driver
+    SKILL-weekly-baseline.md         Sunday full run entry point
+    SKILL-daily-delta.md             Mon-Sat delta run
+    SKILL-monthly-synthesis.md       Month-end synthesis
+    SKILL-macro.md                   Phase 3
+    SKILL-equity.md                  Phase 5A
+    SKILL-bonds.md                   Phase 4A
+    SKILL-commodities.md             Phase 4B
+    SKILL-forex.md                   Phase 4C
+    SKILL-crypto.md                  Phase 4D
+    SKILL-international.md           Phase 4E
+    SKILL-earnings.md                Earnings context
+    SKILL-deep-dive.md               Ad-hoc ticker research
+    SKILL-thesis.md                  Thesis builder
+    SKILL-thesis-tracker.md          Thesis reviewer
+    SKILL-sector-rotation.md         Sector rotation analysis
+    SKILL-sector-heatmap.md          Sector heatmap
+    SKILL-premarket-pulse.md         Pre-market scan
+    sectors/                         11 GICS sector skills (5B-5L)
+    alternative-data/                4 alt-data skills (1A-1D)
+    institutional/                   2 institutional skills (2A-2B)
+  memory/                            25 append-only research logs (see above)
+  templates/                         Output templates (master-digest.md schema is immutable)
   scripts/
-    run_db_first.py                  DB-first entrypoint (validate, ETL, execute-at-open)
-    materialize_snapshot.py          Publish digest snapshot JSON to Supabase
-    update_tearsheet.py              Parse artifacts → Supabase documents + metrics
-    validate_db_first.py             Supabase invariant checks
-    new-day.sh                       Print baseline/delta prompt
-    status.sh                        validate_db_first wrapper + memory count
-    git-commit.sh                    Commit outputs (runs ETL)
-    weekly-rollup.sh / monthly-rollup.sh   JSON scaffolds + prompts
-    fetch-market-data.sh, fetch-*.py, preload-history.py   Market data
-    memory-search.sh                 Search memory ROLLING.md files
-  archive/legacy-scripts/            Retired filesystem-first Bash helpers
-  archive/legacy-outputs/daily/      Historical markdown digests (read-only)
+    new-day.sh                       Auto-detect Sunday(baseline) vs weekday(delta)
+    new-week.sh                      Force baseline on any day
+    status.sh                        Health check
+    run-segment.sh                   Print single-segment prompt (--delta flag)
+    combine-digest.sh                Synthesis prompt printer
+    materialize.sh                   Build DIGEST.md from baseline + deltas
+    git-commit.sh                    Commit config/memory (--evolution for phase 9 branch)
+    update-tearsheet.py              Python dashboard backend
+    publish-update.sh                Push + deploy to GitHub Pages
+    monthly-rollup.sh                Monthly synthesis
+    memory-search.sh                 Grep all 25 ROLLING.md files
   agents/                            Named agent role definitions
-  frontend/                          Next.js app (app/, components/, lib/)
-  outputs/
-    weekly/, monthly/, deep-dives/   JSON-first artifacts (see RUNBOOK.md)
-    daily/                           Stub only (canonical data in Supabase)
-  docs/agentic/                      Architecture, workflows, platforms
+  frontend/                          React + Vite dashboard (digiquant.io)
+    src/pages/                       Dashboard, Portfolio, Signals, Sectors,
+                                     Architecture, BiasTracker, Config
+    public/dashboard-data.json       Generated by update-tearsheet.py
+  data/agent-cache/
+    daily/YYYY-MM-DD/                28+ files on baseline; deltas on weekdays
+    weekly/                          Weekly synthesis outputs
+    monthly/                         Monthly rollup outputs
+    deep-dives/                      Ad-hoc ticker research
+  docs/agentic/                      This documentation suite
+    ARCHITECTURE.md                  This file
+    MEMORY-SYSTEM.md                 Memory format spec
+    PLATFORMS.md                     Platform setup guides
+    SKILLS-CATALOG.md                Complete skill file catalog
+    WORKFLOWS.md                     Operational workflows
 ```
 
 ---

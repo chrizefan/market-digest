@@ -118,7 +118,7 @@ def main() -> int:
     )
     ap.add_argument(
         "artifact",
-        help="Path to JSON artifact file, or '-' for stdin (no repo outputs/ path required).",
+        help="Path to JSON artifact file, or '-' for stdin (no repo-local path required).",
     )
     args = ap.parse_args()
 

@@ -7,7 +7,7 @@ This is the **single authoritative** run instruction for digiquant-atlas.
 | Layer | When | What runs | Supabase impact |
 |--------|------|-----------|-----------------|
 | **GitHub — Daily Price Update** | Weekdays **22:00 UTC** (documented as ~**6:00 PM US Eastern** after NYSE close; exact local offset follows DST) | [`preload-history.py`](scripts/preload-history.py) (stale refresh) → [`compute-technicals.py`](scripts/compute-technicals.py) → macro ingest ([`ingest_fred.py`](scripts/ingest_fred.py), [`ingest_fx_frankfurter.py`](scripts/ingest_fx_frankfurter.py), [`ingest_crypto_fng.py`](scripts/ingest_crypto_fng.py), [`ingest_treasury_curve.py`](scripts/ingest_treasury_curve.py), [`ingest_sec_recent_filings.py`](scripts/ingest_sec_recent_filings.py)) | `price_history`, `price_technicals`, **`macro_series_observations`** (FRED, Frankfurter, Fear & Greed, Treasury: **`us_treasury`** XML when available + **`treasury_market`** Yahoo ^IRX/^FVX/^TNX/^TYX), **`sec_recent_filings`** (watchlist, last 14 days) — **no** digest, no agent research |
-| **Co-work / operator — research & portfolio** | Typically **pre-market** (e.g. 8:00 AM local) or per [`config/schedule.json`](config/schedule.json) | Agent produces JSON → [`run_db_first.py`](scripts/run_db_first.py) → [`update_tearsheet.py`](scripts/update_tearsheet.py) → [`execute_at_open.py`](scripts/execute_at_open.py) (optional) → [`validate_db_first.py`](scripts/validate_db_first.py) | `daily_snapshots`, `documents`, `positions`, `theses`, `position_events`, etc. |
+| **Co-work / operator — research & portfolio** | Typically **pre-market** (e.g. 8:00 AM local) or per [`config/schedule.json`](config/schedule.json) | Agent validates + publishes JSON to Supabase (`materialize_snapshot.py`, `publish_document.py`, …) → operator runs [`run_db_first.py`](scripts/run_db_first.py) (optional disk checks → metrics → `execute_at_open.py` → [`validate_db_first.py`](scripts/validate_db_first.py)) | `daily_snapshots`, `documents`, `positions`, `theses`, `position_events`, etc. |
 
 ### Daily portfolio continuity (post-close)
 
@@ -28,7 +28,7 @@ The weekday GitHub job runs [`refresh_performance_metrics.py --fill-calendar-thr
 
 **Claude Cowork:** project briefing and scheduled task recipes live under [`cowork/`](cowork/) — see [`cowork/README.md`](cowork/README.md) and paste [`cowork/PROJECT-PROMPT.md`](cowork/PROJECT-PROMPT.md) into the Cowork project instructions. **First-time setup:** [`cowork/SETUP-ATLAS-COWORK.md`](cowork/SETUP-ATLAS-COWORK.md) (agent-driven wizard → `cowork/OPERATOR-COWORK.md` + `config/schedule.json` → `cowork_operator`).
 
-**Weekly baseline vs weekly reminder:** [`scripts/run_db_first.py`](scripts/run_db_first.py) treats **Sunday** as **baseline** and other days as **delta** (unless `--baseline` / `--delta`). [`.github/workflows/weekly-check.yml`](.github/workflows/weekly-check.yml) is a **Friday reminder** to publish the **`weekly_digest` JSON** to Supabase (`document_key` e.g. `weekly/YYYY-Www.json`) — not a filesystem `outputs/weekly/*.md` requirement.
+**Weekly baseline vs weekly reminder:** [`scripts/run_db_first.py`](scripts/run_db_first.py) treats **Sunday** as **baseline** and other days as **delta** (unless `--baseline` / `--delta`). [`.github/workflows/weekly-check.yml`](.github/workflows/weekly-check.yml) is a **Friday reminder** to publish the **`weekly_digest` JSON** to Supabase (`document_key` e.g. `weekly/YYYY-Www.json`) — not a filesystem `data/agent-cache/weekly/*.md` requirement.
 
 ## Two tracks (research vs portfolio)
 
@@ -55,9 +55,10 @@ Do **not** store a third “full compiled markdown” copy per weekday. The UI s
 
 ## Canonical principles
 - **Supabase is the source of truth** for daily snapshots, documents, positions, theses, NAV, and metrics.
-- **JSON payloads are canonical**. Markdown is always **derived** for display. Agents should **`validate_artifact.py -`** and **`publish_document.py --payload -`** (stdin) so hosted runs do not depend on repo `outputs/` paths; that directory is **gitignored**.
+- **JSON payloads are canonical**. Markdown is always **derived** for display. Agents should **`validate_artifact.py -`** and **`publish_document.py --payload -`** (stdin) so hosted runs need no repo-local files. Optional JSON under **`data/agent-cache/`** is **gitignored** scratch for local validation only.
 - **Daily operator run** publishes structured artifacts → validates DB state → optionally records position events as executed at **market open (Mon–Fri)** (see backfill above).
-- **Legacy markdown-era trees** are not shipped in git; optional local copies under `archive/legacy-outputs/` for backfill only (see `archive/legacy-outputs/README.md`).
+- **Disk migration:** if you have an external export of old daily folders, copy them into `data/agent-cache/daily/` (gitignored) before running backfill scripts — see below.
+- **Retired `outputs/` path:** the repo must not depend on an `outputs/` directory (it is **gitignored** if recreated). Before deleting any local copy, confirm Supabase is canonical: `python3 scripts/verify_supabase_canonical.py` and optional `--date YYYY-MM-DD` for days you care about.
 
 ## Environment requirements
 1. Python 3.11+ recommended.
@@ -95,9 +96,8 @@ Common flags:
 - `--dry-run` (print what would happen; no writes)
 - `--skip-execute` (skip `execute_at_open.py` — use after **Track A** research-only runs)
 - `--validate-mode {full,research,pm}` (passed to [`validate_db_first.py`](scripts/validate_db_first.py); default `full`)
-- `--legacy-markdown-tearsheet` (run [`update_tearsheet.py`](scripts/update_tearsheet.py) after validation — only if you still maintain `outputs/daily/*.md`)
 
-**Default:** after optional JSON validation under `outputs/daily/<date>/`, the entrypoint runs [`refresh_performance_metrics.py --supabase --fill-calendar-through <date>`](scripts/refresh_performance_metrics.py) (no markdown digest parse).
+**Default:** after optional JSON validation under `data/agent-cache/daily/<date>/`, the entrypoint runs [`refresh_performance_metrics.py --supabase --fill-calendar-through <date>`](scripts/refresh_performance_metrics.py). Run [`update_tearsheet.py`](scripts/update_tearsheet.py) separately when recovering from disk-backed markdown or partial publishes.
 
 ## What gets produced (canonical artifacts)
 ### Daily baseline/delta (stored in Supabase)
@@ -123,33 +123,33 @@ Common flags:
 - `evolution_sources`, `evolution_quality_log`, `evolution_proposals` — schemas under `templates/schemas/evolution-*.schema.json`.
 - Optional scaffold: `./scripts/scaffold_evolution_day.sh [YYYY-MM-DD]` then publish each JSON with `publish_document.py`.
 
-## Publish steps (what the entrypoint does)
-The entrypoint coordinates:
-1. Determine run type (baseline vs delta) + baseline anchor date (from Supabase).
-2. Validate JSON artifacts using `scripts/validate_artifact.py`.
-3. Publish daily snapshot via `scripts/materialize_snapshot.py`.
-4. Publish other artifacts via `scripts/publish_document.py`.
-5. Refresh NAV/metrics via `scripts/update_tearsheet.py` (and/or `scripts/refresh_performance_metrics.py`).
-6. Record “market-open execution” into `position_events` using `price_history.open` and the latest rebalance decision.
-7. Validate DB state (`validate_db_first.py --mode full|research|pm`) and exit non-zero if missing.
+## What `run_db_first.py` does (post-publish)
+After artifacts are already in Supabase, `run_db_first.py`:
+1. Prints run-type guidance (baseline Sunday vs weekday delta).
+2. Optionally validates any JSON files present under `data/agent-cache/daily/<date>/` via `scripts/validate_artifact.py`.
+3. Runs `scripts/refresh_performance_metrics.py --supabase --fill-calendar-through <date>`.
+4. Runs `scripts/execute_at_open.py` unless `--skip-execute`.
+5. Runs `scripts/validate_db_first.py --date <date> --mode <full|research|pm>` and exits non-zero if checks fail (`run_db_first.py` exposes this as `--validate-mode`).
+
+**Publishing** (agent / operator, before this script): `materialize_snapshot.py`, `publish_document.py`, and related validators — see [`docs/ops/SCRIPTS.md`](docs/ops/SCRIPTS.md).
 
 ## Backfill disk → Supabase (migration / recovery only)
 
-If you have a **local** tree (not in git) under `outputs/daily/` or a copy of `archive/legacy-outputs/daily/`, you can replay into Supabase:
+If you have a **local** tree under `data/agent-cache/daily/` (gitignored), you can replay into Supabase:
 
-1. **Legacy markdown era:** copy trees into a writable `outputs/daily/` on your machine, then materialize and refresh documents/metrics:
-   - [`scripts/backfill-historical-daily-to-supabase.sh`](scripts/backfill-historical-daily-to-supabase.sh) — run [`scripts/backfill-db-first-digest.sh`](scripts/backfill-db-first-digest.sh), then `update_tearsheet.py`.
-   - Override with `LEGACY_ROOT`, `BASELINE_DATE`, `LAST_DATE`, or `SKIP_COPY=1` if `outputs/daily/` is already populated locally.
+1. **Markdown-era exports:** populate `data/agent-cache/daily/` (manually or by setting **`LEGACY_ROOT`** to a directory that contains `YYYY-MM-DD/` folders when you run the copy step), then materialize and refresh documents/metrics:
+   - [`scripts/backfill-historical-daily-to-supabase.sh`](scripts/backfill-historical-daily-to-supabase.sh) — copies from **`LEGACY_ROOT`** unless **`SKIP_COPY=1`**, then runs [`scripts/backfill-db-first-digest.sh`](scripts/backfill-db-first-digest.sh), then `update_tearsheet.py`.
+   - Override **`BASELINE_DATE`**, **`LAST_DATE`**, or use **`SKIP_COPY=1`** if `data/agent-cache/daily/` is already populated.
 2. **Requires** `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` (e.g. `config/supabase.env`).
-3. Afterward: `python3 scripts/validate_db_first.py --validate-mode full`.
+3. Afterward: `python3 scripts/validate_db_first.py --mode full`.
 
 **Note:** `delta-request.json` is applied to the **previous calendar day’s** row in `daily_snapshots` (`--baseline-date`); ops must match that chain. Stub `snapshot.json` files are ignored when a rich `delta-request.json` exists (see backfill script).
 
-**Retrofit legacy markdown deltas:** If you only have `DIGEST-DELTA.md` under `archive/legacy-outputs/daily/<date>/`, generate schema-valid `delta-request.json` (and optionally mirror under `outputs/daily/<date>/`) with:
+**Retrofit markdown deltas:** Copy `DIGEST-DELTA.md` into `data/agent-cache/daily/<date>/`, then generate colocated `delta-request.json` with:
 
-`python3 scripts/retrofit_delta_requests.py --also-copy-to-outputs`
+`python3 scripts/retrofit_delta_requests.py`
 
-Re-run with `--force` to overwrite. Uses [`scripts/legacy_delta_to_ops.py`](scripts/legacy_delta_to_ops.py) (regex + narrative/sector pointer fixes).
+Re-run with `--force` to overwrite. Uses [`scripts/legacy_delta_to_ops.py`](scripts/legacy_delta_to_ops.py) (regex + narrative/sector pointer fixes). To copy from an external daily export into `data/agent-cache/daily/` first, set **`LEGACY_ROOT`** when running [`scripts/backfill-historical-daily-to-supabase.sh`](scripts/backfill-historical-daily-to-supabase.sh).
 
 ## DB validation modes ([`validate_db_first.py`](scripts/validate_db_first.py))
 
