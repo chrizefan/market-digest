@@ -43,7 +43,7 @@ DAILY_DIR = AGENT_CACHE_ROOT / "daily"
 PORTFOLIO_JSON = ROOT / "config" / "portfolio.json"
 
 # Benchmarks for comparison
-BENCHMARKS = ["SPY", "QQQ", "TLT", "GLD"]
+BENCHMARKS = ["SPY", "QQQ", "IWM", "EEM", "TLT", "GLD", "IBIT"]
 
 
 def load_portfolio_json():

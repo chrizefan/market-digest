@@ -26,6 +26,43 @@ export function parseDateRangeKey(v: string | null): DateRangeKey {
   return 'itd';
 }
 
+export type PerformanceChartView =
+  | 'nav'
+  | 'drawdown'
+  | 'daily_returns'
+  | 'allocation'
+  | 'cash'
+  | 'rolling';
+
+export function parseChartViewKey(v: string | null): PerformanceChartView {
+  const allowed: PerformanceChartView[] = [
+    'nav',
+    'drawdown',
+    'daily_returns',
+    'allocation',
+    'cash',
+    'rolling',
+  ];
+  if (v && allowed.includes(v as PerformanceChartView)) return v as PerformanceChartView;
+  return 'nav';
+}
+
+/** Per-day return % and NAV re-based to 100 at range start (for combo chart). */
+export function buildDailyReturnsWithNavIndex(
+  snaps: NavChartPoint[]
+): Array<{ date: string; dailyPct: number | null; navIndex: number }> {
+  if (!snaps.length) return [];
+  const base = snaps[0].nav;
+  return snaps.map((s, i) => {
+    const navIndex = base > 0 ? (s.nav / base) * 100 : 100;
+    if (i === 0) return { date: s.date, dailyPct: null, navIndex };
+    const prev = snaps[i - 1].nav;
+    const dailyPct =
+      prev > 0 ? ((s.nav - prev) / prev) * 100 : null;
+    return { date: s.date, dailyPct, navIndex };
+  });
+}
+
 /** Underwater series (% from running peak). */
 export function buildDrawdownSeries(snaps: NavChartPoint[]): Array<{ date: string; drawdown: number }> {
   if (!snaps.length) return [];
