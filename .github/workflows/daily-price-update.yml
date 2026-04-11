@@ -81,9 +81,11 @@ jobs:
             --supabase \
             $TICKER_ARG
 
-      - name: Refresh position & NAV metrics (after closes)
+      # Carry-forward positions + portfolio_metrics for each calendar day through today (UTC)
+      # so timelines stay dense when no digest ran (see RUNBOOK — daily portfolio continuity).
+      - name: Refresh position, NAV & portfolio_metrics (calendar fill)
         run: |
-          python3 scripts/refresh_performance_metrics.py --supabase
+          python3 scripts/refresh_performance_metrics.py --supabase --fill-calendar-through "$(date -u +%Y-%m-%d)"
 
       - name: Verify row counts
         run: |

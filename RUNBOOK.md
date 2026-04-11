@@ -6,8 +6,21 @@ This is the **single authoritative** run instruction for digiquant-atlas.
 
 | Layer | When | What runs | Supabase impact |
 |--------|------|-----------|-----------------|
-| **GitHub — Daily Price Update** | Weekdays **22:00 UTC** (documented as ~**6:00 PM US Eastern** after NYSE close; exact local offset follows DST) | [`preload-history.py`](scripts/preload-history.py) → [`compute-technicals.py`](scripts/compute-technicals.py) → [`refresh_performance_metrics.py`](scripts/refresh_performance_metrics.py) | `price_history`, `price_technicals`, position/NAV **metrics** aligned to **closes** — **no** digest, no agent research |
+| **GitHub — Daily Price Update** | Weekdays **22:00 UTC** (documented as ~**6:00 PM US Eastern** after NYSE close; exact local offset follows DST) | [`preload-history.py`](scripts/preload-history.py) → [`compute-technicals.py`](scripts/compute-technicals.py) → [`refresh_performance_metrics.py --fill-calendar-through`](scripts/refresh_performance_metrics.py) | `price_history`, `price_technicals`, dense **`positions`** / **`nav_history`** / **`portfolio_metrics`** per calendar day (carry-forward when no digest) — **no** digest, no agent research |
 | **Co-work / operator — research & portfolio** | Typically **pre-market** (e.g. 8:00 AM local) or per [`config/schedule.json`](config/schedule.json) | Agent produces JSON → [`run_db_first.py`](scripts/run_db_first.py) → [`update_tearsheet.py`](scripts/update_tearsheet.py) → [`execute_at_open.py`](scripts/execute_at_open.py) (optional) → [`validate_db_first.py`](scripts/validate_db_first.py) | `daily_snapshots`, `documents`, `positions`, `theses`, `position_events`, etc. |
+
+### Daily portfolio continuity (post-close)
+
+The weekday GitHub job runs [`refresh_performance_metrics.py --fill-calendar-through`](scripts/refresh_performance_metrics.py) to **today (UTC)** so you get a **dense calendar** in Supabase even when no digest ran:
+
+1. Refreshes performance columns on the **latest** existing `positions` date (same weights; closes from `price_history`).
+2. For each **calendar day** after that through the target date: if `positions` has no rows for that date, **clones** the prior day (carry-forward), then updates per-position metrics, `nav_history`, and **`portfolio_metrics`** with `computed_from='refresh_script'`.
+3. **Does not overwrite** `portfolio_metrics` rows written by `update_tearsheet.py` (`computed_from='tearsheet'`). Sharpe / vol / drawdown / alpha on script-written days are **carried forward** from the previous metrics row until the next tearsheet recompute.
+
+**Manual backfill** (e.g. fill gaps after prices exist):  
+`python3 scripts/refresh_performance_metrics.py --supabase --fill-calendar-through YYYY-MM-DD`
+
+**Limitation:** `--fill-calendar-through` advances from the **latest** `positions` snapshot date forward only; it does not scan for **holes** on earlier dates. For a missing day *before* your latest snapshot, run once with `--date YYYY-MM-DD` (after `price_history` has that day).
 
 **Claude Cowork:** project briefing and scheduled task recipes live under [`cowork/`](cowork/) — see [`cowork/README.md`](cowork/README.md) and paste [`cowork/PROJECT-PROMPT.md`](cowork/PROJECT-PROMPT.md) into the Cowork project instructions. **First-time setup:** [`cowork/SETUP-ATLAS-COWORK.md`](cowork/SETUP-ATLAS-COWORK.md) (agent-driven wizard → `cowork/OPERATOR-COWORK.md` + `config/schedule.json` → `cowork_operator`).
 
