@@ -8,7 +8,7 @@ Step-by-step procedures for every recurring workflow.
 
 | Workflow | Schedule | Role |
 |----------|----------|------|
-| [`daily-price-update.yml`](../../.github/workflows/daily-price-update.yml) | **Mon–Fri 22:00 UTC** (~6:00 PM US Eastern after cash close, per workflow comments) | Refresh `price_history` / `price_technicals`, then [`refresh_performance_metrics.py --fill-calendar-through`](../../scripts/refresh_performance_metrics.py) (dense `positions` / `nav_history` / `portfolio_metrics` per calendar day). Does **not** run digest, `update_tearsheet.py`, or research. |
+| [`daily-price-update.yml`](../../.github/workflows/daily-price-update.yml) | **Mon–Fri 22:00 UTC** (~6:00 PM US Eastern after cash close, per workflow comments) | [`preload-history.py --incremental-supabase`](../../scripts/preload-history.py) → `price_technicals` → [`refresh_performance_metrics.py --fill-calendar-through`](../../scripts/refresh_performance_metrics.py). Manual **full history** = one-shot `--period max`. Does **not** run digest, `update_tearsheet.py`, or research. |
 | [`weekly-check.yml`](../../.github/workflows/weekly-check.yml) | **Fri 16:00 UTC** | Checks for a local `outputs/weekly/` file only — **not** the same as **Sunday baseline** in [`run_db_first.py`](../../scripts/run_db_first.py). |
 | [`ci.yml`](../../.github/workflows/ci.yml), [`deploy.yml`](../../.github/workflows/deploy.yml) | On push / manual | Build and deploy. |
 

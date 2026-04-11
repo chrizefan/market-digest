@@ -9,15 +9,18 @@ on:
     - cron: "0 22 * * 1-5"   # Mon–Fri 22:00 UTC = 6:00 PM ET (≈2h after NYSE close)
   workflow_dispatch:
     inputs:
-      period:
+      full_history:
         description: >
-          yfinance lookback for each download (1mo, 2y, 5y, max). This is how far back
-          Yahoo data is fetched for tickers being updated — not “only update 5 days in Supabase”.
-          Use 2y for normal runs (matches script default). Use max or 5y after long outages.
+          One-time / rare: full Yahoo pull for watchlist (uses period, default max).
+          Leave unchecked for normal runs: incremental from last Supabase row per ticker.
+        type: boolean
+        default: false
+      period:
+        description: "Only when full_history is true — yfinance lookback (max, 5y, 2y)."
         required: false
-        default: "2y"
+        default: "max"
       ticker:
-        description: "Optional: one ticker only (e.g. GLD). Leave blank for full watchlist + same logic as schedule."
+        description: "Optional: one ticker. With full_history, full period for that ticker only; else incremental for that ticker only."
         required: false
         default: ""
 
@@ -41,31 +44,28 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # Scheduled run: refresh any tickers with stale cache (>1 day)
-      - name: Refresh stale tickers (scheduled)
+      # Incremental: Yahoo only since (latest Supabase date - overlap); merge into runner
+      # cache for compute-technicals; upsert calendar-expanded Yahoo window only.
+      - name: Incremental price sync (scheduled)
         if: github.event_name == 'schedule'
         run: |
-          python3 scripts/preload-history.py \
-            --refresh \
-            --max-stale-days 1 \
-            --supabase
+          python3 scripts/preload-history.py --supabase --incremental-supabase
 
-      # Manual run: same strategy as schedule when ticker is blank (refresh stale tickers);
-      # period defaults to 2y so we do not truncate history to a short window (unlike old 5d default).
       - name: Update prices (manual dispatch)
         if: github.event_name == 'workflow_dispatch'
         run: |
+          TICKER="${{ github.event.inputs.ticker }}"
+          FULL="${{ github.event.inputs.full_history }}"
           PERIOD="${{ github.event.inputs.period }}"
-          ARGS="--supabase"
-          if [ -n "$PERIOD" ]; then
-            ARGS="$ARGS --period $PERIOD"
-          fi
-          if [ -n "${{ github.event.inputs.ticker }}" ]; then
-            ARGS="$ARGS --ticker ${{ github.event.inputs.ticker }}"
+          if [ "$FULL" = "true" ]; then
+            ARGS="--supabase --period ${PERIOD:-max}"
+            [ -n "$TICKER" ] && ARGS="$ARGS --ticker $TICKER"
+            python3 scripts/preload-history.py $ARGS
           else
-            ARGS="$ARGS --refresh --max-stale-days 1"
+            ARGS="--supabase --incremental-supabase"
+            [ -n "$TICKER" ] && ARGS="$ARGS --ticker $TICKER"
+            python3 scripts/preload-history.py $ARGS
           fi
-          python3 scripts/preload-history.py $ARGS
 
       # After prices are up-to-date, recompute TA indicators for last 7 days.
       # 7 days covers: Mon catching up Fri's row, rolling indicators that depend
