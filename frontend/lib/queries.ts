@@ -553,8 +553,9 @@ export async function getDocumentContentById(
 }
 
 /**
- * Markdown compiled from before/after snapshots for inline digest diff in the library.
- * Does not require non-empty changed_paths — diffs full rendered digest when a delta-request row exists.
+ * Markdown compiled from before/after snapshots for digest diff in the library.
+ * When `delta-request.json` exists for the date, uses its baseline and change counts.
+ * Otherwise still diffs vs the latest prior `daily_snapshots` row (changeCount 0).
  */
 export async function getDigestMarkdownDiffPair(targetDate: string): Promise<{
   compareDate: string;
@@ -578,41 +579,48 @@ export async function getDigestMarkdownDiffPair(targetDate: string): Promise<{
 
   if (deltaErr) throw deltaErr;
   const deltaPick = deltaRow as Pick<TableRow<'documents'>, 'payload'> | null;
-  if (!deltaPick?.payload) return null;
 
-  const meta = parseDeltaPayload(deltaPick.payload);
-  const changeCount = new Set([...meta.changed_paths, ...meta.op_paths].filter(Boolean)).size;
+  let changeCount = 0;
+  let compareDate = '';
 
-  let compareDate = meta.baseline_date;
-  if (!compareDate || compareDate === targetDate) {
-    const { data: prev } = await supabase
+  if (deltaPick?.payload) {
+    const meta = parseDeltaPayload(deltaPick.payload);
+    changeCount = new Set([...meta.changed_paths, ...meta.op_paths].filter(Boolean)).size;
+    const baseline = meta.baseline_date;
+    if (baseline && baseline !== targetDate) {
+      compareDate = baseline;
+    }
+  }
+
+  if (!compareDate) {
+    const { data: prev, error: prevErr } = await supabase
       .from('daily_snapshots')
       .select('date')
       .lt('date', targetDate)
       .order('date', { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (prevErr) throw prevErr;
     compareDate = (prev as Pick<TableRow<'daily_snapshots'>, 'date'> | null)?.date ?? '';
   }
   if (!compareDate) return null;
 
   const { data: snaps, error: snapErr } = await supabase
     .from('daily_snapshots')
-    .select('date, snapshot')
+    .select('date, snapshot, digest_markdown')
     .in('date', [targetDate, compareDate]);
 
   if (snapErr) throw snapErr;
-  const byDate: Record<string, unknown> = {};
-  const snapRows = (snaps ?? []) as Pick<TableRow<'daily_snapshots'>, 'date' | 'snapshot'>[];
-  for (const s of snapRows) {
-    if (s?.date) byDate[s.date] = s.snapshot;
+
+  type SnapPick = Pick<TableRow<'daily_snapshots'>, 'date' | 'snapshot' | 'digest_markdown'>;
+  const byDate = new Map<string, SnapPick>();
+  for (const s of (snaps ?? []) as SnapPick[]) {
+    if (s?.date) byDate.set(s.date, s);
   }
 
-  const beforeObj = byDate[compareDate];
-  const afterObj = byDate[targetDate];
-  if (afterObj == null || (typeof afterObj !== 'object' && typeof afterObj !== 'string')) {
-    return null;
-  }
+  const beforeRow = byDate.get(compareDate);
+  const afterRow = byDate.get(targetDate);
+  if (!beforeRow || !afterRow) return null;
 
   function parseSnap(v: unknown): unknown {
     if (v == null) return {};
@@ -626,17 +634,20 @@ export async function getDigestMarkdownDiffPair(targetDate: string): Promise<{
     return typeof v === 'object' ? v : {};
   }
 
-  const beforeParsed = parseSnap(beforeObj) as DigestSnapshot;
-  const afterParsed = parseSnap(afterObj) as DigestSnapshot;
-
-  let beforeMarkdown: string;
-  let afterMarkdown: string;
-  try {
-    beforeMarkdown = renderDigestMarkdownFromSnapshot(beforeParsed);
-    afterMarkdown = renderDigestMarkdownFromSnapshot(afterParsed);
-  } catch {
-    return null;
+  function markdownFromRow(row: SnapPick): string {
+    const dm = row.digest_markdown?.trim();
+    if (dm) return dm;
+    const parsed = parseSnap(row.snapshot) as DigestSnapshot;
+    try {
+      return renderDigestMarkdownFromSnapshot(parsed);
+    } catch {
+      return '';
+    }
   }
+
+  const beforeMarkdown = markdownFromRow(beforeRow);
+  const afterMarkdown = markdownFromRow(afterRow);
+  if (!afterMarkdown.trim()) return null;
 
   return {
     compareDate,
