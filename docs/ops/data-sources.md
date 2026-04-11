@@ -192,7 +192,7 @@ The **Daily Price Update** GitHub workflow (and local scripts) upsert long-horiz
 | US Treasury / Yahoo | `scripts/ingest_treasury_curve.py` | `us_treasury` when Treasury XML has entries; always **`treasury_market`** (^IRX/^FVX/^TNX/^TYX) for 3M/5Y/10Y/30Y — no API key |
 | SEC EDGAR | *Ad hoc* (browser or **`sec-edgar`** MCP) | Major **issuer** filings when research/delta/deep-dive calls for it — not batch-ingested; watchlist ETFs are low-signal for EDGAR. Set **`SEC_EDGAR_USER_AGENT`** for MCP per [`config/mcp.secrets.env.example`](../../config/mcp.secrets.env.example). |
 
-Schemas: [`015_macro_series_observations.sql`](../../supabase/migrations/015_macro_series_observations.sql). Legacy table **`sec_recent_filings`** removed by [`017_drop_sec_recent_filings.sql`](../../supabase/migrations/017_drop_sec_recent_filings.sql).
+Schemas: [`015_macro_series_observations.sql`](../../supabase/migrations/015_macro_series_observations.sql). **`sec_recent_filings`** is removed by [`017_drop_sec_recent_filings.sql`](../../supabase/migrations/017_drop_sec_recent_filings.sql) after legacy [`016`](../../supabase/migrations/016_sec_recent_filings.sql) (keep both files for migration history).
 
 ### Treasury Yield Curve URL
 ```

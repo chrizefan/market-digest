@@ -1,4 +1,4 @@
--- Recent SEC EDGAR filings for watchlist issuers (ingest_sec_recent_filings.py).
+-- Recent SEC EDGAR filings (legacy). Dropped in 017_drop_sec_recent_filings.sql; batch ingest removed from repo.
 
 CREATE TABLE IF NOT EXISTS sec_recent_filings (
   cik              text        NOT NULL,
