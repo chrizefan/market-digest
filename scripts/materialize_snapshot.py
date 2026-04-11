@@ -378,6 +378,15 @@ def _upsert_snapshot(snapshot: Dict[str, Any], digest_markdown: Optional[str]) -
     if pos_rows:
         for r in pos_rows:
             _safe_upsert("positions", r, on_conflict="date,ticker")
+        # Remove stale tickers for this date (carry-forward refresh can leave exited names).
+        keep_tickers = {r["ticker"] for r in pos_rows if r.get("ticker")}
+        d = snapshot["date"]
+        sb = _sb()
+        existing = sb.table("positions").select("ticker").eq("date", d).execute()
+        for row in getattr(existing, "data", None) or []:
+            tk = row.get("ticker")
+            if tk and tk not in keep_tickers:
+                sb.table("positions").delete().eq("date", d).eq("ticker", tk).execute()
 
     # Theses table
     thesis_rows = []
