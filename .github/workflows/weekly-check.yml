@@ -1,26 +1,19 @@
 name: Weekly Rollup Reminder
 
+# Reminder only: canonical weekly rollups live in Supabase (`documents`), not in git.
+# `outputs/` is gitignored — do not rely on a tracked filesystem artifact in CI.
+
 on:
   schedule:
-    # Runs every Friday at 4pm UTC (adjust to your timezone)
     - cron: '0 16 * * 5'
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
 
 jobs:
   weekly-reminder:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Check for weekly output
+      - name: Reminder
         run: |
-          WEEK=$(date +%V)
-          YEAR=$(date +%Y)
-          WEEK_FILE="outputs/weekly/${YEAR}-W${WEEK}.md"
-          if [ ! -f "$WEEK_FILE" ]; then
-            echo "⚠️  Weekly rollup not yet generated for W${WEEK}"
-            echo "Run: ./scripts/weekly-rollup.sh"
-          else
-            echo "✅ Weekly rollup exists: $WEEK_FILE"
-          fi
+          echo "Weekly rollup: author weekly_digest JSON (templates/schemas/weekly-digest.schema.json),"
+          echo "validate (validate_artifact.py -) and publish_document.py --payload - with document_key weekly/YYYY-Www.json."
+          echo "See RUNBOOK.md and scripts/weekly-rollup.sh for scaffold + prompts."
