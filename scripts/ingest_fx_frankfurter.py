@@ -48,10 +48,19 @@ def fetch_range(start: str, end: str, base: str, symbols: list[str]) -> dict:
     return r.json()
 
 
-def payload_to_rows(payload: dict, base: str, symbols: list[str]) -> list[dict]:
+def payload_to_rows(
+    payload: dict,
+    base: str,
+    symbols: list[str],
+    date_min: str,
+    date_max: str,
+) -> list[dict]:
+    """Frankfurter often returns one extra day outside the requested range at year boundaries."""
     rates = payload.get("rates") or {}
     rows: list[dict] = []
     for obs_date, day_rates in sorted(rates.items()):
+        if obs_date < date_min or obs_date > date_max:
+            continue
         if not isinstance(day_rates, dict):
             continue
         for sym in symbols:
@@ -133,7 +142,7 @@ def main() -> int:
     for s, e in iter_year_chunks(start_d, end_d):
         print(f"  Fetch {s} .. {e} base={base} …")
         payload = fetch_range(s, e, base, symbols)
-        rows = payload_to_rows(payload, base, symbols)
+        rows = payload_to_rows(payload, base, symbols, s, e)
         all_rows.extend(rows)
         print(f"    -> {len(rows)} row fragments")
 

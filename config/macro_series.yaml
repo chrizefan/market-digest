@@ -81,9 +81,6 @@ fred:
     - id: ICSA
       title: "Initial jobless claims (weekly)"
       unit: persons
-    - id: VVIXCLS
-      title: "CBOE VVIX (vol of VIX)"
-      unit: index
 
 frankfurter:
   base: USD
