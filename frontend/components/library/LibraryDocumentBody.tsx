@@ -6,17 +6,28 @@ import type { LibraryDocumentView } from '@/lib/queries';
 import RebalanceDocumentView from './RebalanceDocumentView';
 import DeltaRequestDocumentView from './DeltaRequestDocumentView';
 import DeliberationDocumentView from './DeliberationDocumentView';
+import DigestDocumentView from './DigestDocumentView';
 import EvolutionSourcesDocumentView from './EvolutionSourcesDocumentView';
 
 export default function LibraryDocumentBody({
   view,
   markdown,
   payload,
+  documentKey,
+  docDate,
 }: {
   view: LibraryDocumentView;
   markdown: string;
   payload: Record<string, unknown> | null;
+  documentKey: string;
+  docDate: string;
 }) {
+  const isDigest = (documentKey || '').toLowerCase() === 'digest';
+
+  if (view === 'markdown' && isDigest && docDate) {
+    return <DigestDocumentView key={docDate} docDate={docDate} fallbackMarkdown={markdown} />;
+  }
+
   switch (view) {
     case 'rebalance':
       return <RebalanceDocumentView payload={payload} fallbackMarkdown={markdown} />;

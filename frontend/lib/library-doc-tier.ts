@@ -104,3 +104,17 @@ export function docAffectedByDeltaPaths(docPath: string, changedPaths: string[])
     return low.includes(stem.replace(/-/g, '')) || low.includes(stem.replace(/-/g, '_')) || low.includes(`/${stem}`) || low.includes(`/${stem.replace(/-/g, '_')}`);
   });
 }
+
+/** Count distinct delta paths (changed_paths ∪ op_paths) that map to this library row. */
+export function countDeltaTouchesForDoc(
+  docPath: string,
+  changedPaths: string[],
+  opPaths: string[]
+): number {
+  const unique = [...new Set([...changedPaths, ...opPaths].filter(Boolean))];
+  let n = 0;
+  for (const p of unique) {
+    if (docAffectedByDeltaPaths(docPath, [p])) n += 1;
+  }
+  return n;
+}

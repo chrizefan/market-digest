@@ -13,7 +13,6 @@ import type {
   BenchmarkHistoryMap,
   DeltaRequestMeta,
 } from './types';
-import { getJsonAtPointer, stringifyJsonish } from './json-pointer';
 import { renderDigestMarkdownFromSnapshot, type DigestSnapshot } from './render-digest-from-snapshot';
 import { renderDocumentMarkdownFromPayload } from './render-document-from-payload';
 import { DASHBOARD_BENCHMARK_TICKERS } from './benchmark-tickers';
@@ -553,12 +552,16 @@ export async function getDocumentContentById(
   return { id: r.id, content: r.markdown };
 }
 
-/** Snapshot JSON diff for a day that has delta-request.json (baseline vs target date). */
-export async function getLibrarySnapshotDiff(targetDate: string): Promise<{
+/**
+ * Markdown compiled from before/after snapshots for inline digest diff in the library.
+ * Does not require non-empty changed_paths — diffs full rendered digest when a delta-request row exists.
+ */
+export async function getDigestMarkdownDiffPair(targetDate: string): Promise<{
   compareDate: string;
   targetDate: string;
-  paths: string[];
-  diffs: Array<{ path: string; beforeText: string; afterText: string }>;
+  changeCount: number;
+  beforeMarkdown: string;
+  afterMarkdown: string;
 } | null> {
   if (!isSupabaseConfigured() || !supabase) {
     throw new Error(
@@ -578,9 +581,7 @@ export async function getLibrarySnapshotDiff(targetDate: string): Promise<{
   if (!deltaPick?.payload) return null;
 
   const meta = parseDeltaPayload(deltaPick.payload);
-  const pathSet = new Set<string>([...meta.changed_paths, ...meta.op_paths]);
-  const paths = [...pathSet].filter(Boolean);
-  if (!paths.length) return null;
+  const changeCount = new Set([...meta.changed_paths, ...meta.op_paths].filter(Boolean)).size;
 
   let compareDate = meta.baseline_date;
   if (!compareDate || compareDate === targetDate) {
@@ -625,24 +626,24 @@ export async function getLibrarySnapshotDiff(targetDate: string): Promise<{
     return typeof v === 'object' ? v : {};
   }
 
-  const beforeParsed = parseSnap(beforeObj);
-  const afterParsed = parseSnap(afterObj);
+  const beforeParsed = parseSnap(beforeObj) as DigestSnapshot;
+  const afterParsed = parseSnap(afterObj) as DigestSnapshot;
 
-  const diffs = paths.map((path) => {
-    const b = getJsonAtPointer(beforeParsed, path);
-    const a = getJsonAtPointer(afterParsed, path);
-    return {
-      path,
-      beforeText: stringifyJsonish(b === undefined ? undefined : b),
-      afterText: stringifyJsonish(a === undefined ? undefined : a),
-    };
-  });
+  let beforeMarkdown: string;
+  let afterMarkdown: string;
+  try {
+    beforeMarkdown = renderDigestMarkdownFromSnapshot(beforeParsed);
+    afterMarkdown = renderDigestMarkdownFromSnapshot(afterParsed);
+  } catch {
+    return null;
+  }
 
   return {
     compareDate,
     targetDate,
-    paths,
-    diffs,
+    changeCount,
+    beforeMarkdown,
+    afterMarkdown,
   };
 }
 

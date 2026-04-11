@@ -9,7 +9,7 @@ import DeltaDaySummary from '@/components/library/DeltaDaySummary';
 import LibraryDocumentBody from '@/components/library/LibraryDocumentBody';
 import { useDashboard } from '@/lib/dashboard-context';
 import {
-  docAffectedByDeltaPaths,
+  countDeltaTouchesForDoc,
   docMatchesLibraryScope,
   type LibraryScope,
 } from '@/lib/library-doc-tier';
@@ -217,13 +217,6 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
     });
   }, [dateDocs]);
 
-  const deltaPathsForDate = useMemo(() => {
-    if (!effDate) return [] as string[];
-    const m = deltaMetaByDate[effDate];
-    if (!m) return [];
-    return [...new Set([...m.changed_paths, ...m.op_paths])];
-  }, [deltaMetaByDate, effDate]);
-
   const digestDocForDate = useMemo(
     () => docsForEffDate.find((d) => (d.path || '').toLowerCase() === 'digest') ?? null,
     [docsForEffDate]
@@ -411,7 +404,6 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
 
             {libraryScope === 'research' && effDate && deltaMetaByDate[effDate] ? (
               <DeltaDaySummary
-                date={effDate}
                 meta={deltaMetaByDate[effDate]}
                 digestAvailable={!!digestDocForDate}
                 onOpenDigest={() => {
@@ -462,6 +454,8 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                       view={libraryDoc.view}
                       markdown={libraryDoc.markdown}
                       payload={libraryDoc.payload}
+                      documentKey={libraryDoc.document_key}
+                      docDate={libraryDoc.date}
                     />
                   )}
                 </div>
@@ -474,10 +468,12 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                   </div>
                   <div className="divide-y divide-border-subtle">
                     {files.map((f, i) => {
-                      const touched =
-                        effDate && deltaPathsForDate.length
-                          ? docAffectedByDeltaPaths(f.path, deltaPathsForDate)
-                          : false;
+                      const dm = effDate ? deltaMetaByDate[effDate] : null;
+                      const touchCount =
+                        dm && effDate
+                          ? countDeltaTouchesForDoc(f.path, dm.changed_paths, dm.op_paths)
+                          : 0;
+                      const touched = touchCount > 0;
                       return (
                         <button
                           key={i}
@@ -515,6 +511,14 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                           </span>
                           <FileText size={14} className="text-fin-blue/60 shrink-0" />
                           <span className="font-mono text-sm">{f.title || f.filename}</span>
+                          {touchCount > 0 ? (
+                            <span
+                              className="text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30"
+                              title="Delta paths touching this document"
+                            >
+                              {touchCount}
+                            </span>
+                          ) : null}
                           <span className="ml-auto text-[11px] text-text-muted">{f.phase ?? ''}</span>
                         </button>
                       );
