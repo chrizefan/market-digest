@@ -30,12 +30,15 @@ for t in $SQL_RETIRED_TABLES; do
 done
 sql_tables=$(echo "$sql_tables" | sed '/^$/d' | sort -u)
 
-# Extract table keys from the Tables block in database.types.ts
-# Matches lines with exactly 6 spaces of indentation followed by table_name: {
-ts_tables=$(grep -E '^      [a-z_]+: \{$' "$TYPES_FILE" \
-  | awk '{print $1}' \
-  | tr -d ':' \
-  | sort -u)
+# Extract table keys from the Tables block only (not Views / nested Row shapes).
+ts_tables=$(awk '
+  /^    Tables: \{/ { in_tables = 1; next }
+  /^    Views: \{/ { in_tables = 0; next }
+  in_tables && /^      [a-z_]+: \{$/ {
+    gsub(/:/, "", $1)
+    print $1
+  }
+' "$TYPES_FILE" | sort -u)
 
 sql_count=$(echo "$sql_tables" | grep -c . || true)
 ts_count=$(echo "$ts_tables" | grep -c . || true)
