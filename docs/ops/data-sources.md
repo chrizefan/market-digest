@@ -180,6 +180,20 @@ Script: `scripts/fetch-quotes.py`
 
 Script: `scripts/fetch-macro.py`
 
+### Supabase `macro_series_observations` (DB-first macro history)
+
+The **Daily Price Update** GitHub workflow (and local scripts) upsert long-horizon structured series into **`macro_series_observations`**. Manifest: [`config/macro_series.yaml`](../../config/macro_series.yaml).
+
+| Source | Script | Data |
+|--------|--------|------|
+| FRED | `scripts/ingest_fred.py` | Yields, spreads, breakevens, real yields, HY/IG OAS, VIX, broad USD, CPI/PCE/unemployment, etc. (see YAML) — `FRED_API_KEY` in GitHub Actions, `export`, or [`config/mcp.secrets.env`](../../config/mcp.secrets.env) (see [`config/MCP-SETUP.md`](../../config/MCP-SETUP.md); same name as **`fred`** MCP in [`.cursor/mcp.json`](../../.cursor/mcp.json)) |
+| Frankfurter | `scripts/ingest_fx_frankfurter.py` | Daily FX vs USD (EUR, GBP, JPY, CAD) — no API key |
+| Alternative.me | `scripts/ingest_crypto_fng.py` | Crypto Fear & Greed index — no API key |
+| US Treasury / Yahoo | `scripts/ingest_treasury_curve.py` | `us_treasury` when Treasury XML has entries; always **`treasury_market`** (^IRX/^FVX/^TNX/^TYX) for 3M/5Y/10Y/30Y — no API key |
+| SEC EDGAR | `scripts/ingest_sec_recent_filings.py` | Recent 8-K / 4 / 13D / 13G / 10-Q / 10-K (and related) for watchlist tickers → `sec_recent_filings` — **`SEC_EDGAR_USER_AGENT`** only |
+
+Schemas: [`015_macro_series_observations.sql`](../../supabase/migrations/015_macro_series_observations.sql), [`016_sec_recent_filings.sql`](../../supabase/migrations/016_sec_recent_filings.sql).
+
 ### Treasury Yield Curve URL
 ```
 https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml?data=daily_treasury_yield_curve&field_tdr_date_value=YYYYMM

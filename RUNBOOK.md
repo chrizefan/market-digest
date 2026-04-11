@@ -6,7 +6,7 @@ This is the **single authoritative** run instruction for digiquant-atlas.
 
 | Layer | When | What runs | Supabase impact |
 |--------|------|-----------|-----------------|
-| **GitHub — Daily Price Update** | Weekdays **22:00 UTC** (documented as ~**6:00 PM US Eastern** after NYSE close; exact local offset follows DST) | [`preload-history.py --incremental-supabase`](scripts/preload-history.py) → [`compute-technicals.py`](scripts/compute-technicals.py) → [`refresh_performance_metrics.py --fill-calendar-through`](scripts/refresh_performance_metrics.py) | `price_history` (Yahoo **since last DB row** + overlap), `price_technicals`, dense **`positions`** / **`nav_history`** / **`portfolio_metrics`** — **no** digest, no agent research |
+| **GitHub — Daily Price Update** | Weekdays **22:00 UTC** (documented as ~**6:00 PM US Eastern** after NYSE close; exact local offset follows DST) | [`preload-history.py`](scripts/preload-history.py) (stale refresh) → [`compute-technicals.py`](scripts/compute-technicals.py) → macro ingest ([`ingest_fred.py`](scripts/ingest_fred.py), [`ingest_fx_frankfurter.py`](scripts/ingest_fx_frankfurter.py), [`ingest_crypto_fng.py`](scripts/ingest_crypto_fng.py), [`ingest_treasury_curve.py`](scripts/ingest_treasury_curve.py), [`ingest_sec_recent_filings.py`](scripts/ingest_sec_recent_filings.py)) | `price_history`, `price_technicals`, **`macro_series_observations`** (FRED, Frankfurter, Fear & Greed, Treasury: **`us_treasury`** XML when available + **`treasury_market`** Yahoo ^IRX/^FVX/^TNX/^TYX), **`sec_recent_filings`** (watchlist, last 14 days) — **no** digest, no agent research |
 | **Co-work / operator — research & portfolio** | Typically **pre-market** (e.g. 8:00 AM local) or per [`config/schedule.json`](config/schedule.json) | Agent produces JSON → [`run_db_first.py`](scripts/run_db_first.py) → [`update_tearsheet.py`](scripts/update_tearsheet.py) → [`execute_at_open.py`](scripts/execute_at_open.py) (optional) → [`validate_db_first.py`](scripts/validate_db_first.py) | `daily_snapshots`, `documents`, `positions`, `theses`, `position_events`, etc. |
 
 ### Daily portfolio continuity (post-close)
@@ -23,6 +23,8 @@ The weekday GitHub job runs [`refresh_performance_metrics.py --fill-calendar-thr
 **Limitation:** `--fill-calendar-through` advances from the **latest** `positions` snapshot date forward only; it does not scan for **holes** on earlier dates. For a missing day *before* your latest snapshot, run once with `--date YYYY-MM-DD` (after `price_history` has that day).
 
 **GitHub — manual “Daily Price Update”:** By default (checkbox **full history** off) the job matches the weekday cron: **`--incremental-supabase`** — Yahoo fetches only from `(latest price_history date per ticker) − overlap` (see script), merges with Supabase for a full local series for TA, and upserts the **recent Yahoo window** only. For a **one-time full backfill** (or after adding many tickers), run the workflow with **full history** checked and **period** `max` (or `5y`). **Ticker** optional: scope either mode to one symbol. **New ticker** with no `price_history` rows yet: incremental mode uses `--period` from the script (default **2y**); use **full history** or `python3 scripts/preload-history.py --supabase --period max` once if you need full depth.
+
+**Macro + Treasury + SEC (automated):** After technicals, the workflow runs FRED (if **`FRED_API_KEY`**), Frankfurter, crypto Fear & Greed, **Treasury yields** (`us_treasury` from Treasury XML when the feed returns data — often empty from CI; plus **`treasury_market`** from Yahoo ^IRX/^FVX/^TNX/^TYX for reliable 3M/5Y/10Y/30Y), and **recent EDGAR filings** for [`config/watchlist.md`](config/watchlist.md) (if **`SEC_EDGAR_USER_AGENT`** — GitHub secret). Migrations: [`015`](supabase/migrations/015_macro_series_observations.sql), [`016`](supabase/migrations/016_sec_recent_filings.sql). **One-time deep backfill:** manual workflow **backfill macro**. **Smoke tests:** `ingest_treasury_curve.py --dry-run`, `ingest_sec_recent_filings.py --dry-run`. Extra FRED series: [`config/macro_series.yaml`](config/macro_series.yaml); bad IDs log a warning and continue.
 
 **Claude Cowork:** project briefing and scheduled task recipes live under [`cowork/`](cowork/) — see [`cowork/README.md`](cowork/README.md) and paste [`cowork/PROJECT-PROMPT.md`](cowork/PROJECT-PROMPT.md) into the Cowork project instructions. **First-time setup:** [`cowork/SETUP-ATLAS-COWORK.md`](cowork/SETUP-ATLAS-COWORK.md) (agent-driven wizard → `cowork/OPERATOR-COWORK.md` + `config/schedule.json` → `cowork_operator`).
 
@@ -69,7 +71,11 @@ pip install -r requirements.txt
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_KEY`
 
-Recommended: store in `config/supabase.env` (loaded by publisher scripts).
+4. **FRED API key** (free): [`FRED_API_KEY`](https://fred.stlouisfed.org/docs/api/api_key.html) — required for `ingest_fred.py` and for the GitHub **Daily Price Update** job to load FRED series. If unset in Actions, FRED is skipped with a warning; Frankfurter and Fear & Greed still run.
+
+5. **Unified local secrets (optional):** [`config/mcp.secrets.env`](config/mcp.secrets.env) (gitignored; copy from [`config/mcp.secrets.env.example`](config/mcp.secrets.env.example)) can hold **`FRED_API_KEY`**, optional **`COINGECKO_API_KEY`** / **`ALPHA_VANTAGE_API_KEY`**, and **`SEC_EDGAR_USER_AGENT`**. Ingest scripts load it automatically next to `supabase.env`. For **GitHub Actions**, add repository secrets **`FRED_API_KEY`** and **`SEC_EDGAR_USER_AGENT`** (filings ingest is skipped if unset). **Cursor MCP** uses the same names via **`${env:…}`** in [`.cursor/mcp.json`](.cursor/mcp.json) — see [`config/MCP-SETUP.md`](config/MCP-SETUP.md).
+
+Recommended: keep `SUPABASE_*` in `config/supabase.env`; add API keys to `config/mcp.secrets.env` or export them before launching Cursor.
 
 **Script index (grouped by role):** [`docs/ops/SCRIPTS.md`](docs/ops/SCRIPTS.md)
 
@@ -133,6 +139,12 @@ If you have a **local** tree (not in git) under `outputs/daily/` or a copy of `a
 3. Afterward: `python3 scripts/validate_db_first.py --validate-mode full`.
 
 **Note:** `delta-request.json` is applied to the **previous calendar day’s** row in `daily_snapshots` (`--baseline-date`); ops must match that chain. Stub `snapshot.json` files are ignored when a rich `delta-request.json` exists (see backfill script).
+
+**Retrofit legacy markdown deltas:** If you only have `DIGEST-DELTA.md` under `archive/legacy-outputs/daily/<date>/`, generate schema-valid `delta-request.json` (and optionally mirror under `outputs/daily/<date>/`) with:
+
+`python3 scripts/retrofit_delta_requests.py --also-copy-to-outputs`
+
+Re-run with `--force` to overwrite. Uses [`scripts/legacy_delta_to_ops.py`](scripts/legacy_delta_to_ops.py) (regex + narrative/sector pointer fixes).
 
 ## DB validation modes ([`validate_db_first.py`](scripts/validate_db_first.py))
 

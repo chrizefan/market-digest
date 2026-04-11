@@ -9,20 +9,18 @@ on:
     - cron: "0 22 * * 1-5"   # Mon–Fri 22:00 UTC = 6:00 PM ET (≈2h after NYSE close)
   workflow_dispatch:
     inputs:
-      full_history:
-        description: >
-          One-time / rare: full Yahoo pull for watchlist (uses period, default max).
-          Leave unchecked for normal runs: incremental from last Supabase row per ticker.
-        type: boolean
-        default: false
       period:
-        description: "Only when full_history is true — yfinance lookback (max, 5y, 2y)."
+        description: "yfinance period (e.g. 1d, 5d, 1mo, 2y)"
         required: false
-        default: "max"
+        default: "5d"
       ticker:
-        description: "Optional: one ticker. With full_history, full period for that ticker only; else incremental for that ticker only."
+        description: "Single ticker to update (leave blank for full watchlist)"
         required: false
         default: ""
+      backfill_macro:
+        description: "One-time — full FRED + Treasury curve history (slow). Otherwise incremental."
+        type: boolean
+        default: false
 
 jobs:
   update-prices:
@@ -31,6 +29,8 @@ jobs:
     env:
       SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+      SEC_EDGAR_USER_AGENT: ${{ secrets.SEC_EDGAR_USER_AGENT }}
 
     steps:
       - uses: actions/checkout@v4
@@ -44,28 +44,26 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # Incremental: Yahoo only since (latest Supabase date - overlap); merge into runner
-      # cache for compute-technicals; upsert calendar-expanded Yahoo window only.
-      - name: Incremental price sync (scheduled)
+      # Scheduled run: refresh any tickers with stale cache (>1 day)
+      - name: Refresh stale tickers (scheduled)
         if: github.event_name == 'schedule'
         run: |
-          python3 scripts/preload-history.py --supabase --incremental-supabase
+          python3 scripts/preload-history.py \
+            --refresh \
+            --max-stale-days 1 \
+            --supabase
 
+      # Manual run: respect workflow_dispatch inputs
       - name: Update prices (manual dispatch)
         if: github.event_name == 'workflow_dispatch'
         run: |
-          TICKER="${{ github.event.inputs.ticker }}"
-          FULL="${{ github.event.inputs.full_history }}"
-          PERIOD="${{ github.event.inputs.period }}"
-          if [ "$FULL" = "true" ]; then
-            ARGS="--supabase --period ${PERIOD:-max}"
-            [ -n "$TICKER" ] && ARGS="$ARGS --ticker $TICKER"
-            python3 scripts/preload-history.py $ARGS
+          ARGS="--supabase --period ${{ github.event.inputs.period }}"
+          if [ -n "${{ github.event.inputs.ticker }}" ]; then
+            ARGS="$ARGS --ticker ${{ github.event.inputs.ticker }}"
           else
-            ARGS="--supabase --incremental-supabase"
-            [ -n "$TICKER" ] && ARGS="$ARGS --ticker $TICKER"
-            python3 scripts/preload-history.py $ARGS
+            ARGS="$ARGS --refresh --max-stale-days 1"
           fi
+          python3 scripts/preload-history.py $ARGS
 
       # After prices are up-to-date, recompute TA indicators for last 7 days.
       # 7 days covers: Mon catching up Fri's row, rolling indicators that depend
@@ -89,11 +87,52 @@ jobs:
             --supabase \
             $TICKER_ARG
 
-      # Carry-forward positions + portfolio_metrics for each calendar day through today (UTC)
-      # so timelines stay dense when no digest ran (see RUNBOOK — daily portfolio continuity).
-      - name: Refresh position, NAV & portfolio_metrics (calendar fill)
+      # Macro / FX / sentiment / Treasury + SEC filings (see RUNBOOK, config/macro_series.yaml).
+      - name: Ingest macro & Treasury (scheduled)
+        if: github.event_name == 'schedule'
         run: |
-          python3 scripts/refresh_performance_metrics.py --supabase --fill-calendar-through "$(date -u +%Y-%m-%d)"
+          if [ -n "${FRED_API_KEY:-}" ]; then
+            python3 scripts/ingest_fred.py --supabase
+          else
+            echo "::warning::FRED_API_KEY not set — skipping FRED ingest"
+          fi
+          python3 scripts/ingest_fx_frankfurter.py --supabase
+          python3 scripts/ingest_crypto_fng.py --supabase
+          python3 scripts/ingest_treasury_curve.py --supabase
+          if [ -n "${SEC_EDGAR_USER_AGENT:-}" ]; then
+            python3 scripts/ingest_sec_recent_filings.py --supabase --days 14
+          else
+            echo "::warning::SEC_EDGAR_USER_AGENT not set — skipping SEC filings ingest"
+          fi
+
+      - name: Ingest macro & Treasury (manual)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          BF="${{ github.event.inputs.backfill_macro }}"
+          if [ "$BF" = "true" ]; then
+            if [ -n "${FRED_API_KEY:-}" ]; then
+              python3 scripts/ingest_fred.py --supabase --backfill
+            else
+              echo "::warning::FRED_API_KEY not set — skipping FRED backfill"
+            fi
+            python3 scripts/ingest_fx_frankfurter.py --supabase --backfill
+            python3 scripts/ingest_crypto_fng.py --supabase --backfill
+            python3 scripts/ingest_treasury_curve.py --supabase --backfill
+          else
+            if [ -n "${FRED_API_KEY:-}" ]; then
+              python3 scripts/ingest_fred.py --supabase
+            else
+              echo "::warning::FRED_API_KEY not set — skipping FRED ingest"
+            fi
+            python3 scripts/ingest_fx_frankfurter.py --supabase
+            python3 scripts/ingest_crypto_fng.py --supabase
+            python3 scripts/ingest_treasury_curve.py --supabase
+          fi
+          if [ -n "${SEC_EDGAR_USER_AGENT:-}" ]; then
+            python3 scripts/ingest_sec_recent_filings.py --supabase --days 14
+          else
+            echo "::warning::SEC_EDGAR_USER_AGENT not set — skipping SEC filings ingest"
+          fi
 
       - name: Verify row counts
         run: |
@@ -105,4 +144,22 @@ jobs:
           pt = sb.table("price_technicals").select("ticker", count="exact").execute()
           print(f"✅ price_history:    {ph.count} rows")
           print(f"✅ price_technicals: {pt.count} rows")
+          try:
+              mo = sb.table("macro_series_observations").select("source", count="exact").execute()
+              mx = (
+                  sb.table("macro_series_observations")
+                  .select("obs_date")
+                  .order("obs_date", desc=True)
+                  .limit(1)
+                  .execute()
+              )
+              latest = (mx.data or [{}])[0].get("obs_date") if getattr(mx, "data", None) else None
+              print(f"✅ macro_series_observations: {mo.count} rows (latest obs_date={latest})")
+          except Exception as e:
+              print(f"⚠️  macro_series_observations: {e}")
+          try:
+              sf = sb.table("sec_recent_filings").select("accession", count="exact").execute()
+              print(f"✅ sec_recent_filings: {sf.count} rows")
+          except Exception as e:
+              print(f"⚠️  sec_recent_filings: {e}")
           EOF

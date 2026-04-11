@@ -17,6 +17,7 @@ Thumbs.db
 *.key
 secrets/
 config/supabase.env
+config/mcp.secrets.env
 frontend/.env
 frontend/.env.local
 

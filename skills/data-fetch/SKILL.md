@@ -74,7 +74,7 @@ The cache directory is in `.gitignore` (derived data). Run `preload-history.py` 
 When `fetch-market-data.sh` fails (sandboxed agents, CI, missing yfinance), use the MCP-based
 data fetch instead. See **`skills/mcp-data-fetch/SKILL.md`** for full instructions.
 
-DB-first preference: read from Supabase `price_history` and `price_technicals` first.
+DB-first preference: read from Supabase `price_history`, `price_technicals`, and **`macro_series_observations`** (FRED-aligned yields, credit, VIX, FX, crypto Fear & Greed — see `config/macro_series.yaml`) first.
 
 ---
 
@@ -82,7 +82,7 @@ DB-first preference: read from Supabase `price_history` and `price_technicals` f
 
 A GitHub Actions workflow runs every trading day at **6:00 PM ET** (right after the data settles
 post-close). It fetches OHLCV for all 56 watchlist tickers and computes 35 TA indicators, writing
-both into Supabase. This is the **fastest and most reliable** data source for digest runs.
+both into Supabase. The same job then ingests **macro / FX / sentiment / official Treasury curve** into `macro_series_observations`, plus **recent SEC filings** for the watchlist into `sec_recent_filings`.
 
 ### Tables
 
@@ -90,6 +90,8 @@ both into Supabase. This is the **fastest and most reliable** data source for di
 |-------|----------|---------|
 | `price_history` | OHLCV rows per ticker per date | Daily, 6 PM ET |
 | `price_technicals` | 35 TA indicators per ticker per date | Daily, after price_history |
+| `macro_series_observations` | FRED, Frankfurter, crypto F&G, **`us_treasury`** / **`treasury_market`** (`YC/…`) | Daily, after price_technicals |
+| `sec_recent_filings` | 8-K, 4, 13D/G, 10-Q/K, etc., per watchlist ticker | Daily (rolling window) |
 
 ### Example MCP queries (use `mcp_supabase_execute_sql`)
 
@@ -107,6 +109,34 @@ LIMIT 5;
 -- Check freshness
 SELECT MAX(date) AS latest_date, COUNT(DISTINCT ticker) AS tickers
 FROM price_technicals;
+
+-- Latest FRED 10Y and VIX (observation dates vary by series)
+SELECT series_id, obs_date, value, unit
+FROM macro_series_observations
+WHERE source = 'fred' AND series_id IN ('DGS10', 'VIXCLS')
+ORDER BY series_id, obs_date DESC
+LIMIT 6;
+
+-- FX vs USD (Frankfurter)
+SELECT series_id, obs_date, value
+FROM macro_series_observations
+WHERE source = 'frankfurter' AND obs_date = (SELECT MAX(obs_date) FROM macro_series_observations WHERE source = 'frankfurter');
+
+-- Crypto Fear & Greed latest
+SELECT value, meta, obs_date
+FROM macro_series_observations
+WHERE source = 'crypto_fear_greed'
+ORDER BY obs_date DESC
+LIMIT 3;
+
+-- Treasury 10Y (prefer official XML when present; else Yahoo proxy)
+SELECT source, obs_date, value FROM macro_series_observations
+WHERE series_id = 'YC/10Y' AND source IN ('us_treasury', 'treasury_market')
+ORDER BY obs_date DESC, source LIMIT 8;
+
+-- Recent filings for a ticker
+SELECT form, filing_date, filing_url FROM sec_recent_filings
+WHERE ticker = 'SPY' ORDER BY filing_date DESC LIMIT 10;
 ```
 
 ---
