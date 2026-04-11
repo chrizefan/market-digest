@@ -128,15 +128,31 @@ Flag explicitly: **Any thesis whose invalidation trigger came within 10% during 
 
 Write the full monthly synthesis as **JSON** using schema `templates/schemas/monthly-digest.schema.json`.
 
-**Save to**: `outputs/monthly/{{YEAR}}-{{MONTH}}.json`
+- **`date`** in the payload must be the **month-ending** calendar date (YYYY-MM-DD) per the schema.
+- Add a **Cumulative Regime Shifts** block and a **Delta Efficiency Summary** block (see schema narrative guidance).
 
-Add a **Cumulative Regime Shifts** block and a **Delta Efficiency Summary** block (see schema narrative guidance).
+**Canonical delivery is Supabase** — validate and publish **via stdin** (no `outputs/` path required for hosted runs):
+
+```bash
+python3 scripts/validate_artifact.py - <<'EOF'
+{ ... monthly_digest JSON ... }
+EOF
+python3 scripts/publish_document.py \
+  --payload - \
+  --document-key monthly/{{YEAR}}-{{MONTH}}.json \
+  --title "Monthly synthesis" \
+  --category rollup \
+  --doc-type-label "Monthly Summary"
+```
+
+Use the same `{{YEAR}}-{{MONTH}}` in `document_key` (e.g. `monthly/2026-04.json`). This matches `update_tearsheet.py` logical keys when you run optional disk sync.
 
 ---
 
 ## Phase 7 — Metrics refresh (optional)
 
-Run: `python3 scripts/update_tearsheet.py`
+Run: `python3 scripts/update_tearsheet.py`  
+Use when you want the full repo ETL to refresh tearsheet-related tables from disk in addition to the `publish_document.py` upsert.
 
 ---
 
@@ -148,5 +164,6 @@ Run: `python3 scripts/update_tearsheet.py`
 - [ ] Cumulative regime shifts identified
 - [ ] Asset class monthly performance summarized
 - [ ] Thesis performance reviewed (all active theses)
-- [ ] `outputs/monthly/{{YEAR}}-{{MONTH}}.json` written with all required sections
+- [ ] Full `monthly_digest` JSON produced with all required sections
+- [ ] `validate_artifact.py -` (or file) passed and `publish_document.py --payload -` upserted `documents` with `document_key` `monthly/{{YEAR}}-{{MONTH}}.json`
 

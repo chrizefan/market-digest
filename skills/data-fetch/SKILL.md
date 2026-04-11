@@ -111,9 +111,11 @@ FROM price_technicals;
 
 ---
 
-## Outputs (legacy archive)
+## Local fetch cache (gitignored)
 
-All files written to `outputs/daily/YYYY-MM-DD/data/`:
+When you run fetch scripts locally, they may write under `outputs/daily/YYYY-MM-DD/data/` (not committed). Prefer **Supabase** `price_history` / `price_technicals` when available.
+
+Files (when present on disk):
 
 | File | Contents |
 |------|---------|
