@@ -27,32 +27,6 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['daily_snapshots']['Row'], 'id' | 'created_at'> & { id?: string; created_at?: string };
         Update: Partial<Database['public']['Tables']['daily_snapshots']['Insert']>;
       };
-      /**
-       * Migration 011 creates daily_snapshots_new as a staging table, then renames it to daily_snapshots.
-       * It doesn't exist long-term, but CI checks migrations vs. TS types by table name, so we include it.
-       */
-      daily_snapshots_new: {
-        Row: {
-          id: string;
-          date: string;
-          run_type: 'baseline' | 'delta';
-          baseline_date: string | null;
-          regime: Json;
-          market_data: Json;
-          segment_biases: Json | null;
-          actionable: string[] | null;
-          risks: string[] | null;
-          created_at: string | null;
-          updated_at: string | null;
-          snapshot: Json | null;
-          digest_markdown: string | null;
-        };
-        Insert: Omit<
-          Database['public']['Tables']['daily_snapshots_new']['Row'],
-          'id' | 'created_at' | 'updated_at'
-        > & { id?: string; created_at?: string; updated_at?: string };
-        Update: Partial<Database['public']['Tables']['daily_snapshots_new']['Insert']>;
-      };
       positions: {
         Row: {
           id: string;
@@ -128,28 +102,6 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['documents']['Row'], 'id'> & { id?: string };
         Update: Partial<Database['public']['Tables']['documents']['Insert']>;
       };
-      /**
-       * Migration 011 creates documents_new as a staging table, then renames it to documents.
-       * It doesn't exist long-term, but CI checks migrations vs. TS types by table name, so we include it.
-       */
-      documents_new: {
-        Row: {
-          id: string;
-          date: string;
-          title: string;
-          doc_type: string | null;
-          phase: number | null;
-          category: string | null;
-          segment: string | null;
-          sector: string | null;
-          run_type: string | null;
-          document_key: string;
-          content: string | null;
-          payload: Json | null;
-        };
-        Insert: Omit<Database['public']['Tables']['documents_new']['Row'], 'id'> & { id?: string };
-        Update: Partial<Database['public']['Tables']['documents_new']['Insert']>;
-      };
       nav_history: {
         Row: {
           date: string;
@@ -221,6 +173,34 @@ export interface Database {
         };
         Insert: Database['public']['Tables']['price_technicals']['Row'];
         Update: Partial<Database['public']['Tables']['price_technicals']['Row']>;
+      };
+      macro_series_observations: {
+        Row: {
+          source: string;
+          series_id: string;
+          obs_date: string;
+          value: number | null;
+          unit: string | null;
+          meta: Json | null;
+          ingested_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['macro_series_observations']['Row'], 'ingested_at'> & { ingested_at?: string };
+        Update: Partial<Database['public']['Tables']['macro_series_observations']['Insert']>;
+      };
+      sec_recent_filings: {
+        Row: {
+          cik: string;
+          ticker: string | null;
+          accession: string;
+          form: string;
+          filing_date: string;
+          report_date: string | null;
+          primary_document: string | null;
+          filing_url: string | null;
+          ingested_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['sec_recent_filings']['Row'], 'ingested_at'> & { ingested_at?: string };
+        Update: Partial<Database['public']['Tables']['sec_recent_filings']['Insert']>;
       };
     };
     Views: Record<string, never>;

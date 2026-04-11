@@ -18,6 +18,7 @@ sql_tables=$(grep -hE "^CREATE TABLE (IF NOT EXISTS )?[a-z_]+" "$MIGRATIONS_DIR"
   | sed -E 's/CREATE TABLE (IF NOT EXISTS )?//' \
   | awk '{print $1}' \
   | grep -vE '_(default|partitioned|y[0-9]{4})$' \
+  | grep -vE '^(daily_snapshots_new|documents_new)$' \
   | tr '[:upper:]' '[:lower:]' \
   | sort -u)
 

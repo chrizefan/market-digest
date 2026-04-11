@@ -5,6 +5,9 @@ Thumbs.db
 # Editor
 .vscode/
 .idea/
+
+# Local knowledge base (e.g. Obsidian vault; not part of the app)
+knowledge/
 *.swp
 *.swo
 

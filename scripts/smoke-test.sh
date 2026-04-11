@@ -44,30 +44,42 @@ done
 
 echo ""
 echo "── Python scripts (--help) ───────────────────────────"
-PYTHON="${REPO_ROOT}/.venv/bin/python3"
-[[ ! -x "$PYTHON" ]] && PYTHON="python3"
+# Prefer repo venv only when it can import core deps (avoid broken/partial venvs).
+PYTHON="python3"
+if [[ -n "${DIGIQUANT_PYTHON:-}" ]]; then
+  PYTHON="$DIGIQUANT_PYTHON"
+elif [[ -x "${REPO_ROOT}/.venv/bin/python3" ]] \
+  && "${REPO_ROOT}/.venv/bin/python3" -c "import numpy, requests" 2>/dev/null; then
+  PYTHON="${REPO_ROOT}/.venv/bin/python3"
+fi
 
 for script in \
-  scripts/fetch-quotes.py \
-  scripts/fetch-macro.py \
-  scripts/generate-snapshot.py \
-  scripts/update_tearsheet.py \
-  scripts/backfill-supabase.py \
-  scripts/preload-history.py \
-  scripts/fill-entry-prices.py \
-  scripts/run_db_first.py \
-  scripts/validate_db_first.py \
-  scripts/materialize_snapshot.py \
-  scripts/publish_document.py \
-  scripts/validate_artifact.py \
-  scripts/execute_at_open.py \
   scripts/backfill_execution_prices.py \
-  scripts/refresh_performance_metrics.py \
+  scripts/backfill-supabase.py \
   scripts/compute-technicals.py \
-  scripts/repair_supabase_portfolio_data.py \
-  scripts/migrate_md_outputs_to_json.py \
+  scripts/convert_snapshot_v1.py \
+  scripts/execute_at_open.py \
+  scripts/fetch-macro.py \
+  scripts/fetch-quotes.py \
+  scripts/fill-entry-prices.py \
+  scripts/generate-snapshot.py \
+  scripts/ingest_crypto_fng.py \
+  scripts/ingest_fred.py \
+  scripts/ingest_fx_frankfurter.py \
+  scripts/ingest_sec_recent_filings.py \
+  scripts/ingest_treasury_curve.py \
   scripts/legacy_delta_to_ops.py \
-  scripts/convert_snapshot_v1.py; do
+  scripts/materialize_snapshot.py \
+  scripts/migrate_md_outputs_to_json.py \
+  scripts/preload-history.py \
+  scripts/publish_document.py \
+  scripts/refresh_performance_metrics.py \
+  scripts/repair_supabase_portfolio_data.py \
+  scripts/retrofit_delta_requests.py \
+  scripts/run_db_first.py \
+  scripts/update_tearsheet.py \
+  scripts/validate_artifact.py \
+  scripts/validate_db_first.py; do
   run_check "$(basename $script)" "$PYTHON" "$script" --help
 done
 
