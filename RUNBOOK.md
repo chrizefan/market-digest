@@ -28,7 +28,7 @@ The weekday GitHub job runs [`refresh_performance_metrics.py --fill-calendar-thr
 
 **Claude Cowork:** project briefing and scheduled task recipes live under [`cowork/`](cowork/) — see [`cowork/README.md`](cowork/README.md) and paste [`cowork/PROJECT-PROMPT.md`](cowork/PROJECT-PROMPT.md) into the Cowork project instructions. **First-time setup:** [`cowork/SETUP-ATLAS-COWORK.md`](cowork/SETUP-ATLAS-COWORK.md) (agent-driven wizard → `cowork/OPERATOR-COWORK.md` + `config/schedule.json` → `cowork_operator`).
 
-**Weekly baseline vs weekly reminder:** [`scripts/run_db_first.py`](scripts/run_db_first.py) treats **Sunday** as **baseline** and other days as **delta** (unless `--baseline` / `--delta`). [`.github/workflows/weekly-check.yml`](.github/workflows/weekly-check.yml) is a **Friday reminder** to publish the **`weekly_digest` JSON** to Supabase (`document_key` e.g. `weekly/YYYY-Www.json`) — not a filesystem `data/agent-cache/weekly/*.md` requirement.
+**Weekly baseline vs weekly digest:** [`scripts/run_db_first.py`](scripts/run_db_first.py) treats **Sunday** as **baseline** and other days as **delta** (unless `--baseline` / `--delta`). There is **no** scheduled GitHub reminder for **`weekly_digest`**; publish to Supabase when due (`document_key` e.g. `weekly/YYYY-Www.json`) and use [`scripts/weekly-rollup.sh`](scripts/weekly-rollup.sh) for the operator prompt — not a filesystem `data/agent-cache/weekly/*.md` requirement.
 
 ## Two tracks (research vs portfolio)
 

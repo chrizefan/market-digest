@@ -9,8 +9,9 @@ Step-by-step procedures for every recurring workflow.
 | Workflow | Schedule | Role |
 |----------|----------|------|
 | [`daily-price-update.yml`](../../.github/workflows/daily-price-update.yml) | **Mon–Fri 22:00 UTC** (~6:00 PM US Eastern after cash close, per workflow comments) | [`preload-history.py --incremental-supabase`](../../scripts/preload-history.py) → `price_technicals` → [`refresh_performance_metrics.py --fill-calendar-through`](../../scripts/refresh_performance_metrics.py). Manual **full history** = one-shot `--period max`. Does **not** run digest, `update_tearsheet.py`, or research. |
-| [`weekly-check.yml`](../../.github/workflows/weekly-check.yml) | **Fri 16:00 UTC** | Reminder to publish **`weekly_digest`** JSON to Supabase — **not** the same as **Sunday baseline** in [`run_db_first.py`](../../scripts/run_db_first.py). |
 | [`ci.yml`](../../.github/workflows/ci.yml), [`deploy.yml`](../../.github/workflows/deploy.yml) | On push / manual | Build and deploy. |
+
+**Weekly digest:** no scheduled GitHub job — use [`scripts/weekly-rollup.sh`](../../scripts/weekly-rollup.sh) when you need the operator prompt. **Sunday baseline** vs weekdays is still defined in [`run_db_first.py`](../../scripts/run_db_first.py).
 
 **Co-work / operator** runs ([`RUNBOOK.md`](../../RUNBOOK.md)): research + portfolio JSON → `run_db_first.py` → Supabase. Cowork setup: [`cowork/README.md`](../../cowork/README.md), project prompt [`cowork/PROJECT-PROMPT.md`](../../cowork/PROJECT-PROMPT.md), task list [`cowork/tasks/README.md`](../../cowork/tasks/README.md).
 

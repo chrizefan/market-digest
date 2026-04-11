@@ -39,7 +39,7 @@ Files in `memory/*/ROLLING.md` are APPEND-ONLY:
 
 ## Forbidden Actions
 - Do NOT delete memory file content
-- Do NOT modify `.github/workflows/deploy.yml` or `weekly-check.yml` without understanding CI/CD
+- Do NOT modify `.github/workflows/deploy.yml` without understanding CI/CD
 - Do NOT change skill frontmatter `name:` fields without cascading updates
 
 ## Documentation Index

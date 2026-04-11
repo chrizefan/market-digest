@@ -65,7 +65,7 @@ Track A blind research: `skills/research-daily/SKILL.md`. Track B: preferences +
 - Do NOT treat gitignored scratch trees as source of truth — Supabase is canonical
 - Do NOT rewrite `memory/*/ROLLING.md` history — append only
 - Do NOT change skill frontmatter `name:` without updating all references
-- Do NOT modify `.github/workflows/deploy.yml` or `weekly-check.yml`
+- Do NOT modify `.github/workflows/deploy.yml` without understanding CI/CD
 - Do NOT use `sed -i` without the `""` extension on macOS
 
 ## Documentation
