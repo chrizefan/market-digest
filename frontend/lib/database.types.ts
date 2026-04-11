@@ -187,21 +187,6 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['macro_series_observations']['Row'], 'ingested_at'> & { ingested_at?: string };
         Update: Partial<Database['public']['Tables']['macro_series_observations']['Insert']>;
       };
-      sec_recent_filings: {
-        Row: {
-          cik: string;
-          ticker: string | null;
-          accession: string;
-          form: string;
-          filing_date: string;
-          report_date: string | null;
-          primary_document: string | null;
-          filing_url: string | null;
-          ingested_at: string;
-        };
-        Insert: Omit<Database['public']['Tables']['sec_recent_filings']['Row'], 'ingested_at'> & { ingested_at?: string };
-        Update: Partial<Database['public']['Tables']['sec_recent_filings']['Insert']>;
-      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

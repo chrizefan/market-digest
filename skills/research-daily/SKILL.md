@@ -51,6 +51,10 @@ If your environment only supports a scratch file, you may write a **local temp**
 
 **Daily snapshot row:** If you do **not** run a full digest, ensure `daily_snapshots` has a row for `date` (e.g. upsert via `materialize_snapshot.py` from an empty delta, or operator backfills). `validate_db_first.py --mode research` allows a row with nullable `snapshot` when at least one `research_delta` document exists for that date.
 
+## Optional: issuer filings (SEC)
+
+The watchlist is **ETF-heavy**; there is **no** daily `sec_recent_filings` table. When the delta materially involves a **sector** or **specific operating companies**, you may **ad hoc** check EDGAR for recent **8-K** / **10-Q** / **10-K** on names that drive the theme (or use the **`sec-edgar`** MCP with **`SEC_EDGAR_USER_AGENT`**). Cite filing type and date if you lean on them in the narrative.
+
 ## No-change days
 
 Set `"no_change": true` and keep `segments` fields as short strings (e.g. "No material change vs baseline.") so the day is still indexed.

@@ -67,7 +67,6 @@ for script in \
   scripts/ingest_crypto_fng.py \
   scripts/ingest_fred.py \
   scripts/ingest_fx_frankfurter.py \
-  scripts/ingest_sec_recent_filings.py \
   scripts/ingest_treasury_curve.py \
   scripts/legacy_delta_to_ops.py \
   scripts/materialize_snapshot.py \

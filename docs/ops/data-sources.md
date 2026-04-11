@@ -190,9 +190,9 @@ The **Daily Price Update** GitHub workflow (and local scripts) upsert long-horiz
 | Frankfurter | `scripts/ingest_fx_frankfurter.py` | Daily FX vs USD (EUR, GBP, JPY, CAD) — no API key |
 | Alternative.me | `scripts/ingest_crypto_fng.py` | Crypto Fear & Greed index — no API key |
 | US Treasury / Yahoo | `scripts/ingest_treasury_curve.py` | `us_treasury` when Treasury XML has entries; always **`treasury_market`** (^IRX/^FVX/^TNX/^TYX) for 3M/5Y/10Y/30Y — no API key |
-| SEC EDGAR | `scripts/ingest_sec_recent_filings.py` | Recent 8-K / 4 / 13D / 13G / 10-Q / 10-K (and related) for watchlist tickers → `sec_recent_filings` — **`SEC_EDGAR_USER_AGENT`** only |
+| SEC EDGAR | *Ad hoc* (browser or **`sec-edgar`** MCP) | Major **issuer** filings when research/delta/deep-dive calls for it — not batch-ingested; watchlist ETFs are low-signal for EDGAR. Set **`SEC_EDGAR_USER_AGENT`** for MCP per [`config/mcp.secrets.env.example`](../../config/mcp.secrets.env.example). |
 
-Schemas: [`015_macro_series_observations.sql`](../../supabase/migrations/015_macro_series_observations.sql), [`016_sec_recent_filings.sql`](../../supabase/migrations/016_sec_recent_filings.sql).
+Schemas: [`015_macro_series_observations.sql`](../../supabase/migrations/015_macro_series_observations.sql). Legacy table **`sec_recent_filings`** removed by [`017_drop_sec_recent_filings.sql`](../../supabase/migrations/017_drop_sec_recent_filings.sql).
 
 ### Treasury Yield Curve URL
 ```

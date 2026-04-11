@@ -82,7 +82,7 @@ DB-first preference: read from Supabase `price_history`, `price_technicals`, and
 
 A GitHub Actions workflow runs every trading day at **6:00 PM ET** (right after the data settles
 post-close). It fetches OHLCV for all 56 watchlist tickers and computes 35 TA indicators, writing
-both into Supabase. The same job then ingests **macro / FX / sentiment / official Treasury curve** into `macro_series_observations`, plus **recent SEC filings** for the watchlist into `sec_recent_filings`.
+both into Supabase. The same job then ingests **macro / FX / sentiment / official Treasury curve** into `macro_series_observations`. **SEC issuer filings** are **not** batch-loaded (ETF-heavy watchlist); agents check EDGAR **ad hoc** during research / delta / deep dives when a stock or sector story warrants it (see `skills/research-daily`, `skills/daily-delta`, `skills/deep-dive`; optional **`sec-edgar`** MCP).
 
 ### Tables
 
@@ -91,7 +91,6 @@ both into Supabase. The same job then ingests **macro / FX / sentiment / officia
 | `price_history` | OHLCV rows per ticker per date | Daily, 6 PM ET |
 | `price_technicals` | 35 TA indicators per ticker per date | Daily, after price_history |
 | `macro_series_observations` | FRED, Frankfurter, crypto F&G, **`us_treasury`** / **`treasury_market`** (`YC/…`) | Daily, after price_technicals |
-| `sec_recent_filings` | 8-K, 4, 13D/G, 10-Q/K, etc., per watchlist ticker | Daily (rolling window) |
 
 ### Example MCP queries (use `mcp_supabase_execute_sql`)
 
@@ -134,9 +133,6 @@ SELECT source, obs_date, value FROM macro_series_observations
 WHERE series_id = 'YC/10Y' AND source IN ('us_treasury', 'treasury_market')
 ORDER BY obs_date DESC, source LIMIT 8;
 
--- Recent filings for a ticker
-SELECT form, filing_date, filing_url FROM sec_recent_filings
-WHERE ticker = 'SPY' ORDER BY filing_date DESC LIMIT 10;
 ```
 
 ---

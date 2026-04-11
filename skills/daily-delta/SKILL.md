@@ -34,6 +34,8 @@ There is **no** `data/agent-cache/daily/{{DATE}}/_meta.json` in the Supabase-fir
 - `config/watchlist.md` — full asset universe
 - `config/investment-profile.md` — investor profile, risk tolerance, asset preferences, regime playbook
 
+**Optional — issuer filings (ad hoc):** If today’s triage touches a **sector read-through** or **named operating company** (not the ETF wrapper), briefly check whether **major issuers** filed an **8-K** / **10-Q** / **10-K** that could change the narrative. Use EDGAR or **`sec-edgar`** MCP; do **not** assume a Supabase filings table exists.
+
 ### Step 2: Load This Week's Baseline
 Load the baseline snapshot from Supabase for `{{BASELINE_DATE}}` (this is your analytical anchor for the week).
 

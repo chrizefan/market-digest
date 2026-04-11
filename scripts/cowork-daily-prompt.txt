@@ -1,7 +1,8 @@
 Run today's market digest (Supabase-first — no local digest markdown tree).
 
 Step 0: Data layer
-  - Prefer Supabase: `price_technicals`, `price_history`, `macro_series_observations`, `sec_recent_filings`
+  - Prefer Supabase: `price_technicals`, `price_history`, `macro_series_observations`
+  - SEC issuer filings: ad hoc only (major stocks / sector read-through); use EDGAR or `sec-edgar` MCP when research calls for it — not a daily table
     (GitHub Daily Price Update loads most of this automatically).
   - Optional local cache for the agent session only:
       ./scripts/fetch-market-data.sh

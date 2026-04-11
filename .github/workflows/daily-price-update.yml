@@ -31,7 +31,6 @@ jobs:
       SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
       FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-      SEC_EDGAR_USER_AGENT: ${{ secrets.SEC_EDGAR_USER_AGENT }}
 
     steps:
       - uses: actions/checkout@v4
@@ -88,7 +87,7 @@ jobs:
             --supabase \
             $TICKER_ARG
 
-      # Macro / FX / sentiment / Treasury + SEC filings (see RUNBOOK, config/macro_series.yaml).
+      # Macro / FX / sentiment / Treasury (see RUNBOOK, config/macro_series.yaml).
       - name: Ingest macro & Treasury (scheduled)
         if: github.event_name == 'schedule'
         run: |
@@ -100,11 +99,6 @@ jobs:
           python3 scripts/ingest_fx_frankfurter.py --supabase
           python3 scripts/ingest_crypto_fng.py --supabase
           python3 scripts/ingest_treasury_curve.py --supabase
-          if [ -n "${SEC_EDGAR_USER_AGENT:-}" ]; then
-            python3 scripts/ingest_sec_recent_filings.py --supabase --days 14
-          else
-            echo "::warning::SEC_EDGAR_USER_AGENT not set — skipping SEC filings ingest"
-          fi
 
       - name: Ingest macro & Treasury (manual)
         if: github.event_name == 'workflow_dispatch'
@@ -128,11 +122,6 @@ jobs:
             python3 scripts/ingest_fx_frankfurter.py --supabase
             python3 scripts/ingest_crypto_fng.py --supabase
             python3 scripts/ingest_treasury_curve.py --supabase
-          fi
-          if [ -n "${SEC_EDGAR_USER_AGENT:-}" ]; then
-            python3 scripts/ingest_sec_recent_filings.py --supabase --days 14
-          else
-            echo "::warning::SEC_EDGAR_USER_AGENT not set — skipping SEC filings ingest"
           fi
 
       - name: Verify row counts
@@ -158,9 +147,4 @@ jobs:
               print(f"✅ macro_series_observations: {mo.count} rows (latest obs_date={latest})")
           except Exception as e:
               print(f"⚠️  macro_series_observations: {e}")
-          try:
-              sf = sb.table("sec_recent_filings").select("accession", count="exact").execute()
-              print(f"✅ sec_recent_filings: {sf.count} rows")
-          except Exception as e:
-              print(f"⚠️  sec_recent_filings: {e}")
           EOF

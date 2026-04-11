@@ -27,7 +27,6 @@ Operator truth for **when to run what** remains [`RUNBOOK.md`](../../RUNBOOK.md)
 | [`scripts/ingest_fx_frankfurter.py`](../../scripts/ingest_fx_frankfurter.py) | Frankfurter FX → same table; **`--supabase`**, **`--backfill`** year-chunk history |
 | [`scripts/ingest_crypto_fng.py`](../../scripts/ingest_crypto_fng.py) | Crypto Fear & Greed → same table; **`--supabase`**, **`--backfill`** uses YAML `backfill_limit` |
 | [`scripts/ingest_treasury_curve.py`](../../scripts/ingest_treasury_curve.py) | Treasury XML (`us_treasury`) + Yahoo ^IRX/^FVX/^TNX/^TYX (`treasury_market`); **`--backfill`** uses Yahoo **`max`** and skips the slow XML month crawl (often empty from cloud); **`--xml-months N`** to force official XML |
-| [`scripts/ingest_sec_recent_filings.py`](../../scripts/ingest_sec_recent_filings.py) | EDGAR recent filings for watchlist → `sec_recent_filings`; needs **`SEC_EDGAR_USER_AGENT`**; **`--days 14`** |
 | [`scripts/fetch-quotes.py`](../../scripts/fetch-quotes.py), [`scripts/fetch-macro.py`](../../scripts/fetch-macro.py), [`scripts/fetch-market-data.sh`](../../scripts/fetch-market-data.sh) | Local/agent cache |
 
 ## Portfolio helpers

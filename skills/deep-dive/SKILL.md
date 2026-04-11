@@ -44,6 +44,7 @@ Search for: latest earnings, valuation multiples, analyst ratings, balance sheet
 - **Balance sheet**: Debt load, cash position — any financial stress?
 - **Analyst consensus**: Buy / Hold / Sell ratio, average price target vs. current
 - **Upcoming catalysts**: Earnings date, product launches, regulatory events
+- **SEC filings (when material):** For **single-stock** or issuer-heavy themes, optionally review recent **8-K**, **10-Q**, **10-K** (or 20-F) on [EDGAR](https://www.sec.gov/edgar) or via the **`sec-edgar`** MCP if configured — especially around earnings, restatements, or heavy news flow. ETF-only sleeves usually skip this.
 
 ---
 
