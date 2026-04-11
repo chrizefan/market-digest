@@ -23,8 +23,8 @@ sql_tables=$(grep -hE "^CREATE TABLE (IF NOT EXISTS )?[a-z_]+" "$MIGRATIONS_DIR"
   | sort -u)
 
 # Tables created in an early migration then dropped later (CREATE line remains; TS omits them).
-# Example: 016 creates sec_recent_filings, 017 drops it.
-SQL_RETIRED_TABLES="sec_recent_filings"
+# Examples: 016 sec_recent_filings → 017 drop; 001 benchmark_history → 010 drop (use price_history).
+SQL_RETIRED_TABLES="sec_recent_filings benchmark_history"
 for t in $SQL_RETIRED_TABLES; do
   sql_tables=$(printf '%s\n' "$sql_tables" | grep -vxF "$t" || true)
 done

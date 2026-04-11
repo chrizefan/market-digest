@@ -140,15 +140,15 @@
 ┌──────────────────────────────────┐     ┌─────────────────────────┐
 │       SUPABASE (PostgreSQL)       │     │  GITHUB PAGES           │
 │                                   │     │                         │
-│  8 tables:                        │     │  Static React SPA       │
-│  daily_snapshots                  │     │  Loads dashboard-       │
-│  positions                        │     │  data.json at startup   │
-│  theses                           │     │                         │
-│  position_events                  │     │  Falls back to static   │
-│  documents                        │     │  JSON if Supabase is    │
-│  nav_history                      │     │  not configured         │
-│  benchmark_history                │     │                         │
-│  portfolio_metrics                │     └─────────────────────────┘
+│  Key tables (see migrations):    │     │  Static React SPA       │
+│  daily_snapshots, positions,      │     │  Loads dashboard-       │
+│  theses, position_events,         │     │  data.json at startup   │
+│  documents, nav_history,          │     │                         │
+│  portfolio_metrics, price_history │     │  Falls back to static   │
+│  (+ macro_series_observations)    │     │  JSON if Supabase is    │
+│                                   │     │  not configured         │
+│  Benchmark closes: price_history  │     │                         │
+│  (benchmark_history dropped 010) │     └─────────────────────────┘
 └───────────────────────────────────┘
 ```
 
@@ -517,12 +517,11 @@ Checks per phase:
 │    segment           │     │    invested_pct       │
 │    sector            │     └─────────────────────┘
 │    run_type          │
-│    content           │     ┌─────────────────────┐
-└─────────────────────┘     │  benchmark_history    │
-                             ├─────────────────────┤
-┌─────────────────────┐     │ date + ticker (UQ)    │
-│  portfolio_metrics   │     │    price (>= 0)       │
-├─────────────────────┤     └─────────────────────┘
+│    content           │
+└─────────────────────┘
+┌─────────────────────┐
+│  portfolio_metrics   │
+├─────────────────────┤
 │ PK date              │
 │    pnl_pct           │
 │    sharpe            │
@@ -540,7 +539,7 @@ Checks per phase:
 |---------------------|----------|
 | **Enum-like CHECKs** | `positions.category` IN 12 values; `theses.status` IN 7 values; `documents.doc_type` IN 5 values |
 | **Numeric ranges** | `weight_pct` 0-100; `price >= 0`; `nav > 0`; `volatility` 0-10; `max_drawdown` -1 to 0; `phase` 1-9 |
-| **NOT NULL** | `positions.ticker`; `positions.date`; `position_events.ticker`/`date`; `benchmark_history.ticker`; `documents.date` |
+| **NOT NULL** | `positions.ticker`; `positions.date`; `position_events.ticker`/`date`; `documents.date` |
 | **Additional indexes** | `positions.category`; `position_events.event`; `documents.segment`; `theses.status`; `theses.thesis_id` |
 
 ### 5.4 Frontend Data Access Pattern

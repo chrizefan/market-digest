@@ -67,7 +67,7 @@ def main():
         print("✅ Dry run complete!")
         return
 
-    mod.push_to_supabase(parsed_digests, docs, history, b_hist, metrics_row, pj_positions)
+    mod.push_to_supabase(parsed_digests, docs, history, metrics_row, pj_positions)
     print("✅ Backfill complete!")
 
 if __name__ == "__main__":

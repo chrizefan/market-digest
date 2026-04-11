@@ -913,7 +913,7 @@ def load_snapshot_json(day_dir):
         return None
 
 
-def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_positions):
+def push_to_supabase(parsed_digests, docs, history, metrics, pj_positions):
     """Push all data to Supabase tables. Uses upsert (ON CONFLICT DO UPDATE)."""
     if not supabase_configured():
         return
@@ -1117,20 +1117,6 @@ def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_position
                 print(f"   Supabase warning (nav_history chunk {i}): {e}")
         print(f"   Supabase: {len(nav_rows)} nav_history rows upserted")
 
-    # ---- benchmark_history ----
-    bench_rows = []
-    for ticker, bdata in b_hist.items():
-        for h in bdata.get("history", []):
-            bench_rows.append({"date": h["date"], "ticker": ticker, "price": h["price"]})
-    if bench_rows:
-        for i in range(0, len(bench_rows), 500):
-            chunk = bench_rows[i:i+500]
-            try:
-                sb.table("benchmark_history").upsert(chunk, on_conflict="date,ticker").execute()
-            except Exception as e:
-                print(f"   Supabase warning (benchmark_history chunk {i}): {e}")
-        print(f"   Supabase: {len(bench_rows)} benchmark_history rows upserted")
-
     # ---- portfolio_metrics ----
     if metrics:
         try:
@@ -1285,7 +1271,7 @@ def main():
             "cash_pct": round(cash_pct, 2),
             "total_invested": round(total_invested, 2),
         }
-        push_to_supabase(parsed_digests, docs, history, b_hist, metrics_row, pj_positions)
+        push_to_supabase(parsed_digests, docs, history, metrics_row, pj_positions)
     else:
         print("   ❌ Supabase not configured — data will NOT be available to the frontend!")
         if _HAS_SUPABASE:

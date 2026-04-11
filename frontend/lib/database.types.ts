@@ -113,15 +113,6 @@ export interface Database {
         Insert: Database['public']['Tables']['nav_history']['Row'];
         Update: Partial<Database['public']['Tables']['nav_history']['Row']>;
       };
-      benchmark_history: {
-        Row: {
-          date: string;
-          ticker: string;
-          price: number;
-        };
-        Insert: Database['public']['Tables']['benchmark_history']['Row'];
-        Update: Partial<Database['public']['Tables']['benchmark_history']['Row']>;
-      };
       portfolio_metrics: {
         Row: {
           id: string;

@@ -268,7 +268,7 @@ Output artifacts (JSON-first):
 ## Phase 8 — Metrics refresh (optional) + Commit
 
 In DB-first mode, Phase 7B already upserted today’s snapshot/positions/theses/documents.
-`python3 scripts/update_tearsheet.py` remains optional for NAV/benchmarks/metrics refresh (until those are fully DB-native).
+`python3 scripts/update_tearsheet.py` remains optional for NAV/metrics refresh (benchmark series live in `price_history`; legacy `benchmark_history` was removed in migration 010).
 
 Then commit repo changes if any:
 `./scripts/git-commit.sh`
