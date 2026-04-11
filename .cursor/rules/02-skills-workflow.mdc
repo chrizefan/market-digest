@@ -14,7 +14,7 @@ name: skill-name
 description: One-line description used as routing key
 ---
 ```
-- Do NOT rename `name:` without updating `CLAUDE_PROJECT_INSTRUCTIONS.md` and the skills catalog
+- Do NOT rename `name:` without updating `docs/agentic/SKILLS-CATALOG.md`
 - Do NOT remove or reformat frontmatter
 
 ## Required Sections

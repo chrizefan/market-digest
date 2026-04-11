@@ -1,17 +1,18 @@
 # digiquant-atlas — Cursor Rules
 
 ## What This Project Is
-A daily market intelligence repo using a 7-phase AI-orchestrated pipeline. Skill files (`skills/*.md`) are step-by-step instruction sets for AI agents. Memory files (`memory/*/ROLLING.md`) are append-only research logs.
+A daily market intelligence repo using a **9-phase** AI-orchestrated pipeline. Skills are `skills/<slug>/SKILL.md`. Memory files (`memory/*/ROLLING.md`) are append-only. **DB-first**: Supabase + JSON canonical; markdown derived.
 
 ## Core Architecture
 - `skills/orchestrator/SKILL.md` — master pipeline (read this first for context)
-- `config/watchlist.md` + `config/preferences.md` — user configuration (read at session start)
-- `memory/BIAS-TRACKER.md` — daily cross-asset bias log (14 columns)
-- `outputs/daily/YYYY-MM-DD/` — one folder per day, 22 output files
+- `config/watchlist.md` + `config/preferences.md` — user configuration (preferences for **Track B** portfolio only)
+- `memory/BIAS-TRACKER.md` — daily cross-asset bias log
+- `outputs/daily/YYYY-MM-DD/` — JSON artifacts; legacy `.md` in `archive/legacy-outputs/`
+- `python3 scripts/run_db_first.py` — publish/validate entry
 
 ## Skill File Rules
-When editing `skills/*.md` files:
-- YAML frontmatter `name:` and `description:` are sacred — do NOT rename without updating `CLAUDE_PROJECT_INSTRUCTIONS.md`
+When editing `skills/<slug>/SKILL.md` files:
+- YAML frontmatter `name:` and `description:` are sacred — do NOT rename without updating `docs/agentic/SKILLS-CATALOG.md`
 - Always preserve `## Memory Update` heading and its content
 - Output paths use `{{DATE}}` placeholder — never hardcode dates
 - Keep numbered Steps format: `### 1. Step Name` throughout

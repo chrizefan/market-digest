@@ -1,17 +1,17 @@
 # digiquant-atlas — Windsurf Rules
 
 ## Project Purpose
-Daily market intelligence system using a 7-phase AI-orchestrated pipeline. Produces structured research across all asset classes. Skill files (`skills/*.md`) are step-by-step instruction sets for AI agents.
+Daily market intelligence system using a **9-phase** AI-orchestrated pipeline. **DB-first (Supabase)**; JSON artifacts are canonical; markdown is derived. Skills live in `skills/<slug>/SKILL.md`.
 
 ## Architecture at a Glance
 ```
-skills/               ← 35+ skill files (AI instruction sets)
+skills/<slug>/        ← Skill packages (SKILL.md per folder)
 config/               ← watchlist.md, preferences.md, hedge-funds.md
-memory/               ← 23 append-only ROLLING.md files + BIAS-TRACKER.md
-templates/            ← Output templates with {{PLACEHOLDER}} syntax
-outputs/daily/        ← Agent-generated, YYYY-MM-DD/ folders
-scripts/              ← Bash utility scripts
-docs/agentic/         ← Full documentation suite
+memory/               ← append-only ROLLING.md files + BIAS-TRACKER.md
+templates/            ← JSON schemas + templates
+outputs/daily/        ← JSON artifacts per date (legacy .md in archive/)
+scripts/              ← Bash + Python (run_db_first.py, ETL)
+docs/agentic/         ← Architecture, workflows
 agents/               ← Named agent role definitions
 ```
 
@@ -23,7 +23,7 @@ When starting a session:
 
 ## Critical Conventions
 
-### Skill Files (skills/*.md)
+### Skill files (`skills/<slug>/SKILL.md`)
 - YAML frontmatter `name:` + `description:` are routing keys — do NOT change without cascading updates
 - Preserve `## Memory Update` sections — they drive the memory system
 - Use `{{DATE}}` in output paths, never hardcode
@@ -49,14 +49,17 @@ When starting a session:
 - Tables require `|---|---|` separator row
 - Templates: `{{PLACEHOLDER}}` syntax for runtime substitution
 
-## 7-Phase Pipeline Summary
-1. Alt Data + Premarket (positioning, sentiment, options flow)
-2. Institutional Intel (dark pools, hedge fund moves, 13F updates)
-3. Macro Regime (rates, dollar, risk-on/off determination)
+## Pipeline summary (9 phases)
+1. Alt Data + Premarket
+2. Institutional Intel
+3. Macro Regime
 4. Asset Classes (bonds, commodities, forex, crypto, international)
-5. Equities + 11 Sectors (each sector as a sub-agent)
+5. US Equities + 11 GICS sectors
 6. Earnings & Events
-7. Synthesis → DIGEST.md
+7. Digest synthesis → **snapshot JSON** → Supabase (`daily_snapshots`, `documents.digest`)
+8–9. Portfolio layer (screener, deliberation, PM — see orchestrator skill)
+
+Track A blind research: `skills/research-daily/SKILL.md`. Track B: preferences + `rebalance-decision.json`. See `RUNBOOK.md`.
 
 ## What NOT To Do
 - Do NOT modify `outputs/daily/` files — agent-generated

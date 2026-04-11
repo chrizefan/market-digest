@@ -4,13 +4,13 @@ applyTo: "**"
 
 # digiquant-atlas — GitHub Copilot Instructions
 
-This repository is a **daily market intelligence system** with a 7-phase AI-orchestrated pipeline. It produces structured financial research across all asset classes.
+This repository is a **daily market intelligence system** with a **9-phase** AI-orchestrated pipeline. Canonical state is **DB-first (Supabase)**; JSON artifacts are primary and markdown is derived.
 
 ## Project Context
 
-- **Language**: Bash scripts + Markdown (skill files as instruction sets) + Python (tearsheet + DB-first publishers)
-- **Architecture**: Skill files (`skills/*.md`) are step-by-step instruction sets for AI agents
-- **Outputs**: `outputs/daily/YYYY-MM-DD/` folders (22 files per day)
+- **Language**: Bash + Python (ETL, publish) + Markdown skills under `skills/<slug>/SKILL.md`
+- **Architecture**: [`RUNBOOK.md`](RUNBOOK.md), [`docs/agentic/ARCHITECTURE.md`](docs/agentic/ARCHITECTURE.md)
+- **Outputs**: JSON under `outputs/daily/YYYY-MM-DD/` + rows in Supabase (`daily_snapshots`, `documents`, …). Legacy markdown samples: `archive/legacy-outputs/daily/`
 
 ## Key Files to Know
 
@@ -23,8 +23,9 @@ This repository is a **daily market intelligence system** with a 7-phase AI-orch
 | `skills/profile-setup/SKILL.md` | Interactive wizard to configure investment-profile.md |
 | `templates/digest-snapshot-schema.json` | Canonical daily digest snapshot JSON schema |
 | `templates/schemas/*.schema.json` | Canonical schemas for weekly/monthly/delta/rebalance artifacts |
-| `scripts/new-day.sh` | Creates daily folder structure |
-| `scripts/validate-phase.sh` | Validates outputs after each pipeline phase |
+| `scripts/run_db_first.py` | DB-first publish + validate entry |
+| `scripts/new-day.sh` | Prints baseline/delta prompt |
+| `scripts/validate-phase.sh` | Validates outputs after each pipeline phase (legacy phase checks) |
 
 ## Skill File Conventions
 
@@ -39,22 +40,11 @@ When editing or creating skill files in `skills/`:
 - **macOS `sed`**: use `sed -i ""` not `sed -i` (macOS requires the extension argument)
 - All scripts run from repo root — paths are relative
 
-## Output Structure
+## Output structure (current)
 
-```
-outputs/daily/YYYY-MM-DD/
-  DIGEST.md              ← Master output
-  macro.md               ← Phase 3
-  bonds.md               ← Phase 4A
-  commodities.md         ← Phase 4B
-  forex.md               ← Phase 4C
-  crypto.md              ← Phase 4D
-  international.md       ← Phase 4E
-  equities.md            ← Phase 5A
-  alt-data.md            ← Phase 1
-  institutional.md       ← Phase 2
-  sectors/*.md           ← 11 files (Phase 5B-L)
-```
+- **Canonical**: `snapshot.json`, `delta-request.json`, segment JSON, `rebalance-decision.json` → `materialize_snapshot.py` / `update_tearsheet.py` → Supabase.
+- **Legacy** (read-only samples): `archive/legacy-outputs/daily/*.md`
+- **Index**: [`docs/ops/SCRIPTS.md`](docs/ops/SCRIPTS.md)
 
 ## Coding Standards
 
@@ -67,7 +57,7 @@ outputs/daily/YYYY-MM-DD/
 ## What NOT to Do
 
 - Do not modify `outputs/daily/` files directly — these are agent-generated
-- Do not change the `name:` field in skill file frontmatter without updating CLAUDE_PROJECT_INSTRUCTIONS.md
+- Do not change the `name:` field in skill file frontmatter without updating `docs/agentic/SKILLS-CATALOG.md`
 - Do not remove the `.github/workflows/` files — `deploy.yml` and `weekly-check.yml` are CI/CD
 
 ## Complete Documentation
