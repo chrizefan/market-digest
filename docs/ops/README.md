@@ -4,6 +4,7 @@ These files are **guidance** for humans and agents. They are not loaded by valid
 
 | File | Purpose |
 |------|---------|
+| [SCRIPTS.md](SCRIPTS.md) | Script index (DB-first, data, migration) |
 | [data-sources.md](data-sources.md) | URLs, feeds, MCP notes, calendars |
 | [email-research.md](email-research.md) | Gmail + newsletter intake |
 

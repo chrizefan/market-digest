@@ -1,11 +1,14 @@
-# Evolution / post-mortem (legacy index)
+# Evolution / post-mortem
 
-New work is **JSON-first** under `outputs/evolution/YYYY-MM-DD/`:
+Canonical artifacts are **`evolution_sources`**, **`evolution_quality_log`**, and **`evolution_proposals`** (schemas under `templates/schemas/evolution-*.schema.json`). **Publish to Supabase** with:
 
-- `quality-log.json` — `evolution_quality_log` (schema: `templates/schemas/evolution-quality-log.schema.json`)
-- `sources.json` — `evolution_sources`
-- `proposals.json` — `evolution_proposals`
+```bash
+python3 scripts/validate_artifact.py -
+python3 scripts/publish_document.py --payload - --document-key … 
+```
 
-Scaffold: `./scripts/scaffold_evolution_day.sh [YYYY-MM-DD]`
+(pipe JSON on stdin for each artifact)
 
-The historical narrative log in this folder (`quality-log.md`) is retained for reference; append new dated sections here only if you want a single readable file—**canonical artifacts for publishing are the JSON files above.**
+Scaffold (optional local scratch): `./scripts/scaffold_evolution_day.sh [YYYY-MM-DD]` — still end by **publishing** via `publish_document.py`; do not rely on committed `outputs/` (that tree is gitignored).
+
+The narrative `quality-log.md` in this folder is optional human-readable notes only.

@@ -1,37 +1,45 @@
-# Prompt Patterns
+# Prompt patterns
 
 Copy-paste prompts for every task type. Replace `{DATE}` with today's date (YYYY-MM-DD).
 
+## DB-first (preferred)
+
+- **Entrypoint:** `python3 scripts/run_db_first.py` — follow printed baseline vs delta instructions.
+- **Track A (blind research):** paste from [`scripts/cowork-research-prompt.txt`](../../scripts/cowork-research-prompt.txt).
+- **Track B (portfolio):** paste from [`scripts/cowork-daily-prompt.txt`](../../scripts/cowork-daily-prompt.txt).
+
+Sections below use **legacy filesystem paths** (`*.md` under `outputs/daily/`) where teams still run markdown-first; for production, emit **JSON** and publish per [`RUNBOOK.md`](../../RUNBOOK.md).
+
 ---
 
-## Full Daily Digest
+## Full daily digest
 
 ```
 Today is {DATE}.
 
-Read skills/orchestrator/SKILL.md and run the complete pipeline.
+Read skills/orchestrator/SKILL.md and run the complete pipeline (9 phases; see docs/agentic/ARCHITECTURE.md).
 
 Setup:
-- Read config/watchlist.md and config/preferences.md
-- Run ./scripts/new-day.sh output has already been run — folder outputs/daily/{DATE}/ exists
+- Read config/watchlist.md; for portfolio layer read config/preferences.md and config/investment-profile.md
+- outputs/daily/{DATE}/ may exist after ./scripts/new-day.sh
 
-Execute all 7 phases in sequence. Each phase should read prior phases' outputs.
-Update all memory files at the end of the session.
+Execute phases; produce JSON artifacts and publish to Supabase (materialize_snapshot.py, update_tearsheet.py — RUNBOOK.md).
+Update memory files at end of session.
 ```
 
 ---
 
-## Single Segment — Macro
+## Single segment — Macro
 
 ```
 Today is {DATE}.
 
 Read skills/macro/SKILL.md for instructions.
 First read memory/macro/ROLLING.md for prior context.
-Also read config/preferences.md.
+Read config/preferences.md only if this run feeds portfolio (Track B).
 
 Run the macro analysis.
-Write to: outputs/daily/{DATE}/macro.md
+Write JSON (and/or segment artifact paths per skill); if legacy: outputs/daily/{DATE}/macro.md
 Append findings to: memory/macro/ROLLING.md
 ```
 
@@ -176,7 +184,7 @@ Write to: outputs/deep-dives/{TICKER}-{DATE}.md
 
 ---
 
-## Portfolio / Thesis Review
+## Portfolio / thesis review
 
 ```
 Today is {DATE}.
@@ -185,7 +193,7 @@ Read memory/THESES.md for all active theses.
 Read config/preferences.md for portfolio positioning and risk tolerance.
 Read memory/BIAS-TRACKER.md (last 5 rows) for recent bias trends.
 
-If today's DIGEST.md exists, read it: outputs/daily/{DATE}/DIGEST.md
+Load today's digest from Supabase or snapshot JSON for {DATE}; legacy path: outputs/daily/{DATE}/DIGEST.md or archive.
 
 For each active thesis:
 - Assess current evidence For vs Against
@@ -197,24 +205,18 @@ Append your review to memory/THESES.md under today's date.
 
 ---
 
-## Weekly Synthesis
+## Weekly synthesis
 
 ```
 Week ending: {DATE}
 
-Read all DIGEST.md files from this week:
-- outputs/daily/{MON}/DIGEST.md
-- outputs/daily/{TUE}/DIGEST.md
-- outputs/daily/{WED}/DIGEST.md
-- outputs/daily/{THU}/DIGEST.md
-- outputs/daily/{FRI}/DIGEST.md (if exists)
+Read this week's digests from Supabase (documents / daily_snapshots) or JSON under outputs/daily/*/snapshot.json.
+Legacy: outputs/daily/*/DIGEST.md or archive/legacy-outputs/daily/.
 
 Read memory/BIAS-TRACKER.md entries for this week.
-Write a weekly JSON artifact (schema: templates/schemas/weekly-digest.schema.json).
-
-Identify the week's key themes, regime shifts, and position-relevant events.
+Write weekly JSON (schema: templates/schemas/weekly-digest.schema.json).
 Write to: outputs/weekly/{YYYY}-W{WW}.json
-Do NOT update memory files — this is read-only synthesis.
+Do NOT update memory files — read-only synthesis.
 ```
 
 ---
@@ -267,16 +269,15 @@ Please:
 
 ---
 
-## Editing Conventions Reminder
-
-Include this in any session that involves modifying project files:
+## Editing conventions reminder
 
 ```
 Important conventions for this project:
 - Memory files (memory/**/ROLLING.md) are APPEND-ONLY. Never rewrite existing content.
-- macOS sed: use sed -i "" not sed -i (required for BSD compatibility)
-- Skill file frontmatter name: fields are sacred — changes require cascading updates
-- Output files in outputs/daily/ are agent-generated — do not manually edit them
-- Always use {{DATE}} placeholder in output paths, never hardcode dates
-- Memory directory search: use find memory/ -name "ROLLING.md" not memory/*/ROLLING.md
+- macOS sed: use sed -i "" not sed -i (BSD)
+- Skill YAML frontmatter name:/description: — changes need cascading updates
+- outputs/daily/ JSON and snapshots are agent-generated — do not hand-edit canonical JSON
+- Prefer Supabase + JSON; markdown under outputs/ is legacy or derived
+- Use {DATE} / YYYY-MM-DD in paths, never hardcoded dates
+- find memory/ -name "ROLLING.md" for memory discovery
 ```

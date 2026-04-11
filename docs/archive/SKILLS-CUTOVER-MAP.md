@@ -1,6 +1,8 @@
 # Skills hard-cutover map (legacy → package paths)
 
-This document supports the hard-cutover migration from legacy flat skill files to per-skill packages:
+> **Archived** (moved from `docs/agentic/SKILLS-CUTOVER-MAP.md`). Migration to `skills/<slug>/SKILL.md` is complete; kept for historical path lookup only.
+
+This document recorded the hard-cutover from legacy flat skill files to per-skill packages:
 
 - **Legacy**: `skills/SKILL-*.md`, `skills/sectors/SKILL-sector-*.md`, `skills/alternative-data/SKILL-*.md`, `skills/institutional/SKILL-*.md`
 - **New canonical**: `skills/<skill-slug>/SKILL.md`
@@ -57,7 +59,7 @@ This document supports the hard-cutover migration from legacy flat skill files t
 
 The following files currently reference legacy skill paths and must be updated to the **new package paths**:
 
-- **Core instructions**: `AGENTS.md`, `CLAUDE.md`, `CLAUDE_PROJECT_INSTRUCTIONS.md`, `.github/copilot-instructions.md`, `RUNBOOK.md`, `.cursorrules`, `.windsurfrules` (legacy paste doc: `docs/archive/PROJECT-INSTRUCTIONS-PASTE.txt`)
+- **Core instructions**: `AGENTS.md`, `CLAUDE.md`, `cowork/PROJECT-PROMPT.md`, root `CLAUDE_PROJECT_INSTRUCTIONS.md` (stub), `.github/copilot-instructions.md`, `RUNBOOK.md`, `.cursorrules`, `.windsurfrules` (legacy paste doc: `docs/archive/PROJECT-INSTRUCTIONS-PASTE.txt`; long Claude paste: `docs/archive/CLAUDE_PROJECT_INSTRUCTIONS-full.md`)
 - **Agent entrypoints**: `agents/orchestrator.agent.md`, `agents/portfolio-manager.agent.md`, `agents/alt-data-analyst.agent.md`, `agents/sector-analyst.agent.md`, `agents/thesis-tracker.agent.md`
 - **Scripts that print prompts / reference skills**: `scripts/new-day.sh`, `scripts/thesis.sh`, `scripts/monthly-rollup.sh`, `scripts/fetch-market-data.sh`, `scripts/cowork-daily-prompt.txt` (retired: `archive/legacy-scripts/run-segment.sh`, `new-week.sh`, `run-daily.sh`)
 - **Docs**: `docs/agentic/README.md`, `docs/agentic/ARCHITECTURE.md`, `docs/agentic/WORKFLOWS.md`, `docs/agentic/PROMPTS.md`, `docs/agentic/PLATFORMS.md` (archived walkthrough: `docs/archive/DAILY-RUN-WALKTHROUGH.md`)

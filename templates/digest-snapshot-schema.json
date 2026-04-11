@@ -157,6 +157,10 @@
           "url": { "type": "string", "maxLength": 2000 }
         }
       }
+    },
+    "no_change": {
+      "type": "boolean",
+      "description": "When true, this snapshot is an explicit no-op day (materialized state matches baseline or prior; validators and UI may show 'no material change')."
     }
   },
   "definitions": {

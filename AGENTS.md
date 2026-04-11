@@ -36,6 +36,11 @@ Load prior baseline snapshot from Supabase (or last published JSON)
 Output: delta-request JSON → operator runs scripts/materialize_snapshot.py
 ```
 
+### Track A vs Track B (research vs portfolio)
+- **Track A:** `skills/research-daily/SKILL.md` → `validate_artifact.py -` → `publish_document.py --payload -` with unique `research-delta/…` key → `run_db_first.py --skip-execute --validate-mode research` — Cowork: `cowork/tasks/research-daily-delta.md` / `research-weekly-baseline.md` / `recurring-scheduled-run.md`
+- **Track B:** Portfolio / analyst (preferences + `rebalance-decision.json`) → `run_db_first.py --validate-mode pm` or `full` — Cowork: `cowork/tasks/portfolio-pm-rebalance.md`
+- **Cadence / open execution:** `config/schedule.json`; **backfill opens:** `scripts/backfill_execution_prices.py`
+
 ### Key scripts
 ```bash
 python3 scripts/run_db_first.py # DB-first entrypoint (baseline/delta + publish + validate)
@@ -48,7 +53,7 @@ python3 scripts/run_db_first.py # DB-first entrypoint (baseline/delta + publish 
 ## Core Rules
 
 - **Search the web** for prices/yields/news — never use training data cutoff values
-- **Read `config/watchlist.md` + `config/investment-profile.md`** at session start
+- **Read `config/watchlist.md`** every session. Read **`config/preferences.md`** and **`config/investment-profile.md`** for **Track B (portfolio)** only — not for Track A (`skills/research-daily/SKILL.md`).
 - Daily digest is DB-first: markdown is derived from the snapshot JSON stored in Supabase.
 - **State a bias** (Bullish/Bearish/Neutral/Conflicted) with rationale for every segment
 - Run **Phase 1 (alt-data) BEFORE Phase 3 (macro)** — positioning informs regime read
@@ -72,8 +77,9 @@ python3 scripts/run_db_first.py # DB-first entrypoint (baseline/delta + publish 
 
 ## Full Documentation
 
-- Architecture: `docs/agentic/ARCHITECTURE.md`
+- Architecture: `docs/agentic/ARCHITECTURE.md` (extended inventory: `docs/archive/ARCHITECTURE-REVIEW.md`)
 - Platform setup: `docs/agentic/PLATFORMS.md`
 - Skills catalog: `docs/agentic/SKILLS-CATALOG.md`
 - Workflows: `docs/agentic/WORKFLOWS.md`
 - Development conventions: `CLAUDE.md`
+- Claude.ai Projects: paste `cowork/PROJECT-PROMPT.md`; root `CLAUDE_PROJECT_INSTRUCTIONS.md` is a short pointer only

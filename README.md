@@ -10,7 +10,7 @@ Daily market intelligence with an AI-orchestrated pipeline. **Canonical state is
 | [AGENTS.md](AGENTS.md) | Agent behavior + `python3 scripts/run_db_first.py` |
 | [docs/agentic/WORKFLOWS.md](docs/agentic/WORKFLOWS.md) | Procedures (baseline, delta, rollups) |
 | [docs/agentic/PLATFORMS.md](docs/agentic/PLATFORMS.md) | IDE / platform setup |
-| [cowork/](cowork/) | Cloud Cowork / scheduled-task copy-paste |
+| [cowork/](cowork/) | **Claude Cowork:** start at [`cowork/README.md`](cowork/README.md); paste [`cowork/PROJECT-PROMPT.md`](cowork/PROJECT-PROMPT.md) into project settings; tasks in [`cowork/tasks/`](cowork/tasks/) |
 
 ## One command
 
@@ -25,8 +25,8 @@ config/           Runtime inputs: watchlist, portfolio, investment profile
 skills/<slug>/    Instruction packages (orchestrator, macro, sector-*, …)
 templates/schemas/JSON schemas for artifacts
 scripts/          Automation (run_db_first.py, materialize_snapshot.py, …)
-outputs/          JSON artifacts (weekly, monthly, deep-dives, evolution); daily/ is a stub
-archive/          Legacy scripts + legacy daily markdown outputs
+outputs/          Not committed (see outputs/README.md); optional local scratch — **Supabase** is canonical
+archive/          `legacy-scripts/` (reference); `legacy-outputs/` bulk samples not in git (see archive/legacy-outputs/README.md)
 memory/           Append-only ROLLING.md research logs
 docs/research/    Curated research doctrine (see skills/research-library)
 frontend/         Next.js dashboard
@@ -54,9 +54,12 @@ python3 scripts/run_db_first.py   # DB-first entry
 | File | Contents |
 |------|----------|
 | `CLAUDE.md` | Claude Code quick commands |
-| `docs/agentic/ARCHITECTURE.md` | System design |
+| `CLAUDE_PROJECT_INSTRUCTIONS.md` | Claude.ai Projects: pointers only (paste `cowork/PROJECT-PROMPT.md`) |
+| `docs/agentic/ARCHITECTURE.md` | System design (primary) |
+| `docs/archive/ARCHITECTURE-REVIEW.md` | Extended reference (inventory, frontend, deploy) |
 | `docs/agentic/MEMORY-SYSTEM.md` | Memory format |
 | `docs/agentic/SKILLS-CATALOG.md` | Skill index (keep short; filesystem is source of truth) |
+| `docs/ops/SCRIPTS.md` | Script index (publish, data, migration) |
 | `docs/ops/` | Sourcing / email ops (non-runtime reference) |
 
 ## Legacy / archive

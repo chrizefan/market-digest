@@ -48,17 +48,17 @@ claude -p "Search memory for any notes on NVDA"
 
 ## Claude.ai Projects
 
-**Config file**: `CLAUDE_PROJECT_INSTRUCTIONS.md`
+**Primary paste**: `cowork/PROJECT-PROMPT.md` — keep this block in Project Instructions (aligned with Co-work, DB-first, Track A/B).
 
-Copy the full contents of this file and paste into the Project Instructions field in your Claude.ai Project settings.
+**Stub / pointers**: `CLAUDE_PROJECT_INSTRUCTIONS.md` at repo root links to `AGENTS.md`, `RUNBOOK.md`, and `docs/agentic/SKILLS-CATALOG.md` so you do not maintain duplicate long tables in two places.
 
 **Setup steps:**
 1. Open claude.ai → Projects → New Project (or your existing project)
 2. Go to Project Settings → Project Instructions
-3. Paste contents of `CLAUDE_PROJECT_INSTRUCTIONS.md`
-4. Attach relevant files: `config/watchlist.md`, `config/preferences.md`
+3. Paste contents of `cowork/PROJECT-PROMPT.md` (and optionally append the short stub from `CLAUDE_PROJECT_INSTRUCTIONS.md`)
+4. Attach or sync: `config/watchlist.md`, `config/investment-profile.md` (Track B), `cowork/PROJECT.md` as needed
 
-**Current config**: `CLAUDE_PROJECT_INSTRUCTIONS.md` ✅
+**Historical long paste** (skill tables, file map): `docs/archive/CLAUDE_PROJECT_INSTRUCTIONS-full.md`
 
 ---
 

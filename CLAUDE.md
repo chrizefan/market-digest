@@ -1,6 +1,6 @@
 # digiquant-atlas — Claude Code Instructions
 
-> For pipeline/behavioral rules see `AGENTS.md`. For Claude.ai Projects, see `CLAUDE_PROJECT_INSTRUCTIONS.md`.
+> For pipeline/behavioral rules see `AGENTS.md`. For Claude.ai Projects, paste `cowork/PROJECT-PROMPT.md`; root `CLAUDE_PROJECT_INSTRUCTIONS.md` is a short pointer only.
 
 ---
 
@@ -30,7 +30,7 @@ python scripts/update_tearsheet.py  # Parse digests + push to Supabase (primary 
 
 ```
 config/      watchlist.md, investment-profile.md, portfolio.json, hedge-funds.md
-skills/      Skill files (step-by-step instruction sets for AI pipeline phases)
+skills/      `skills/<slug>/SKILL.md` packages (AI pipeline phases)
 templates/   Output templates — do not delete
 outputs/     daily/YYYY-MM-DD/, weekly/, monthly/, deep-dives/
 scripts/     Bash + Python automation
@@ -54,7 +54,7 @@ supabase/    Schema migrations
 1. Create `skills/sector-newname/SKILL.md` using schema `templates/schemas/sector-report.schema.json` as the output contract
 2. Add the sector to `skills/orchestrator/SKILL.md` Phase 5 list
 3. If `scripts/new-day.sh` still lists sectors for prompts, add the slug there
-4. Update `CLAUDE_PROJECT_INSTRUCTIONS.md` skill table
+4. Update `docs/agentic/SKILLS-CATALOG.md` when adding skills
 
 ### When modifying scripts:
 - Scripts use `#!/bin/bash` + `set -e` — keep this pattern
@@ -70,8 +70,6 @@ git commit -m "research: YYYY-MM-DD — [brief summary]"
 
 ---
 
-## Current Portfolio Context
+## Portfolio context
 
-Active: IAU (gold ~20%), XLE (energy 12%), DBO (oil 5%), XLP (staples 8%), BIL/SHY (~47%)
-Macro regime: Geopolitical shock (Iran War) → WTI $112, Gold ATH, VIX elevated
-Update `config/portfolio.json` when allocations change.
+Authoritative allocations: `config/portfolio.json` and `config/investment-profile.md`. Do not treat examples in docs as live positions.

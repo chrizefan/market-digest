@@ -4,6 +4,15 @@
 > **Pipeline version**: v3 — 9-phase orchestrator with three-tier cadence
 > **Operational truth**: [`RUNBOOK.md`](../../RUNBOOK.md) (DB-first, JSON artifacts, Supabase canonical).
 
+**Orientation**
+
+| Topic | Doc |
+|--------|-----|
+| Publish / validate / schedules | [`RUNBOOK.md`](../../RUNBOOK.md) |
+| Track A (blind research) vs Track B (portfolio) | [`../../AGENTS.md`](../../AGENTS.md), [`../../skills/research-daily/SKILL.md`](../../skills/research-daily/SKILL.md) |
+| Baseline + daily deltas without duplicating full docs | [`COMPILED-RESEARCH-VIEW.md`](COMPILED-RESEARCH-VIEW.md) |
+| Extended inventory (frontend, deploy, security, debt) | [`../archive/ARCHITECTURE-REVIEW.md`](../archive/ARCHITECTURE-REVIEW.md) (archived reference) |
+
 ---
 
 ## Overview
@@ -26,7 +35,7 @@ The system operates on a **three-tier cadence**:
 
 ### Sunday — Weekly Baseline
 
-The full pipeline. Every segment is re-analyzed from scratch. The baseline becomes the week's analytical anchor. All 28+ output files are written.
+The full pipeline. Every segment is re-analyzed from scratch. The baseline becomes the week's analytical anchor. Many segment JSON artifacts plus digest snapshot / delta materialization (see `RUNBOOK.md`).
 
 Entry point: `skills/weekly-baseline/SKILL.md` → `skills/orchestrator/SKILL.md`
 
@@ -292,14 +301,18 @@ The Next.js frontend reads from Supabase (primary) with static JSON fallback —
 
 ---
 
-## Daily Output File Map
+## Daily output layout
 
-### Sunday Baseline — 28+ output files
+**Current (DB-first):** canonical artifacts are **`snapshot.json`**, **`delta-request.json`**, segment JSON under `outputs/daily/{DATE}/` (and `sectors/*.json`), portfolio JSON (`rebalance-decision.json`, etc.), then **`materialize_snapshot.py`** / **`update_tearsheet.py`** → Supabase. Markdown is derived for display.
+
+**Legacy filesystem tree** (historical reference; samples under `archive/legacy-outputs/daily/`):
+
+### Sunday baseline — legacy markdown layout
 
 ```
 outputs/daily/YYYY-MM-DD/
   _meta.json                        {"type":"baseline","week":"YYYY-Wnn"}
-  DIGEST.md                         Master synthesized brief (Phase 7)
+  DIGEST.md                         Legacy master brief (Phase 7)
   alt-data/
     sentiment-news.md               Phase 1A
     cta-positioning.md              Phase 1B
@@ -477,7 +490,7 @@ digiquant-atlas/
   RUNBOOK.md                         Single operational entry (DB-first)
   CLAUDE.md                          Claude Code quick commands
   AGENTS.md                          Cross-platform agent entry point
-  CLAUDE_PROJECT_INSTRUCTIONS.md     Claude.ai Projects paste
+  CLAUDE_PROJECT_INSTRUCTIONS.md     Claude.ai Projects pointers (paste: cowork/PROJECT-PROMPT.md)
   config/
     watchlist.md                     Tracked tickers + asset universe
     investment-profile.md            Policy + preferences

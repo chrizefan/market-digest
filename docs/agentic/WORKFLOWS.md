@@ -4,40 +4,53 @@ Step-by-step procedures for every recurring workflow.
 
 ---
 
-## Daily Full Digest
+## GitHub Actions (systematic data, no agent)
 
-**Time**: Before or after market open/close
-**Duration**: 1-3 hours (AI-parallel)
+| Workflow | Schedule | Role |
+|----------|----------|------|
+| [`daily-price-update.yml`](../../.github/workflows/daily-price-update.yml) | **Mon–Fri 22:00 UTC** (~6:00 PM US Eastern after cash close, per workflow comments) | Refresh `price_history` / `price_technicals`, then [`refresh_performance_metrics.py`](../../scripts/refresh_performance_metrics.py) so dashboard **metrics** match **closing** prices. Does **not** run digest, `update_tearsheet.py`, or research. |
+| [`weekly-check.yml`](../../.github/workflows/weekly-check.yml) | **Fri 16:00 UTC** | Checks for a local `outputs/weekly/` file only — **not** the same as **Sunday baseline** in [`run_db_first.py`](../../scripts/run_db_first.py). |
+| [`ci.yml`](../../.github/workflows/ci.yml), [`deploy.yml`](../../.github/workflows/deploy.yml) | On push / manual | Build and deploy. |
+
+**Co-work / operator** runs ([`RUNBOOK.md`](../../RUNBOOK.md)): research + portfolio JSON → `run_db_first.py` → Supabase. Cowork setup: [`cowork/README.md`](../../cowork/README.md), project prompt [`cowork/PROJECT-PROMPT.md`](../../cowork/PROJECT-PROMPT.md), task list [`cowork/tasks/README.md`](../../cowork/tasks/README.md).
+
+---
+
+## Daily full digest (DB-first)
+
+**Time:** Before or after market open/close (see [`config/schedule.json`](../../config/schedule.json) for intent).  
+**Duration:** 1–3 hours (AI-parallel)
 
 ### Steps
 
 ```bash
-# 1. Create today's folder
+# 1. Optional: scaffold folder + printed prompt
 ./scripts/new-day.sh
-# → prints today's full digest prompt
 ```
 
 ```bash
-# 2. Copy the printed prompt into your AI platform
-# OR use the manual prompt below:
+# 2. Run the pipeline from the skill (JSON artifacts under outputs/daily/{DATE}/)
+#    Then publish + validate:
+python3 scripts/run_db_first.py
+#    Flags: --skip-execute / --validate-mode research|pm|full — see RUNBOOK.md
 ```
 
 **Manual prompt for full digest:**
 ```
 Today is YYYY-MM-DD.
-Read skills/orchestrator/SKILL.md and run the complete pipeline.
-Read config/watchlist.md and config/preferences.md first.
-Read all relevant memory/*/ROLLING.md files for prior context.
-DB-first: publish to Supabase (no canonical outputs/daily writing). Legacy archive lives under `archive/legacy-outputs/daily/`.
-Update all memory files when complete.
+Read skills/orchestrator/SKILL.md (or weekly-baseline / daily-delta per day type).
+Read config/watchlist.md; for portfolio work also preferences + investment-profile.
+Read relevant memory/*/ROLLING.md for prior context.
+DB-first: write JSON artifacts → materialize_snapshot.py / update_tearsheet.py as in RUNBOOK.md.
+Legacy markdown samples: archive/legacy-outputs/daily/
 ```
 
 ```bash
-# 3. After agent writes outputs, commit
+# 3. After outputs exist, commit (runs ETL)
 ./scripts/git-commit.sh
 ```
 
-**Output**: Supabase rows updated (daily_snapshots, documents, positions, theses, nav_history, portfolio_metrics) + updated memory
+**Output:** Supabase (`daily_snapshots`, `documents`, `positions`, …) + updated memory
 
 ---
 
@@ -79,7 +92,7 @@ Update memory/BIAS-TRACKER.md with today's row.
 
 ## Weekly Rollup
 
-**Runs**: Friday evening or Sunday
+**Runs**: Friday evening or Sunday (filesystem rollup); **Supabase weekly baseline** is **Sunday** when using default [`run_db_first.py`](../../scripts/run_db_first.py) detection (`--baseline` on Sunday).
 **Purpose**: Synthesize the week's research into one narrative
 
 ```bash
@@ -89,11 +102,13 @@ Update memory/BIAS-TRACKER.md with today's row.
 
 **Manual prompt:**
 ```
-Read all DIGEST.md files from this week's outputs/daily/ folders.
+Read this week's research from Supabase (documents / daily_snapshots) or from
+outputs/daily/{DATE}/ JSON and digest payloads — NOT legacy DIGEST.md unless
+you are explicitly mining archive/legacy-outputs/daily/.
 Read memory/BIAS-TRACKER.md for the week's bias history.
-Write a weekly JSON artifact (schema: `templates/schemas/weekly-digest.schema.json`).
-Synthesize into `outputs/weekly/{YYYY}-W{WW}.json`
-Do NOT update memory files — this is read-only synthesis.
+Write a weekly JSON artifact (schema: templates/schemas/weekly-digest.schema.json).
+Synthesize into outputs/weekly/{YYYY}-W{WW}.json
+Do NOT update memory files — read-only synthesis.
 ```
 
 ---
@@ -146,7 +161,7 @@ Append the completed thesis to memory/THESES.md with today's date.
 ```
 Read skills/thesis-tracker/SKILL.md.
 Read memory/THESES.md for all active theses.
-Read today's DIGEST.md or relevant segment outputs.
+Read today's digest from Supabase or outputs/daily/{DATE}/ snapshot JSON — not legacy DIGEST.md unless from archive.
 Score each thesis: [Building | Confirmed | Extended | At Risk | Exited]
 Append your review to memory/THESES.md under today's date.
 ```
@@ -163,7 +178,7 @@ Read skills/deep-dive/SKILL.md.
 Run a deep dive on: {TICKER or TOPIC}
 Read memory/equity/ROLLING.md and relevant sector ROLLING.md for prior notes.
 Read config/watchlist.md to see if it's a tracked position.
-Output to: outputs/deep-dives/{TICKER}-{DATE}.md
+Output: prefer outputs/deep-dives/{slug}.json (schema: templates/schemas/deep-dive.schema.json); markdown is derived.
 ```
 
 ---
@@ -217,8 +232,8 @@ Shows:
 # After any session with outputs
 ./scripts/git-commit.sh
 
-# Manual commit format
-git add outputs/ memory/
+# Manual commit format (JSON outputs + memory + config as needed)
+git add outputs/ memory/ config/
 git commit -m "$(date +%Y-%m-%d): Daily digest + memory update"
 git push
 ```

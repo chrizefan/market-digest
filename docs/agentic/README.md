@@ -1,75 +1,76 @@
-# docs/agentic/ — Agentic Development Documentation
+# docs/agentic/ — Agentic development documentation
 
-This folder is the central reference for running the digiquant-atlas pipeline on any AI platform. Start here.
+Central reference for running the digiquant-atlas pipeline on any AI platform.
 
-## What Is digiquant-atlas?
+## Canonical model (read this first)
 
-A daily market intelligence system that orchestrates a 7-phase pipeline of AI research agents. Each phase builds on the previous: alternative data flows into institutional analysis, which informs macro regime determination, which drives asset-class and sector research, all synthesized into a single daily digest.
+- **Supabase + JSON** are the source of truth; markdown in the app is **derived**.
+- **Operator steps:** [`RUNBOOK.md`](../../RUNBOOK.md) — env, publish, validation, GitHub vs Co-work, Track A/B.
+- **One CLI entrypoint:** `python3 scripts/run_db_first.py` (after JSON artifacts exist under `outputs/daily/{DATE}/` when applicable).
 
-## Quick Start (Any Platform)
+## What is digiquant-atlas?
 
-**Full daily digest:**
-```
-Read skills/orchestrator/SKILL.md and run the full pipeline.
-Today's date is YYYY-MM-DD. Output goes to outputs/daily/YYYY-MM-DD/
-```
+A **9-phase** AI research pipeline (alternative data → institutional → macro → asset classes → equities/sectors → earnings → digest → portfolio layer) with a **three-tier cadence**: Sunday baseline, Mon–Sat deltas, month-end synthesis. Phases emit **structured JSON** (and optional segment markdown during transition); the digest is **`snapshot.json` / `delta-request.json`** materialized into `daily_snapshots` and `documents` in Supabase.
 
-**Single segment:**
-```
-Read skills/macro/SKILL.md and produce today's macro analysis.
-Date: YYYY-MM-DD. Write to outputs/daily/YYYY-MM-DD/macro.md
-Update memory/macro/ROLLING.md
-```
+## Quick start (DB-first)
 
-**Thesis check:**
-```
-Read memory/THESES.md and config/preferences.md.
-Review today's market action against each active thesis.
+**Detect mode and commands:**
+
+```bash
+python3 scripts/run_db_first.py
 ```
 
-## Platform Setup
+**Track A — generic research only (no portfolio preferences):**
 
-| Platform | Config File | Notes |
-|----------|------------|-------|
-| Claude Code | `CLAUDE.md` | Auto-read from repo root |
-| Claude.ai Projects | `CLAUDE_PROJECT_INSTRUCTIONS.md` | Paste into Project Instructions |
+- Skill: [`skills/research-daily/SKILL.md`](../../skills/research-daily/SKILL.md)
+- Prompt: [`scripts/cowork-research-prompt.txt`](../../scripts/cowork-research-prompt.txt)
+- After publish: `python3 scripts/run_db_first.py --skip-execute --validate-mode research`
+
+**Track B — portfolio / analyst (uses preferences + investment profile):**
+
+- Prompt: [`scripts/cowork-daily-prompt.txt`](../../scripts/cowork-daily-prompt.txt)
+- Cowork: [`cowork/README.md`](../../cowork/README.md), [`cowork/tasks/README.md`](../../cowork/tasks/README.md)
+- Validate: `--validate-mode pm` or `full`
+
+**Full pipeline (combined):** [`skills/orchestrator/SKILL.md`](../../skills/orchestrator/SKILL.md) or [`skills/weekly-baseline/SKILL.md`](../../skills/weekly-baseline/SKILL.md) / [`skills/daily-delta/SKILL.md`](../../skills/daily-delta/SKILL.md) per day type.
+
+**Single segment:** read `skills/{segment}/SKILL.md`, write **JSON** where the skill specifies, append `memory/**/ROLLING.md`, publish per [`RUNBOOK.md`](../../RUNBOOK.md).
+
+## Platform setup
+
+| Platform | Config file | Notes |
+|----------|-------------|-------|
+| Claude Code | `CLAUDE.md` | Repo root |
+| Claude.ai Projects | `cowork/PROJECT-PROMPT.md` | Paste into project instructions; root `CLAUDE_PROJECT_INSTRUCTIONS.md` is pointers only |
 | GitHub Copilot | `.github/copilot-instructions.md` | `applyTo: "**"` frontmatter |
-| Cursor | `.cursor/rules/` (MDC) or `.cursorrules` (legacy) | Rules auto-applied |
-| Windsurf | `.windsurfrules` | Auto-read from repo root |
-| OpenHands / Devin | `AGENTS.md` | Generic cross-platform |
+| Cursor | `.cursor/rules/` or `.cursorrules` | Rules |
+| Windsurf | `.windsurfrules` | Auto-read |
+| OpenHands / Devin | [`AGENTS.md`](../../AGENTS.md) | Cross-platform |
 
-See `PLATFORMS.md` for detailed setup instructions per platform.
+See [`PLATFORMS.md`](PLATFORMS.md) for details.
 
-## Documentation Index
+## Documentation index
 
 | File | Contents |
 |------|----------|
-| `README.md` | This file — entry point |
-| `ARCHITECTURE.md` | System design, data flows, file dependency map |
-| `PLATFORMS.md` | Platform-specific setup guides |
-| `AGENTS.md` | Named agent role catalog with capabilities |
-| `WORKFLOWS.md` | Daily/weekly/monthly step-by-step workflows |
-| `MEMORY-SYSTEM.md` | All 23 ROLLING.md files explained + BIAS-TRACKER |
-| `SKILLS-CATALOG.md` | All 35+ skills indexed with phase/output/memory |
-| `PROMPTS.md` | Copy-paste prompt patterns for each task type |
+| `README.md` | This file |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | System design and data flow |
+| [`WORKFLOWS.md`](WORKFLOWS.md) | Step workflows (includes GitHub Actions) |
+| [`PLATFORMS.md`](PLATFORMS.md) | IDE / platform setup |
+| [`AGENTS.md`](AGENTS.md) | Stub → root [`AGENTS.md`](../../AGENTS.md) |
+| [`MEMORY-SYSTEM.md`](MEMORY-SYSTEM.md) | ROLLING.md + BIAS-TRACKER |
+| [`SKILLS-CATALOG.md`](SKILLS-CATALOG.md) | Skill package index (filesystem is authoritative) |
+| [`PROMPTS.md`](PROMPTS.md) | Copy-paste patterns (legacy `.md` paths noted where applicable) |
+| [`COMPILED-RESEARCH-VIEW.md`](COMPILED-RESEARCH-VIEW.md) | On-read baseline + delta fold |
 
-## Agent Definitions
+## Agent definitions
 
-Named agent roles live in `agents/`:
+Named roles live in `agents/` (see table in root [`AGENTS.md`](../../AGENTS.md)).
 
-| Agent File | Role |
-|-----------|------|
-| `agents/orchestrator.agent.md` | Full 7-phase pipeline driver |
-| `agents/sector-analyst.agent.md` | Single or multi-sector deep dive |
-| `agents/alt-data-analyst.agent.md` | Phase 1 alternative data |
-| `agents/institutional-analyst.agent.md` | Phase 2 institutional intel |
-| `agents/research-assistant.agent.md` | Ad-hoc research + ticker questions |
-| `agents/thesis-tracker.agent.md` | Portfolio thesis management |
+## Key rules
 
-## Key Rules (Apply to All Platforms)
-
-1. Memory files are **append-only** — never rewrite history
-2. Output files are **agent-generated** — never manually edit `outputs/daily/`
-3. Read `config/watchlist.md` + `config/preferences.md` at every session start
-4. Use `{{DATE}}` in output paths, never hardcode dates
-5. macOS sed: `sed -i ""` not `sed -i`
+1. Memory files are **append-only**.
+2. Prefer **JSON artifacts** and Supabase publish over hand-editing derived markdown.
+3. Read `config/watchlist.md` every session; read `config/preferences.md` and `config/investment-profile.md` only for **Track B**, not Track A.
+4. Use `{DATE}` / `YYYY-MM-DD` in paths, not hardcoded dates.
+5. macOS: `sed -i ""` not `sed -i`.

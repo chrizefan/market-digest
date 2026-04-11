@@ -68,9 +68,9 @@ In Claude.ai: **New Project** → name it `digiquant-atlas` (or similar)
 
 ### 3.2 Set the Project Instructions
 
-Copy the full contents of `CLAUDE_PROJECT_INSTRUCTIONS.md` and paste it into the Project's **Instructions** field.
+Copy the full contents of `cowork/PROJECT-PROMPT.md` (and optionally the short stub in `CLAUDE_PROJECT_INSTRUCTIONS.md`) and paste into the Project's **Instructions** field.
 
-This tells Claude how to behave in every session — reading config, updating memory, using skills, etc.
+Canonical behavior and skill routing live in `AGENTS.md` and `docs/agentic/SKILLS-CATALOG.md`; the paste block stays focused on session workflow.
 
 ### 3.3 Upload your files to the Project
 
