@@ -46,6 +46,10 @@ YAHOO_TREASURY = {
 }
 
 
+def _log(msg: str, *, file=sys.stdout) -> None:
+    print(msg, file=file, flush=True)
+
+
 def add_months_first(d: date, delta: int) -> date:
     y, m = d.year, d.month + delta
     while m > 12:
@@ -59,7 +63,7 @@ def add_months_first(d: date, delta: int) -> date:
 
 def fetch_month(yyyymm: str) -> str:
     url = TREASURY_XML_URL.format(yyyymm=yyyymm)
-    r = requests.get(url, timeout=30)
+    r = requests.get(url, timeout=(10, 45))
     r.raise_for_status()
     return r.text
 
@@ -100,9 +104,10 @@ def yahoo_treasury_rows(period: str) -> list[dict]:
     """Daily closes for key tenors via Yahoo (percent units)."""
     syms = list(YAHOO_TREASURY.values())
     try:
-        raw = yf.download(syms, period=period, progress=False, threads=True)["Close"]
+        # threads=False: avoids intermittent hangs in CI / Actions with threads=True
+        raw = yf.download(syms, period=period, progress=False, threads=False)["Close"]
     except Exception as e:
-        print(f"  ⚠️  yfinance treasury: {e}", file=sys.stderr)
+        _log(f"  ⚠️  yfinance treasury: {e}", file=sys.stderr)
         return []
     if raw is None or raw.empty:
         return []
@@ -153,23 +158,32 @@ def main() -> int:
     today = date.today()
     sb = connect_supabase() if args.supabase else None
     if args.supabase and not sb:
-        print("Supabase not configured", file=sys.stderr)
+        _log("Supabase not configured", file=sys.stderr)
         return 1
 
     month_span = 420 if args.backfill else 4
+    yahoo_period = "5y" if args.backfill else "3mo"
     start_anchor = today.replace(day=1)
     end_anchor = add_months_first(start_anchor, -(month_span - 1))
+    months = list(iter_months_backward(start_anchor, end_anchor))
+    total_m = len(months)
+    _log(
+        f"ingest_treasury_curve: backfill={args.backfill} "
+        f"— {total_m} Treasury XML months ({end_anchor.isoformat()} → {start_anchor.isoformat()}), "
+        f"then Yahoo period={yahoo_period}"
+    )
 
     all_curves: list[tuple[str, dict[str, float]]] = []
     seen_dates: set[str] = set()
-    for yyyymm in iter_months_backward(start_anchor, end_anchor):
+    for i, yyyymm in enumerate(months, 1):
+        _log(f"  XML [{i}/{total_m}] {yyyymm} …")
         try:
             xml = fetch_month(yyyymm)
         except Exception as e:
-            print(f"  ⚠️  XML {yyyymm}: {e}")
+            _log(f"  ⚠️  XML {yyyymm}: {e}")
             continue
         parsed = parse_treasury_month_xml(xml)
-        print(f"  XML {yyyymm}: {len(parsed)} curve dates")
+        _log(f"  XML [{i}/{total_m}] {yyyymm}: {len(parsed)} curve dates")
         for d, yd in parsed:
             if d not in seen_dates:
                 seen_dates.add(d)
@@ -188,8 +202,9 @@ def main() -> int:
         {"curve": "daily_treasury_xml", "official": True},
     )
 
-    yahoo_period = "5y" if args.backfill else "3mo"
+    _log(f"  Yahoo Finance: downloading {list(YAHOO_TREASURY.values())} period={yahoo_period} …")
     rows_yf = yahoo_treasury_rows(yahoo_period)
+    _log(f"  Yahoo Finance: parsed {len(rows_yf)} row fragments")
     if not args.backfill and sb and rows_yf:
         last_m = latest_obs_date_for_source(sb, SOURCE_MARKET)
         if last_m:
@@ -199,20 +214,21 @@ def main() -> int:
     rows = rows_xml + rows_yf
     rows.sort(key=lambda r: (r["source"], r["series_id"], r["obs_date"]))
 
-    print(f"  XML rows: {len(rows_xml)}  Yahoo rows: {len(rows_yf)}  total: {len(rows)}")
+    _log(f"  XML rows: {len(rows_xml)}  Yahoo rows: {len(rows_yf)}  total: {len(rows)}")
 
     if args.dry_run:
         if rows:
             ds = [r["obs_date"] for r in rows]
-            print(f"  date range: {min(ds)} .. {max(ds)}")
+            _log(f"  date range: {min(ds)} .. {max(ds)}")
         return 0
 
     if not args.supabase or not sb:
-        print("Use --supabase to upsert (or --dry-run)", file=sys.stderr)
+        _log("Use --supabase to upsert (or --dry-run)", file=sys.stderr)
         return 1
 
+    _log(f"  Supabase upsert: {len(rows)} rows …")
     n = upsert_observations(sb, rows)
-    print(f"Upserted {n} treasury rows")
+    _log(f"Upserted {n} treasury rows")
     return 0
 
 
