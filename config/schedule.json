@@ -1,0 +1,38 @@
+{
+  "$schema_comment": "Operator preferences for Co-work / run_db_first. Not consumed by GitHub Actions.",
+  "research_cadence": {
+    "description": "When Track A (generic research) is expected to run. Project-level; may run more often than portfolio tasks.",
+    "interval_hours": 12,
+    "allowed_interval_hours": [8, 12, 24],
+    "anchor_note": "baseline_date in each research_delta targets the latest Sunday (or last baseline) on or before run date; full-scope anchor aligns with weekly baseline digest.",
+    "slots": ["pre_market_8am_et", "optional_post_us_close"],
+    "notes": "Not consumed by GitHub Actions. One recurring Cowork job can use cowork/tasks/recurring-scheduled-run.md; or split schedules across research-daily-delta.md / research-weekly-baseline.md / research-monthly-synthesis.md / portfolio-pm-rebalance.md."
+  },
+  "portfolio_manager_cadence": {
+    "frequency": "daily",
+    "allowed_values": ["daily", "weekly", "manual"]
+  },
+  "execution_assumption": {
+    "price_reference": "market_open",
+    "allowed_values": ["market_open", "market_close"],
+    "notes": "market_close aligns with evening price_history refresh; market_open may require backfill_execution_prices.py."
+  },
+  "rebalance_source_for_opens": {
+    "mode": "same_day",
+    "allowed_values": ["same_day", "prior_trading_day"],
+    "notes": "prior_trading_day → execute_at_open.py --prior-trading-day-rebalance (e.g. Fri decision → Mon open)."
+  },
+  "cowork_operator": {
+    "description": "Filled by the Cowork setup wizard (cowork/SETUP-ATLAS-COWORK.md). Not read by Python scripts.",
+    "configured": false,
+    "configured_at": null,
+    "timezone": null,
+    "cadence_summary": null,
+    "pattern": null,
+    "month_end_policy": null,
+    "portfolio_schedule": null,
+    "primary_task_file": null,
+    "modular_task_files": null,
+    "notes": null
+  }
+}

@@ -1,19 +1,16 @@
-# Manual Run — Operator Steps (DB-first)
+# Task: Manual operator run
 
-See also [`cowork/PROJECT.md`](../PROJECT.md) and [`RUNBOOK.md`](../../RUNBOOK.md).
+**Before anything else:** read [`../PROJECT.md`](../PROJECT.md).
 
-## 1) Ensure environment
-- `pip install -r requirements.txt`
-- `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` set (service role)
+## Steps
 
-## 2) Run the pipeline entrypoint
+1. `pip install -r requirements.txt`; `SUPABASE_URL` + `SUPABASE_SERVICE_KEY`.
+2. Produce or fix artifacts per your goal, then:
 
-```bash
-python3 scripts/run_db_first.py
-```
+   ```bash
+   python3 scripts/run_db_first.py
+   ```
 
-## 3) If it fails
-- Re-run with `--dry-run` to see required inputs.
-- Check Supabase credentials and connectivity.
-- Re-run validation step printed by the CLI.
+   Use `--dry-run`, `--skip-execute`, `--validate-mode`, `--date` as needed ([`RUNBOOK.md`](../../RUNBOOK.md)).
 
+3. On failure: check credentials, re-run validation command printed by the CLI.

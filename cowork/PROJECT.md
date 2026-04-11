@@ -1,40 +1,115 @@
-# Cowork — digiquant-atlas (single source for scheduled runs)
+# digiquant-atlas — Cowork project briefing
 
-This folder is the **operator briefing** for Cloud Cowork (or any scheduler): DB-first, JSON artifacts, Supabase canonical.
+**Read this file at the start of every Cowork session** for this repository. Scheduled tasks add a second step: open the specific file under `cowork/tasks/` that this run is tied to.
 
-## Read first (in order)
+**First-time Cowork setup:** Tell the agent to follow [`SETUP-ATLAS-COWORK.md`](SETUP-ATLAS-COWORK.md) (or paste that path). It will ask how often to run jobs, timezone, router vs modular tasks, and will write [`OPERATOR-COWORK.md`](OPERATOR-COWORK.md) plus update `config/schedule.json` → `cowork_operator` with paste-ready instructions for the Cowork UI.
 
-1. [`RUNBOOK.md`](../RUNBOOK.md) — authoritative steps, env, validation
-2. [`AGENTS.md`](../AGENTS.md) — agent behavior
-3. [`skills/orchestrator/SKILL.md`](../skills/orchestrator/SKILL.md) — phase list (load **only** this skill for the full pipeline unless debugging one segment)
+---
 
-## Environment
+## What this codebase is
 
-- **Python 3.11+** with `pip install -r requirements.txt` (includes `jsonschema` for artifact validation).
-- **Supabase** (service role for writes):
+- **DB-first** market intelligence: agents produce **JSON artifacts** → publish to **Supabase** (`daily_snapshots`, `documents`, `positions`, …). UI markdown is **derived**.
+- **Three-tier cadence:** Sunday **baseline**, Mon–Sat **delta**, month-end rollup (see `RUNBOOK.md`).
+- **Two runnable tracks:**
+  - **Track A — Research only:** positioning-blind; produce `research_delta` JSON and publish with **`validate_artifact.py -`** + **`publish_document.py --payload -`** (stdin). Unique `document_key` under `research-delta/…` (see `skills/research-daily/SKILL.md`). No `preferences` / `investment-profile` / `portfolio.json`. The repo **does not commit** `outputs/`; Supabase is canonical.
+  - **Track B — Portfolio / analyst:** uses preferences + profile; `rebalance-decision.json` and related portfolio JSON.
+- **Combined flow:** full digest + PM in one session (see `scripts/cowork-daily-prompt.txt`).
+
+---
+
+## What runs where (do not confuse these)
+
+| Layer | Who | What |
+|--------|-----|------|
+| **GitHub Actions** | CI | Weekday **price_history** / **price_technicals** / **refresh_performance_metrics** — **not** digest, not agent research |
+| **Cowork / you** | Agent | Research JSON, materialize, `update_tearsheet`, optional `execute_at_open`, validation |
+
+Evening job details: `RUNBOOK.md` → Schedules table.
+
+**In Cloud desktop:** if **Supabase MCP** is connected, treat the database as the first-class source for **prices** (`price_history`), **technicals** (`price_technicals`), and **portfolio-facing tables** (e.g. `positions`, `daily_snapshots`, `documents`, `nav_history`, metrics) when you need current or historical state for analysis. Prefer MCP **reads** over inferring from stale local files or training data.
+
+**Writes:** upsert artifacts with **`scripts/publish_document.py`** (use **`--payload -`** with JSON on stdin when no disk path exists). Optional **`scripts/update_tearsheet.py`** for local dashboard mirrors only. A run is done when **`documents`** / related tables are updated — not when files land under `outputs/`. Avoid hand-written MCP SQL for large JSON payloads. See `cowork/tasks/README.md` → “Supabase-first writes”.
+
+---
+
+## MCP toolkit (Cloud desktop — use judgment)
+
+Your environment may expose more than one MCP server. **Tool definitions list what is actually callable**; this section is orientation only.
+
+| Kind | Suggested use | Required? |
+|------|----------------|-----------|
+| **Supabase** | Read/query structured app data: OHLCV, technicals, snapshots, documents, positions, events | **Prefer this** for anything already in the DB |
+| **Market / macro MCPs** (e.g. FRED, Alpha Vantage, CoinGecko, Frankfurter, SEC, crypto fear & greed, Polymarket, etc.) | Extra series, quotes, filings, alt-data when research needs them | **Optional** — use when they clearly improve accuracy vs a generic web search |
+| **Web search** | News, fast-changing context, when no MCP fits | As needed |
+
+Do **not** feel obligated to invoke every connector on every run. Pick tools that match the segment (e.g. macro → FRED; crypto spot → CoinGecko; equities fundamentals → SEC). Phase→tool hints: [`docs/ops/data-sources.md`](../docs/ops/data-sources.md); MCP fallback patterns: [`skills/mcp-data-fetch/SKILL.md`](../skills/mcp-data-fetch/SKILL.md).
+
+---
+
+## Environment (required for publish)
+
+- **Python 3.11+**, repo root as cwd.
+- `pip install -r requirements.txt` (includes `jsonschema` for `validate_artifact.py`).
+- **Supabase service role** (writes for scripts):
   - `SUPABASE_URL`
-  - `SUPABASE_SERVICE_KEY`
-- Optional: `config/supabase.env` loaded by publisher scripts (see RUNBOOK).
+  - `SUPABASE_SERVICE_KEY`  
+  Optional file: `config/supabase.env` (loaded by scripts).
 
-Prices and portfolio context for the app are **in Supabase** (`price_history`, `daily_snapshots`, `documents`, etc.). MCP servers in `.vscode/mcp.json` are **optional** research tools—not required for baseline runs.
+**Note:** Supabase **MCP** (read/query in the agent) complements but does not replace env vars for **Python publishers** (`run_db_first.py`, `update_tearsheet.py`, etc.) unless your setup injects the same credentials.
 
-## Daily command
+---
+
+## Commands you will use often
 
 ```bash
-python3 scripts/run_db_first.py
+python3 scripts/run_db_first.py    # after JSON artifacts exist; see flags in RUNBOOK
+./scripts/fetch-market-data.sh     # optional local cache before long research
+./scripts/status.sh                # quick sanity
 ```
 
-## Related tasks
+**Execution / cadence hints:** `config/schedule.json` (e.g. `rebalance_source_for_opens.mode` for `execute_at_open.py`).
 
-- [`tasks/daily-8am.md`](tasks/daily-8am.md) — pre-market schedule
-- [`tasks/manual-run.md`](tasks/manual-run.md) — ad-hoc
+---
 
-## Post-mortem (evolution)
+## Read order (when in doubt)
 
-After a run, optionally scaffold post-mortem JSON:
+1. This file (`cowork/PROJECT.md`)
+2. The **task** file for this run (`cowork/tasks/…`)
+3. [`RUNBOOK.md`](../RUNBOOK.md) — authoritative publish/validate/schedules
+4. [`AGENTS.md`](../AGENTS.md) — rules, Track A/B, scripts list
+5. The **skill** named in the task (e.g. `skills/research-daily/SKILL.md`, `skills/daily-delta/SKILL.md`, `skills/orchestrator/SKILL.md`)
+
+**Long copy-paste prompts (optional):**
+
+- Track B combined: [`scripts/cowork-daily-prompt.txt`](../scripts/cowork-daily-prompt.txt)
+- Track A: [`scripts/cowork-research-prompt.txt`](../scripts/cowork-research-prompt.txt)
+
+---
+
+## Tasks you can schedule
+
+See [`tasks/README.md`](tasks/README.md). Typical patterns:
+
+- **One recurring job (8h/12h/24h):** [`tasks/recurring-scheduled-run.md`](tasks/recurring-scheduled-run.md) — branches month-end / Sunday vs weekday, then portfolio.
+- **Separate jobs:** [`tasks/research-daily-delta.md`](tasks/research-daily-delta.md), [`tasks/research-weekly-baseline.md`](tasks/research-weekly-baseline.md), [`tasks/research-monthly-synthesis.md`](tasks/research-monthly-synthesis.md), [`tasks/portfolio-pm-rebalance.md`](tasks/portfolio-pm-rebalance.md).
+
+Each modular task file stays short; the router delegates to them.
+
+---
+
+## Guardrails
+
+- Do **not** treat **`outputs/`** or **`archive/legacy-outputs/`** as product state — both are **gitignored** (except README / `.gitkeep`). Canonical data is in **Supabase**.
+- **Track A:** never load `config/preferences.md`, `config/investment-profile.md`, or `config/portfolio.json`.
+- If `validate_db_first.py` fails, fix artifacts or Supabase rows, then re-run validation for the date (`RUNBOOK.md`).
+- Pre-market runs may record **null** execution prices until opens exist; then `python3 scripts/backfill_execution_prices.py --date YYYY-MM-DD` (`RUNBOOK.md`).
+
+---
+
+## Optional post-run
 
 ```bash
 ./scripts/scaffold_evolution_day.sh
 ```
 
-Fill `outputs/evolution/YYYY-MM-DD/*.json`, then ETL via `scripts/update_tearsheet.py` or your normal publish path.
+Produce evolution JSON (`evolution_sources`, `evolution_quality_log`, `evolution_proposals`), validate with `validate_artifact.py -`, publish each with `publish_document.py --payload -` and the correct `document_key` per `RUNBOOK.md` (optional `update_tearsheet.py` for local mirror).
