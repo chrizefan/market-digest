@@ -78,6 +78,21 @@ def _latest_baseline_date(sb, before_or_on: str) -> Optional[str]:
     return str(rows[0]["date"])[:10]
 
 
+def _execute_at_open_argv(d: str) -> list[str]:
+    argv = [sys.executable, "scripts/execute_at_open.py", "--date", d]
+    sched = ROOT / "config" / "schedule.json"
+    if not sched.exists():
+        return argv
+    try:
+        cfg = json.loads(sched.read_text(encoding="utf-8"))
+        mode = (cfg.get("rebalance_source_for_opens") or {}).get("mode", "same_day")
+        if mode == "prior_trading_day":
+            argv.append("--prior-trading-day-rebalance")
+    except (json.JSONDecodeError, OSError, TypeError):
+        pass
+    return argv
+
+
 def _print_agent_prompt(run_type: str, d: str, baseline_date: Optional[str]) -> None:
     print("")
     print("=== AGENT PROMPT (JSON-first, DB-first) ===")
@@ -90,6 +105,14 @@ def _print_agent_prompt(run_type: str, d: str, baseline_date: Optional[str]) -> 
         print(f"Baseline date (Supabase): {baseline_date or '[MISSING]'}")
         print("Emit a single Delta Request JSON (schema: templates/delta-request-schema.json).")
         print("Return JSON only.")
+    print("")
+    print("Track A (generic research, positioning-blind): skills/research-daily/SKILL.md")
+    print("  → research_delta JSON → validate_artifact.py - → publish_document.py --payload - (document_key research-delta/<RUN_SUFFIX>.json)")
+    print("  → run: python3 scripts/run_db_first.py --skip-execute --validate-mode research")
+    print("")
+    print("Track B (portfolio / analyst, user-specific): config/preferences.md + investment-profile.md")
+    print("  → rebalance-decision.json + snapshot/digest path as today")
+    print("  → run: python3 scripts/run_db_first.py --validate-mode full|pm")
     print("")
     print("Additional portfolio-layer artifacts (JSON):")
     print("- asset recommendations: templates/schemas/asset-recommendation.schema.json")
@@ -107,6 +130,17 @@ def main() -> int:
     ap.add_argument("--baseline", action="store_true", help="Force baseline mode")
     ap.add_argument("--delta", action="store_true", help="Force delta mode")
     ap.add_argument("--dry-run", action="store_true", help="Print actions without writing")
+    ap.add_argument(
+        "--skip-execute",
+        action="store_true",
+        help="Skip execute_at_open.py (use after Track A research-only publish).",
+    )
+    ap.add_argument(
+        "--validate-mode",
+        choices=("full", "research", "pm"),
+        default="full",
+        help="Passed to validate_db_first.py (default: full).",
+    )
     args = ap.parse_args()
 
     d = args.date
@@ -150,12 +184,25 @@ def main() -> int:
         return rc
 
     # 2.5) Record market-open execution events (best-effort)
-    rc = _run([sys.executable, "scripts/execute_at_open.py", "--date", d], dry_run=args.dry_run)
-    if rc != 0:
-        return rc
+    if not args.skip_execute:
+        rc = _run(_execute_at_open_argv(d), dry_run=args.dry_run)
+        if rc != 0:
+            return rc
+    else:
+        print("$ (skipped execute_at_open.py — --skip-execute)")
 
     # 3) DB-first validation
-    rc = _run([sys.executable, "scripts/validate_db_first.py", "--date", d], dry_run=args.dry_run)
+    rc = _run(
+        [
+            sys.executable,
+            "scripts/validate_db_first.py",
+            "--date",
+            d,
+            "--mode",
+            args.validate_mode,
+        ],
+        dry_run=args.dry_run,
+    )
     if rc != 0:
         return rc
 

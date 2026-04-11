@@ -54,7 +54,20 @@ for script in \
   scripts/update_tearsheet.py \
   scripts/backfill-supabase.py \
   scripts/preload-history.py \
-  scripts/fill-entry-prices.py; do
+  scripts/fill-entry-prices.py \
+  scripts/run_db_first.py \
+  scripts/validate_db_first.py \
+  scripts/materialize_snapshot.py \
+  scripts/publish_document.py \
+  scripts/validate_artifact.py \
+  scripts/execute_at_open.py \
+  scripts/backfill_execution_prices.py \
+  scripts/refresh_performance_metrics.py \
+  scripts/compute-technicals.py \
+  scripts/repair_supabase_portfolio_data.py \
+  scripts/migrate_md_outputs_to_json.py \
+  scripts/legacy_delta_to_ops.py \
+  scripts/convert_snapshot_v1.py; do
   run_check "$(basename $script)" "$PYTHON" "$script" --help
 done
 

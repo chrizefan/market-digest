@@ -826,7 +826,94 @@ def _render_markdown_from_payload(payload: dict) -> str:
     if doc_type == "rebalance_decision":
         notes = str(body.get("pm_notes") or "").strip()
         out = [f"# REBALANCE DECISION — {date}".strip(), "", "## PM Notes", notes, ""]
+        table = body.get("rebalance_table") or []
+        if isinstance(table, list) and table:
+            out.extend(
+                [
+                    "## Rebalance Table",
+                    "| Ticker | Current% | Recommended% | Change | Action | Urgency | Rationale |",
+                    "|---|---:|---:|---:|---|---|---|",
+                ]
+            )
+            for r in table:
+                if not isinstance(r, dict):
+                    continue
+                rat = str(r.get("rationale") or "").replace("|", "\\|").replace("\n", " ")
+                out.append(
+                    "| {t} | {c} | {rec} | {ch} | {a} | {u} | {rat} |".format(
+                        t=r.get("ticker") or "",
+                        c=r.get("current_pct") if r.get("current_pct") is not None else "",
+                        rec=r.get("recommended_pct") if r.get("recommended_pct") is not None else "",
+                        ch=r.get("change_pct") if r.get("change_pct") is not None else "",
+                        a=r.get("action") or "",
+                        u=r.get("urgency") or "",
+                        rat=rat,
+                    )
+                )
+            out.append("")
         return "\n".join(out).strip() + "\n"
+
+    if doc_type == "delta_request" or (
+        not doc_type
+        and isinstance(payload.get("ops"), list)
+        and isinstance(payload.get("changed_paths"), list)
+    ):
+        lines = [
+            f"# DELTA REQUEST — {date}".strip(),
+            "",
+            f"**Baseline:** {payload.get('baseline_date') or '—'}",
+            "",
+        ]
+        cp = payload.get("changed_paths") or []
+        if isinstance(cp, list) and cp:
+            lines.append("## Changed paths")
+            for p in cp:
+                if isinstance(p, str):
+                    lines.append(f"- `{p}`")
+            lines.append("")
+        ops = payload.get("ops") or []
+        if isinstance(ops, list) and ops:
+            lines.append("## Operations")
+            lines.append("| Op | Path | Reason |")
+            lines.append("|---|---|---|")
+            for op in ops:
+                if not isinstance(op, dict):
+                    continue
+                o = str(op.get("op") or "")
+                path = str(op.get("path") or "").replace("|", "\\|")
+                reason = str(op.get("reason") or "").replace("|", "\\|").replace("\n", " ")
+                lines.append(f"| {o} | `{path}` | {reason} |")
+            lines.append("")
+        return "\n".join(lines).strip() + "\n"
+
+    if doc_type == "research_delta":
+        seg = payload.get("segments") if isinstance(payload.get("segments"), dict) else {}
+        lines = [
+            f"# RESEARCH DELTA — {date}",
+            "",
+            f"**Baseline:** {payload.get('baseline_date') or '—'}",
+            f"**No material change:** {payload.get('no_change', False)}",
+            "",
+            "## Summary",
+            str(payload.get("summary") or "").strip(),
+            "",
+            "## Macro",
+            str(seg.get("macro") or "").strip(),
+            "",
+            "## Crypto",
+            str(seg.get("crypto") or "").strip(),
+            "",
+            "## Sentiment",
+            str(seg.get("sentiment") or "").strip(),
+            "",
+            "## Sectors",
+            str(seg.get("sectors") or "").strip(),
+            "",
+            "## International",
+            str(seg.get("international") or "").strip(),
+            "",
+        ]
+        return "\n".join(lines).strip() + "\n"
 
     if doc_type == "evolution_quality_log":
         b = body if isinstance(body, dict) else {}
@@ -971,6 +1058,8 @@ def load_all_markdowns(root):
             return "Deep Dive"
         if dt == "delta_request":
             return "Daily Delta"
+        if dt == "research_delta":
+            return "Research Delta"
         return fallback
 
     def _category_label(payload_doc_type: str | None, fallback: str) -> str:
@@ -988,6 +1077,8 @@ def load_all_markdowns(root):
             return "portfolio"
         if dt == "delta_request":
             return "delta"
+        if dt == "research_delta":
+            return "output"
         if dt.startswith("evolution_"):
             return "output"
         return fallback
@@ -1577,6 +1668,13 @@ def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_position
         dk = d.get("document_key") or _logical_document_key(d.get("path", ""))
         payload = d.get("payload")
         content = d.get("content")
+        if isinstance(payload, dict) and str(payload.get("doc_type") or "") == "evolution_sources":
+            b = payload.get("body") if isinstance(payload.get("body"), dict) else {}
+            ratings = b.get("source_ratings") or []
+            notes = str(b.get("notes") or "").strip()
+            has_ratings = any(isinstance(r, dict) for r in ratings)
+            if not notes and not has_ratings:
+                continue
         # Ensure every document row has a JSON payload (markdown docs become markdown_legacy / deep_dive).
         if not isinstance(payload, dict):
             payload = _payload_from_markdown(

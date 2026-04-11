@@ -1,3 +1,7 @@
+Track B — combined digest + portfolio (uses preferences / investment profile).
+
+For positioning-blind research only, use scripts/cowork-research-prompt.txt and cowork/tasks/research-daily-delta.md (or research-weekly-baseline.md on Sunday / cowork/tasks/recurring-scheduled-run.md for one recurring job).
+
 Run today's market digest.
 
 Step 0: Fetch systematic market data.
@@ -12,7 +16,7 @@ Step 0: Fetch systematic market data.
   **If scripts fail** (sandbox, missing yfinance): follow `skills/mcp-data-fetch/SKILL.md`
   to fetch data via MCP tools (FRED, Alpha Vantage, CoinGecko, Frankfurter) instead.
 
-Step 1: Run `python3 scripts/run_db_first.py` to detect mode and print required actions.
+Step 1: Run `python3 scripts/run_db_first.py` to detect mode and print required actions (add `--validate-mode full` or `pm` after portfolio artifacts exist; see RUNBOOK.md).
   - If missing: run `./scripts/new-day.sh` first, then re-read.
   - If type = "baseline": read `skills/weekly-baseline/SKILL.md` → follow full 9-phase pipeline.
   - If type = "delta": read `skills/daily-delta/SKILL.md` → follow delta pipeline.

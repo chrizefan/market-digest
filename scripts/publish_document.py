@@ -43,9 +43,26 @@ def _render_markdown(payload: dict) -> str:
     return _render_markdown_from_payload(payload)
 
 
+def _load_payload(path_or_dash: str) -> dict:
+    if path_or_dash == "-":
+        raw = sys.stdin.read()
+        if not raw.strip():
+            raise ValueError("stdin is empty (pass JSON for --payload -)")
+        payload = json.loads(raw)
+    else:
+        payload = json.loads(Path(path_or_dash).read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("payload must be a JSON object")
+    return payload
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Publish an artifact JSON payload into Supabase documents.")
-    ap.add_argument("--payload", required=True, help="Path to artifact JSON file")
+    ap.add_argument(
+        "--payload",
+        required=True,
+        help="Path to artifact JSON file, or '-' to read JSON from stdin (hosted / no local outputs/).",
+    )
     ap.add_argument("--document-key", required=True, help="Stable key (e.g. 'weekly/2026-W15.json')")
     ap.add_argument("--title", required=True, help="Document title")
     ap.add_argument("--category", default="rollup", help="Category tag")
@@ -54,10 +71,7 @@ def main() -> int:
     ap.add_argument("--no-markdown", action="store_true", help="Do not render/store documents.content")
     args = ap.parse_args()
 
-    payload_path = Path(args.payload)
-    payload = json.loads(payload_path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError("payload must be a JSON object")
+    payload = _load_payload(args.payload)
 
     date_str = args.date or str(payload.get("date") or "")
     if not date_str:
