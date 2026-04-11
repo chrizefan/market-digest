@@ -22,6 +22,14 @@ sql_tables=$(grep -hE "^CREATE TABLE (IF NOT EXISTS )?[a-z_]+" "$MIGRATIONS_DIR"
   | tr '[:upper:]' '[:lower:]' \
   | sort -u)
 
+# Tables created in an early migration then dropped later (CREATE line remains; TS omits them).
+# Example: 016 creates sec_recent_filings, 017 drops it.
+SQL_RETIRED_TABLES="sec_recent_filings"
+for t in $SQL_RETIRED_TABLES; do
+  sql_tables=$(printf '%s\n' "$sql_tables" | grep -vxF "$t" || true)
+done
+sql_tables=$(echo "$sql_tables" | sed '/^$/d' | sort -u)
+
 # Extract table keys from the Tables block in database.types.ts
 # Matches lines with exactly 6 spaces of indentation followed by table_name: {
 ts_tables=$(grep -E '^      [a-z_]+: \{$' "$TYPES_FILE" \
