@@ -12,6 +12,8 @@ import type {
   Doc,
   BenchmarkHistoryMap,
   DeltaRequestMeta,
+  DashboardPositionEvent,
+  ServerPortfolioMetrics,
 } from './types';
 import { renderDigestMarkdownFromSnapshot, type DigestSnapshot } from './render-digest-from-snapshot';
 import { renderDocumentMarkdownFromPayload } from './render-document-from-payload';
@@ -107,7 +109,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
 
   const [
     snapshotRes, positionsRes, thesesRes, navRes,
-    benchRes, metricsRes, docsRes, deltaDocsRes,
+    benchRes, metricsRes, docsRes, deltaDocsRes, eventsRes,
   ] = await Promise.all([
     supabase.from('daily_snapshots').select('*').order('date', { ascending: false }).limit(1).single(),
     supabase.from('positions').select('*').order('date', { ascending: false }).limit(1000),
@@ -129,6 +131,13 @@ export async function getFullDashboardData(): Promise<DashboardData> {
       .eq('document_key', 'delta-request.json')
       .order('date', { ascending: false })
       .limit(400),
+    supabase
+      .from('position_events')
+      .select(
+        'date,ticker,event,weight_pct,prev_weight_pct,weight_change_pct,cumulative_return_since_event_pct,price,thesis_id,reason'
+      )
+      .order('date', { ascending: false })
+      .limit(200),
   ]);
 
   if (docsRes.error) {
@@ -147,6 +156,9 @@ export async function getFullDashboardData(): Promise<DashboardData> {
   if (benchRes.error) {
     console.error('Supabase price_history (benchmarks) query:', benchRes.error);
   }
+  if (eventsRes.error) {
+    console.error('Supabase position_events query:', eventsRes.error);
+  }
 
   const snapshot: TableRow<'daily_snapshots'> = snapshotRes.data ?? ({} as TableRow<'daily_snapshots'>);
   const rawSnapshotJson = snapshot.snapshot;
@@ -159,7 +171,41 @@ export async function getFullDashboardData(): Promise<DashboardData> {
   const navHistory: TableRow<'nav_history'>[] = navRes.data ?? [];
   const benchRows: Pick<TableRow<'price_history'>, 'date' | 'ticker' | 'close'>[] =
     benchRes.data ?? [];
-  const metrics: TableRow<'portfolio_metrics'> = metricsRes.data ?? ({} as TableRow<'portfolio_metrics'>);
+  const metricsRow = metricsRes.data as TableRow<'portfolio_metrics'> | null;
+  const metrics: TableRow<'portfolio_metrics'> =
+    metricsRes.error || !metricsRow ? ({} as TableRow<'portfolio_metrics'>) : metricsRow;
+
+  const position_events: DashboardPositionEvent[] = ((eventsRes.data ?? []) as TableRow<'position_events'>[]).map(
+    (e) => ({
+      date: e.date,
+      ticker: e.ticker,
+      event: e.event,
+      weight_pct: e.weight_pct != null ? Number(e.weight_pct) : null,
+      prev_weight_pct: e.prev_weight_pct != null ? Number(e.prev_weight_pct) : null,
+      weight_change_pct: e.weight_change_pct != null ? Number(e.weight_change_pct) : null,
+      cumulative_return_since_event_pct:
+        e.cumulative_return_since_event_pct != null ? Number(e.cumulative_return_since_event_pct) : null,
+      price: e.price != null ? Number(e.price) : null,
+      thesis_id: e.thesis_id ?? null,
+      reason: e.reason ?? null,
+    })
+  );
+
+  const server_portfolio_metrics: ServerPortfolioMetrics | null =
+    metrics.date != null && String(metrics.date).length > 0
+      ? {
+          date: metrics.date,
+          as_of_date: metrics.as_of_date ?? null,
+          pnl_pct: metrics.pnl_pct != null ? Number(metrics.pnl_pct) : null,
+          sharpe: metrics.sharpe != null ? Number(metrics.sharpe) : null,
+          volatility: metrics.volatility != null ? Number(metrics.volatility) : null,
+          max_drawdown: metrics.max_drawdown != null ? Number(metrics.max_drawdown) : null,
+          alpha: metrics.alpha != null ? Number(metrics.alpha) : null,
+          cash_pct: metrics.cash_pct != null ? Number(metrics.cash_pct) : null,
+          total_invested: metrics.total_invested != null ? Number(metrics.total_invested) : null,
+          generated_at: metrics.generated_at ?? null,
+        }
+      : null;
   const rawDocs: Pick<
     TableRow<'documents'>,
     'id' | 'date' | 'title' | 'doc_type' | 'phase' | 'category' | 'segment' | 'sector' | 'run_type' | 'document_key'
@@ -418,7 +464,12 @@ export async function getFullDashboardData(): Promise<DashboardData> {
         last_updated: snapshot.date ?? latestPosDate,
         benchmarks: Object.keys(benchmarks),
       },
-      snapshots: navHistory.map((h) => ({ date: h.date, nav: Number(h.nav) })),
+      snapshots: navHistory.map((h) => ({
+        date: h.date,
+        nav: Number(h.nav),
+        cash_pct: h.cash_pct != null ? Number(h.cash_pct) : null,
+        invested_pct: h.invested_pct != null ? Number(h.invested_pct) : null,
+      })),
       strategy: {
         regime: String(regime.label ?? regime.regime ?? 'Unknown'),
         regime_label: String(regime.bias ?? regime.regime_label ?? 'neutral'),
@@ -454,11 +505,15 @@ export async function getFullDashboardData(): Promise<DashboardData> {
       date: p.date,
       ticker: p.ticker,
       weight_pct: Number(p.weight_pct ?? 0),
+      category: p.category ?? null,
+      thesis_id: p.thesis_id ?? null,
     })),
+    position_events,
     ratios: [],
     docs,
     delta_request_meta_by_date,
     benchmarks,
+    server_portfolio_metrics,
     calculated: {
       portfolio_pnl: metrics.pnl_pct != null ? Number(metrics.pnl_pct) : 0,
       total_invested:
@@ -552,18 +607,33 @@ export async function getDocumentContentById(
   return { id: r.id, content: r.markdown };
 }
 
-/**
- * Markdown compiled from before/after snapshots for digest diff in the library.
- * When `delta-request.json` exists for the date, uses its baseline and change counts.
- * Otherwise still diffs vs the latest prior `daily_snapshots` row (changeCount 0).
- */
-export async function getDigestMarkdownDiffPair(targetDate: string): Promise<{
+/** What to diff the digest against in the library. */
+export type DigestCompareKind = 'previous_digest' | 'delta_baseline';
+
+export type DigestDiffContext = {
+  previousDigestDate: string | null;
+  deltaBaselineDate: string | null;
+  changeCount: number;
+};
+
+export type DigestMarkdownDiffPair = {
   compareDate: string;
   targetDate: string;
   changeCount: number;
   beforeMarkdown: string;
   afterMarkdown: string;
-} | null> {
+  compareKind: DigestCompareKind;
+  /** Latest `daily_snapshots.date` strictly before `targetDate` (when that row exists). */
+  previousDigestDate: string | null;
+  /** Weekly / delta anchor from `delta-request.json` or `daily_snapshots.baseline_date` for the target row. */
+  deltaBaselineDate: string | null;
+};
+
+async function loadDigestDiffAnchors(targetDate: string): Promise<{
+  changeCount: number;
+  resolvedDeltaBaseline: string | null;
+  previousDigestDate: string | null;
+}> {
   if (!isSupabaseConfigured() || !supabase) {
     throw new Error(
       'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
@@ -581,31 +651,73 @@ export async function getDigestMarkdownDiffPair(targetDate: string): Promise<{
   const deltaPick = deltaRow as Pick<TableRow<'documents'>, 'payload'> | null;
 
   let changeCount = 0;
-  let compareDate = '';
-
+  let deltaPayloadBaseline: string | null = null;
   if (deltaPick?.payload) {
     const meta = parseDeltaPayload(deltaPick.payload);
     changeCount = new Set([...meta.changed_paths, ...meta.op_paths].filter(Boolean)).size;
-    const baseline = meta.baseline_date;
-    if (baseline && baseline !== targetDate) {
-      compareDate = baseline;
-    }
+    const b = meta.baseline_date;
+    deltaPayloadBaseline = b && b !== targetDate ? b : null;
   }
 
-  if (!compareDate) {
-    const { data: prev, error: prevErr } = await supabase
-      .from('daily_snapshots')
-      .select('date')
-      .lt('date', targetDate)
-      .order('date', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (prevErr) throw prevErr;
-    compareDate = (prev as Pick<TableRow<'daily_snapshots'>, 'date'> | null)?.date ?? '';
-  }
-  if (!compareDate) return null;
+  const { data: targetSnapMeta, error: targetMetaErr } = await supabase
+    .from('daily_snapshots')
+    .select('baseline_date')
+    .eq('date', targetDate)
+    .maybeSingle();
 
-  const { data: snaps, error: snapErr } = await supabase
+  if (targetMetaErr) throw targetMetaErr;
+  const rowBaseline =
+    (targetSnapMeta as Pick<TableRow<'daily_snapshots'>, 'baseline_date'> | null)?.baseline_date ?? null;
+  const rowBaselineOk = rowBaseline && rowBaseline !== targetDate ? rowBaseline : null;
+
+  const resolvedDeltaBaseline = deltaPayloadBaseline || rowBaselineOk;
+
+  const { data: prev, error: prevErr } = await supabase
+    .from('daily_snapshots')
+    .select('date')
+    .lt('date', targetDate)
+    .order('date', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (prevErr) throw prevErr;
+  const previousDigestDate =
+    (prev as Pick<TableRow<'daily_snapshots'>, 'date'> | null)?.date ?? null;
+
+  return { changeCount, resolvedDeltaBaseline, previousDigestDate };
+}
+
+/**
+ * Loads digest diff anchors once, then markdown pair for the chosen comparison mode.
+ * Use this from the library UI so comparison toggles stay accurate when a mode returns no pair.
+ */
+export async function loadDigestLibraryDiff(
+  targetDate: string,
+  compareKind: DigestCompareKind = 'previous_digest'
+): Promise<{ context: DigestDiffContext; pair: DigestMarkdownDiffPair | null }> {
+  if (!isSupabaseConfigured() || !supabase) {
+    throw new Error(
+      'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
+    );
+  }
+  const sb = supabase;
+  const { changeCount, resolvedDeltaBaseline, previousDigestDate } = await loadDigestDiffAnchors(targetDate);
+
+  const context: DigestDiffContext = {
+    previousDigestDate,
+    deltaBaselineDate: resolvedDeltaBaseline,
+    changeCount,
+  };
+
+  let compareDate = '';
+  if (compareKind === 'delta_baseline') {
+    if (!resolvedDeltaBaseline) return { context, pair: null };
+    compareDate = resolvedDeltaBaseline;
+  } else {
+    if (!previousDigestDate) return { context, pair: null };
+    compareDate = previousDigestDate;
+  }
+
+  const { data: snaps, error: snapErr } = await sb
     .from('daily_snapshots')
     .select('date, snapshot, digest_markdown')
     .in('date', [targetDate, compareDate]);
@@ -620,7 +732,7 @@ export async function getDigestMarkdownDiffPair(targetDate: string): Promise<{
 
   const beforeRow = byDate.get(compareDate);
   const afterRow = byDate.get(targetDate);
-  if (!beforeRow || !afterRow) return null;
+  if (!beforeRow || !afterRow) return { context, pair: null };
 
   function parseSnap(v: unknown): unknown {
     if (v == null) return {};
@@ -647,15 +759,33 @@ export async function getDigestMarkdownDiffPair(targetDate: string): Promise<{
 
   const beforeMarkdown = markdownFromRow(beforeRow);
   const afterMarkdown = markdownFromRow(afterRow);
-  if (!afterMarkdown.trim()) return null;
+  if (!afterMarkdown.trim()) return { context, pair: null };
 
   return {
-    compareDate,
-    targetDate,
-    changeCount,
-    beforeMarkdown,
-    afterMarkdown,
+    context,
+    pair: {
+      compareDate,
+      targetDate,
+      changeCount,
+      beforeMarkdown,
+      afterMarkdown,
+      compareKind,
+      previousDigestDate,
+      deltaBaselineDate: resolvedDeltaBaseline,
+    },
   };
+}
+
+/**
+ * Markdown pair only (same as `loadDigestLibraryDiff(...).pair`).
+ * @see loadDigestLibraryDiff — prefer that when the UI needs `DigestDiffContext` for toggles.
+ */
+export async function getDigestMarkdownDiffPair(
+  targetDate: string,
+  compareKind: DigestCompareKind = 'previous_digest'
+): Promise<DigestMarkdownDiffPair | null> {
+  const { pair } = await loadDigestLibraryDiff(targetDate, compareKind);
+  return pair;
 }
 
 export async function getDailySnapshots(

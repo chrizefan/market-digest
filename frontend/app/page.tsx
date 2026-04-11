@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { StatCard, Badge, formatPct, pnlColor } from '@/components/ui';
+import { NavSparkline } from '@/components/portfolio/nav-sparkline';
 
 const REGIME_COLORS: Record<string, string> = {
   bullish: 'text-fin-green border-fin-green/40',
@@ -92,6 +93,25 @@ export default function OverviewPage() {
             iconColor="text-fin-purple"
           />
         </div>
+
+        {portfolio.snapshots.length >= 2 && (
+          <div className="glass-card px-5 py-4 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0 flex-1">
+              <span className="text-[10px] text-text-muted uppercase tracking-wider shrink-0">
+                NAV trend
+              </span>
+              <div className="h-14 w-full min-w-[160px] max-w-[320px]">
+                <NavSparkline snaps={portfolio.snapshots} />
+              </div>
+            </div>
+            <Link
+              href="/performance"
+              className="text-sm text-fin-blue hover:underline font-medium shrink-0"
+            >
+              Full performance →
+            </Link>
+          </div>
+        )}
 
         {/* Two-column: Positions + Strategy */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

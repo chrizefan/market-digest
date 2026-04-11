@@ -5,7 +5,11 @@ import type { Change } from 'diff';
 import { diffLines, diffWords } from 'diff';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { getDigestMarkdownDiffPair } from '@/lib/queries';
+import {
+  loadDigestLibraryDiff,
+  type DigestCompareKind,
+  type DigestDiffContext,
+} from '@/lib/queries';
 
 type Mode = 'review' | 'split' | 'formatted';
 
@@ -88,18 +92,28 @@ export default function DigestDocumentView({
   fallbackMarkdown: string;
 }) {
   const [mode, setMode] = useState<Mode>('review');
+  const [compareKind, setCompareKind] = useState<DigestCompareKind>('previous_digest');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pair, setPair] = useState<Awaited<ReturnType<typeof getDigestMarkdownDiffPair>>>(null);
+  const [context, setContext] = useState<DigestDiffContext | null>(null);
+  const [pair, setPair] = useState<Awaited<ReturnType<typeof loadDigestLibraryDiff>>['pair']>(null);
 
   useEffect(() => {
     let cancelled = false;
-    getDigestMarkdownDiffPair(docDate)
-      .then((p) => {
-        if (!cancelled) setPair(p);
+    // Re-enter loading when date or compare target changes (stale diff until fetch completes).
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch lifecycle
+    setLoading(true);
+    setError(null);
+    loadDigestLibraryDiff(docDate, compareKind)
+      .then(({ context: ctx, pair: p }) => {
+        if (!cancelled) {
+          setContext(ctx);
+          setPair(p);
+        }
       })
       .catch((e) => {
         if (!cancelled) {
+          setContext(null);
           setPair(null);
           setError(e instanceof Error ? e.message : 'Failed to load diff');
         }
@@ -110,7 +124,7 @@ export default function DigestDocumentView({
     return () => {
       cancelled = true;
     };
-  }, [docDate]);
+  }, [docDate, compareKind]);
 
   const lineItems = useMemo(() => {
     if (!pair) return [];
@@ -134,27 +148,141 @@ export default function DigestDocumentView({
     );
   }
 
+  const showCompareChrome = context !== null;
+  const canComparePrevious = !!context?.previousDigestDate;
+  const canCompareBaseline = !!context?.deltaBaselineDate;
+
   if (!pair) {
     return (
-      <div className="prose prose-invert max-w-none text-sm leading-relaxed">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{fallbackMarkdown}</ReactMarkdown>
+      <div className="space-y-4">
+        {showCompareChrome ? (
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center text-xs">
+            <span className="text-text-muted shrink-0">Compare digest to</span>
+            <div className="flex flex-wrap rounded-md border border-border-subtle overflow-hidden">
+              <button
+                type="button"
+                disabled={!canComparePrevious}
+                onClick={() => setCompareKind('previous_digest')}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                  compareKind === 'previous_digest'
+                    ? 'bg-fin-blue/25 text-fin-blue'
+                    : 'text-text-muted hover:text-white bg-bg-secondary'
+                }`}
+                title={
+                  canComparePrevious
+                    ? 'Latest prior daily snapshot (usually yesterday)'
+                    : 'No earlier snapshot for this date'
+                }
+              >
+                Previous digest
+                {context?.previousDigestDate ? (
+                  <span className="font-mono text-[10px] text-text-muted ml-1">{context.previousDigestDate}</span>
+                ) : null}
+              </button>
+              <button
+                type="button"
+                disabled={!canCompareBaseline}
+                onClick={() => setCompareKind('delta_baseline')}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors border-l border-border-subtle disabled:opacity-40 disabled:cursor-not-allowed ${
+                  compareKind === 'delta_baseline'
+                    ? 'bg-fin-blue/25 text-fin-blue'
+                    : 'text-text-muted hover:text-white bg-bg-secondary'
+                }`}
+                title={
+                  canCompareBaseline
+                    ? 'Weekly / delta baseline from delta-request or snapshot row'
+                    : 'No baseline_date on this run'
+                }
+              >
+                Delta baseline
+                {context?.deltaBaselineDate ? (
+                  <span className="font-mono text-[10px] text-text-muted ml-1">{context.deltaBaselineDate}</span>
+                ) : null}
+              </button>
+            </div>
+            {context && context.changeCount > 0 ? (
+              <span className="text-text-muted">
+                {context.changeCount} path{context.changeCount !== 1 ? 's' : ''} in delta-request
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+        {compareKind === 'delta_baseline' && canCompareBaseline ? (
+          <p className="text-text-muted text-sm">
+            Could not load snapshots for the delta baseline date, or the current digest is empty.
+          </p>
+        ) : compareKind === 'previous_digest' && canComparePrevious ? (
+          <p className="text-text-muted text-sm">
+            {`Could not load markdown for the prior snapshot or today's row (check daily_snapshots).`}
+          </p>
+        ) : compareKind === 'previous_digest' && !canComparePrevious ? (
+          <p className="text-text-muted text-sm">No earlier digest snapshot to compare.</p>
+        ) : null}
+        <div className="prose prose-invert max-w-none text-sm leading-relaxed">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{fallbackMarkdown}</ReactMarkdown>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="text-text-muted">
-          Compared to <span className="font-mono text-fin-blue">{pair.compareDate}</span>
+      <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center text-xs">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <span className="text-text-muted shrink-0">Compare digest to</span>
+          <div className="flex flex-wrap rounded-md border border-border-subtle overflow-hidden">
+            <button
+              type="button"
+              disabled={!canComparePrevious}
+              onClick={() => setCompareKind('previous_digest')}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                compareKind === 'previous_digest'
+                  ? 'bg-fin-blue/25 text-fin-blue'
+                  : 'text-text-muted hover:text-white bg-bg-secondary'
+              }`}
+              title={
+                canComparePrevious
+                  ? 'Latest prior daily snapshot (usually yesterday)'
+                  : 'No earlier snapshot for this date'
+              }
+            >
+              Previous digest
+              {context?.previousDigestDate ? (
+                <span className="font-mono text-[10px] text-text-muted ml-1">{context.previousDigestDate}</span>
+              ) : null}
+            </button>
+            <button
+              type="button"
+              disabled={!canCompareBaseline}
+              onClick={() => setCompareKind('delta_baseline')}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors border-l border-border-subtle disabled:opacity-40 disabled:cursor-not-allowed ${
+                compareKind === 'delta_baseline'
+                  ? 'bg-fin-blue/25 text-fin-blue'
+                  : 'text-text-muted hover:text-white bg-bg-secondary'
+              }`}
+              title={
+                canCompareBaseline
+                  ? 'Weekly / delta baseline from delta-request or snapshot row'
+                  : 'No baseline_date on this run'
+              }
+            >
+              Delta baseline
+              {context?.deltaBaselineDate ? (
+                <span className="font-mono text-[10px] text-text-muted ml-1">{context.deltaBaselineDate}</span>
+              ) : null}
+            </button>
+          </div>
+        </div>
+        <span className="text-text-muted lg:ml-auto">
+          Showing diff vs <span className="font-mono text-fin-blue">{pair.compareDate}</span>
           {pair.changeCount > 0 ? (
-            <span className="text-text-muted">
+            <span>
               {' '}
-              · {pair.changeCount} path{pair.changeCount !== 1 ? 's' : ''} in delta
+              · {pair.changeCount} path{pair.changeCount !== 1 ? 's' : ''} in delta-request
             </span>
           ) : null}
         </span>
-        <div className="flex flex-wrap rounded-md border border-border-subtle overflow-hidden">
+        <div className="flex flex-wrap rounded-md border border-border-subtle overflow-hidden w-full sm:w-auto">
           <button
             type="button"
             onClick={() => setMode('review')}

@@ -101,10 +101,49 @@ export interface BenchmarkData {
 /** Map of benchmark ticker → BenchmarkData. */
 export type BenchmarkHistoryMap = Record<string, BenchmarkData>;
 
-/** A single NAV data point for charts. */
+/** A single NAV data point for charts (aligned with nav_history). */
 export interface NavChartPoint {
   date: string;
   nav: number;
+  cash_pct?: number | null;
+  invested_pct?: number | null;
+}
+
+/** One historical position row for sleeve / time-series aggregation. */
+export interface PositionHistoryRow {
+  date: string;
+  ticker: string;
+  weight_pct: number;
+  category: string | null;
+  thesis_id: string | null;
+}
+
+/** Execution / change ledger row (position_events). */
+export interface DashboardPositionEvent {
+  date: string;
+  ticker: string;
+  event: 'OPEN' | 'EXIT' | 'REBALANCE' | 'HOLD';
+  weight_pct: number | null;
+  prev_weight_pct: number | null;
+  weight_change_pct: number | null;
+  cumulative_return_since_event_pct: number | null;
+  price: number | null;
+  thesis_id: string | null;
+  reason: string | null;
+}
+
+/** Latest row from portfolio_metrics (server-computed; optional). */
+export interface ServerPortfolioMetrics {
+  date: string | null;
+  as_of_date: string | null;
+  pnl_pct: number | null;
+  sharpe: number | null;
+  volatility: number | null;
+  max_drawdown: number | null;
+  alpha: number | null;
+  cash_pct: number | null;
+  total_invested: number | null;
+  generated_at: string | null;
 }
 
 /** Chart row for the Performance page NAV chart — portfolio + optional benchmark columns. */
@@ -180,14 +219,14 @@ export interface DashboardData {
   portfolio: Portfolio;
   positions: Position[];
   portfolio_management: PortfolioManagement;
-  /** Raw position weights over time for performance/analysis views. */
-  position_history: Array<{
-    date: string;
-    ticker: string;
-    weight_pct: number;
-  }>;
+  /** Position weights over time (includes category / thesis for sleeve charts). */
+  position_history: PositionHistoryRow[];
+  /** Recent execution events (OPEN / EXIT / REBALANCE / HOLD). */
+  position_events: DashboardPositionEvent[];
   ratios: Array<{ long_ticker: string; short_ticker: string; net_weight: number }>;
   docs: Doc[];
+  /** Server-side metrics snapshot (when portfolio_metrics row exists). */
+  server_portfolio_metrics: ServerPortfolioMetrics | null;
   /** Per trading day: paths touched by delta-request.json (when published). */
   delta_request_meta_by_date: Record<string, DeltaRequestMeta>;
   benchmarks: BenchmarkHistoryMap;
@@ -233,14 +272,4 @@ export interface MiniCalendarProps {
   dates: string[];
   selected: string | null;
   onSelect: (date: string) => void;
-}
-
-export interface PositionPnlTableProps {
-  positions: Position[];
-}
-
-export interface AdvancedStatsProps {
-  metrics: CalculatedMetrics;
-  snaps: NavChartPoint[];
-  benchmarks: BenchmarkHistoryMap;
 }

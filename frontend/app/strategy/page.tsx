@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useDashboard } from '@/lib/dashboard-context';
 import PageHeader from '@/components/page-header';
 import { Badge } from '@/components/ui';
@@ -7,6 +8,7 @@ import {
   AlertTriangle, ArrowUpRight, Target, TrendingUp, ArrowRightLeft,
 } from 'lucide-react';
 import { Thesis, ProposedPosition, RebalanceAction } from '@/lib/types';
+import { aggregateWeightByThesis } from '@/lib/portfolio-aggregates';
 
 interface RegimeColorSet {
   text: string;
@@ -38,6 +40,10 @@ function actionColor(action: string | null | undefined): string {
 
 export default function StrategyPage() {
   const { data, loading, error } = useDashboard();
+  const exposureByThesis = useMemo(
+    () => aggregateWeightByThesis(data?.positions ?? []),
+    [data?.positions]
+  );
 
   if (loading) return <div className="flex items-center justify-center h-screen text-text-secondary">Loading…</div>;
   if (error || !data) return <div className="flex items-center justify-center h-screen text-fin-red">{error}</div>;
@@ -80,11 +86,12 @@ export default function StrategyPage() {
               <h3 className="text-sm font-semibold">Active Theses</h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[700px]">
+              <table className="w-full text-sm min-w-[820px]">
                 <thead>
                   <tr className="text-text-muted text-xs uppercase tracking-wider border-b border-border-subtle">
                     <th className="text-left px-5 py-3">ID</th>
                     <th className="text-left px-5 py-3">Thesis</th>
+                    <th className="text-right px-5 py-3">Exposure</th>
                     <th className="text-left px-5 py-3">Vehicle</th>
                     <th className="text-left px-5 py-3">Invalidation</th>
                     <th className="text-left px-5 py-3">Status</th>
@@ -96,12 +103,27 @@ export default function StrategyPage() {
                     <tr key={i} className="hover:bg-white/[0.02]">
                       <td className="px-5 py-3 font-mono text-fin-blue">{t.id}</td>
                       <td className="px-5 py-3 font-medium">{t.name}</td>
+                      <td className="px-5 py-3 text-right font-mono tabular-nums font-semibold">
+                        {(exposureByThesis.get(t.id) ?? 0).toFixed(1)}%
+                      </td>
                       <td className="px-5 py-3 font-mono text-text-secondary text-[0.85rem]">{t.vehicle}</td>
                       <td className="px-5 py-3 text-text-muted text-[0.85rem]">{t.invalidation}</td>
                       <td className={`px-5 py-3 font-semibold ${statusColor(t.status)}`}>{t.status}</td>
                       <td className="px-5 py-3 text-text-secondary text-[0.85rem]">{t.notes}</td>
                     </tr>
                   ))}
+                  {(exposureByThesis.get('_unlinked') ?? 0) > 0.005 && (
+                    <tr className="hover:bg-white/[0.02] bg-white/[0.02]">
+                      <td className="px-5 py-3 font-mono text-text-muted">—</td>
+                      <td className="px-5 py-3 font-medium text-text-secondary">Unlinked positions</td>
+                      <td className="px-5 py-3 text-right font-mono tabular-nums font-semibold">
+                        {(exposureByThesis.get('_unlinked') ?? 0).toFixed(1)}%
+                      </td>
+                      <td colSpan={4} className="px-5 py-3 text-text-muted text-xs">
+                        No thesis_id on digest positions
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
