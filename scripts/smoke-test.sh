@@ -1,6 +1,7 @@
 #!/bin/bash
 # smoke-test.sh — Fast sanity check: every script must exit 0 when called with --help
-# (or with no-op flags). Run this before CI to catch missing deps or syntax errors.
+# (or with no-op flags). Requires the same deps as the app (pip install -r requirements.txt);
+# CI installs them in .github/workflows/ci.yml before running this script.
 set -e
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
