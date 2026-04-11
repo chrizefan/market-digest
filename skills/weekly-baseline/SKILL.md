@@ -2,7 +2,7 @@
 name: weekly-baseline
 description: >
   Sunday weekly baseline run. Full 9-phase pipeline that anchors the week for Mon-Sat deltas.
-  Triggers on Sundays (see scripts/new-day.sh), or when the user says "run weekly baseline",
+  Triggers on Sundays (see scripts/new-day.sh → run_db_first), or when the user says "run weekly baseline",
   "baseline run", or "full baseline". In DB-first mode, produces a fully materialized digest
   snapshot JSON and publishes it to Supabase (no outputs/daily writes). Adds a Week Setup preamble
   reviewing prior week evolution and sets the analytical frame for the upcoming week.
@@ -22,7 +22,7 @@ Before the standard Pre-Flight, complete the following steps:
 
 ### Step 1: Prior Week Review
 Read these files (in order) and internalize without summarizing to the user:
-- `outputs/weekly/[last week label].md` — if it exists
+- Supabase `documents` for `document_key` matching `weekly/{{LAST_WEEK_LABEL}}.json` — if present
 - `config/portfolio.json` — current positions and last proposed_positions (note tickers only for now; actual weights reviewed in Phase 7D)
 
 After reading, note internally:
@@ -110,14 +110,13 @@ After completing Phase 7 synthesis, include the following content in the **snaps
 
 All items from the standard Session Completion Checklist (`skills/orchestrator/SKILL.md`), plus:
 
-- [ ] Prior week DIGEST.md reviewed (portfolio.json loaded)
+- [ ] Prior week rollup reviewed in Supabase or `config/portfolio.json` loaded
 - [ ] Week Ahead Calendar scanned (high-impact events identified)
-- [ ] `_meta.json` in output folder confirms `"type": "baseline"`
-- [ ] Week Ahead Setup section added to `DIGEST.md`
+- [ ] Week Ahead Setup captured **inside** the digest snapshot JSON (narrative fields)
 - [ ] Full digest snapshot JSON produced (schema `templates/digest-snapshot-schema.json`)
 - [ ] Snapshot published to Supabase via `scripts/materialize_snapshot.py --snapshot-json ...`
-- [ ] Phase 7C: All analyst reports in `outputs/daily/{{DATE}}/positions/`
-- [ ] Phase 7D: Rebalance decision + baseline anchor weights in `rebalance-decision.md`
+- [ ] Phase 7C: Analyst outputs published as `documents` (e.g. `positions/{{TICKER}}/{{DATE}}.json`) or embedded per team convention
+- [ ] Phase 7D: `rebalance_decision` published via `publish_document.py` (schema `rebalance-decision.schema.json`)
 
 ### DB-first publish command
 

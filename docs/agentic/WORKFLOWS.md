@@ -9,7 +9,7 @@ Step-by-step procedures for every recurring workflow.
 | Workflow | Schedule | Role |
 |----------|----------|------|
 | [`daily-price-update.yml`](../../.github/workflows/daily-price-update.yml) | **Mon–Fri 22:00 UTC** (~6:00 PM US Eastern after cash close, per workflow comments) | [`preload-history.py --incremental-supabase`](../../scripts/preload-history.py) → `price_technicals` → [`refresh_performance_metrics.py --fill-calendar-through`](../../scripts/refresh_performance_metrics.py). Manual **full history** = one-shot `--period max`. Does **not** run digest, `update_tearsheet.py`, or research. |
-| [`weekly-check.yml`](../../.github/workflows/weekly-check.yml) | **Fri 16:00 UTC** | Checks for a local `outputs/weekly/` file only — **not** the same as **Sunday baseline** in [`run_db_first.py`](../../scripts/run_db_first.py). |
+| [`weekly-check.yml`](../../.github/workflows/weekly-check.yml) | **Fri 16:00 UTC** | Reminder to publish **`weekly_digest`** JSON to Supabase — **not** the same as **Sunday baseline** in [`run_db_first.py`](../../scripts/run_db_first.py). |
 | [`ci.yml`](../../.github/workflows/ci.yml), [`deploy.yml`](../../.github/workflows/deploy.yml) | On push / manual | Build and deploy. |
 
 **Co-work / operator** runs ([`RUNBOOK.md`](../../RUNBOOK.md)): research + portfolio JSON → `run_db_first.py` → Supabase. Cowork setup: [`cowork/README.md`](../../cowork/README.md), project prompt [`cowork/PROJECT-PROMPT.md`](../../cowork/PROJECT-PROMPT.md), task list [`cowork/tasks/README.md`](../../cowork/tasks/README.md).
@@ -24,15 +24,17 @@ Step-by-step procedures for every recurring workflow.
 ### Steps
 
 ```bash
-# 1. Optional: scaffold folder + printed prompt
+# 1. Entrypoint (prints agent prompt; on full run refreshes metrics + validates DB)
 ./scripts/new-day.sh
+# same as: python3 scripts/run_db_first.py
 ```
 
 ```bash
-# 2. Run the pipeline from the skill (JSON artifacts under outputs/daily/{DATE}/)
-#    Then publish + validate:
+# 2. Agent: follow skills/orchestrator/SKILL.md (baseline) or skills/daily-delta/SKILL.md (weekday).
+#    Publish JSON only: materialize_snapshot.py + publish_document.py (stdin).
+#    Optional scratch files under outputs/ are gitignored — not canonical.
 python3 scripts/run_db_first.py
-#    Flags: --skip-execute / --validate-mode research|pm|full — see RUNBOOK.md
+#    Flags: --skip-execute / --validate-mode research|pm|full / --legacy-markdown-tearsheet — RUNBOOK.md
 ```
 
 **Manual prompt for full digest:**
@@ -41,12 +43,12 @@ Today is YYYY-MM-DD.
 Read skills/orchestrator/SKILL.md (or weekly-baseline / daily-delta per day type).
 Read config/watchlist.md; for portfolio work also preferences + investment-profile.
 Read relevant memory/*/ROLLING.md for prior context.
-DB-first: write JSON artifacts → materialize_snapshot.py / update_tearsheet.py as in RUNBOOK.md.
-Legacy markdown samples: archive/legacy-outputs/daily/
+DB-first: JSON → materialize_snapshot.py / publish_document.py; close with run_db_first.py.
+Legacy markdown samples (migration only): archive/legacy-outputs/daily/
 ```
 
 ```bash
-# 3. After outputs exist, commit (runs ETL)
+# 3. Commit repo config/memory only (Supabase already holds digest data)
 ./scripts/git-commit.sh
 ```
 

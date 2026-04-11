@@ -1,53 +1,39 @@
-Track B — combined digest + portfolio (uses preferences / investment profile).
+Run today's market digest (Supabase-first — no local digest markdown tree).
 
-For positioning-blind research only, use scripts/cowork-research-prompt.txt and cowork/tasks/research-daily-delta.md (or research-weekly-baseline.md on Sunday / cowork/tasks/recurring-scheduled-run.md for one recurring job).
+Step 0: Data layer
+  - Prefer Supabase: `price_technicals`, `price_history`, `macro_series_observations`, `sec_recent_filings`
+    (GitHub Daily Price Update loads most of this automatically).
+  - Optional local cache for the agent session only:
+      ./scripts/fetch-market-data.sh
+    (writes under outputs/daily/$(date +%Y-%m-%d)/data/ — gitignored scratch, not canonical).
+  - If scripts fail: `skills/mcp-data-fetch/SKILL.md` (MCP tools).
 
-Run today's market digest.
+Step 1: Run mode
+  - Sunday → `skills/weekly-baseline/SKILL.md` (full baseline JSON → materialize_snapshot).
+  - Mon–Sat → `skills/daily-delta/SKILL.md` (delta-request JSON → materialize).
+  - Hint: `python3 scripts/run_db_first.py --dry-run` prints mode + baseline anchor from Supabase.
+  - `./scripts/new-day.sh` is the same entrypoint as `run_db_first.py` (no folder scaffolding).
 
-Step 0: Fetch systematic market data.
-  Run: ./scripts/fetch-market-data.sh
-  (Or individually: python3 scripts/fetch-quotes.py && python3 scripts/fetch-macro.py)
-  DB-first: do not rely on outputs/daily. Use Supabase + JSON artifacts; see RUNBOOK.md.
-  fetch-quotes.py loads per-ticker CSV cache from data/price-history/ and only fetches
-  the latest missing days (incremental). If the cache is empty (first run, new machine),
-  the orchestrator auto-seeds it with 2yr of data via preload-history.py.
-  Technicals (RSI, MACD, SMA20/50/200, ATR, BBands) are computed over the full cached window.
-  **Manual preload/refresh**: python3 scripts/preload-history.py [--refresh]
-  **If scripts fail** (sandbox, missing yfinance): follow `skills/mcp-data-fetch/SKILL.md`
-  to fetch data via MCP tools (FRED, Alpha Vantage, CoinGecko, Frankfurter) instead.
+Step 2: Execute the skill pipeline
+  - Publish JSON with `scripts/validate_artifact.py` + `scripts/publish_document.py --payload -`
+    (stdin) or `scripts/materialize_snapshot.py` for the digest snapshot.
+  - Do not write outputs/daily/*.md or rely on validate-phase.sh filesystem checkpoints.
 
-Step 1: Run `python3 scripts/run_db_first.py` to detect mode and print required actions (add `--validate-mode full` or `pm` after portfolio artifacts exist; see RUNBOOK.md).
-  - If missing: run `./scripts/new-day.sh` first, then re-read.
-  - If type = "baseline": read `skills/weekly-baseline/SKILL.md` → follow full 9-phase pipeline.
-  - If type = "delta": read `skills/daily-delta/SKILL.md` → follow delta pipeline.
+Step 3: Portfolio layer (JSON documents in Supabase)
+  - Opportunity screener, deliberation, portfolio recommendation, rebalance_decision:
+    each as validated JSON + publish_document with stable document_key.
+  - Update `config/portfolio.json` when the human approves proposed weights (repo config, not DB).
 
-Step 2: Execute the pipeline from the skill file exactly. Every phase, every output file, every checkpoint.
-  - Run `./scripts/validate-phase.sh [phase]` after each phase before proceeding to the next.
-  - Do not skip phases or continue past a failed checkpoint.
+Step 4: Operator close-out
+  - `python3 scripts/run_db_first.py`  (metrics refresh, execute_at_open, validate_db_first)
+  - Optional: `./scripts/git-commit.sh` for config/memory/repo-only commits (not outputs/).
 
-Step 3: After the digest snapshot is available, run the portfolio layer:
-  - Read `skills/opportunity-screener/SKILL.md` — scan full watchlist against digest, produce ranked shortlist → `opportunity_screen` artifact
-  - Baseline days: Read `skills/deliberation/SKILL.md` (full multi-round) then `skills/portfolio-manager/SKILL.md` (clean-slate + rebalance decision).
-  - Delta days: Follow Phase 7C in `skills/daily-delta/SKILL.md` — threshold monitor first. If triggers fire → scoped screener + deliberation → PM review.
-  - Save: positions/{TICKER}.md, deliberation.md, portfolio-recommended.md, rebalance-decision.md
-  - Update: config/portfolio.json → proposed_positions[] (when rebalance triggered)
-
-Step 4: Run `python3 scripts/update-tearsheet.py` to regenerate the dashboard.
-
-Step 5: Run `./scripts/git-commit.sh` to commit outputs.
-
-Step 6: Run Phase 9 post-mortem (source scorecard, quality log, improvement proposals → evolution branch + PR via `./scripts/git-commit.sh --evolution`).
-
-Step 7: Run `./scripts/validate-phase.sh --all` as final validation. All phases must pass.
+Step 5: Phase 9 / evolution
+  - Publish evolution JSON to `documents` (schemas under templates/schemas/evolution-*.schema.json)
+    or use `./scripts/git-commit.sh --evolution` if you still maintain local evolution drafts.
 
 Rules:
-- Search live for ALL prices, yields, and news. Never use training data.
-- MCP tools are available for structured data — use them at their assigned phase instead of web searching:
-  `mcp_fred_*` (macro/bonds), `mcp_polymarket_*` (alt-data/sentiment), `mcp_crypto-feargr_*` + `mcp_coingecko_*` (crypto),
-  `mcp_frankfurter-f_*` (forex), `mcp_world-bank_*` (international), `mcp_sec-edgar_*` (institutional).
-  See `docs/ops/data-sources.md` for full phase→tool mapping and key series/query references.
-- Read config/watchlist.md, config/preferences.md, and config/investment-profile.md before any analysis.
-- Read yesterday's DIGEST.md (or this week's baseline) for continuity — prior outputs ARE the memory.
-- Do not skip the portfolio layer — baseline days always run full PM; delta days run threshold monitor.
-- Be direct and opinionated. State biases clearly.
-
+- Search live for prices and news; do not rely on model cutoff for market facts.
+- Use MCP tools per `config/data-sources.md` where assigned.
+- Continuity: read prior `daily_snapshots` / digest `documents` from Supabase — not yesterday's DIGEST.md.
+- Be direct and opinionated; state biases clearly.

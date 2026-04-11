@@ -2,7 +2,7 @@
 name: daily-delta
 description: >
   Mon–Sat daily delta analysis. Triggers on weekday digest runs, "run delta", "daily delta",
-  or when new-day.sh output shows "DAILY DELTA" mode. In DB-first mode, loads the current
+  or when the operator ran ./scripts/new-day.sh (wraps run_db_first). In DB-first mode, loads the current
   week's baseline snapshot from Supabase, emits a small delta request JSON (ops), then
   materializes a full snapshot and upserts to Supabase (no outputs/daily writes).
 ---
@@ -21,14 +21,14 @@ Estimated token savings vs full run: **~70%** on a typical day.
 
 ## Pre-Flight: Delta Context Load
 
-### Step 0: Read the Meta file
-Read today's run metadata and confirm:
-- `"type": "delta"` — confirms delta mode
-- `"baseline"` — the baseline date (e.g. `"2026-04-05"`)
-- `"delta_number"` — which delta this is this week (e.g. `1` = Monday)
-- `"week"` — week label (e.g. `"2026-W15"`)
+### Step 0: Confirm delta mode (Supabase, not `_meta.json`)
+There is **no** `outputs/daily/{{DATE}}/_meta.json` in the Supabase-first pipeline.
 
-**If metadata is missing or type is not `"delta"`**: Stop and ask the user to run `./scripts/new-day.sh` first.
+- **Weekday (Mon–Sat)** → you are in **delta** mode unless the user explicitly asked for a full baseline rerun.
+- Load the **latest baseline date** from Supabase: most recent `daily_snapshots.date` where `run_type = 'baseline'` and `date <= {{DATE}}`. Treat that as `{{BASELINE_DATE}}`.
+- **Delta number** = count of `daily_snapshots` rows with `run_type = 'delta'` for the same ISO week as `{{DATE}}`, plus one for today’s run (logical sequence only).
+
+**If no baseline exists** before `{{DATE}}`: stop and have the operator run a **Sunday baseline** (or a one-off baseline) via `skills/weekly-baseline/SKILL.md` + `materialize_snapshot.py` before applying deltas.
 
 ### Step 1: Load Config
 - `config/watchlist.md` — full asset universe

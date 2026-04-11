@@ -3,9 +3,8 @@ name: market-orchestrator
 description: >
   Master orchestrator for the comprehensive daily market analysis pipeline. Triggers when the user says
   "run today's digest", "daily analysis", "morning brief", "market update", or pastes the new-day prompt.
-  Replaces SKILL-digest.md as the primary pipeline driver. Runs a 9-phase sequential deep-dive (plus
-  portfolio phases 7C/7D) where each phase is a dedicated sub-agent research task before synthesizing
-  all findings into DIGEST.md, running the portfolio layer, and regenerating the web dashboard.
+  Supabase-first: phases produce JSON artifacts (publish_document / materialize_snapshot); no
+  outputs/daily markdown tree. Sundays use weekly-baseline; Mon–Sat use daily-delta.
 ---
 
 # digiquant-atlas — Master Orchestrator
@@ -14,25 +13,33 @@ This is the primary entry point for every comprehensive daily digest session.
 
 ---
 
-## Run Mode Detection
+## Supabase-first contract (mandatory)
 
-Before doing anything else, check today's `_meta.json` to determine the run type:
+- **Do not** create `outputs/daily/` markdown trees, `_meta.json`, `DIGEST.md`, or segment `.md` files.
+- **Do** load prior state from Supabase (`daily_snapshots`, `documents`, `price_technicals`, `macro_series_observations`).
+- **Do** publish structured JSON: `scripts/materialize_snapshot.py` for the digest snapshot;
+  `scripts/publish_document.py --payload -` (stdin) for segment docs, portfolio layer, rollups
+  (each with a stable `document_key`, e.g. `sectors/energy/2026-04-11.json`).
+- **Operator close-out:** `python3 scripts/run_db_first.py` (refreshes metrics, optional `execute_at_open`, validates DB).
 
-```bash
-cat outputs/daily/$(date +%Y-%m-%d)/_meta.json
-```
+Section headings below that mention file paths describe **logical outputs** — implement them as JSON
+documents in Supabase, not as repo files.
 
-| `_meta.json` type | Action |
-|-------------------|--------|
-| `"baseline"` | Continue below — run the full 9-phase pipeline (this skill) |
-| `"delta"` | **Stop. Switch to `skills/daily-delta/SKILL.md` instead.** |
-| File missing | Check day of week: Sunday → continue below. Mon–Sat → run `./scripts/new-day.sh` first |
+**Phase checkpoints:** Commands like `./scripts/validate-phase.sh N` below assume a **legacy markdown**
+tree. In Supabase-first runs, skip them; instead confirm each phase’s JSON is **validated and published**
+(`validate_artifact.py`, `publish_document.py`) before moving on.
 
-**On Sundays** (or when `_meta.json` says baseline): Use `skills/weekly-baseline/SKILL.md` for the
-enhanced baseline run that adds the Week Setup preamble and Week Ahead Calendar.
+---
 
-**On Mon–Sat** (when `_meta.json` says delta): Use `skills/daily-delta/SKILL.md` for the lightweight
-delta run. Do NOT run this full orchestrator — that wastes ~70% of tokens unnecessarily.
+## Run mode detection (no filesystem meta)
+
+| Condition | Action |
+|-----------|--------|
+| **Sunday** (or user requests full baseline) | Use `skills/weekly-baseline/SKILL.md` — full 9-phase baseline → materialize snapshot JSON |
+| **Mon–Sat** | Use `skills/daily-delta/SKILL.md` — delta ops JSON → materialize; **do not** run this full orchestrator |
+
+Optional: run `python3 scripts/run_db_first.py --dry-run` to print today’s mode hint and baseline anchor
+for deltas (from Supabase).
 
 ---
 
@@ -58,7 +65,7 @@ Then load the following. Do NOT summarize to the user — just internalize:
 2. `config/investment-profile.md` — investor identity, horizon, risk tolerance, asset preferences, regime playbook
 3. `config/hedge-funds.md` — tracked fund reference
 4. `docs/ops/data-sources.md` — tracked signal sources, KOL accounts, Polymarket topics
-5. Yesterday's `DIGEST.md` if it exists (for continuity)
+5. **Prior digest** — latest `daily_snapshots` row before today and/or `documents` with `document_key` prefix `digest` (for continuity)
 
 **After loading**, internally note:
 - Active theses and their current status

@@ -27,8 +27,8 @@ if [ "$1" == "--evolution" ]; then
     git checkout -b "${BRANCH}"
   fi
 
-  # Stage only evolution-related files (DB-first: outputs/evolution/YYYY-MM-DD/*.json)
-  git add "outputs/evolution/${DATE}/"
+  # Stage only evolution-related files
+  git add "outputs/daily/${DATE}/evolution/"
   git add docs/evolution-changelog.md
 
   # Check if there's anything to commit
@@ -66,13 +66,13 @@ if [ "$1" == "--evolution" ]; then
 This PR contains post-mortem observations and improvement proposals from today's digest run.
 
 ### Files Changed
-- \`outputs/evolution/${DATE}/sources.json\` — Data source ratings
-- \`outputs/evolution/${DATE}/quality-log.json\` — Quality self-assessment
-- \`outputs/evolution/${DATE}/proposals.json\` — New improvement proposals
+- \`outputs/daily/${DATE}/evolution/sources.md\` — Data source ratings
+- \`outputs/daily/${DATE}/evolution/quality-log.md\` — Quality self-assessment
+- \`outputs/daily/${DATE}/evolution/proposals.md\` — New improvement proposals
 - \`docs/evolution-changelog.md\` — Applied improvements log
 
 ### Review Instructions
-1. Review the proposals in \`outputs/evolution/${DATE}/proposals.json\`
+1. Review the proposals in \`outputs/daily/${DATE}/evolution/proposals.md\`
 2. Approve/reject each proposal
 3. Merge this PR to apply the evolution artifacts to master
 
@@ -95,24 +95,14 @@ This PR contains post-mortem observations and improvement proposals from today's
 
 else
   echo ""
-  echo "📦 Committing digiquant-atlas outputs — $DATE"
-  echo "============================================"
-
-  # Regenerate snapshot.json sidecars from latest outputs
+  echo "📦 Committing digiquant-atlas repo changes — $DATE"
+  echo "=================================================="
+  echo "   (Digest data lives in Supabase; outputs/ is gitignored — no markdown ETL here.)"
   echo ""
-  echo "🔄 Generating snapshot.json sidecars..."
-  if ! python3 scripts/generate-snapshot.py --all 2>&1; then
-    echo "   ⚠️  Snapshot generation failed — check output above"
-    echo "   Continuing with stale snapshots. Review before pushing."
-  fi
 
-  echo ""
-  echo "🔄 Pushing data to Supabase..."
-  if ! python3 scripts/update_tearsheet.py 2>&1; then
-    echo "   ❌  Supabase push failed — dashboard may show stale data"
-    echo "   Fix: pip install -r requirements.txt && python3 scripts/update_tearsheet.py"
-    echo "   Aborting commit to prevent stale state."
-    exit 1
+  echo "🔄 Refreshing performance metrics through $DATE..."
+  if ! python3 scripts/refresh_performance_metrics.py --supabase --fill-calendar-through "$DATE" 2>&1; then
+    echo "   ⚠️  refresh_performance_metrics failed — check SUPABASE_* env and logs above"
   fi
 
   # Validate portfolio constraints before committing
@@ -124,9 +114,9 @@ else
     fi
   fi
 
-  # Stage digest outputs and config (no more dashboard-data.json needed)
-  git add outputs/
-  git add config/
+  # Config / memory / docs only (canonical research + portfolio state is in Supabase)
+  git add config/ 2>/dev/null || true
+  git add memory/ 2>/dev/null || true
 
   # Check if there's anything to commit
   if git diff --staged --quiet; then

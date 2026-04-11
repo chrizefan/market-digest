@@ -1,5 +1,6 @@
 #!/bin/bash
-# validate-phase.sh — Validate outputs after each pipeline phase before proceeding
+# validate-phase.sh — Legacy: validates outputs/daily/*.md after each phase.
+# Supabase-first: use python3 scripts/validate_db_first.py instead.
 #
 # Usage:
 #   ./scripts/validate-phase.sh <phase> [date]     # Validate a specific phase
@@ -127,77 +128,327 @@ validate_preflight() {
   local run_type="$1"
   print_header "Pre-Flight" "(output dir + config)"
 
-  pass "DB-first mode (no outputs/daily validation)"
+  # Output dir
+  if [ -d "$OUTPUT_DIR" ]; then
+    pass "Output directory exists: $OUTPUT_DIR"
+  else
+    fail "Output directory missing: $OUTPUT_DIR — run ./scripts/new-day.sh first"
+  fi
+
+  # _meta.json
+  check_file_exists "$OUTPUT_DIR/_meta.json" "_meta.json"
 
   # Config files
   check_file "config/watchlist.md" "config/watchlist.md" 3
   check_file "config/preferences.md" "config/preferences.md" 3
   check_file "config/investment-profile.md" "config/investment-profile.md" 3
   check_file "config/hedge-funds.md" "config/hedge-funds.md" 3
-  check_file "docs/ops/data-sources.md" "docs/ops/data-sources.md" 3
+  check_file "config/data-sources.md" "config/data-sources.md" 3
+
+  # Delta-specific: check baseline exists
+  if [ "$run_type" = "delta" ]; then
+    local baseline_date
+    baseline_date=$(python3 -c "import json; print(json.load(open('$OUTPUT_DIR/_meta.json')).get('baseline',''))" 2>/dev/null || echo "")
+    if [ -n "$baseline_date" ] && [ -f "outputs/daily/$baseline_date/DIGEST.md" ]; then
+      local bl_lines
+      bl_lines=$(wc -l < "outputs/daily/$baseline_date/DIGEST.md" | tr -d ' ')
+      if [ "$bl_lines" -gt 10 ]; then
+        pass "Baseline DIGEST.md exists ($baseline_date, $bl_lines lines)"
+      else
+        fail "Baseline DIGEST.md too short ($baseline_date, $bl_lines lines)"
+      fi
+    else
+      fail "Baseline DIGEST.md missing or unreferenced"
+    fi
+  fi
 }
 
 validate_phase1() {
   local run_type="$1"
   print_header "1" "Alternative Data & Signals"
 
-  pass "DB-first: phase 1 validated via published snapshot content"
+  if [ "$run_type" = "baseline" ]; then
+    check_file "$OUTPUT_DIR/sentiment-news.md" "1A: Sentiment & News" 10
+    check_file "$OUTPUT_DIR/cta-positioning.md" "1B: CTA & Systematic Positioning" 10
+    check_file "$OUTPUT_DIR/options-derivatives.md" "1C: Options & Derivatives" 10
+    check_file "$OUTPUT_DIR/politician-signals.md" "1D: Politician & Official Signals" 10
+  else
+    # Delta mode: alt-data is optional; check if delta exists when written
+    if [ -f "$OUTPUT_DIR/deltas/alt-data.delta.md" ]; then
+      check_file "$OUTPUT_DIR/deltas/alt-data.delta.md" "Alt-data delta" 5
+    else
+      warn "Alt-data delta not written (carried forward — OK if triage determined no change)"
+    fi
+  fi
 }
 
 validate_phase2() {
   local run_type="$1"
   print_header "2" "Institutional Intelligence"
 
-  pass "DB-first: phase 2 validated via published snapshot content"
+  if [ "$run_type" = "baseline" ]; then
+    check_file "$OUTPUT_DIR/institutional-flows.md" "2A: Institutional Flows" 10
+    check_file "$OUTPUT_DIR/hedge-fund-intel.md" "2B: Hedge Fund Intelligence" 10
+  else
+    if [ -f "$OUTPUT_DIR/deltas/institutional.delta.md" ]; then
+      check_file "$OUTPUT_DIR/deltas/institutional.delta.md" "Institutional delta" 5
+    else
+      warn "Institutional delta not written (carried forward — OK if triage determined no change)"
+    fi
+  fi
 }
 
 validate_phase3() {
   local run_type="$1"
   print_header "3" "Macro Regime Classification"
 
-  pass "DB-first: phase 3 validated via published snapshot content"
+  if [ "$run_type" = "baseline" ]; then
+    check_file "$OUTPUT_DIR/macro.md" "Macro analysis" 20
+
+    # Structural check: macro.md should contain regime classification
+    if [ -f "$OUTPUT_DIR/macro.md" ] && grep -qi "regime\|growth.*inflation\|risk.appetite\|policy" "$OUTPUT_DIR/macro.md"; then
+      pass "Macro regime keywords present"
+    elif [ -f "$OUTPUT_DIR/macro.md" ]; then
+      warn "Macro regime classification keywords not found — verify regime section exists"
+    fi
+  else
+    # Delta mode: macro is mandatory
+    check_file "$OUTPUT_DIR/deltas/macro.delta.md" "Macro delta (MANDATORY)" 5
+  fi
 }
 
 validate_phase4() {
   local run_type="$1"
   print_header "4" "Asset Class Deep Dives"
 
-  pass "DB-first: phase 4 validated via published snapshot content"
+  if [ "$run_type" = "baseline" ]; then
+    check_file "$OUTPUT_DIR/bonds.md" "4A: Bonds & Rates" 15
+    check_file "$OUTPUT_DIR/commodities.md" "4B: Commodities" 15
+    check_file "$OUTPUT_DIR/forex.md" "4C: Forex" 15
+    check_file "$OUTPUT_DIR/crypto.md" "4D: Crypto & Digital Assets" 15
+    check_file "$OUTPUT_DIR/international.md" "4E: International & EM" 15
+  else
+    # Delta: crypto is mandatory, others are threshold-based
+    check_file "$OUTPUT_DIR/deltas/crypto.delta.md" "4D: Crypto delta (MANDATORY)" 5
+
+    for seg in bonds commodities forex international; do
+      if [ -f "$OUTPUT_DIR/deltas/$seg.delta.md" ]; then
+        check_file "$OUTPUT_DIR/deltas/$seg.delta.md" "4: $seg delta" 5
+      fi
+    done
+    # Count how many optional deltas were written
+    local opt_count
+    opt_count=$(find "$OUTPUT_DIR/deltas" -name "bonds.delta.md" -o -name "commodities.delta.md" \
+                -o -name "forex.delta.md" -o -name "international.delta.md" 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$opt_count" -eq 0 ]; then
+      warn "No optional asset-class deltas written (bonds, commodities, forex, international)"
+    fi
+  fi
 }
 
 validate_phase5() {
   local run_type="$1"
   print_header "5" "US Equities + Sectors"
 
-  pass "DB-first: phase 5 validated via published snapshot content"
+  local sectors="technology healthcare energy financials consumer-staples consumer-disc industrials utilities materials real-estate comms"
+
+  if [ "$run_type" = "baseline" ]; then
+    check_file "$OUTPUT_DIR/us-equities.md" "5A: US Equities Overview" 20
+
+    local sector_count=0
+    local sector_total=11
+    for sector in $sectors; do
+      if check_file "$OUTPUT_DIR/sectors/$sector.md" "5: $sector" 10; then
+        sector_count=$((sector_count + 1))
+      fi
+    done
+
+    if [ "$sector_count" -eq "$sector_total" ]; then
+      pass "All $sector_total sector files present and populated"
+    fi
+  else
+    # Delta: us-equities is mandatory
+    check_file "$OUTPUT_DIR/deltas/us-equities.delta.md" "5A: US Equities delta (MANDATORY)" 5
+
+    # Sector deltas are optional
+    local sector_delta_count
+    sector_delta_count=$(find "$OUTPUT_DIR/sectors" -name "*.delta.md" 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$sector_delta_count" -gt 0 ]; then
+      for delta_file in "$OUTPUT_DIR"/sectors/*.delta.md; do
+        [ -f "$delta_file" ] && check_file "$delta_file" "Sector delta: $(basename "$delta_file")" 5
+      done
+    else
+      warn "No sector deltas written (OK if no sector moved >1.5%)"
+    fi
+  fi
 }
 
 validate_phase7() {
   local run_type="$1"
   print_header "7" "DIGEST Synthesis + Snapshot"
 
-  pass "DB-first: digest is stored in Supabase (daily_snapshots.snapshot + documents)"
+  if [ "$run_type" = "baseline" ]; then
+    check_file "$OUTPUT_DIR/DIGEST.md" "DIGEST.md (master synthesis)" 50
+
+    # Structural checks on DIGEST.md
+    if [ -f "$OUTPUT_DIR/DIGEST.md" ]; then
+      local digest="$OUTPUT_DIR/DIGEST.md"
+      local checks_ok=true
+
+      if grep -qi "market regime\|regime snapshot" "$digest"; then
+        pass "DIGEST contains Market Regime section"
+      else
+        warn "DIGEST may be missing Market Regime Snapshot section"
+      fi
+
+      if grep -qi "thesis\|thes.*tracker" "$digest"; then
+        pass "DIGEST contains Thesis Tracker section"
+      else
+        warn "DIGEST may be missing Thesis Tracker section"
+      fi
+
+      if grep -qi "actionable\|action.*summary\|top.*items" "$digest"; then
+        pass "DIGEST contains Actionable Summary section"
+      else
+        warn "DIGEST may be missing Actionable Summary section"
+      fi
+
+      if grep -qi "risk.*radar" "$digest"; then
+        pass "DIGEST contains Risk Radar section"
+      else
+        warn "DIGEST may be missing Risk Radar section"
+      fi
+    fi
+  else
+    # Delta mode: both DIGEST-DELTA.md and materialized DIGEST.md required
+    check_file "$OUTPUT_DIR/DIGEST-DELTA.md" "DIGEST-DELTA.md (delta changes)" 15
+    check_file "$OUTPUT_DIR/DIGEST.md" "DIGEST.md (materialized)" 50
+
+    # Verify materialized DIGEST is a complete file (not just the delta template)
+    if [ -f "$OUTPUT_DIR/DIGEST.md" ]; then
+      local lines
+      lines=$(wc -l < "$OUTPUT_DIR/DIGEST.md" | tr -d ' ')
+      if [ "$lines" -lt 100 ]; then
+        warn "Materialized DIGEST.md seems short ($lines lines) — may not be fully materialized"
+      fi
+    fi
+  fi
+
+  # snapshot.json validation (both baseline and delta)
+  if [ -f "$OUTPUT_DIR/snapshot.json" ]; then
+    if python3 -c "
+import json, sys
+s = json.load(open('$OUTPUT_DIR/snapshot.json'))
+required = ['schema_version','date','run_type','regime','positions','market_data']
+missing = [k for k in required if k not in s]
+if missing:
+    print('Missing keys: ' + ', '.join(missing))
+    sys.exit(1)
+if not isinstance(s.get('positions'), list) or len(s['positions']) == 0:
+    print('positions array is empty')
+    sys.exit(1)
+md = s.get('market_data', {})
+for k in ['SPY','VIX','BTC']:
+    if k not in md:
+        print('market_data missing ' + k)
+        sys.exit(1)
+" 2>/dev/null; then
+      pass "snapshot.json — valid structure with required fields"
+    else
+      local err
+      err=$(python3 -c "
+import json, sys
+s = json.load(open('$OUTPUT_DIR/snapshot.json'))
+required = ['schema_version','date','run_type','regime','positions','market_data']
+missing = [k for k in required if k not in s]
+if missing:
+    print('Missing keys: ' + ', '.join(missing)); sys.exit(0)
+if not isinstance(s.get('positions'), list) or len(s['positions']) == 0:
+    print('positions array is empty'); sys.exit(0)
+md = s.get('market_data', {})
+for k in ['SPY','VIX','BTC']:
+    if k not in md:
+        print('market_data missing ' + k); sys.exit(0)
+" 2>/dev/null)
+      fail "snapshot.json — $err"
+    fi
+  else
+    warn "snapshot.json not found — Supabase ETL will fall back to regex parsing"
+  fi
 }
 
 validate_phase7b() {
   local run_type="$1"
   print_header "7B" "Opportunity Screen"
 
-  pass "DB-first: opportunity screen optional and not validated as file output"
+  if [ "$run_type" = "baseline" ]; then
+    check_file "$OUTPUT_DIR/opportunity-screen.md" "Opportunity screen" 10
+  else
+    # Delta: opportunity screen is part of 7C threshold scan, not a standalone file
+    if [ -f "$OUTPUT_DIR/opportunity-screen.md" ]; then
+      check_file "$OUTPUT_DIR/opportunity-screen.md" "Opportunity screen (optional on delta)" 5
+    else
+      pass "Opportunity screen skipped (expected on delta days unless triggered)"
+    fi
+  fi
 }
 
 validate_phase7c() {
   local run_type="$1"
   print_header "7C" "Deliberation / Portfolio Monitor"
 
-  pass "DB-first: portfolio outputs are captured in snapshot/positions/theses tables"
+  if [ "$run_type" = "baseline" ]; then
+    check_file "$OUTPUT_DIR/deliberation.md" "Deliberation transcript" 15
+
+    # Check for analyst position files
+    local pos_count
+    pos_count=$(find "$OUTPUT_DIR/positions" -name "*.md" 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$pos_count" -gt 0 ]; then
+      pass "Analyst positions: $pos_count file(s) in positions/"
+    else
+      fail "No analyst position files in positions/"
+    fi
+  else
+    # Delta: portfolio monitor may or may not trigger deliberation
+    if [ -f "$OUTPUT_DIR/deliberation.md" ]; then
+      check_file "$OUTPUT_DIR/deliberation.md" "Deliberation transcript (triggered)" 10
+    else
+      pass "No deliberation triggered (portfolio monitor found no threshold breaches)"
+    fi
+  fi
 }
 
 validate_phase7d() {
   local run_type="$1"
   print_header "7D" "Portfolio Manager Review"
 
-  pass "DB-first: portfolio decisions represented in snapshot + positions table"
+  if [ "$run_type" = "baseline" ]; then
+    check_file "$OUTPUT_DIR/portfolio-recommended.md" "Portfolio recommended" 10
+    check_file "$OUTPUT_DIR/rebalance-decision.md" "Rebalance decision" 10
+
+    # Check portfolio.json was updated with proposed_positions
+    if [ -f "config/portfolio.json" ]; then
+      local has_proposed
+      has_proposed=$(python3 -c "
+import json
+d=json.load(open('config/portfolio.json'))
+pp=d.get('proposed_positions',[])
+print(len(pp))
+" 2>/dev/null || echo "0")
+      if [ "$has_proposed" -gt 0 ]; then
+        pass "portfolio.json has $has_proposed proposed position(s)"
+      else
+        warn "portfolio.json proposed_positions is empty"
+      fi
+    fi
+  else
+    # Delta: only runs if 7C triggered
+    check_file "$OUTPUT_DIR/rebalance-decision.md" "Rebalance decision (or monitor note)" 3
+
+    if [ -f "$OUTPUT_DIR/portfolio-recommended.md" ]; then
+      check_file "$OUTPUT_DIR/portfolio-recommended.md" "Portfolio recommended (triggered)" 10
+    fi
+  fi
 }
 
 validate_phase8() {
@@ -260,30 +511,38 @@ validate_phase9() {
   local run_type="$1"
   print_header "9" "Post-Mortem & Evolution"
 
-  # DB-first: JSON under outputs/evolution/YYYY-MM-DD/ (not outputs/daily/.../evolution/)
-  local evo_dir="outputs/evolution/$DATE"
+  local evo_dir="$OUTPUT_DIR/evolution"
 
-  _json_nonempty() {
-    local f="$1"
-    [ -f "$f" ] && [ "$(wc -c < "$f" | tr -d ' ')" -gt 40 ]
-  }
-
-  if _json_nonempty "$evo_dir/sources.json"; then
-    pass "Source scorecard (9A) — $evo_dir/sources.json"
+  # Check evolution files exist
+  if [ -f "$evo_dir/sources.md" ]; then
+    local lines
+    lines=$(wc -l < "$evo_dir/sources.md" | tr -d ' ')
+    if [ "$lines" -gt 3 ]; then
+      pass "Source scorecard (9A) — $lines lines"
+    else
+      warn "Source scorecard (9A) is sparse ($lines lines)"
+    fi
   else
-    warn "$evo_dir/sources.json missing or empty — run ./scripts/scaffold_evolution_day.sh $DATE"
+    warn "$evo_dir/sources.md does not exist"
   fi
 
-  if _json_nonempty "$evo_dir/quality-log.json"; then
-    pass "Quality post-mortem (9B) — $evo_dir/quality-log.json"
+  if [ -f "$evo_dir/quality-log.md" ]; then
+    local lines
+    lines=$(wc -l < "$evo_dir/quality-log.md" | tr -d ' ')
+    if [ "$lines" -gt 3 ]; then
+      pass "Quality post-mortem (9B) — $lines lines"
+    else
+      warn "Quality post-mortem (9B) is sparse ($lines lines)"
+    fi
   else
-    warn "$evo_dir/quality-log.json missing or empty"
+    warn "$evo_dir/quality-log.md does not exist"
   fi
 
-  if [ -f "$evo_dir/proposals.json" ]; then
-    pass "Proposals file present (9C)"
+  # Proposals are optional (max 2 per session)
+  if [ -f "$evo_dir/proposals.md" ]; then
+    pass "Proposals file exists (9C)"
   else
-    warn "$evo_dir/proposals.json not found"
+    warn "$evo_dir/proposals.md not found"
   fi
 }
 

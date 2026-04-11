@@ -264,61 +264,24 @@ def _load_prefetched_prices(root):
     return {}
 
 
-def fetch_prices(tickers, start_date, price_field="Close"):
-    """Fetch daily prices from start_date to today (default: Close).
-
-    For simulation we use Open (market-open execution); for display / FX we use Close.
-    """
-    ohlc = fetch_ohlc_matrix(tickers, start_date)
-    return ohlc.get(price_field, pd.DataFrame())
-
-
-def fetch_ohlc_matrix(tickers, start_date):
-    """Return dict with 'Open', 'Close' DataFrames (columns=tickers) and 'trading_days' set.
-
-    Prices are forward-filled over the full calendar date range so every day has
-    an entry for the portfolio NAV chart.  'trading_days' is the set of dates
-    when exchanges were actually open (from yfinance); use it to filter returns
-    when computing annualised stats (Sharpe, alpha, volatility).
-    """
-    empty = {"Open": pd.DataFrame(), "Close": pd.DataFrame(), "trading_days": set()}
+def fetch_prices(tickers, start_date):
+    """Fetch daily closing prices from start_date to today."""
     if not _HAS_YFINANCE or not tickers:
-        return empty
-
+        return pd.DataFrame() if _HAS_YFINANCE else None
+    
+    # Pad start_date backwards slightly in case it falls on a weekend
     start_dt = pd.to_datetime(start_date) - pd.Timedelta(days=5)
-    tickers = list(tickers)
-
+    
     try:
-        raw = yf.download(
-            tickers, start=start_dt.strftime("%Y-%m-%d"), progress=False, threads=True
-        )
+        data = yf.download(tickers, start=start_dt.strftime("%Y-%m-%d"), progress=False)["Close"]
+        if len(tickers) == 1:
+            data = data.to_frame(name=tickers[0])
+        # Forward fill weekends/holidays so every requested date resolves to last close
+        data = data.ffill()
+        return data
     except Exception as e:
-        print(f"  Warning: OHLC fetch failed — {e}")
-        return empty
-
-    if raw is None or (hasattr(raw, "empty") and raw.empty):
-        return empty
-
-    # Capture the raw yfinance trading-day index before any reindexing.
-    trading_days: set = set(raw.index.normalize())
-
-    def _frame_for(field: str) -> pd.DataFrame:
-        try:
-            part = raw[field]
-        except (KeyError, TypeError):
-            return pd.DataFrame()
-        if isinstance(part, pd.Series):
-            frame = part.to_frame(name=tickers[0]).ffill()
-        else:
-            frame = part.ffill()
-        # Expand to full calendar range: every calendar day carries the last known price.
-        # Non-trading days get the same price as the prior trading close (return = 0).
-        if not frame.empty:
-            full_range = pd.date_range(frame.index.min(), frame.index.max(), freq="D")
-            frame = frame.reindex(full_range).ffill()
-        return frame
-
-    return {"Open": _frame_for("Open"), "Close": _frame_for("Close"), "trading_days": trading_days}
+        print(f"  Warning: benchmark fetch failed — {e}")
+        return pd.DataFrame()
 
 def compute_technicals_for_tickers(tickers: list) -> dict:
     """Compute RSI, MACD signal, SMA50/200 position, ATR for a list of tickers.
@@ -415,10 +378,6 @@ def simulate_portfolio(digests):
     Simulate portfolio NAV and cash over time based on daily digests.
     Assumes base 100 starting on the first digest's date.
     Requires yfinance + pandas.
-
-    Execution model (simulation): rebalances take effect at the **start** of the
-    session; daily returns are **open-to-open** Mon–Fri using OHLC Open. Marks for
-    display (current_price) use Close on the last bar.
     """
     if not digests or not _HAS_YFINANCE:
         return [], [], {}, digests[-1] if digests else None
@@ -434,16 +393,11 @@ def simulate_portfolio(digests):
     benchmarks_list = BENCHMARKS
     all_symbols = list(all_tickers.union(set(benchmarks_list)))
     
-    print(f"   Fetching OHLC for {len(all_symbols)} tickers from {start_date} (NAV: open-to-open)...")
-    ohlc = fetch_ohlc_matrix(all_symbols, start_date)
-    opens = ohlc.get("Open", pd.DataFrame())
-    closes = ohlc.get("Close", pd.DataFrame())
-    trading_days: set = ohlc.get("trading_days", set())
+    print(f"   Fetching prices for {len(all_symbols)} tickers from {start_date}...")
+    prices = fetch_prices(all_symbols, start_date)
 
-    if opens.empty:
+    if prices.empty:
         return [], [], {}, digests[-1] if digests else None
-
-    prices = opens  # simulation path uses Open
 
     # Build sequence of business days from start_date to last available price
     if start_date not in prices.index:
@@ -467,19 +421,8 @@ def simulate_portfolio(digests):
     digest_idx = 0
     
     for i, date in enumerate(dates):
-        # Apply any digest published on or prior to this session open (rebalance at open)
-        while digest_idx < len(digests) and pd.to_datetime(digests[digest_idx]["date"]) <= date:
-            active_digest = digests[digest_idx]
-            digest_idx += 1
-            new_weights = {}
-            for p in active_digest["positions"]:
-                w = p["weight"] / 100.0
-                new_weights[p["ticker"]] = w
-            current_weights = new_weights
-            cash_pct = current_weights.get("CASH", 0.0)
-
         if i > 0:
-            prev_date = dates[i - 1]
+            prev_date = dates[i-1]
             daily_return = 0.0
             for ticker, weight in current_weights.items():
                 if ticker == "CASH":
@@ -493,14 +436,21 @@ def simulate_portfolio(digests):
                 except KeyError:
                     pass
             nav = nav * (1.0 + daily_return)
+        
+        # Apply any digest published on or prior to this trading date
+        while digest_idx < len(digests) and pd.to_datetime(digests[digest_idx]["date"]) <= date:
+            active_digest = digests[digest_idx]
+            digest_idx += 1
+            new_weights = {}
+            for p in active_digest["positions"]:
+                w = p["weight"] / 100.0
+                new_weights[p["ticker"]] = w
+            current_weights = new_weights
+            cash_pct = current_weights.get("CASH", 0.0)
 
         portfolio_history.append({
             "date": date.strftime("%Y-%m-%d"),
-            "nav": float(nav),
-            # Tag whether this is a real trading day so callers can filter for
-            # annualised stats (Sharpe, alpha) without inflating denominator
-            # with zero-return weekend/holiday observations.
-            "is_trading_day": date.normalize() in trading_days,
+            "nav": float(nav)
         })
 
     # If there are digests published on a weekend/holiday AFTER the last trading day, apply the newest one
@@ -514,8 +464,9 @@ def simulate_portfolio(digests):
         current_weights = new_weights
         cash_pct = current_weights.get("CASH", 0.0)
         
-    # For a true simulator we'd track exact entry date/price for each lot;
-    # marks use last Close; returns use Open (see docstring).
+    active_positions = []
+    # For a true simulator we'd track exact entry date/price for each lot,
+    # but for tearsheet we approximate using the most recent close.
     active_positions = []
     if active_digest:
         last_date = dates[-1]
@@ -528,17 +479,9 @@ def simulate_portfolio(digests):
 
         for p in active_digest["positions"]:
             t = p["ticker"]
-            if t == "CASH":
-                continue
-            try:
-                if float(p.get("weight", 0) or 0) == 0:
-                    continue
-            except (TypeError, ValueError):
-                pass
+            if t == "CASH": continue
             cp = None
-            if not closes.empty and t in closes.columns:
-                cp = float(closes.loc[last_date, t])
-            elif t in prices.columns:
+            if t in prices.columns:
                 cp = float(prices.loc[last_date, t])
             
             ti_data = {}
@@ -786,221 +729,6 @@ def _read_md(filepath):
     except Exception:
         return "_(Error reading file)_"
 
-def _read_json(filepath):
-    """Read a JSON file and return parsed object or None."""
-    try:
-        return json.loads(filepath.read_text(encoding="utf-8"))
-    except Exception:
-        return None
-
-def _render_markdown_from_payload(payload: dict) -> str:
-    """Deterministic markdown view from structured payload (best-effort)."""
-    doc_type = str(payload.get("doc_type") or "")
-    date = str(payload.get("date") or "")
-    body = payload.get("body") if isinstance(payload.get("body"), dict) else {}
-
-    if doc_type == "deep_dive":
-        md = body.get("markdown") if isinstance(body, dict) else None
-        if isinstance(md, str) and md.strip():
-            return md.strip() + "\n"
-        title = payload.get("title") or "Deep Dive"
-        return f"# {title}{(' — ' + date) if date else ''}\n\n_No content available._\n"
-
-    if doc_type == "weekly_digest":
-        wk = payload.get("week_label") or ""
-        legacy = body.get("full_document_markdown") if isinstance(body, dict) else None
-        if isinstance(legacy, str) and legacy.strip():
-            return legacy.strip() + "\n"
-        ex = str(body.get("executive_summary") or "").strip()
-        kt = str(body.get("key_takeaway") or "").strip()
-        out = [f"# WEEKLY DIGEST — {wk or date}".strip(), "", "## Executive Summary", ex, "", "## Key Takeaway", kt, ""]
-        return "\n".join([x for x in out if x is not None]).strip() + "\n"
-
-    if doc_type == "monthly_digest":
-        ml = payload.get("month_label") or ""
-        mir = str(body.get("month_in_review") or "").strip()
-        kl = str(body.get("key_learning") or "").strip()
-        out = [f"# MONTHLY DIGEST — {ml or date}".strip(), "", "## Month in Review", mir, "", "## Key Learning", kl, ""]
-        return "\n".join([x for x in out if x is not None]).strip() + "\n"
-
-    if doc_type == "rebalance_decision":
-        notes = str(body.get("pm_notes") or "").strip()
-        out = [f"# REBALANCE DECISION — {date}".strip(), "", "## PM Notes", notes, ""]
-        table = body.get("rebalance_table") or []
-        if isinstance(table, list) and table:
-            out.extend(
-                [
-                    "## Rebalance Table",
-                    "| Ticker | Current% | Recommended% | Change | Action | Urgency | Rationale |",
-                    "|---|---:|---:|---:|---|---|---|",
-                ]
-            )
-            for r in table:
-                if not isinstance(r, dict):
-                    continue
-                rat = str(r.get("rationale") or "").replace("|", "\\|").replace("\n", " ")
-                out.append(
-                    "| {t} | {c} | {rec} | {ch} | {a} | {u} | {rat} |".format(
-                        t=r.get("ticker") or "",
-                        c=r.get("current_pct") if r.get("current_pct") is not None else "",
-                        rec=r.get("recommended_pct") if r.get("recommended_pct") is not None else "",
-                        ch=r.get("change_pct") if r.get("change_pct") is not None else "",
-                        a=r.get("action") or "",
-                        u=r.get("urgency") or "",
-                        rat=rat,
-                    )
-                )
-            out.append("")
-        return "\n".join(out).strip() + "\n"
-
-    if doc_type == "delta_request" or (
-        not doc_type
-        and isinstance(payload.get("ops"), list)
-        and isinstance(payload.get("changed_paths"), list)
-    ):
-        lines = [
-            f"# DELTA REQUEST — {date}".strip(),
-            "",
-            f"**Baseline:** {payload.get('baseline_date') or '—'}",
-            "",
-        ]
-        cp = payload.get("changed_paths") or []
-        if isinstance(cp, list) and cp:
-            lines.append("## Changed paths")
-            for p in cp:
-                if isinstance(p, str):
-                    lines.append(f"- `{p}`")
-            lines.append("")
-        ops = payload.get("ops") or []
-        if isinstance(ops, list) and ops:
-            lines.append("## Operations")
-            lines.append("| Op | Path | Reason |")
-            lines.append("|---|---|---|")
-            for op in ops:
-                if not isinstance(op, dict):
-                    continue
-                o = str(op.get("op") or "")
-                path = str(op.get("path") or "").replace("|", "\\|")
-                reason = str(op.get("reason") or "").replace("|", "\\|").replace("\n", " ")
-                lines.append(f"| {o} | `{path}` | {reason} |")
-            lines.append("")
-        return "\n".join(lines).strip() + "\n"
-
-    if doc_type == "research_delta":
-        seg = payload.get("segments") if isinstance(payload.get("segments"), dict) else {}
-        lines = [
-            f"# RESEARCH DELTA — {date}",
-            "",
-            f"**Baseline:** {payload.get('baseline_date') or '—'}",
-            f"**No material change:** {payload.get('no_change', False)}",
-            "",
-            "## Summary",
-            str(payload.get("summary") or "").strip(),
-            "",
-            "## Macro",
-            str(seg.get("macro") or "").strip(),
-            "",
-            "## Crypto",
-            str(seg.get("crypto") or "").strip(),
-            "",
-            "## Sentiment",
-            str(seg.get("sentiment") or "").strip(),
-            "",
-            "## Sectors",
-            str(seg.get("sectors") or "").strip(),
-            "",
-            "## International",
-            str(seg.get("international") or "").strip(),
-            "",
-        ]
-        return "\n".join(lines).strip() + "\n"
-
-    if doc_type == "evolution_quality_log":
-        b = body if isinstance(body, dict) else {}
-        title = str(payload.get("title") or "Quality log")
-        lines = [
-            f"# {title}",
-            f"**Date:** {date}",
-            "",
-            "## Summary",
-            str(b.get("summary") or ""),
-            "",
-            "## Triage",
-            str(b.get("triage_notes") or ""),
-            "",
-            f"**Rating:** {b.get('phase_rating') or '—'}",
-            "",
-            "## Strengths",
-            str(b.get("strengths") or ""),
-            "",
-            "## Weaknesses",
-            str(b.get("weaknesses") or ""),
-            "",
-        ]
-        return "\n".join(lines).strip() + "\n"
-
-    if doc_type == "evolution_sources":
-        b = body if isinstance(body, dict) else {}
-        title = str(payload.get("title") or "Sources")
-        parts = [f"# {title}", f"**Date:** {date}", "", "## Notes", str(b.get("notes") or ""), "", "## Ratings"]
-        for row in b.get("source_ratings") or []:
-            if isinstance(row, dict):
-                parts.append(f"- **{row.get('name')}** ({row.get('reliability')}): {row.get('notes')}")
-        return "\n".join(parts).strip() + "\n"
-
-    if doc_type == "evolution_proposals":
-        b = body if isinstance(body, dict) else {}
-        title = str(payload.get("title") or "Proposals")
-        parts = [f"# {title}", f"**Date:** {date}", ""]
-        for prop in b.get("proposals") or []:
-            if not isinstance(prop, dict):
-                continue
-            parts.extend(
-                [
-                    f"### {prop.get('id')}: {prop.get('title')}",
-                    f"**Priority:** {prop.get('priority')} | **Status:** {prop.get('status', 'open')}",
-                    "",
-                    f"**Problem:** {prop.get('problem')}",
-                    "",
-                    f"**Proposal:** {prop.get('proposal')}",
-                    "",
-                ]
-            )
-        return "\n".join(parts).strip() + "\n"
-
-    # Default: show payload for audit
-    try:
-        raw = json.dumps(payload, indent=2, ensure_ascii=False)
-    except Exception:
-        raw = str(payload)
-    return f"# DOCUMENT — {doc_type or date}\n\n```json\n{raw}\n```\n"
-
-def _payload_from_markdown(doc_type: str, date_str: str, title: str, markdown: str, extra_meta: dict | None = None) -> dict:
-    meta = extra_meta if isinstance(extra_meta, dict) else {}
-    if doc_type == "deep_dive":
-        # Lightweight but consistent envelope for UI surfacing.
-        headings = []
-        for line in (markdown or "").splitlines():
-            m = re.match(r"^(#{1,6})\\s+(.+)$", line.strip())
-            if m:
-                headings.append({"heading": m.group(2).strip(), "level": len(m.group(1))})
-        return {
-            "schema_version": "1.0",
-            "doc_type": "deep_dive",
-            "date": date_str,
-            "title": title,
-            "meta": meta,
-            "body": {"markdown": markdown or "", "sections": headings},
-        }
-    return {
-        "schema_version": "1.0",
-        "doc_type": doc_type or "markdown_legacy",
-        "date": date_str,
-        "title": title,
-        "meta": meta,
-        "body": {"markdown": markdown or ""},
-    }
-
 
 def _detect_run_type(day_dir):
     """Read _meta.json from a daily folder to determine baseline/delta."""
@@ -1014,74 +742,12 @@ def _detect_run_type(day_dir):
     return "baseline"
 
 
-def _logical_document_key(repo_relative: str) -> str:
-    """Stable document_key for Supabase (matches migration 009); not a filesystem path."""
-    p = repo_relative.replace("\\", "/")
-    p = re.sub(r"^.*outputs/daily/\d{4}-\d{2}-\d{2}/", "", p)
-    if p == "DIGEST.md":
-        return "digest"
-    if p == "DIGEST-DELTA.md":
-        return "digest-delta"
-    p2 = re.sub(r"^.*outputs/weekly/", "weekly/", p)
-    if p2 != p:
-        return p2
-    p3 = re.sub(r"^.*outputs/monthly/", "monthly/", p)
-    if p3 != p:
-        return p3
-    p4 = re.sub(r"^.*outputs/deep-dives/", "deep-dives/", p)
-    if p4 != p:
-        return p4
-    p5 = re.sub(r"^.*outputs/evolution/", "evolution/", p)
-    if p5 != p:
-        return p5.replace("\\", "/")
-    return p.split("/")[-1] if p else "unknown"
-
-
 def load_all_markdowns(root):
     """Scan outputs for the timeline view.
 
     Returns enriched doc objects with phase, category, segment, sector, and runType metadata.
     """
     docs = []
-
-    def _doc_type_label(payload_doc_type: str | None, fallback: str) -> str:
-        """
-        documents.doc_type is constrained by chk_documents_doc_type.
-        Keep labels within the allowed set to avoid batch upsert failure.
-        """
-        dt = str(payload_doc_type or "").strip()
-        if dt == "weekly_digest":
-            return "Weekly Rollup"
-        if dt == "monthly_digest":
-            return "Monthly Summary"
-        if dt == "deep_dive":
-            return "Deep Dive"
-        if dt == "delta_request":
-            return "Daily Delta"
-        if dt == "research_delta":
-            return "Research Delta"
-        return fallback
-
-    def _category_label(payload_doc_type: str | None, fallback: str) -> str:
-        """
-        documents.category is constrained by chk_documents_category.
-        """
-        dt = str(payload_doc_type or "").strip()
-        if dt == "rebalance_decision":
-            return "portfolio"
-        if dt == "portfolio_recommendation":
-            return "portfolio"
-        if dt == "deliberation_transcript":
-            return "portfolio"
-        if dt == "asset_recommendation":
-            return "portfolio"
-        if dt == "delta_request":
-            return "delta"
-        if dt == "research_delta":
-            return "output"
-        if dt.startswith("evolution_"):
-            return "output"
-        return fallback
 
     # --- 1. Daily output folders (baseline + delta files) ---
     daily_path = root / "outputs" / "daily"
@@ -1095,40 +761,6 @@ def load_all_markdowns(root):
 
             run_type = _detect_run_type(day_dir)
 
-            # JSON artifacts (new canonical for recurring sub-documents)
-            for jf in sorted(day_dir.glob("*.json")):
-                if jf.name.startswith("."):
-                    continue
-                payload = _read_json(jf)
-                if not isinstance(payload, dict):
-                    continue
-                # Ignore snapshot.json here; it is stored via daily_snapshots/documents(digest)
-                if jf.name == "snapshot.json":
-                    continue
-                # Ignore legacy meta (not a publishable research doc)
-                if jf.name == "_meta.json":
-                    continue
-                doc_type = str(payload.get("doc_type") or "")
-                file_date = str(payload.get("date") or day_date)
-                payload["date"] = file_date
-                rel = str(jf.relative_to(root))
-                docs.append(
-                    {
-                        "title": str(payload.get("title") or jf.stem.replace("-", " ").title()),
-                        "type": _doc_type_label(doc_type, "Daily Digest"),
-                        "date": file_date,
-                        "path": rel,
-                        "document_key": _logical_document_key(rel),
-                        "content": _render_markdown_from_payload(payload),
-                        "payload": payload,
-                        "phase": None,
-                        "category": _category_label(doc_type, "output"),
-                        "segment": jf.stem,
-                        "sector": None,
-                        "runType": run_type,
-                    }
-                )
-
             # Top-level .md files in the day folder
             for md_file in sorted(day_dir.glob("*.md")):
                 if md_file.name.startswith("."):
@@ -1137,13 +769,11 @@ def load_all_markdowns(root):
                 cls = FILE_CLASSIFICATION.get(md_file.name, {})
                 segment_name = cls.get("segment", md_file.stem)
                 is_delta_file = md_file.name == "DIGEST-DELTA.md"
-                rel = str(md_file.relative_to(root))
                 docs.append({
                     "title": segment_name.replace("-", " ").title(),
                     "type": "Daily Delta" if is_delta_file else "Daily Digest",
                     "date": day_date,
-                    "path": rel,
-                    "document_key": _logical_document_key(rel),
+                    "path": str(md_file.relative_to(root)),
                     "content": content,
                     "phase": cls.get("phase"),
                     "category": cls.get("category", "output"),
@@ -1155,34 +785,6 @@ def load_all_markdowns(root):
             # sectors/*.md (baseline sector files)
             sectors_dir = day_dir / "sectors"
             if sectors_dir.exists():
-                # JSON-first sector reports
-                for jf in sorted(sectors_dir.glob("*.json")):
-                    if jf.name.startswith("."):
-                        continue
-                    payload = _read_json(jf)
-                    if not isinstance(payload, dict):
-                        continue
-                    file_date = str(payload.get("date") or day_date)
-                    payload["date"] = file_date
-                    stem = jf.stem.replace(".delta", "")
-                    sector_label = SECTOR_NAMES.get(stem, stem.replace("-", " ").title())
-                    srel = str(jf.relative_to(root))
-                    docs.append(
-                        {
-                            "title": f"{sector_label} (JSON)",
-                            "type": "sector_report",
-                            "date": file_date,
-                            "path": srel,
-                            "document_key": _logical_document_key(srel),
-                            "content": _render_markdown_from_payload(payload),
-                            "payload": payload,
-                            "phase": 5,
-                            "category": "sector",
-                            "segment": stem,
-                            "sector": sector_label,
-                            "runType": run_type,
-                        }
-                    )
                 for sf in sorted(sectors_dir.glob("*.md")):
                     if sf.name.startswith("."):
                         continue
@@ -1190,13 +792,11 @@ def load_all_markdowns(root):
                     stem = sf.stem.replace(".delta", "")
                     is_delta = sf.name.endswith(".delta.md")
                     sector_label = SECTOR_NAMES.get(stem, stem.replace("-", " ").title())
-                    srel = str(sf.relative_to(root))
                     docs.append({
                         "title": f"{sector_label}{' Delta' if is_delta else ''}",
                         "type": "Daily Delta" if is_delta else "Daily Digest",
                         "date": day_date,
-                        "path": srel,
-                        "document_key": _logical_document_key(srel),
+                        "path": str(sf.relative_to(root)),
                         "content": content,
                         "phase": 5,
                         "category": "sector",
@@ -1212,13 +812,11 @@ def load_all_markdowns(root):
                     content = _read_md(df)
                     segment = df.stem.replace(".delta", "")
                     cls = FILE_CLASSIFICATION.get(f"{segment}.md", {})
-                    drel = str(df.relative_to(root))
                     docs.append({
                         "title": f"{segment.replace('-', ' ').title()} Delta",
                         "type": "Daily Delta",
                         "date": day_date,
-                        "path": drel,
-                        "document_key": _logical_document_key(drel),
+                        "path": str(df.relative_to(root)),
                         "content": content,
                         "phase": cls.get("phase"),
                         "category": cls.get("category", "delta"),
@@ -1233,13 +831,11 @@ def load_all_markdowns(root):
                 for pf in sorted(positions_dir.glob("*.md")):
                     content = _read_md(pf)
                     ticker = pf.stem.upper()
-                    prel = str(pf.relative_to(root))
                     docs.append({
                         "title": f"{ticker} Position Analysis",
                         "type": "Daily Digest",
                         "date": day_date,
-                        "path": prel,
-                        "document_key": _logical_document_key(prel),
+                        "path": str(pf.relative_to(root)),
                         "content": content,
                         "phase": 7,
                         "category": "portfolio",
@@ -1249,116 +845,32 @@ def load_all_markdowns(root):
                     })
 
     # --- 2. Weekly / Monthly / Deep-dive rollups ---
-    # Weekly / Monthly: JSON-only artifacts (markdown is derived)
-    for rel_path, doc_type, label, category in [
-        ("outputs/weekly",  "weekly_digest",  "Weekly Rollup",   "rollup"),
-        ("outputs/monthly", "monthly_digest", "Monthly Summary", "rollup"),
+    for rel_path, label, category in [
+        ("outputs/weekly",     "Weekly Rollup",   "rollup"),
+        ("outputs/monthly",    "Monthly Summary", "rollup"),
+        ("outputs/deep-dives", "Deep Dive",       "deep-dive"),
     ]:
         path = root / rel_path
         if not path.exists():
             continue
-        for jf in sorted(path.glob("*.json")):
-            if jf.name.startswith("."):
+        for md_file in sorted(path.glob("*.md")):
+            if md_file.name.startswith("."):
                 continue
-            payload = _read_json(jf)
-            if not isinstance(payload, dict):
-                continue
-            file_date = str(payload.get("date") or "")
-            if not file_date:
-                m = re.match(r"(\d{4}-\d{2}-\d{2})", jf.stem)
-                file_date = m.group(1) if m else datetime.fromtimestamp(os.path.getmtime(jf)).strftime("%Y-%m-%d")
-                payload["date"] = file_date
-            title = str(payload.get("title") or jf.stem.replace("-", " ").title())
-            content = _render_markdown_from_payload(payload)
-            wrel = str(jf.relative_to(root))
+            content = _read_md(md_file)
+            m = re.match(r"(\d{4}-\d{2}-\d{2})", md_file.stem)
+            file_date = m.group(1) if m else datetime.fromtimestamp(os.path.getmtime(md_file)).strftime("%Y-%m-%d")
             docs.append({
-                "title": title,
-                "type": _doc_type_label(str(payload.get("doc_type") or ""), label),
+                "title": md_file.stem.replace("-", " ").title(),
+                "type": label,
                 "date": file_date,
-                "path": wrel,
-                "document_key": _logical_document_key(wrel),
+                "path": str(md_file.relative_to(root)),
                 "content": content,
-                "payload": payload,
                 "phase": None,
                 "category": category,
-                "segment": jf.stem,
+                "segment": md_file.stem,
                 "sector": None,
                 "runType": None,
             })
-
-    # Deep dives: JSON-first (schema: templates/schemas/deep-dive.schema.json)
-    deep_path = root / "outputs" / "deep-dives"
-    if deep_path.exists():
-        for jf in sorted(deep_path.glob("*.json")):
-            if jf.name.startswith("."):
-                continue
-            payload = _read_json(jf)
-            if not isinstance(payload, dict):
-                continue
-            if str(payload.get("doc_type") or "") != "deep_dive":
-                continue
-            file_date = str(payload.get("date") or "")
-            if not file_date:
-                m = re.match(r"(\d{4}-\d{2}-\d{2})", jf.stem)
-                file_date = m.group(1) if m else datetime.fromtimestamp(os.path.getmtime(jf)).strftime("%Y-%m-%d")
-                payload["date"] = file_date
-            title = str(payload.get("title") or jf.stem.replace("-", " ").title())
-            content = _render_markdown_from_payload(payload)
-            wrel = str(jf.relative_to(root))
-            docs.append({
-                "title": title,
-                "type": _doc_type_label("deep_dive", "Deep Dive"),
-                "date": file_date,
-                "path": wrel,
-                "document_key": _logical_document_key(wrel),
-                "content": content,
-                "payload": payload,
-                "phase": None,
-                "category": "deep-dive",
-                "segment": jf.stem.replace(".json", ""),
-                "sector": None,
-                "runType": None,
-            })
-
-    # --- 3. Evolution post-mortem (outputs/evolution/YYYY-MM-DD/*.json) ---
-    evo_root = root / "outputs" / "evolution"
-    if evo_root.exists():
-        for day_dir in sorted(evo_root.iterdir()):
-            if not day_dir.is_dir():
-                continue
-            day_date = day_dir.name
-            if not re.match(r"\d{4}-\d{2}-\d{2}", day_date):
-                continue
-            for jf in sorted(day_dir.glob("*.json")):
-                if jf.name.startswith("."):
-                    continue
-                payload = _read_json(jf)
-                if not isinstance(payload, dict):
-                    continue
-                doc_type = str(payload.get("doc_type") or "")
-                if doc_type not in ("evolution_quality_log", "evolution_sources", "evolution_proposals"):
-                    continue
-                file_date = str(payload.get("date") or day_date)
-                payload["date"] = file_date
-                title = str(payload.get("title") or jf.stem.replace("-", " ").title())
-                content = _render_markdown_from_payload(payload)
-                wrel = str(jf.relative_to(root))
-                docs.append(
-                    {
-                        "title": title,
-                        "type": _doc_type_label("evolution_quality_log", "Daily Digest"),
-                        "date": file_date,
-                        "path": wrel,
-                        "document_key": _logical_document_key(wrel),
-                        "content": content,
-                        "payload": payload,
-                        "phase": None,
-                        "category": "output",
-                        "segment": "evolution",
-                        "sector": None,
-                        "runType": None,
-                    }
-                )
 
     return docs
 
@@ -1394,24 +906,6 @@ def load_snapshot_json(day_dir):
         return data
     except Exception:
         return None
-
-
-def _position_weight_pct(p: dict) -> float:
-    try:
-        w = p.get("weight_pct", p.get("weight"))
-        if w is None:
-            return 0.0
-        return float(w)
-    except (TypeError, ValueError):
-        return 0.0
-
-
-def _include_position_row(p: dict) -> bool:
-    """Drop zero-weight equity rows (stale EXIT placeholders); keep CASH."""
-    t = p.get("ticker")
-    if t == "CASH":
-        return True
-    return _position_weight_pct(p) != 0.0
 
 
 def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_positions):
@@ -1462,25 +956,6 @@ def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_position
 
     if snapshot_rows:
         try:
-            # PostgREST upsert sets every column in the INSERT row; omitted keys become NULL on
-            # UPDATE ... SET ... = excluded.* and wipe DB-first fields (snapshot, digest_markdown).
-            for row in snapshot_rows:
-                dt = row["date"]
-                prior_res = (
-                    sb.table("daily_snapshots")
-                    .select("snapshot,digest_markdown")
-                    .eq("date", dt)
-                    .limit(1)
-                    .execute()
-                )
-                pdata = getattr(prior_res, "data", None) or []
-                prior = pdata[0] if pdata else None
-                if prior:
-                    if prior.get("snapshot") is not None:
-                        row["snapshot"] = prior["snapshot"]
-                    # Tearsheet never sends digest_markdown; must copy so upsert doesn't NULL it.
-                    if "digest_markdown" not in row:
-                        row["digest_markdown"] = prior.get("digest_markdown")
             sb.table("daily_snapshots").upsert(snapshot_rows, on_conflict="date").execute()
             print(f"   Supabase: {len(snapshot_rows)} daily_snapshots upserted")
         except Exception as e:
@@ -1497,20 +972,14 @@ def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_position
 
         if positions_source:
             for p in positions_source:
-                if not _include_position_row(p):
-                    continue
-                ticker = p.get("ticker", "")
-                pj = pj_lookup.get(ticker, {})
-                tid = p.get("thesis_id")
-                if not tid and pj.get("thesis_ids"):
-                    tid = pj["thesis_ids"][0]
                 position_rows.append({
                     "date": d["date"],
-                    "ticker": ticker,
-                    "name": p.get("name") or pj.get("name"),
-                    "category": p.get("category") or pj.get("category"),
+                    "ticker": p["ticker"],
+                    "name": p.get("name"),
+                    "category": p.get("category"),
                     "weight_pct": p.get("weight_pct", 0),
-                    "thesis_id": tid,
+                    "action": p.get("action"),
+                    "thesis_id": p.get("thesis_id"),
                     "rationale": p.get("rationale"),
                     "current_price": p.get("current_price"),
                     "entry_price": p.get("entry_price"),
@@ -1519,8 +988,6 @@ def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_position
         else:
             # Use digest-parsed positions, enriched with portfolio.json metadata
             for p in d.get("positions", []):
-                if not _include_position_row(p):
-                    continue
                 ticker = p["ticker"]
                 pj = pj_lookup.get(ticker, {})
                 position_rows.append({
@@ -1529,6 +996,7 @@ def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_position
                     "name": pj.get("name") or p.get("name"),
                     "category": pj.get("category"),
                     "weight_pct": p.get("weight", 0),
+                    "action": p.get("action"),
                     "thesis_id": (pj.get("thesis_ids") or [None])[0],
                     "rationale": p.get("rationale"),
                     "entry_price": pj.get("entry_price_usd"),
@@ -1580,16 +1048,11 @@ def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_position
     for d in sorted_digests:
         day_dir = DAILY_DIR / d["date"]
         snap = load_snapshot_json(day_dir)
-        raw_curr = snap["positions"] if snap else d.get("positions", [])
-        curr_positions = [p for p in raw_curr if _include_position_row(p)]
+        curr_positions = snap["positions"] if snap else d.get("positions", [])
         curr_weights = {p.get("ticker", p.get("ticker", "")): p for p in curr_positions}
 
         for ticker, p in curr_weights.items():
             wt = p.get("weight_pct", p.get("weight", 0))
-            pj = pj_lookup.get(ticker, {})
-            thesis_id = p.get("thesis_id")
-            if not thesis_id and pj.get("thesis_ids"):
-                thesis_id = pj["thesis_ids"][0]
             prev_p = prev_weights.get(ticker)
             prev_wt = prev_p.get("weight_pct", prev_p.get("weight", 0)) if prev_p else 0
 
@@ -1608,10 +1071,9 @@ def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_position
                 "event": event,
                 "weight_pct": wt,
                 "prev_weight_pct": prev_wt if prev_wt else None,
-                "weight_change_pct": float(wt) - float(prev_wt or 0),
                 "price": p.get("current_price"),
-                "thesis_id": thesis_id,
-                "reason": p.get("rationale"),
+                "thesis_id": p.get("thesis_id"),
+                "reason": p.get("action") or p.get("rationale"),
             })
 
         # Check for EXITs (tickers in prev but not in curr)
@@ -1624,7 +1086,6 @@ def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_position
                     "event": "EXIT",
                     "weight_pct": 0,
                     "prev_weight_pct": prev_p.get("weight_pct", prev_p.get("weight", 0)),
-                    "weight_change_pct": -float(prev_p.get("weight_pct", prev_p.get("weight", 0)) or 0),
                     "price": None,
                     "reason": "Position removed",
                 })
@@ -1651,8 +1112,19 @@ def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_position
                 print(f"   Supabase warning (nav_history chunk {i}): {e}")
         print(f"   Supabase: {len(nav_rows)} nav_history rows upserted")
 
-    # Benchmark series (SPY, QQQ, TLT, GLD): read from price_history in the dashboard —
-    # no separate benchmark_history table (see migration 010_schema_streamline.sql).
+    # ---- benchmark_history ----
+    bench_rows = []
+    for ticker, bdata in b_hist.items():
+        for h in bdata.get("history", []):
+            bench_rows.append({"date": h["date"], "ticker": ticker, "price": h["price"]})
+    if bench_rows:
+        for i in range(0, len(bench_rows), 500):
+            chunk = bench_rows[i:i+500]
+            try:
+                sb.table("benchmark_history").upsert(chunk, on_conflict="date,ticker").execute()
+            except Exception as e:
+                print(f"   Supabase warning (benchmark_history chunk {i}): {e}")
+        print(f"   Supabase: {len(bench_rows)} benchmark_history rows upserted")
 
     # ---- portfolio_metrics ----
     if metrics:
@@ -1665,25 +1137,6 @@ def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_position
     # ---- documents ----
     doc_rows = []
     for d in docs:
-        dk = d.get("document_key") or _logical_document_key(d.get("path", ""))
-        payload = d.get("payload")
-        content = d.get("content")
-        if isinstance(payload, dict) and str(payload.get("doc_type") or "") == "evolution_sources":
-            b = payload.get("body") if isinstance(payload.get("body"), dict) else {}
-            ratings = b.get("source_ratings") or []
-            notes = str(b.get("notes") or "").strip()
-            has_ratings = any(isinstance(r, dict) for r in ratings)
-            if not notes and not has_ratings:
-                continue
-        # Ensure every document row has a JSON payload (markdown docs become markdown_legacy / deep_dive).
-        if not isinstance(payload, dict):
-            payload = _payload_from_markdown(
-                "deep_dive" if d.get("category") == "deep-dive" else "markdown_legacy",
-                d["date"],
-                d.get("title") or "",
-                content or "",
-                {},
-            )
         doc_rows.append({
             "date": d["date"],
             "title": d["title"],
@@ -1693,28 +1146,14 @@ def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_position
             "segment": d.get("segment"),
             "sector": d.get("sector"),
             "run_type": d.get("runType"),
-            "document_key": dk,
-            "payload": payload,
-            "content": content,
+            "file_path": d.get("path", ""),
+            "content": d.get("content"),
         })
     if doc_rows:
-        for row in doc_rows:
-            prior_res = (
-                sb.table("documents")
-                .select("payload")
-                .eq("date", row["date"])
-                .eq("document_key", row["document_key"])
-                .limit(1)
-                .execute()
-            )
-            pdata = getattr(prior_res, "data", None) or []
-            prior = pdata[0] if pdata else None
-            if (row.get("payload") is None or not isinstance(row.get("payload"), dict)) and prior and prior.get("payload") is not None:
-                row["payload"] = prior["payload"]
         for i in range(0, len(doc_rows), 200):
             chunk = doc_rows[i:i+200]
             try:
-                sb.table("documents").upsert(chunk, on_conflict="date,document_key").execute()
+                sb.table("documents").upsert(chunk, on_conflict="date,file_path").execute()
             except Exception as e:
                 print(f"   Supabase warning (documents chunk {i}): {e}")
         print(f"   Supabase: {len(doc_rows)} documents upserted")
@@ -1724,8 +1163,10 @@ def push_to_supabase(parsed_digests, docs, history, b_hist, metrics, pj_position
 
 def main():
     parser = argparse.ArgumentParser(
-        description="update_tearsheet.py — Parse daily digests and push portfolio data to Supabase",
-        epilog="By default writes to Supabase only. Use --json to also emit the static dashboard-data.json."
+        description="update_tearsheet.py — LEGACY: parse outputs/daily/DIGEST.md (+ snapshot.json) and upsert Supabase.",
+        epilog="Supabase-first default path: python3 scripts/run_db_first.py (uses refresh_performance_metrics). "
+        "Use this script only when replaying a local markdown tree (migration / recovery). "
+        "Add --json to also write frontend/public/dashboard-data.json."
     )
     parser.add_argument(
         "--json", action="store_true",
@@ -1799,48 +1240,30 @@ def main():
 
     # Advanced performance metrics (yfinance-dependent)
     if _HAS_YFINANCE and len(history) > 1:
-        idx = pd.to_datetime([h["date"] for h in history])
-        navs = pd.Series([h["nav"] for h in history], index=idx)
+        navs = pd.Series([h['nav'] for h in history])
         returns = navs.pct_change().dropna()
-
-        # Drawdown uses the full calendar series (includes flat weekends) so the
-        # chart is continuous.  Sharpe/vol/alpha must use only trading-day returns
-        # to avoid deflating annualised stats with 104 zero-return weekend days/yr.
-        td_mask = pd.Series(
-            [h.get("is_trading_day", True) for h in history], index=idx, dtype=bool
-        )
-        trading_returns = returns[td_mask.reindex(returns.index, fill_value=True)]
-
-        if not trading_returns.empty and trading_returns.std() != 0:
-            vol = float(trading_returns.std() * np.sqrt(252))
+        if not returns.empty and returns.std() != 0:
+            vol = float(returns.std() * np.sqrt(252))
             volatility = vol if not np.isnan(vol) else 0.0
-
+            
             risk_free = 0.00  # Default to 0 for simplicity
-            sh = float((trading_returns.mean() * 252 - risk_free) / volatility)
+            sh = float((returns.mean() * 252 - risk_free) / volatility)
             sharpe = sh if not np.isnan(sh) else 0.0
-
+        
         cum_max = navs.cummax()
         drawdowns = (navs - cum_max) / cum_max
         m_dd = float(drawdowns.min())
         max_dd = m_dd if not np.isnan(m_dd) else 0.0
-
-        # Alpha vs SPY: filter both series to trading days only so the 252-day
-        # annualisation factor and mean return comparison are apple-to-apple.
-        if b_hist and "SPY" in b_hist and len(history) > 1:
-            spy_pts = {
-                pd.Timestamp(x["date"]): x["price"] for x in b_hist["SPY"]["history"]
-            }
-            spy_series = pd.Series(
-                [spy_pts.get(ts) for ts in idx], index=idx
-            ).ffill().bfill()
-            spy_ret = spy_series.pct_change().dropna()
-            # Intersect on trading days only
-            common = trading_returns.index.intersection(spy_ret.index)
-            common = common[~(trading_returns.loc[common].isna() | spy_ret.loc[common].isna())]
-            if len(common) > 5:
-                pr = trading_returns.loc[common]
-                sr = spy_ret.loc[common]
-                a = float((pr.mean() - sr.mean()) * 252)
+        
+        # Alpha relative to SPY
+        if b_hist and "SPY" in b_hist.keys() and len(b_hist["SPY"]["history"]) > 1:
+            spy_s = pd.Series([h['price'] for h in b_hist["SPY"]["history"]])
+            spy_ret = spy_s.pct_change().dropna()
+            min_len = min(len(returns), len(spy_ret))
+            if min_len > 0:
+                port_ret_aligned = returns.iloc[-min_len:]
+                spy_ret_aligned = spy_ret.iloc[-min_len:]
+                a = float(port_ret_aligned.mean() * 252 - spy_ret_aligned.mean() * 252)
                 alpha = a if not np.isnan(a) else 0.0
 
     docs = load_all_markdowns(ROOT)
@@ -1857,8 +1280,6 @@ def main():
             "alpha": round(alpha, 4),
             "cash_pct": round(cash_pct, 2),
             "total_invested": round(total_invested, 2),
-            "computed_from": "tearsheet",
-            "as_of_date": latest_digest["date"],
         }
         push_to_supabase(parsed_digests, docs, history, b_hist, metrics_row, pj_positions)
     else:

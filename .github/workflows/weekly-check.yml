@@ -14,6 +14,6 @@ jobs:
     steps:
       - name: Reminder
         run: |
-          echo "Weekly rollup: author weekly_digest JSON (templates/schemas/weekly-digest.schema.json),"
+          echo "Weekly rollup (Supabase): author weekly_digest JSON (templates/schemas/weekly-digest.schema.json),"
           echo "validate (validate_artifact.py -) and publish_document.py --payload - with document_key weekly/YYYY-Www.json."
-          echo "See RUNBOOK.md and scripts/weekly-rollup.sh for scaffold + prompts."
+          echo "See RUNBOOK.md and scripts/weekly-rollup.sh (prints operator prompt)."

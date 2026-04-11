@@ -6,12 +6,12 @@ Operator truth for **when to run what** remains [`RUNBOOK.md`](../../RUNBOOK.md)
 
 | Script | Role |
 |--------|------|
-| [`scripts/run_db_first.py`](../../scripts/run_db_first.py) | Entry: validate artifacts → `update_tearsheet.py` → `execute_at_open.py` (optional) → `validate_db_first.py` |
+| [`scripts/run_db_first.py`](../../scripts/run_db_first.py) | Entry: validate optional `outputs/daily/<date>/*.json` → **`refresh_performance_metrics.py`** (default) or `--legacy-markdown-tearsheet` → `update_tearsheet.py` → `execute_at_open.py` (optional) → `validate_db_first.py` |
 | [`scripts/validate_db_first.py`](../../scripts/validate_db_first.py) | Supabase row checks (`--mode full\|research\|pm`) |
 | [`scripts/validate_artifact.py`](../../scripts/validate_artifact.py) | JSON schema validation (snapshot, delta-request, `doc_type` payloads) |
 | [`scripts/materialize_snapshot.py`](../../scripts/materialize_snapshot.py) | Apply delta / upsert `daily_snapshots` + digest document |
 | [`scripts/publish_document.py`](../../scripts/publish_document.py) | Upsert one `documents` row from JSON file path or **`--payload -`** (stdin) |
-| [`scripts/update_tearsheet.py`](../../scripts/update_tearsheet.py) | Scan `outputs/` → push snapshots, documents, NAV, etc. |
+| [`scripts/update_tearsheet.py`](../../scripts/update_tearsheet.py) | **Legacy:** scan `outputs/daily/*.md` (+ snapshot.json) → upsert Supabase / optional dashboard JSON |
 | [`scripts/execute_at_open.py`](../../scripts/execute_at_open.py) | `position_events` from rebalance + `price_history.open` |
 | [`scripts/backfill_execution_prices.py`](../../scripts/backfill_execution_prices.py) | Fill null execution prices after opens exist |
 
@@ -51,7 +51,7 @@ Operator truth for **when to run what** remains [`RUNBOOK.md`](../../RUNBOOK.md)
 
 ## Operator shell
 
-[`scripts/new-day.sh`](../../scripts/new-day.sh), [`scripts/status.sh`](../../scripts/status.sh), [`scripts/git-commit.sh`](../../scripts/git-commit.sh), [`scripts/weekly-rollup.sh`](../../scripts/weekly-rollup.sh), [`scripts/monthly-rollup.sh`](../../scripts/monthly-rollup.sh), [`scripts/validate-phase.sh`](../../scripts/validate-phase.sh), [`scripts/smoke-test.sh`](../../scripts/smoke-test.sh) — see each file’s `--help` where supported.
+[`scripts/new-day.sh`](../../scripts/new-day.sh) (wrapper → `run_db_first.py`), [`scripts/status.sh`](../../scripts/status.sh), [`scripts/git-commit.sh`](../../scripts/git-commit.sh) (config/memory — not `outputs/`), [`scripts/weekly-rollup.sh`](../../scripts/weekly-rollup.sh) / [`scripts/monthly-rollup.sh`](../../scripts/monthly-rollup.sh) (Supabase JSON prompts), [`scripts/validate-phase.sh`](../../scripts/validate-phase.sh) (legacy markdown checkpoints), [`scripts/smoke-test.sh`](../../scripts/smoke-test.sh) — see `--help` where supported.
 
 ## Co-work prompts
 

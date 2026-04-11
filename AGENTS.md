@@ -6,46 +6,34 @@
 
 ## What This Repo Is
 
-Daily market intelligence system. Three-tier cadence:
-- **Weekly Baseline** (Sunday) — Full 9-phase run, all 20+ output files from scratch
-- **Daily Delta** (Mon–Sat) — Lightweight delta, only changed segments (~70% token savings)
-- **Monthly Synthesis** (month end) — Review of all baselines + deltas
+Daily market intelligence system. Three-tier cadence (**Supabase-first**, no `outputs/daily` markdown tree):
+- **Weekly Baseline** (Sunday) — Full digest snapshot JSON → `materialize_snapshot.py`
+- **Daily Delta** (Mon–Sat) — Delta-request JSON → materialize (~70% token savings vs full rewrite)
+- **Monthly Synthesis** (month end) — `monthly_digest` JSON → `documents`
 
 ---
 
 ## Quickstart for Agents
 
-### Step 1: Check today's run type
-```
-DB-first: run the single entrypoint and follow its printed instructions:
+### Step 1: Run mode (no `_meta.json`)
+- **Sunday** (or explicit baseline) → `skills/weekly-baseline/SKILL.md`
+- **Mon–Sat** → `skills/daily-delta/SKILL.md` (load baseline + prior deltas from **Supabase** `daily_snapshots` / `documents`)
+- Hint: `python3 scripts/run_db_first.py --dry-run`
 
-python3 scripts/run_db_first.py
+### Publish path (canonical)
 ```
-
-### Sunday — Weekly Baseline (full run):
+JSON → validate_artifact.py (- or path)
+     → publish_document.py --payload -   OR   materialize_snapshot.py --date … --snapshot-json …
+Operator close-out: python3 scripts/run_db_first.py
 ```
-Read: skills/weekly-baseline/SKILL.md
-Follow: All 9 phases in order
-Publish: digest snapshot JSON → Supabase via scripts/materialize_snapshot.py (see RUNBOOK.md)
-```
-
-### Mon–Sat — Daily Delta
-```
-Read: skills/daily-delta/SKILL.md
-Load prior baseline snapshot from Supabase (or last published JSON)
-Output: delta-request JSON → operator runs scripts/materialize_snapshot.py
-```
-
-### Track A vs Track B (research vs portfolio)
-- **Track A:** `skills/research-daily/SKILL.md` → `validate_artifact.py -` → `publish_document.py --payload -` with unique `research-delta/…` key → `run_db_first.py --skip-execute --validate-mode research` — Cowork: `cowork/tasks/research-daily-delta.md` / `research-weekly-baseline.md` / `recurring-scheduled-run.md`
-- **Track B:** Portfolio / analyst (preferences + `rebalance-decision.json`) → `run_db_first.py --validate-mode pm` or `full` — Cowork: `cowork/tasks/portfolio-pm-rebalance.md`
-- **Cadence / open execution:** `config/schedule.json`; **backfill opens:** `scripts/backfill_execution_prices.py`
 
 ### Key scripts
 ```bash
-python3 scripts/run_db_first.py # DB-first entrypoint (baseline/delta + publish + validate)
-./scripts/git-commit.sh         # Commit + push (runs ETL first)
-./scripts/monthly-rollup.sh     # Monthly JSON scaffold + synthesis prompt
+./scripts/new-day.sh              # Same as run_db_first.py (no folder scaffold)
+python3 scripts/run_db_first.py   # Metrics refresh + execute_at_open + validate_db_first
+./scripts/git-commit.sh           # Commit config/memory (not outputs/)
+./scripts/weekly-rollup.sh        # Prints weekly JSON → Supabase prompt
+./scripts/monthly-rollup.sh      # Prints monthly JSON → Supabase prompt
 ```
 
 ---
@@ -53,8 +41,8 @@ python3 scripts/run_db_first.py # DB-first entrypoint (baseline/delta + publish 
 ## Core Rules
 
 - **Search the web** for prices/yields/news — never use training data cutoff values
-- **Read `config/watchlist.md`** every session. Read **`config/preferences.md`** and **`config/investment-profile.md`** for **Track B (portfolio)** only — not for Track A (`skills/research-daily/SKILL.md`).
-- Daily digest is DB-first: markdown is derived from the snapshot JSON stored in Supabase.
+- **Read `config/watchlist.md` + `config/investment-profile.md`** at session start
+- **Canonical digest** lives in Supabase (`daily_snapshots.snapshot`, `documents`); do not rely on local `DIGEST.md`
 - **State a bias** (Bullish/Bearish/Neutral/Conflicted) with rationale for every segment
 - Run **Phase 1 (alt-data) BEFORE Phase 3 (macro)** — positioning informs regime read
 - Daily δ: always write mandatory deltas: macro, us-equities, crypto
@@ -77,9 +65,8 @@ python3 scripts/run_db_first.py # DB-first entrypoint (baseline/delta + publish 
 
 ## Full Documentation
 
-- Architecture: `docs/agentic/ARCHITECTURE.md` (extended inventory: `docs/archive/ARCHITECTURE-REVIEW.md`)
+- Architecture: `docs/agentic/ARCHITECTURE.md`
 - Platform setup: `docs/agentic/PLATFORMS.md`
 - Skills catalog: `docs/agentic/SKILLS-CATALOG.md`
 - Workflows: `docs/agentic/WORKFLOWS.md`
 - Development conventions: `CLAUDE.md`
-- Claude.ai Projects: paste `cowork/PROJECT-PROMPT.md`; root `CLAUDE_PROJECT_INSTRUCTIONS.md` is a short pointer only

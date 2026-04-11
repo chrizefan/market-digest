@@ -28,7 +28,7 @@ The weekday GitHub job runs [`refresh_performance_metrics.py --fill-calendar-thr
 
 **Claude Cowork:** project briefing and scheduled task recipes live under [`cowork/`](cowork/) — see [`cowork/README.md`](cowork/README.md) and paste [`cowork/PROJECT-PROMPT.md`](cowork/PROJECT-PROMPT.md) into the Cowork project instructions. **First-time setup:** [`cowork/SETUP-ATLAS-COWORK.md`](cowork/SETUP-ATLAS-COWORK.md) (agent-driven wizard → `cowork/OPERATOR-COWORK.md` + `config/schedule.json` → `cowork_operator`).
 
-**Weekly baseline vs weekly file check:** [`scripts/run_db_first.py`](scripts/run_db_first.py) treats **Sunday** as **baseline** and other days as **delta** (unless `--baseline` / `--delta`). That is independent of [`.github/workflows/weekly-check.yml`](.github/workflows/weekly-check.yml), which only reminds you to create a **filesystem** weekly artifact under `outputs/weekly/` on **Fridays (16:00 UTC)** — it does **not** publish to Supabase.
+**Weekly baseline vs weekly reminder:** [`scripts/run_db_first.py`](scripts/run_db_first.py) treats **Sunday** as **baseline** and other days as **delta** (unless `--baseline` / `--delta`). [`.github/workflows/weekly-check.yml`](.github/workflows/weekly-check.yml) is a **Friday reminder** to publish the **`weekly_digest` JSON** to Supabase (`document_key` e.g. `weekly/YYYY-Www.json`) — not a filesystem `outputs/weekly/*.md` requirement.
 
 ## Two tracks (research vs portfolio)
 
@@ -86,6 +86,8 @@ For both manual and scheduled runs:
 python3 scripts/run_db_first.py
 ```
 
+(`./scripts/new-day.sh` is a thin wrapper around the same command.)
+
 Common flags:
 - `--date YYYY-MM-DD`
 - `--baseline` (force baseline mode)
@@ -93,6 +95,9 @@ Common flags:
 - `--dry-run` (print what would happen; no writes)
 - `--skip-execute` (skip `execute_at_open.py` — use after **Track A** research-only runs)
 - `--validate-mode {full,research,pm}` (passed to [`validate_db_first.py`](scripts/validate_db_first.py); default `full`)
+- `--legacy-markdown-tearsheet` (run [`update_tearsheet.py`](scripts/update_tearsheet.py) after validation — only if you still maintain `outputs/daily/*.md`)
+
+**Default:** after optional JSON validation under `outputs/daily/<date>/`, the entrypoint runs [`refresh_performance_metrics.py --supabase --fill-calendar-through <date>`](scripts/refresh_performance_metrics.py) (no markdown digest parse).
 
 ## What gets produced (canonical artifacts)
 ### Daily baseline/delta (stored in Supabase)
