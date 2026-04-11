@@ -22,8 +22,11 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
-import pandas as pd
-from typing import TYPE_CHECKING
+try:
+    import pandas as pd
+    _HAS_PANDAS = True
+except ImportError:
+    _HAS_PANDAS = False
 
 ROOT = Path(__file__).parent.parent
 CACHE_DIR = ROOT / "data" / "price-history"
@@ -215,6 +218,10 @@ def main():
     parser.add_argument("--supabase", action="store_true",
                         help="Also upsert fetched data to Supabase price_history table")
     args = parser.parse_args()
+
+    if not _HAS_PANDAS:
+        print("❌ pandas is required — pip install pandas")
+        sys.exit(1)
 
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
