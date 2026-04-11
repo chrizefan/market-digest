@@ -10,11 +10,14 @@ on:
   workflow_dispatch:
     inputs:
       period:
-        description: "yfinance period (e.g. 1d, 5d, 1mo, 2y)"
+        description: >
+          yfinance lookback for each download (1mo, 2y, 5y, max). This is how far back
+          Yahoo data is fetched for tickers being updated — not “only update 5 days in Supabase”.
+          Use 2y for normal runs (matches script default). Use max or 5y after long outages.
         required: false
-        default: "5d"
+        default: "2y"
       ticker:
-        description: "Single ticker to update (leave blank for full watchlist)"
+        description: "Optional: one ticker only (e.g. GLD). Leave blank for full watchlist + same logic as schedule."
         required: false
         default: ""
 
@@ -47,11 +50,16 @@ jobs:
             --max-stale-days 1 \
             --supabase
 
-      # Manual run: respect workflow_dispatch inputs
+      # Manual run: same strategy as schedule when ticker is blank (refresh stale tickers);
+      # period defaults to 2y so we do not truncate history to a short window (unlike old 5d default).
       - name: Update prices (manual dispatch)
         if: github.event_name == 'workflow_dispatch'
         run: |
-          ARGS="--supabase --period ${{ github.event.inputs.period }}"
+          PERIOD="${{ github.event.inputs.period }}"
+          ARGS="--supabase"
+          if [ -n "$PERIOD" ]; then
+            ARGS="$ARGS --period $PERIOD"
+          fi
           if [ -n "${{ github.event.inputs.ticker }}" ]; then
             ARGS="$ARGS --ticker ${{ github.event.inputs.ticker }}"
           else

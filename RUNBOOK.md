@@ -22,6 +22,8 @@ The weekday GitHub job runs [`refresh_performance_metrics.py --fill-calendar-thr
 
 **Limitation:** `--fill-calendar-through` advances from the **latest** `positions` snapshot date forward only; it does not scan for **holes** on earlier dates. For a missing day *before* your latest snapshot, run once with `--date YYYY-MM-DD` (after `price_history` has that day).
 
+**GitHub — manual “Daily Price Update”:** Leave **ticker** blank to match the weekday job (`--refresh --max-stale-days 1`). **Period** is the yfinance **lookback window** for downloads (default **2y**, same as `preload-history.py` when `--period` is omitted on schedule). It is not “only write five days to Supabase”; upserts merge by date. After long outages, set period to **5y** or **max** in the workflow UI.
+
 **Claude Cowork:** project briefing and scheduled task recipes live under [`cowork/`](cowork/) — see [`cowork/README.md`](cowork/README.md) and paste [`cowork/PROJECT-PROMPT.md`](cowork/PROJECT-PROMPT.md) into the Cowork project instructions. **First-time setup:** [`cowork/SETUP-ATLAS-COWORK.md`](cowork/SETUP-ATLAS-COWORK.md) (agent-driven wizard → `cowork/OPERATOR-COWORK.md` + `config/schedule.json` → `cowork_operator`).
 
 **Weekly baseline vs weekly file check:** [`scripts/run_db_first.py`](scripts/run_db_first.py) treats **Sunday** as **baseline** and other days as **delta** (unless `--baseline` / `--delta`). That is independent of [`.github/workflows/weekly-check.yml`](.github/workflows/weekly-check.yml), which only reminds you to create a **filesystem** weekly artifact under `outputs/weekly/` on **Fridays (16:00 UTC)** — it does **not** publish to Supabase.
