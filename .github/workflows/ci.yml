@@ -8,7 +8,7 @@ on:
 
 jobs:
   smoke-test:
-    name: Smoke Test (bash scripts)
+    name: Smoke test (scripts --help)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,7 +16,7 @@ jobs:
         run: bash scripts/smoke-test.sh
 
   pytest:
-    name: ETL Unit Tests (pytest)
+    name: ETL unit tests (pytest)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,9 +26,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install pytest
+        run: pip install -r requirements.txt
       - name: Run tests
         run: python -m pytest tests/ -v
 
@@ -45,6 +43,9 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
         run: npm ci
+        working-directory: frontend
+      - name: Lint
+        run: npm run lint
         working-directory: frontend
       - name: Build
         run: npm run build

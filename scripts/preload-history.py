@@ -22,9 +22,6 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
-import pandas as pd
-from typing import TYPE_CHECKING
-
 ROOT = Path(__file__).parent.parent
 CACHE_DIR = ROOT / "data" / "price-history"
 
@@ -80,6 +77,8 @@ def cache_is_stale(ticker: str, max_age_days: int = 7) -> bool:
 
 def save_cache(ticker: str, df: pd.DataFrame) -> None:
     """Save OHLCV DataFrame to CSV cache. Index must be DatetimeIndex named 'Date'."""
+    import pandas as pd
+
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     df = df.sort_index()
     # Ensure consistent column names
@@ -97,6 +96,8 @@ def upsert_to_supabase(ticker: str, df: pd.DataFrame) -> int:
     Returns the number of rows upserted, or 0 on error.
     Requires SUPABASE_URL and SUPABASE_SERVICE_KEY environment variables.
     """
+    import pandas as pd
+
     try:
         from supabase import create_client
     except ImportError:
