@@ -9,6 +9,7 @@ Usage:
   python3 scripts/ingest_treasury_curve.py --dry-run
   python3 scripts/ingest_treasury_curve.py --supabase
   python3 scripts/ingest_treasury_curve.py --supabase --backfill
+  python3 scripts/ingest_treasury_curve.py --supabase --backfill --xml-months 420   # rare: full XML from home/VPN
 """
 
 from __future__ import annotations
@@ -150,7 +151,19 @@ def main() -> int:
     p = argparse.ArgumentParser(description="Ingest Treasury yields into Supabase")
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--supabase", action="store_true")
-    p.add_argument("--backfill", action="store_true", help="More XML months + longer Yahoo history")
+    p.add_argument(
+        "--backfill",
+        action="store_true",
+        help="Yahoo period=max for deep history; skips Treasury XML month crawl by default (slow, often 0 rows from cloud)",
+    )
+    p.add_argument(
+        "--xml-months",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Treasury.gov XML months to fetch backward from this month (default: 4 without --backfill, 0 with --backfill). "
+        "Use e.g. 420 only when the feed returns data (often not from GitHub Actions).",
+    )
     args = p.parse_args()
 
     load_config_env()
@@ -161,17 +174,31 @@ def main() -> int:
         _log("Supabase not configured", file=sys.stderr)
         return 1
 
-    month_span = 420 if args.backfill else 4
-    yahoo_period = "5y" if args.backfill else "3mo"
+    if args.xml_months is not None:
+        month_span = max(0, args.xml_months)
+    elif args.backfill:
+        month_span = 0
+    else:
+        month_span = 4
+    yahoo_period = "max" if args.backfill else "3mo"
     start_anchor = today.replace(day=1)
-    end_anchor = add_months_first(start_anchor, -(month_span - 1))
-    months = list(iter_months_backward(start_anchor, end_anchor))
+    if month_span == 0:
+        months = []
+    else:
+        end_anchor = add_months_first(start_anchor, -(month_span - 1))
+        months = list(iter_months_backward(start_anchor, end_anchor))
     total_m = len(months)
-    _log(
-        f"ingest_treasury_curve: backfill={args.backfill} "
-        f"— {total_m} Treasury XML months ({end_anchor.isoformat()} → {start_anchor.isoformat()}), "
-        f"then Yahoo period={yahoo_period}"
-    )
+    if month_span == 0:
+        _log(
+            f"ingest_treasury_curve: backfill={args.backfill} — Treasury XML: skipped; "
+            f"Yahoo period={yahoo_period} (add --xml-months N for official XML crawl)"
+        )
+    else:
+        _log(
+            f"ingest_treasury_curve: backfill={args.backfill} "
+            f"— {total_m} Treasury XML months ({end_anchor.isoformat()} → {start_anchor.isoformat()}), "
+            f"Yahoo period={yahoo_period}"
+        )
 
     all_curves: list[tuple[str, dict[str, float]]] = []
     seen_dates: set[str] = set()
