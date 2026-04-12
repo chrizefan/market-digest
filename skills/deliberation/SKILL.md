@@ -38,8 +38,13 @@ Load all context per `skills/portfolio-manager/SKILL.md` Pre-Flight section:
 - `config/investment-profile.md` — risk tolerance, regime playbook
 - `docs/research/LIBRARY.md` — research framework
 - Digest (DB-first: Supabase `documents.payload` + rendered markdown if needed)
+- **`research_changelog/{{DATE}}.json`** when present — use `items[]` as the authoritative “what changed since yesterday” list for research docs (complements digest `delta-request` paths).
 
 **Do NOT load `config/portfolio.json` weights.** Analyst blindness is maintained through Phase B.
+
+### Weekday delta-scoped deliberation (`meta.kind: delta_scoped`)
+
+On **Mon–Sat** when Phase 7C triggers (or when the user requests a focused debate), prefer a **shorter roster** (triggered tickers only). Simulate a hedge-fund desk: **analyst** states bull/base/bear and size implication; **PM** (with `preferences` + `investment-profile`) pushes back on risk, liquidity, mandate, and correlation; allow **multiple rounds** in `body.rounds` until `final_decisions` are explicit. Cite **`research_changelog`** lines when arguing from “new information” so the debate stays grounded in today’s deltas, not stale narrative.
 
 ---
 

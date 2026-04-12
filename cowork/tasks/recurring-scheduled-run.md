@@ -43,4 +43,4 @@ After research artifacts for `RUN_DATE` exist in Supabase (including anything pu
 
 ### Alternative: separate Cowork tasks (lower ambiguity, same total work)
 
-If you prefer **not** to branch inside one job (clearer ops, slightly more scheduler setup), create **separate** scheduled tasks that each point at **one** file only: `research-weekly-baseline.md`, `research-daily-delta.md`, `research-monthly-synthesis.md`, and `portfolio-pm-rebalance.md`. Skip this router file.
+If you prefer **not** to branch inside one job (clearer ops, slightly more scheduler setup), create **separate** scheduled tasks that each point at **one** file only: `research-weekly-baseline.md`, `research-daily-delta.md`, `research-monthly-synthesis.md`, `research-document-deltas.md` (optional Track B manifest folds), and `portfolio-pm-rebalance.md`. Skip this router file.

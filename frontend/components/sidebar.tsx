@@ -16,11 +16,10 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { href: '/',              label: 'Overview',           icon: LayoutDashboard },
-  { href: '/portfolio',     label: 'Asset Allocation',   icon: PieChart },
+  { href: '/portfolio',     label: 'Portfolio',          icon: PieChart },
   { href: '/performance',   label: 'Performance',        icon: TrendingUp },
   { href: '/strategy',      label: 'Strategy & Thesis',  icon: Target },
   { href: '/library',       label: 'Research Library',   icon: Clock },
-  { href: '/architecture',  label: 'Architecture',       icon: Database },
 ];
 
 export default function Sidebar() {
@@ -69,7 +68,7 @@ export default function Sidebar() {
         </div>
 
         {/* Nav links */}
-        <nav className="flex-1 py-4">
+        <nav className="flex-1 py-4 flex flex-col">
           {NAV.map(({ href, label, icon: Icon }) => {
             const fullHref = `${base}${href}`;
             const isActive = pathname === fullHref || pathname === href;
@@ -92,6 +91,17 @@ export default function Sidebar() {
             );
           })}
         </nav>
+
+        <div className="px-6 py-4 border-t border-border-subtle mt-auto">
+          <Link
+            href="/architecture"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 text-sm text-text-muted hover:text-text-primary transition-colors"
+          >
+            <Database size={20} />
+            Architecture
+          </Link>
+        </div>
       </aside>
     </>
   );

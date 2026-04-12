@@ -166,6 +166,7 @@ function PortfolioPageContent() {
   const positionHistory = useMemo(() => data?.position_history ?? [], [data]);
   const positionEvents = useMemo(() => data?.position_events ?? [], [data]);
   const lastUpdated = data?.portfolio?.meta?.last_updated ?? null;
+  const holdingTechnicals = useMemo(() => data?.holding_technicals ?? {}, [data]);
 
   const thesisById = useMemo(() => new Map(theses.map((t) => [t.id, t])), [theses]);
 
@@ -265,7 +266,7 @@ function PortfolioPageContent() {
       if (d.date === lastUpdated) m.set(d.path, true);
     }
     return m;
-  }, [data?.docs, lastUpdated]);
+  }, [data, lastUpdated]);
 
   const researchStripLinks = useMemo(() => {
     if (!lastUpdated) return [] as { label: string; docKey: string }[];
@@ -293,10 +294,11 @@ function PortfolioPageContent() {
     return sortPmDocs(
       data.docs.filter((d) => d.date === lastUpdated && getDocLibraryTier(d) === 'portfolio')
     );
-  }, [data?.docs, lastUpdated]);
+  }, [data, lastUpdated]);
 
   useEffect(() => {
     const t = searchParams.get('tab') as TabId | null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync tab from URL
     if (t && VALID_TABS.includes(t)) setTab(t);
   }, [searchParams]);
 
@@ -306,6 +308,7 @@ function PortfolioPageContent() {
     if (!lastUpdated || !data?.docs) return;
     if (searchParams.get('tab') !== 'pm_process') return;
     if (!docKeyParam) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync PM doc viewer from URL
       setPmActiveFile(null);
       setPmLibraryDoc(null);
       return;
@@ -621,7 +624,7 @@ function PortfolioPageContent() {
                 <h3 className="text-lg font-semibold">Positions</h3>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm min-w-[900px]">
+                <table className="w-full text-sm min-w-[1040px]">
                   <thead>
                     <tr className="text-text-muted text-xs uppercase tracking-wider">
                       <th className="text-left px-4 py-3">Ticker</th>
@@ -631,6 +634,12 @@ function PortfolioPageContent() {
                       <th className="text-right px-4 py-3">Day</th>
                       <th className="text-right px-4 py-3">P&amp;L</th>
                       <th className="text-right px-4 py-3">Contrib</th>
+                      <th className="text-right px-4 py-3" title="RSI(14) from price_technicals">
+                        RSI
+                      </th>
+                      <th className="text-right px-4 py-3" title="% vs SMA50">
+                        vs50
+                      </th>
                       <th className="text-left px-4 py-3">Category</th>
                       <th className="text-left px-4 py-3">Thesis</th>
                       <th className="text-right px-4 py-3">Entry</th>
@@ -647,6 +656,7 @@ function PortfolioPageContent() {
                           : p.entry_price && p.current_price && p.entry_price > 0
                             ? ((p.current_price - p.entry_price) / p.entry_price) * 100
                             : null;
+                      const tech = holdingTechnicals[p.ticker];
                       return (
                         <Fragment key={p.ticker + String(i)}>
                           <tr
@@ -680,6 +690,14 @@ function PortfolioPageContent() {
                             <td className="px-4 py-3 text-right font-mono tabular-nums text-xs text-text-secondary">
                               {p.contribution_pct != null ? formatPct(p.contribution_pct) : '—'}
                             </td>
+                            <td className="px-4 py-3 text-right font-mono tabular-nums text-xs text-text-secondary">
+                              {tech?.rsi_14 != null && !Number.isNaN(tech.rsi_14) ? tech.rsi_14.toFixed(1) : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono tabular-nums text-xs text-text-secondary">
+                              {tech?.pct_vs_sma50 != null && !Number.isNaN(tech.pct_vs_sma50)
+                                ? formatPct(tech.pct_vs_sma50)
+                                : '—'}
+                            </td>
                             <td className="px-4 py-3 text-text-secondary text-xs">
                               {formatCategory(p.category)}
                             </td>
@@ -698,7 +716,7 @@ function PortfolioPageContent() {
                           </tr>
                           {isExpanded && (
                             <tr className="bg-white/[0.02]">
-                              <td colSpan={12} className="px-6 py-6">
+                              <td colSpan={14} className="px-6 py-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                   <div>
                                     <h4 className="flex items-center gap-2 text-base font-semibold mb-2">
@@ -710,6 +728,22 @@ function PortfolioPageContent() {
                                   </div>
                                   <div>
                                     <h4 className="text-base font-semibold mb-3">Position details</h4>
+                                    {tech ? (
+                                      <p className="text-xs text-text-muted mb-3">
+                                        Technicals as of{' '}
+                                        <span className="font-mono text-text-secondary">{tech.date}</span>
+                                        {' — '}
+                                        RSI(14){' '}
+                                        <span className="font-mono text-text-primary">
+                                          {tech.rsi_14 != null ? tech.rsi_14.toFixed(1) : '—'}
+                                        </span>
+                                        {', '}
+                                        vs SMA50{' '}
+                                        <span className="font-mono text-text-primary">
+                                          {tech.pct_vs_sma50 != null ? formatPct(tech.pct_vs_sma50) : '—'}
+                                        </span>
+                                      </p>
+                                    ) : null}
                                     <div className="grid grid-cols-2 gap-3 mb-4">
                                       <div className="bg-bg-secondary rounded-lg p-3 border border-border-subtle">
                                         <span className="text-xs text-text-muted uppercase tracking-wider block mb-1">
@@ -754,7 +788,7 @@ function PortfolioPageContent() {
                     })}
                     {positions.length === 0 && (
                       <tr>
-                        <td colSpan={12} className="text-center py-10 text-text-muted">
+                        <td colSpan={14} className="text-center py-10 text-text-muted">
                           No active positions
                         </td>
                       </tr>

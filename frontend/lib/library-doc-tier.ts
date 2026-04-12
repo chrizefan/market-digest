@@ -1,4 +1,4 @@
-import type { Doc } from './types';
+import type { Doc, ResearchChangelogMeta } from './types';
 
 /** Library filter tabs: default Research hides portfolio machine artifacts and evolution. */
 export type LibraryScope = 'research' | 'portfolio' | 'evolution' | 'all';
@@ -52,6 +52,8 @@ export function docMatchesLibraryScope(
     if (tier !== 'research') return false;
     // Machine artifacts: hide from research (surfaced via structured views / Portfolio / delta panel)
     if (file === 'delta-request.json') return false;
+    const full = (d.path || '').toLowerCase();
+    if (full.startsWith('document-deltas/')) return false;
     return true;
   }
   if (scope === 'portfolio') {
@@ -116,6 +118,23 @@ export function countDeltaTouchesForDoc(
   let n = 0;
   for (const p of unique) {
     if (docAffectedByDeltaPaths(docPath, [p])) n += 1;
+  }
+  return n;
+}
+
+function normPathKey(p: string): string {
+  return (p || '').toLowerCase().trim();
+}
+
+/** Badge count from research_changelog items (per-document delta pipeline). */
+export function countResearchChangelogTouchesForDoc(docPath: string, meta: ResearchChangelogMeta | null): number {
+  if (!meta?.items?.length) return 0;
+  const key = normPathKey(docPath);
+  let n = 0;
+  for (const it of meta.items) {
+    const tk = normPathKey(it.target_document_key);
+    if (!tk) continue;
+    if (key === tk || key.endsWith(tk) || tk.endsWith(key)) n += 1;
   }
   return n;
 }

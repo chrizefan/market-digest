@@ -24,18 +24,65 @@ export function renderDocumentMarkdownFromPayload(payload: unknown): string | nu
   const docType = s(p.doc_type);
   if (!docType) return null;
 
+  const dateStr = s(p.date);
+
+  if (docType === 'research_changelog') {
+    const items = Array.isArray(p.items) ? p.items : [];
+    const out: string[] = [`# Research changelog${dateStr ? ` — ${dateStr}` : ''}`, ''];
+    for (const it of items) {
+      const o = asObj(it);
+      if (!o) continue;
+      out.push(
+        `- **${s(o.target_document_key)}** (${s(o.status)}): ${s(o.one_line_change)} _${s(o.severity)}_`
+      );
+    }
+    return `${out.join('\n').trim()}\n`;
+  }
+
+  if (docType === 'research_baseline_manifest') {
+    const docs = Array.isArray(p.documents) ? p.documents : [];
+    const out: string[] = [`# Research baseline manifest${dateStr ? ` — ${dateStr}` : ''}`, ''];
+    for (const row of docs) {
+      const o = asObj(row);
+      if (!o) continue;
+      out.push(`- ${s(o.document_key)}${s(o.phase) ? ` (${s(o.phase)})` : ''}`);
+    }
+    if (s(p.prior_context_note).trim()) {
+      out.push('', '## Prior context', s(p.prior_context_note).trim());
+    }
+    return `${out.join('\n').trim()}\n`;
+  }
+
+  if (docType === 'document_delta') {
+    const out: string[] = [
+      `# Document delta${dateStr ? ` — ${dateStr}` : ''}`,
+      '',
+      `**Target:** ${s(p.target_document_key)}`,
+      `**Status:** ${s(p.status)}`,
+    ];
+    if (s(p.skip_reason).trim()) out.push(`**Skip reason:** ${s(p.skip_reason).trim()}`);
+    const ops = Array.isArray(p.ops) ? p.ops : [];
+    if (ops.length) {
+      out.push('', '## Ops');
+      for (const op of ops) {
+        const o = asObj(op);
+        if (!o) continue;
+        out.push(`- \`${s(o.op)}\` ${s(o.path)}${s(o.reason) ? ` — ${s(o.reason)}` : ''}`);
+      }
+    }
+    return `${out.join('\n').trim()}\n`;
+  }
+
   if (docType === 'deep_dive') {
     const title = s(p.title) || 'Deep Dive';
-    const date = s(p.date);
     const body = asObj(p.body) || {};
     const md = s(body.markdown);
     if (md.trim()) return md.trimEnd() + '\n';
-    return `# ${title}${date ? ` — ${date}` : ''}\n\n_No content available._\n`;
+    return `# ${title}${dateStr ? ` — ${dateStr}` : ''}\n\n_No content available._\n`;
   }
 
-  const date = s(p.date);
   const lines: string[] = [];
-  lines.push(`# ${docType.replace(/_/g, ' ').toUpperCase()}${date ? ` — ${date}` : ''}`);
+  lines.push(`# ${docType.replace(/_/g, ' ').toUpperCase()}${dateStr ? ` — ${dateStr}` : ''}`);
   lines.push('');
 
   const body = asObj(p.body) || {};

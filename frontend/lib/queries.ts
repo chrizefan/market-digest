@@ -12,12 +12,18 @@ import type {
   Doc,
   BenchmarkHistoryMap,
   DeltaRequestMeta,
+  ResearchChangelogMeta,
   DashboardPositionEvent,
   ServerPortfolioMetrics,
+  HoldingTechnicalSnapshot,
+  MacroSeriesPoint,
+  ThesisHistoryPoint,
 } from './types';
 import { renderDigestMarkdownFromSnapshot, type DigestSnapshot } from './render-digest-from-snapshot';
 import { renderDocumentMarkdownFromPayload } from './render-document-from-payload';
 import { DASHBOARD_BENCHMARK_TICKERS, sortTickerUniverse } from './benchmark-tickers';
+import { extractSnapshotContextBullets } from './snapshot-context';
+import { MACRO_PREVIEW_SERIES_IDS } from './macro-curated';
 
 type SB = SupabaseClient<Database>;
 
@@ -66,6 +72,31 @@ function parseDeltaPayload(payload: unknown): DeltaRequestMeta {
   return { changed_paths, baseline_date, op_paths };
 }
 
+function parseResearchChangelogPayload(payload: unknown): ResearchChangelogMeta {
+  const empty: ResearchChangelogMeta = { items: [], baseline_date: null };
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return empty;
+  const o = payload as Record<string, unknown>;
+  if (String(o.doc_type || '') !== 'research_changelog') return empty;
+  const raw = o.items;
+  const items: ResearchChangelogMeta['items'] = [];
+  if (Array.isArray(raw)) {
+    for (const it of raw) {
+      if (!it || typeof it !== 'object' || Array.isArray(it)) continue;
+      const r = it as Record<string, unknown>;
+      const tk = typeof r.target_document_key === 'string' ? r.target_document_key : '';
+      if (!tk) continue;
+      items.push({
+        target_document_key: tk,
+        status: typeof r.status === 'string' ? r.status : '',
+        one_line_change: typeof r.one_line_change === 'string' ? r.one_line_change : undefined,
+        severity: typeof r.severity === 'string' ? r.severity : undefined,
+      });
+    }
+  }
+  const baseline_date = typeof o.baseline_date === 'string' ? o.baseline_date : null;
+  return { items, baseline_date };
+}
+
 export type LibraryDocumentView =
   | 'markdown'
   | 'rebalance'
@@ -94,6 +125,13 @@ function resolveLibraryDocumentView(document_key: string, payload: unknown): Lib
   if (key === 'delta-request.json' || dt === 'delta_request') return 'delta_request';
   if (key.includes('deliberation') || dt === 'deliberation_transcript') return 'deliberation';
   if (dt === 'evolution_sources') return 'evolution_sources';
+  if (
+    dt === 'research_changelog' ||
+    dt === 'document_delta' ||
+    dt === 'research_baseline_manifest'
+  ) {
+    return 'markdown';
+  }
   return 'markdown';
 }
 
@@ -109,7 +147,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
 
   const [
     snapshotRes, positionsRes, thesesRes, navRes,
-    benchRes, metricsRes, docsRes, deltaDocsRes, eventsRes, tickerViewRes, snapshotRunTypesRes,
+    benchRes, metricsRes, docsRes, deltaDocsRes, changelogDocsRes, eventsRes, tickerViewRes, snapshotRunTypesRes,
   ] = await Promise.all([
     supabase.from('daily_snapshots').select('*').order('date', { ascending: false }).limit(1).single(),
     supabase.from('positions').select('*').order('date', { ascending: false }).limit(1000),
@@ -132,6 +170,12 @@ export async function getFullDashboardData(): Promise<DashboardData> {
       .order('date', { ascending: false })
       .limit(400),
     supabase
+      .from('documents')
+      .select('date, payload')
+      .ilike('document_key', 'research-changelog/%')
+      .order('date', { ascending: false })
+      .limit(400),
+    supabase
       .from('position_events')
       .select(
         'date,ticker,event,weight_pct,prev_weight_pct,weight_change_pct,cumulative_return_since_event_pct,price,thesis_id,reason'
@@ -149,12 +193,22 @@ export async function getFullDashboardData(): Promise<DashboardData> {
   if (deltaDocsRes.error) {
     console.error('Supabase delta-request documents query:', deltaDocsRes.error);
   }
+  if (changelogDocsRes.error) {
+    console.error('Supabase research-changelog documents query:', changelogDocsRes.error);
+  }
 
   const delta_request_meta_by_date: Record<string, DeltaRequestMeta> = {};
   const deltaRows = (deltaDocsRes.data ?? []) as Pick<TableRow<'documents'>, 'date' | 'payload'>[];
   for (const row of deltaRows) {
     if (!row?.date) continue;
     delta_request_meta_by_date[row.date] = parseDeltaPayload(row.payload);
+  }
+
+  const research_changelog_by_date: Record<string, ResearchChangelogMeta> = {};
+  const changelogRows = (changelogDocsRes.data ?? []) as Pick<TableRow<'documents'>, 'date' | 'payload'>[];
+  for (const row of changelogRows) {
+    if (!row?.date) continue;
+    research_changelog_by_date[row.date] = parseResearchChangelogPayload(row.payload);
   }
   if (benchRes.error) {
     console.error('Supabase price_history (benchmarks) query:', benchRes.error);
@@ -491,6 +545,80 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     return { ticker: p.ticker, current_pct: curr, recommended_pct: rec, action };
   });
 
+  const snapshot_context_bullets = extractSnapshotContextBullets(
+    snapshot.segment_biases,
+    snapshot.market_data
+  );
+
+  const runTypeRaw = String(snapshot.run_type || '').toLowerCase();
+  const latest_snapshot_run_type: 'baseline' | 'delta' | null =
+    runTypeRaw === 'baseline' || runTypeRaw === 'delta' ? runTypeRaw : null;
+
+  let holding_technicals: Record<string, HoldingTechnicalSnapshot> = {};
+  const macro_series_preview: Record<string, MacroSeriesPoint[]> = {};
+
+  if (posTickers.length > 0 || MACRO_PREVIEW_SERIES_IDS.length > 0) {
+    const [techRes, macroRes] = await Promise.all([
+      posTickers.length > 0
+        ? supabase
+            .from('price_technicals')
+            .select('date,ticker,rsi_14,pct_vs_sma50')
+            .in('ticker', posTickers)
+            .order('date', { ascending: false })
+            .limit(400)
+        : Promise.resolve({ data: null as unknown, error: null }),
+      supabase
+        .from('macro_series_observations')
+        .select('series_id,obs_date,value')
+        .in('series_id', MACRO_PREVIEW_SERIES_IDS)
+        .order('obs_date', { ascending: false })
+        .limit(800),
+    ]);
+
+    if (techRes.error) {
+      console.warn('Supabase price_technicals query:', techRes.error);
+    } else if (techRes.data && Array.isArray(techRes.data)) {
+      const seen = new Set<string>();
+      for (const row of techRes.data as Pick<
+        TableRow<'price_technicals'>,
+        'date' | 'ticker' | 'rsi_14' | 'pct_vs_sma50'
+      >[]) {
+        if (!row?.ticker || seen.has(row.ticker)) continue;
+        seen.add(row.ticker);
+        holding_technicals[row.ticker] = {
+          date: row.date,
+          rsi_14: row.rsi_14 != null ? Number(row.rsi_14) : null,
+          pct_vs_sma50: row.pct_vs_sma50 != null ? Number(row.pct_vs_sma50) : null,
+        };
+        if (seen.size >= posTickers.length) break;
+      }
+    }
+
+    if (macroRes.error) {
+      console.warn('Supabase macro_series_observations query:', macroRes.error);
+    } else if (macroRes.data && Array.isArray(macroRes.data)) {
+      const bySeries: Record<string, MacroSeriesPoint[]> = {};
+      for (const row of macroRes.data as Pick<
+        TableRow<'macro_series_observations'>,
+        'series_id' | 'obs_date' | 'value'
+      >[]) {
+        if (!row?.series_id) continue;
+        const sid = String(row.series_id);
+        if (!bySeries[sid]) bySeries[sid] = [];
+        if (bySeries[sid].length >= 60) continue;
+        bySeries[sid].push({
+          obs_date: row.obs_date,
+          value: row.value != null ? Number(row.value) : null,
+        });
+      }
+      for (const [sid, pts] of Object.entries(bySeries)) {
+        macro_series_preview[sid] = [...pts].sort((a, b) =>
+          a.obs_date < b.obs_date ? -1 : a.obs_date > b.obs_date ? 1 : 0
+        );
+      }
+    }
+  }
+
   return {
     portfolio: {
       meta: {
@@ -498,6 +626,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
         base_currency: 'CAD',
         last_updated: snapshot.date ?? latestPosDate,
         benchmarks: Object.keys(benchmarks),
+        latest_snapshot_run_type,
       },
       snapshots: navHistory.map((h) => ({
         date: h.date,
@@ -547,6 +676,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     ratios: [],
     docs,
     delta_request_meta_by_date,
+    research_changelog_by_date,
     snapshot_run_type_by_date,
     benchmarks,
     price_history_tickers,
@@ -566,7 +696,37 @@ export async function getFullDashboardData(): Promise<DashboardData> {
       max_drawdown: metrics.max_drawdown != null ? Number(metrics.max_drawdown) : 0,
       alpha: metrics.alpha != null ? Number(metrics.alpha) : 0,
     },
+    snapshot_context_bullets,
+    holding_technicals,
+    macro_series_preview,
   };
+}
+
+/**
+ * Historical rows for one thesis_id from the theses table (status / name evolution).
+ */
+export async function getThesisHistoryById(thesisId: string): Promise<ThesisHistoryPoint[]> {
+  if (!isSupabaseConfigured() || !supabase) return [];
+  const id = thesisId.trim();
+  if (!id) return [];
+  const { data, error } = await supabase
+    .from('theses')
+    .select('date,thesis_id,name,status,notes')
+    .eq('thesis_id', id)
+    .order('date', { ascending: true });
+  if (error) {
+    console.error('Supabase theses history query:', error);
+    return [];
+  }
+  return ((data ?? []) as Pick<TableRow<'theses'>, 'date' | 'thesis_id' | 'name' | 'status' | 'notes'>[]).map(
+    (r) => ({
+      date: r.date,
+      thesis_id: r.thesis_id,
+      name: r.name,
+      status: r.status ?? null,
+      notes: r.notes ?? null,
+    })
+  );
 }
 
 const COMPARABLE_PAGE = 1000;

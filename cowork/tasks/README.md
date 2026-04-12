@@ -24,6 +24,7 @@ In **Cloud desktop**, with **Supabase MCP** connected, use the DB for prices/tec
 | [`research-daily-delta.md`](research-daily-delta.md) | **Track A** — **delta** research for high-frequency or Mon–Sat slots (unique `research-delta/…` key per publish). |
 | [`research-monthly-synthesis.md`](research-monthly-synthesis.md) | **Month-end** — `monthly_digest` JSON → validate → `publish_document.py`. |
 | [`portfolio-pm-rebalance.md`](portfolio-pm-rebalance.md) | **Track B** — digest pipeline + PM, analyst, screener, **`rebalance_decision`** (after research exists for the date). |
+| [`research-document-deltas.md`](research-document-deltas.md) | **Track B** — manifest-driven **`document_delta`** publish + **`fold_document_deltas.py`** (optional separate job). |
 | [`manual-run.md`](manual-run.md) | Ad-hoc operator run; minimal steps. |
 
 **Project-level prompt:** paste contents of [`../PROJECT-PROMPT.md`](../PROJECT-PROMPT.md) into Cowork **project** settings so every task inherits the same ground rules.
@@ -40,4 +41,4 @@ Workspace root = this repository.
 
 ### Example: separate Cowork tasks (no router)
 
-Point each schedule at exactly one of: `research-daily-delta.md`, `research-weekly-baseline.md`, `research-monthly-synthesis.md`, `portfolio-pm-rebalance.md`.
+Point each schedule at exactly one of: `research-daily-delta.md`, `research-weekly-baseline.md`, `research-monthly-synthesis.md`, `portfolio-pm-rebalance.md`, `research-document-deltas.md` (or merge Phase 6 into the portfolio/digest job).

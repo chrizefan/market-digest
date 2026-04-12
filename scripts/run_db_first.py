@@ -8,7 +8,7 @@ import subprocess
 import sys
 from datetime import date as dt_date, datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Optional
 
 try:
     from supabase import create_client  # type: ignore

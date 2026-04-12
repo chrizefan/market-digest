@@ -2,13 +2,17 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Calendar, ChevronDown, ChevronRight, Filter, FileText, X } from 'lucide-react';
+import { Calendar, ChevronDown, ChevronRight, Filter, FileText, Search, X } from 'lucide-react';
 
 import PageHeader from '@/components/page-header';
 import DeltaDaySummary from '@/components/library/DeltaDaySummary';
 import LibraryDocumentBody from '@/components/library/LibraryDocumentBody';
 import { useDashboard } from '@/lib/dashboard-context';
-import { countDeltaTouchesForDoc, docMatchesLibraryScope } from '@/lib/library-doc-tier';
+import {
+  countDeltaTouchesForDoc,
+  countResearchChangelogTouchesForDoc,
+  docMatchesLibraryScope,
+} from '@/lib/library-doc-tier';
 import { getLibraryDocumentById, type LibraryDocumentResult } from '@/lib/queries';
 import type { Doc } from '@/lib/types';
 
@@ -198,11 +202,16 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
   const [activeLoading, setActiveLoading] = useState(false);
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const docs = useMemo<Doc[]>(() => data?.docs || [], [data]);
   const deltaMetaByDate = useMemo(
     () => data?.delta_request_meta_by_date ?? {},
     [data?.delta_request_meta_by_date]
+  );
+  const researchChangelogByDate = useMemo(
+    () => data?.research_changelog_by_date ?? {},
+    [data?.research_changelog_by_date]
   );
   const snapshotRunTypeByDate = useMemo(
     () => data?.snapshot_run_type_by_date ?? {},
@@ -254,8 +263,17 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
   const dateDocs = useMemo<Doc[]>(() => {
     let list = docsForEffDate;
     if (filterCat) list = list.filter((d) => categorizeDoc(d) === filterCat);
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter((d) => {
+        const title = (d.title || '').toLowerCase();
+        const path = (d.path || '').toLowerCase();
+        const seg = (d.segment || '').toLowerCase();
+        return title.includes(q) || path.includes(q) || seg.includes(q);
+      });
+    }
     return list;
-  }, [docsForEffDate, filterCat]);
+  }, [docsForEffDate, filterCat, searchQuery]);
 
   const grouped = useMemo<[string, Doc[]][]>(() => {
     const map: Record<string, Doc[]> = {};
@@ -357,15 +375,26 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
               </button>
             ) : null}
 
-            {/* Filters */}
-            <div className="glass-card p-3">
+            {/* Filters + search */}
+            <div className="glass-card p-3 space-y-2">
+              <div className="relative">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search title, path…"
+                  className="w-full rounded-md border border-border-subtle bg-bg-secondary/80 pl-8 pr-2 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-fin-blue/50"
+                  aria-label="Search documents"
+                />
+              </div>
               <button
                 type="button"
                 onClick={() => setShowFilters(!showFilters)}
                 className="flex items-center gap-2 text-xs text-text-muted w-full"
               >
                 <Filter size={12} />
-                <span>Filters</span>
+                <span>Category filters</span>
                 {showFilters ? (
                   <ChevronDown size={12} className="ml-auto" />
                 ) : (
@@ -479,10 +508,13 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                   <div className="divide-y divide-border-subtle">
                     {files.map((f, i) => {
                       const dm = effDate ? deltaMetaByDate[effDate] : null;
-                      const touchCount =
+                      const cl = effDate ? researchChangelogByDate[effDate] : null;
+                      const touchDelta =
                         dm && effDate
                           ? countDeltaTouchesForDoc(f.path, dm.changed_paths, dm.op_paths)
                           : 0;
+                      const touchChangelog = countResearchChangelogTouchesForDoc(f.path, cl);
+                      const touchCount = touchDelta + touchChangelog;
                       const touched = touchCount > 0;
                       return (
                         <button

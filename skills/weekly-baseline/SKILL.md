@@ -21,7 +21,8 @@ This is the Sunday full-run skill. It executes the complete 9-phase pipeline wit
 Before the standard Pre-Flight, complete the following steps:
 
 ### Step 1: Prior Week Review
-Read these files (in order) and internalize without summarizing to the user:
+Read these sources (in order) and internalize without summarizing to the user:
+- **Last materialized digest (context only):** Supabase `daily_snapshots` row for the **latest `date` strictly before** this baseline run (e.g. last Saturday or last trading day). Use its `snapshot` JSON as **read-only** continuity — you will still produce a **fresh** full baseline and manifest; explicitly overturn prior errors where needed.
 - Supabase `documents` for `document_key` matching `weekly/{{LAST_WEEK_LABEL}}.json` — if present
 - `config/portfolio.json` — current positions and last proposed_positions (note tickers only for now; actual weights reviewed in Phase 7D)
 
@@ -55,6 +56,15 @@ Announce to user: "Week Setup complete. Prior week reviewed. Starting full basel
 Follow ALL 9 phases from `skills/orchestrator/SKILL.md` exactly.
 
 Return here after Phase 7 (digest synthesis) to add the Week Ahead Setup section, then publish the DB snapshot.
+
+### After Phase 7 — Research baseline manifest (recommended)
+Publish **`research_baseline_manifest`** for the week (schema: `templates/schemas/research-baseline-manifest.schema.json`):
+- `document_key`: `research-manifest/{{BASELINE_DATE}}.json` (or your team’s stable convention).
+- `week_anchor_date` / `baseline_digest_date`: align with this Sunday’s materialized digest date.
+- `documents[]`: list every research artifact key you will maintain Mon–Sat (phase outputs, `sectors/{sector}/{{DATE}}.json`, etc.).
+- Optional `prior_context_note`: what you are carrying forward vs explicitly reversing vs last week’s digest.
+
+Validate + `publish_document.py --payload -` with `--doc-type-label "Research Baseline Manifest"`.
 
 ---
 

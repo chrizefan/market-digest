@@ -113,6 +113,7 @@ Common flags:
 - **Daily snapshot** (canonical): `templates/digest-snapshot-schema.json`
   - stored in `daily_snapshots.snapshot` and mirrored to `documents` as payload for `document_key='digest'`
 - **Delta ops** on weekdays: `templates/delta-request-schema.json`
+- **Per-document research pipeline** (optional Track B): `templates/schemas/research-baseline-manifest.schema.json`, `templates/schemas/document-delta.schema.json`, `templates/schemas/research-changelog.schema.json` — publish manifest on baseline; weekdays publish `document-deltas/…` then run [`scripts/fold_document_deltas.py`](scripts/fold_document_deltas.py) to materialize targets + `research-changelog/{{DATE}}.json`.
 
 ### Portfolio layer (stored in Supabase documents.payload)
 - `asset_recommendation` (`templates/schemas/asset-recommendation.schema.json`)
@@ -163,7 +164,7 @@ Re-run with `--force` to overwrite. Uses [`scripts/legacy_delta_to_ops.py`](scri
 ## DB validation modes ([`validate_db_first.py`](scripts/validate_db_first.py))
 
 - **`full` (default):** `daily_snapshots` + `documents.digest` + positions sanity + `nav_history` / `portfolio_metrics` non-empty.
-- **`research`:** `daily_snapshots` + **`digest` or `research_delta`** document with payload; positions zero-weight rule skipped; nav/metrics tables still non-empty.
+- **`research`:** `daily_snapshots` + **`digest` or `research_delta`** (or **`document_delta` / `research_changelog` / `research_baseline_manifest`**) document with payload; positions zero-weight rule skipped; nav/metrics tables still non-empty.
 - **`pm`:** `full` plus a `rebalance_decision` document for `date` (portfolio layer present).
 
 **No-change days:** Prefer a **delta request** with empty `ops` (see [`templates/delta-request-schema.json`](templates/delta-request-schema.json)) and materialize as usual, **or** set `"no_change": true` on the digest snapshot (see [`templates/digest-snapshot-schema.json`](templates/digest-snapshot-schema.json)) after materialization so the day is still indexed in `daily_snapshots`.

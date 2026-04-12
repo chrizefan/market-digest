@@ -192,6 +192,39 @@ If a sector materially changed, update the relevant row(s) in `sector_scorecard`
 
 ---
 
+## Phase 6 — Research baseline manifest + per-document deltas (Track B)
+
+> **Optional but recommended** when you publish **segment JSON** alongside the digest (`sectors/…`, phase outputs, etc.). Keeps continuity without rewriting every file; the PM layer can read **`research_changelog`** for “what changed.”
+
+### Step 6.1 — Load the week manifest
+- From Supabase `documents`, load `research-manifest/{{WEEK_ANCHOR_DATE}}.json` (or the latest row with `doc_type: research_baseline_manifest` for the current ISO week).
+- If **missing** (first run of the pattern): on **baseline days** publish the manifest after Phase 5 completes; on **delta days** skip Phase 6 or run a one-off manifest from the prior Sunday baseline.
+
+### Step 6.2 — Per manifest entry, triage and publish `document_delta`
+For each `documents[]` entry in the manifest:
+- Compare live data vs **yesterday’s** materialized doc for that `document_key` (Supabase `documents` with `date = prior calendar day` and the same key, or the key with the prior date embedded in the path — see [`scripts/fold_document_deltas.py`](../../scripts/fold_document_deltas.py)).
+- Emit **`document_delta`** JSON (schema: [`templates/schemas/document-delta.schema.json`](../../templates/schemas/document-delta.schema.json)):
+  - **`status: skipped`** + `skip_reason` when nothing material changed.
+  - **`status: updated`** + minimal `ops` (`set` / `append` / `remove`, JSON Pointer paths) against **yesterday’s** payload. Avoid huge root `set` unless `baseline_error_correction: true` (weekly escape hatch).
+- Validate: `python3 scripts/validate_artifact.py -` (stdin)  
+- Publish with **unique** `document_key`, e.g. `document-deltas/{{DATE}}/{{RUN_SUFFIX}}/{{slug}}.json`, `--doc-type-label "Document Delta"`, `--category output`.
+
+### Step 6.3 — Fold into materialized research docs
+Operator (after all `document_delta` rows for `{{DATE}}` exist):
+
+```bash
+python3 scripts/fold_document_deltas.py --date {{DATE}}
+```
+
+This upserts **folded full JSON** per `target_document_key` and publishes **`research-changelog/{{DATE}}.json`** for PM/analyst consumption (unless `--skip-changelog`).
+
+### Step 6.4 — Digest delta-request (Phase 7)
+Author **`delta-request.json`** with **narrow** ops; seed `changed_paths` from which manifest targets were **updated** (not skipped) plus usual digest paths. Then **Phase 7B** `materialize_snapshot` using **`{{MATERIALIZE_BASELINE_DATE}}`** (prior calendar day), envelope `baseline_date` = **`{{WEEK_ANCHOR_DATE}}`**.
+
+**Cowork-only task file:** [`cowork/tasks/research-document-deltas.md`](../../cowork/tasks/research-document-deltas.md) if you schedule research folds separately from PM.
+
+---
+
 ## Phase 7 — Emit Delta Request JSON (authoritative weekday output)
 
 Emit a single **Delta Request JSON** (schema: `templates/delta-request-schema.json`) containing:

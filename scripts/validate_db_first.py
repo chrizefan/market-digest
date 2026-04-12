@@ -65,7 +65,15 @@ def _has_research_doc(sb, d: str) -> bool:
         p = r.get("payload")
         if key == "digest" and p is not None:
             return True
-        if isinstance(p, dict) and p.get("doc_type") == "research_delta":
+        if isinstance(p, dict) and p.get("doc_type") in (
+            "research_delta",
+            "document_delta",
+            "research_changelog",
+            "research_baseline_manifest",
+        ):
+            return True
+        low = key.lower()
+        if low.startswith("document-deltas/") or low.startswith("research-changelog/"):
             return True
     return False
 

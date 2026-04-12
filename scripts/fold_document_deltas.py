@@ -170,16 +170,26 @@ def _publish(
 
 
 def _human_doc_type_label(payload: Dict[str, Any]) -> str:
-    dt = str(payload.get("doc_type") or "document")
+    """Labels must match documents.chk_documents_doc_type (see supabase/migrations/019)."""
+    dt = str(payload.get("doc_type") or "")
     mapping = {
-        "sector_report": "Deep Dive",
+        "sector_report": "Sector Report",
         "deep_dive": "Deep Dive",
-        "asset_recommendation": "asset_recommendation",
-        "portfolio_recommendation": "portfolio_recommendation",
-        "deliberation_transcript": "deliberation_transcript",
-        "rebalance_decision": "rebalance_decision",
+        "asset_recommendation": "Asset Recommendation",
+        "portfolio_recommendation": "Portfolio Recommendation",
+        "deliberation_transcript": "Deliberation Transcript",
+        "rebalance_decision": "Rebalance Decision",
+        "evolution_sources": "Evolution Sources",
+        "evolution_quality_log": "Evolution Quality Log",
+        "evolution_proposals": "Evolution Proposals",
+        "research_changelog": "Research Changelog",
+        "research_baseline_manifest": "Research Baseline Manifest",
+        "document_delta": "Document Delta",
+        "research_delta": "Research Delta",
+        "weekly_digest": "Weekly Rollup",
+        "monthly_digest": "Monthly Summary",
     }
-    return mapping.get(dt, dt.replace("_", " ").title())
+    return mapping.get(dt, "Deep Dive")
 
 
 def main() -> int:

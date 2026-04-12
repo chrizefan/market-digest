@@ -1099,6 +1099,9 @@ DOC_TYPE_DB_COLUMN: Dict[str, str] = {
     "research_baseline_manifest": "Research Baseline Manifest",
     "document_delta": "Document Delta",
     "research_changelog": "Research Changelog",
+    "evolution_sources": "Evolution Sources",
+    "evolution_quality_log": "Evolution Quality Log",
+    "evolution_proposals": "Evolution Proposals",
 }
 
 

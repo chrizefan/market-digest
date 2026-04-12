@@ -153,6 +153,28 @@ export interface PerfChartPoint {
   [benchmark: string]: number | null | string;
 }
 
+/** Latest row from price_technicals for a holding (Overview / Portfolio). */
+export interface HoldingTechnicalSnapshot {
+  date: string;
+  rsi_14: number | null;
+  pct_vs_sma50: number | null;
+}
+
+/** One observation for macro sparklines. */
+export interface MacroSeriesPoint {
+  obs_date: string;
+  value: number | null;
+}
+
+/** One row in thesis_id history (theses table over time). */
+export interface ThesisHistoryPoint {
+  date: string;
+  thesis_id: string;
+  name: string;
+  status: string | null;
+  notes: string | null;
+}
+
 /** Portfolio meta / identity fields. */
 export interface PortfolioMeta {
   name: string;
@@ -160,6 +182,8 @@ export interface PortfolioMeta {
   last_updated: string | null;
   benchmarks: string[];
   inception_date?: string;
+  /** Run type for the latest daily_snapshots row driving this dashboard. */
+  latest_snapshot_run_type?: 'baseline' | 'delta' | null;
 }
 
 /** Top-level portfolio object. */
@@ -196,6 +220,19 @@ export interface DeltaRequestMeta {
   op_paths: string[];
 }
 
+/** Parsed research_changelog payload (per-document delta summary for a date). */
+export interface ResearchChangelogItem {
+  target_document_key: string;
+  status: string;
+  one_line_change?: string;
+  severity?: string;
+}
+
+export interface ResearchChangelogMeta {
+  items: ResearchChangelogItem[];
+  baseline_date: string | null;
+}
+
 /** A document record as returned to the Research Library. */
 export interface Doc {
   id: string;
@@ -229,12 +266,20 @@ export interface DashboardData {
   server_portfolio_metrics: ServerPortfolioMetrics | null;
   /** Per trading day: paths touched by delta-request.json (when published). */
   delta_request_meta_by_date: Record<string, DeltaRequestMeta>;
+  /** Per trading day: research_changelog.json items (after fold_document_deltas). */
+  research_changelog_by_date: Record<string, ResearchChangelogMeta>;
   /** Fallback for calendar baseline vs delta when document rows omit `run_type`. */
   snapshot_run_type_by_date: Record<string, 'baseline' | 'delta'>;
   benchmarks: BenchmarkHistoryMap;
   /** Distinct tickers in price_history (view); sorted with majors first. */
   price_history_tickers: string[];
   calculated: CalculatedMetrics;
+  /** Short bullets from latest snapshot segment_biases / market_data. */
+  snapshot_context_bullets: string[];
+  /** Latest price_technicals row per current holding ticker. */
+  holding_technicals: Record<string, HoldingTechnicalSnapshot>;
+  /** Recent points per series_id for macro preview (curated list). */
+  macro_series_preview: Record<string, MacroSeriesPoint[]>;
 }
 
 // ---------------------------------------------------------------------------

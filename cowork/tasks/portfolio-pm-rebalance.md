@@ -4,7 +4,7 @@
 
 ## Preconditions
 
-Research for the **as-of date** is available in **Supabase** — portfolio **digest** snapshot and/or at least one **`research_delta`** row in `documents` (any `research-delta/…` key). If this session **just** published Track A research, you may proceed once that row exists. **Do not** depend on local `data/agent-cache/` for canonical state.
+Research for the **as-of date** is available in **Supabase** — portfolio **digest** snapshot and/or at least one **`research_delta`** row in `documents` (any `research-delta/…` key), and/or **`document_delta`** / **`research_changelog`** / **`research_baseline_manifest`** from the per-document pipeline. Prefer reading **`research-changelog/{{DATE}}.json`** (after `fold_document_deltas.py`) for a compact “what changed” summary before analyst / PM work. **Do not** depend on local `data/agent-cache/` for canonical state.
 
 ## Objective
 
@@ -13,8 +13,8 @@ Research for the **as-of date** is available in **Supabase** — portfolio **dig
 ## Steps
 
 1. Load same-day context from Supabase (`daily_snapshots`, `documents`).
-2. **Digest mode:** Sunday → [`skills/weekly-baseline/SKILL.md`](../../skills/weekly-baseline/SKILL.md); Mon–Sat → [`skills/daily-delta/SKILL.md`](../../skills/daily-delta/SKILL.md) (including threshold monitor / Phase 7C and PM path when triggered).
-3. **Portfolio layer** (when digest phases allow): [`skills/opportunity-screener/SKILL.md`](../../skills/opportunity-screener/SKILL.md); baseline → [`skills/deliberation/SKILL.md`](../../skills/deliberation/SKILL.md) + [`skills/portfolio-manager/SKILL.md`](../../skills/portfolio-manager/SKILL.md); delta → scoped path per `daily-delta` skill.
+2. **Digest mode:** Sunday → [`skills/weekly-baseline/SKILL.md`](../../skills/weekly-baseline/SKILL.md); Mon–Sat → [`skills/daily-delta/SKILL.md`](../../skills/daily-delta/SKILL.md) (including Phase 6 per-document deltas + fold when used, threshold monitor / Phase 7C, PM path when triggered).
+3. **Portfolio layer** (when digest phases allow): Ground analysts on **yesterday’s** `asset_recommendation` / `rebalance_decision` / `portfolio_recommendation` plus today’s **`research_changelog`**. Then [`skills/opportunity-screener/SKILL.md`](../../skills/opportunity-screener/SKILL.md); baseline → [`skills/deliberation/SKILL.md`](../../skills/deliberation/SKILL.md) + [`skills/portfolio-manager/SKILL.md`](../../skills/portfolio-manager/SKILL.md); delta → scoped path per `daily-delta` skill. Prefer **`deliberation_transcript.meta.kind: delta_scoped`** on weekdays with extra PM–analyst rounds when triggers fire.
 4. `python3 scripts/run_db_first.py --validate-mode pm` (use `full` if you also shipped a full digest payload for the date).
 5. If execution prices stayed null after open: `python3 scripts/backfill_execution_prices.py --date YYYY-MM-DD`.
 
