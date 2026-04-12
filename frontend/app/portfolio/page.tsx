@@ -25,6 +25,7 @@ import {
   buildSleeveStackSeries,
   thesisStackLabel,
   categoryStackLabel,
+  tickerStackLabel,
   aggregateWeightByThesis,
   type SleeveStackMode,
 } from '@/lib/portfolio-aggregates';
@@ -68,6 +69,22 @@ interface AllocationDatum {
   value: number;
 }
 
+type SummaryAllocationMode = 'ticker' | 'category' | 'thesis';
+
+const MAX_PIE_SLICES = 14;
+
+type PieSliceDatum = { name: string; value: number; tooltipExtra?: string };
+
+function bucketAllocationsForPie(items: AllocationDatum[]): PieSliceDatum[] {
+  const pos = items.filter((x) => x.value > 0.0001).sort((a, b) => b.value - a.value);
+  if (pos.length <= MAX_PIE_SLICES) return pos.map(({ name, value }) => ({ name, value }));
+  const head = pos.slice(0, MAX_PIE_SLICES - 1);
+  const tail = pos.slice(MAX_PIE_SLICES - 1);
+  const other = tail.reduce((s, x) => s + x.value, 0);
+  const tooltipExtra = tail.map((t) => `${t.name}: ${t.value.toFixed(1)}%`).join(' · ');
+  return [...head.map(({ name, value }) => ({ name, value })), { name: 'Other', value: other, tooltipExtra }];
+}
+
 type TabId = 'summary' | 'thesis' | 'history' | 'activity';
 
 function eventBadgeVariant(
@@ -89,7 +106,9 @@ function thesisNames(ids: string[], thesisById: Map<string, Thesis>): string {
 export default function PortfolioPage() {
   const { data, loading, error } = useDashboard();
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
+  const [expandedThesisId, setExpandedThesisId] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>('summary');
+  const [summaryAllocationMode, setSummaryAllocationMode] = useState<SummaryAllocationMode>('ticker');
   const [historyMode, setHistoryMode] = useState<SleeveStackMode>('category');
 
   const positions = useMemo(() => data?.positions ?? [], [data]);
@@ -113,6 +132,8 @@ export default function PortfolioPage() {
     if ((metrics?.cash_pct ?? 0) > 0) slices.push({ name: 'CASH', value: metrics?.cash_pct ?? 0 });
     return slices;
   }, [positions, ratios, metrics?.cash_pct]);
+
+  const pieDataBucketed = useMemo(() => bucketAllocationsForPie(pieData), [pieData]);
 
   const categoryBarData = useMemo(() => {
     const m = new Map<string, number>();
@@ -161,13 +182,33 @@ export default function PortfolioPage() {
     [thesisBookRows]
   );
 
+  const thesisBarRich = useMemo(
+    () =>
+      thesisBookRows
+        .filter((r) => r.weight > 0)
+        .map((r) => ({
+          name: r.id === '_unlinked' ? 'Unlinked' : r.thesis?.name ?? r.id,
+          value: r.weight,
+          status: r.thesis?.status ?? null,
+        })),
+    [thesisBookRows]
+  );
+
+  const activityEvents = useMemo(
+    () => positionEvents.filter((ev) => ev.event !== 'HOLD'),
+    [positionEvents]
+  );
+
   const { data: sleeveData, keys: sleeveKeys } = useMemo(
     () => buildSleeveStackSeries(positionHistory, historyMode),
     [positionHistory, historyMode]
   );
 
-  const formatSleeveKey = (k: string) =>
-    historyMode === 'thesis' ? thesisStackLabel(k, theses) : categoryStackLabel(k);
+  const formatSleeveKey = (k: string) => {
+    if (historyMode === 'thesis') return thesisStackLabel(k, theses);
+    if (historyMode === 'ticker') return tickerStackLabel(k);
+    return categoryStackLabel(k);
+  };
 
   const researchLinks = useMemo(
     () =>
@@ -242,54 +283,84 @@ export default function PortfolioPage() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <div className="glass-card p-6">
-                <SectionTitle>Current allocation (by ticker)</SectionTitle>
-                <div className="h-[320px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius="55%"
-                        outerRadius="80%"
-                        paddingAngle={2}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {pieData.map((_, i) => (
-                          <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          background: '#1a1a1a',
-                          border: '1px solid #2a2a2a',
-                          borderRadius: '8px',
-                          fontSize: '0.85rem',
-                        }}
-                        formatter={(val: number) => `${val.toFixed(1)}%`}
-                      />
-                      <Legend
-                        verticalAlign="middle"
-                        align="right"
-                        layout="vertical"
-                        iconType="circle"
-                        iconSize={8}
-                        formatter={(val: string) => (
-                          <span className="text-text-secondary text-xs ml-1">{val}</span>
-                        )}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+            <div className="glass-card p-6 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <SectionTitle className="mb-0">Current allocation</SectionTitle>
+                <div className="flex rounded-lg border border-border-subtle overflow-hidden text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setSummaryAllocationMode('ticker')}
+                    className={`px-3 py-1.5 font-medium ${summaryAllocationMode === 'ticker' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
+                  >
+                    Ticker
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSummaryAllocationMode('category')}
+                    className={`px-3 py-1.5 font-medium border-l border-border-subtle ${summaryAllocationMode === 'category' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
+                  >
+                    Category
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSummaryAllocationMode('thesis')}
+                    className={`px-3 py-1.5 font-medium border-l border-border-subtle ${summaryAllocationMode === 'thesis' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
+                  >
+                    Thesis
+                  </button>
                 </div>
               </div>
-
-              <div className="glass-card p-6">
-                <SectionTitle>By category (current)</SectionTitle>
-                <div className="h-[320px]">
-                  {categoryBarData.length === 0 ? (
+              <div className="h-[320px]">
+                {summaryAllocationMode === 'ticker' &&
+                  (pieDataBucketed.length === 0 ? (
+                    <p className="text-text-muted text-sm py-12 text-center">No positions</p>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={pieDataBucketed}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius="55%"
+                          outerRadius="80%"
+                          paddingAngle={2}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {pieDataBucketed.map((_, i) => (
+                            <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (!active || !payload?.length) return null;
+                            const p = payload[0].payload as PieSliceDatum;
+                            return (
+                              <div className="rounded-lg border border-border-subtle bg-[#141414] px-3 py-2 text-xs shadow-lg max-w-xs">
+                                <p className="font-medium text-text-primary">{p.name}</p>
+                                <p className="text-text-secondary tabular-nums">{p.value.toFixed(1)}%</p>
+                                {p.tooltipExtra ? (
+                                  <p className="text-text-muted mt-1.5 text-[11px] leading-snug">{p.tooltipExtra}</p>
+                                ) : null}
+                              </div>
+                            );
+                          }}
+                        />
+                        <Legend
+                          verticalAlign="middle"
+                          align="right"
+                          layout="vertical"
+                          iconType="circle"
+                          iconSize={8}
+                          formatter={(val: string) => (
+                            <span className="text-text-secondary text-xs ml-1">{val}</span>
+                          )}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ))}
+                {summaryAllocationMode === 'category' &&
+                  (categoryBarData.length === 0 ? (
                     <p className="text-text-muted text-sm py-12 text-center">No positions</p>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
@@ -312,28 +383,73 @@ export default function PortfolioPage() {
                           tick={{ fill: '#a1a1aa', fontSize: 11 }}
                         />
                         <Tooltip
-                          contentStyle={{
-                            background: '#1a1a1a',
-                            border: '1px solid #2a2a2a',
-                            borderRadius: '8px',
-                            fontSize: '0.85rem',
+                          content={({ active, payload }) => {
+                            if (!active || !payload?.length) return null;
+                            const row = payload[0].payload as { name: string; value: number };
+                            return (
+                              <div className="rounded-lg border border-border-subtle bg-[#141414] px-3 py-2 text-xs shadow-lg">
+                                <p className="font-medium text-text-primary">{row.name}</p>
+                                <p className="text-text-secondary tabular-nums">{Number(row.value).toFixed(1)}% weight</p>
+                              </div>
+                            );
                           }}
-                          formatter={(val: number) => [`${Number(val).toFixed(1)}%`, 'Weight']}
                         />
                         <Bar dataKey="value" fill="#3B82F6" radius={[0, 4, 4, 0]} name="Weight %" />
                       </BarChart>
                     </ResponsiveContainer>
-                  )}
-                </div>
+                  ))}
+                {summaryAllocationMode === 'thesis' &&
+                  (thesisBarRich.length === 0 ? (
+                    <p className="text-text-muted text-sm py-12 text-center">No thesis-linked weights</p>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        layout="vertical"
+                        data={thesisBarRich}
+                        margin={{ left: 4, right: 16, top: 8, bottom: 8 }}
+                      >
+                        <CartesianGrid stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                        <XAxis
+                          type="number"
+                          domain={[0, 'auto']}
+                          tick={{ fill: '#71717a', fontSize: 11 }}
+                          tickFormatter={(v) => `${v}%`}
+                        />
+                        <YAxis
+                          type="category"
+                          dataKey="name"
+                          width={140}
+                          tick={{ fill: '#a1a1aa', fontSize: 10 }}
+                        />
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (!active || !payload?.length) return null;
+                            const row = payload[0].payload as {
+                              name: string;
+                              value: number;
+                              status: string | null;
+                            };
+                            return (
+                              <div className="rounded-lg border border-border-subtle bg-[#141414] px-3 py-2 text-xs shadow-lg max-w-xs">
+                                <p className="font-medium text-text-primary">{row.name}</p>
+                                <p className="text-text-secondary tabular-nums">{Number(row.value).toFixed(1)}% weight</p>
+                                {row.status ? (
+                                  <p className="text-text-muted mt-1 text-[11px]">Status: {row.status}</p>
+                                ) : null}
+                              </div>
+                            );
+                          }}
+                        />
+                        <Bar dataKey="value" fill="#8B5CF6" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ))}
               </div>
             </div>
 
             <div className="glass-card p-0 overflow-hidden">
               <div className="px-6 py-5 border-b border-border-subtle bg-bg-secondary">
                 <h3 className="text-lg font-semibold">Positions</h3>
-                <p className="text-text-muted text-sm mt-1">
-                  Expand a row for rationale, PM notes, and thesis detail. Δ vs prior snapshot.
-                </p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm min-w-[900px]">
@@ -519,7 +635,7 @@ export default function PortfolioPage() {
 
             <div className="glass-card p-0 overflow-hidden">
               <div className="px-5 py-4 border-b border-border-subtle bg-bg-secondary">
-                <h3 className="text-sm font-semibold">Thesis tracker + exposure</h3>
+                <h3 className="text-sm font-semibold">Thesis tracker</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm min-w-[720px]">
@@ -530,31 +646,90 @@ export default function PortfolioPage() {
                       <th className="text-left px-5 py-3">Vehicle</th>
                       <th className="text-left px-5 py-3">Status</th>
                       <th className="text-left px-5 py-3">Invalidation</th>
+                      <th className="px-5 py-3 w-10" aria-label="Expand" />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-subtle">
-                    {thesisBookRows.map((row) => (
-                      <tr key={row.id} className="hover:bg-white/[0.02]">
-                        <td className="px-5 py-3 font-medium">
-                          {row.id === '_unlinked' ? 'Unlinked positions' : row.thesis?.name ?? row.id}
-                        </td>
-                        <td className="px-5 py-3 text-right font-mono tabular-nums font-semibold">
-                          {row.weight.toFixed(1)}%
-                        </td>
-                        <td className="px-5 py-3 font-mono text-text-secondary text-xs">
-                          {row.thesis?.vehicle ?? '—'}
-                        </td>
-                        <td className="px-5 py-3 text-text-secondary text-xs">
-                          {row.thesis?.status ?? '—'}
-                        </td>
-                        <td className="px-5 py-3 text-text-muted text-xs max-w-md">
-                          {row.thesis?.invalidation ?? '—'}
-                        </td>
-                      </tr>
-                    ))}
+                    {thesisBookRows.map((row) => {
+                      const isOpen = expandedThesisId === row.id;
+                      const label = row.id === '_unlinked' ? 'Unlinked positions' : row.thesis?.name ?? row.id;
+                      return (
+                        <Fragment key={row.id}>
+                          <tr
+                            onClick={() => setExpandedThesisId(isOpen ? null : row.id)}
+                            className="hover:bg-white/[0.02] cursor-pointer transition-colors"
+                          >
+                            <td className="px-5 py-3 font-medium">{label}</td>
+                            <td className="px-5 py-3 text-right font-mono tabular-nums font-semibold">
+                              {row.weight.toFixed(1)}%
+                            </td>
+                            <td className="px-5 py-3 font-mono text-text-secondary text-xs">
+                              {row.thesis?.vehicle ?? '—'}
+                            </td>
+                            <td className="px-5 py-3 text-text-secondary text-xs">
+                              {row.thesis?.status ?? '—'}
+                            </td>
+                            <td className="px-5 py-3 text-text-muted text-xs max-w-[200px] truncate" title={row.thesis?.invalidation ?? undefined}>
+                              {row.thesis?.invalidation ?? '—'}
+                            </td>
+                            <td className="px-5 py-3 text-text-muted">
+                              {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                            </td>
+                          </tr>
+                          {isOpen && (
+                            <tr className="bg-white/[0.02]">
+                              <td colSpan={6} className="px-6 py-5 border-t border-border-subtle">
+                                {row.id === '_unlinked' ? (
+                                  <p className="text-text-muted text-sm leading-relaxed">
+                                    Positions not linked to a named thesis in the latest snapshot.
+                                  </p>
+                                ) : (
+                                  <>
+                                    <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
+                                      Summary
+                                    </h4>
+                                    <p className="text-text-secondary text-sm leading-relaxed whitespace-pre-wrap">
+                                      {row.thesis?.notes?.trim() || 'No summary in snapshot.'}
+                                    </p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+                                      <div className="rounded-lg border border-border-subtle bg-bg-secondary/80 p-3">
+                                        <span className="text-[10px] text-text-muted uppercase tracking-wider">Vehicle</span>
+                                        <p className="text-sm mt-1">{row.thesis?.vehicle ?? '—'}</p>
+                                      </div>
+                                      <div className="rounded-lg border border-border-subtle bg-bg-secondary/80 p-3">
+                                        <span className="text-[10px] text-text-muted uppercase tracking-wider">Status</span>
+                                        <p className="text-sm mt-1">{row.thesis?.status ?? '—'}</p>
+                                      </div>
+                                      <div className="rounded-lg border border-border-subtle bg-bg-secondary/80 p-3">
+                                        <span className="text-[10px] text-text-muted uppercase tracking-wider">Invalidation</span>
+                                        <p className="text-sm mt-1 leading-snug">{row.thesis?.invalidation ?? '—'}</p>
+                                      </div>
+                                    </div>
+                                  </>
+                                )}
+                                {researchLinks.length > 0 && lastUpdated && (
+                                  <div className="mt-5 flex flex-wrap items-center gap-2">
+                                    <span className="text-xs text-text-muted">Research</span>
+                                    {researchLinks.map((l) => (
+                                      <Link
+                                        key={l.docKey}
+                                        href={`/library?date=${encodeURIComponent(String(lastUpdated))}&docKey=${encodeURIComponent(l.docKey)}`}
+                                        className="text-xs px-2.5 py-1 rounded-md bg-fin-blue/10 text-fin-blue hover:bg-fin-blue/20 transition-colors"
+                                      >
+                                        {l.label}
+                                      </Link>
+                                    ))}
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })}
                     {thesisBookRows.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="text-center py-8 text-text-muted">
+                        <td colSpan={6} className="text-center py-8 text-text-muted">
                           No theses in latest snapshot
                         </td>
                       </tr>
@@ -569,29 +744,38 @@ export default function PortfolioPage() {
         {tab === 'history' && (
           <div className="glass-card p-6 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <SectionTitle className="mb-0">Sleeve evolution (% of book)</SectionTitle>
+              <SectionTitle className="mb-0">Sleeve evolution</SectionTitle>
               <div className="flex rounded-lg border border-border-subtle overflow-hidden text-xs">
                 <button
                   type="button"
-                  onClick={() => setHistoryMode('category')}
-                  className={`px-3 py-1.5 font-medium ${historyMode === 'category' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
+                  onClick={() => setHistoryMode('ticker')}
+                  className={`px-3 py-1.5 font-medium ${historyMode === 'ticker' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
                 >
-                  By category
+                  Ticker
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryMode('category')}
+                  className={`px-3 py-1.5 font-medium border-l border-border-subtle ${historyMode === 'category' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
+                >
+                  Category
                 </button>
                 <button
                   type="button"
                   onClick={() => setHistoryMode('thesis')}
                   className={`px-3 py-1.5 font-medium border-l border-border-subtle ${historyMode === 'thesis' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
                 >
-                  By thesis
+                  Thesis
                 </button>
               </div>
             </div>
-            <p className="text-text-muted text-sm">
-              Stacked areas sum to ~100% per day (excluding any non-position cash rows in history).
-            </p>
             <div className="h-[380px]" aria-label="Sleeve weights stacked over time">
-              <SleeveStackedChart data={sleeveData} keys={sleeveKeys} formatKey={formatSleeveKey} />
+              <SleeveStackedChart
+                data={sleeveData}
+                keys={sleeveKeys}
+                formatKey={formatSleeveKey}
+                aggregateOtherNote={historyMode === 'ticker'}
+              />
             </div>
           </div>
         )}
@@ -599,55 +783,80 @@ export default function PortfolioPage() {
         {tab === 'activity' && (
           <div className="glass-card p-0 overflow-hidden">
             <div className="px-6 py-5 border-b border-border-subtle bg-bg-secondary">
-              <h3 className="text-lg font-semibold">Execution &amp; changes</h3>
-              <p className="text-text-muted text-sm mt-1">
-                Recent rows from <code className="text-text-secondary">position_events</code> (newest
-                first).
-              </p>
+              <h3 className="text-lg font-semibold">Activity</h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[800px]">
+              <table className="w-full text-sm min-w-[920px]">
                 <thead>
                   <tr className="text-text-muted text-xs uppercase tracking-wider">
                     <th className="text-left px-5 py-3">Date</th>
                     <th className="text-left px-5 py-3">Ticker</th>
                     <th className="text-left px-5 py-3">Event</th>
+                    <th className="text-right px-5 py-3">Prior wt</th>
                     <th className="text-right px-5 py-3">Weight</th>
                     <th className="text-right px-5 py-3">Δ wt</th>
                     <th className="text-right px-5 py-3">Since event</th>
-                    <th className="text-left px-5 py-3">Reason</th>
+                    <th className="text-left px-5 py-3 max-w-[200px]">Reason</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-subtle">
-                  {positionEvents.map((ev, i) => (
-                    <tr key={`${ev.date}-${ev.ticker}-${i}`} className="hover:bg-white/[0.02]">
-                      <td className="px-5 py-3 font-mono text-xs text-text-secondary">{ev.date}</td>
-                      <td className="px-5 py-3 font-semibold">{ev.ticker}</td>
-                      <td className="px-5 py-3">
-                        <Badge variant={eventBadgeVariant(ev.event)}>{ev.event}</Badge>
-                      </td>
-                      <td className="px-5 py-3 text-right font-mono tabular-nums text-xs">
-                        {ev.weight_pct != null ? `${ev.weight_pct.toFixed(2)}%` : '—'}
-                      </td>
-                      <td className="px-5 py-3 text-right font-mono tabular-nums text-xs text-text-secondary">
-                        {ev.weight_change_pct != null
-                          ? `${ev.weight_change_pct > 0 ? '+' : ''}${ev.weight_change_pct.toFixed(2)}pp`
-                          : '—'}
-                      </td>
-                      <td
-                        className={`px-5 py-3 text-right font-mono tabular-nums text-xs ${pnlColor(ev.cumulative_return_since_event_pct)}`}
-                      >
-                        {ev.cumulative_return_since_event_pct != null
-                          ? formatPct(ev.cumulative_return_since_event_pct)
-                          : '—'}
-                      </td>
-                      <td className="px-5 py-3 text-text-muted text-xs max-w-md">{ev.reason ?? '—'}</td>
-                    </tr>
-                  ))}
-                  {positionEvents.length === 0 && (
+                  {activityEvents.map((ev, i) => {
+                    const thesisName = ev.thesis_id ? thesisById.get(ev.thesis_id)?.name ?? ev.thesis_id : null;
+                    const detailParts = [
+                      ev.reason ? `Reason: ${ev.reason}` : null,
+                      thesisName ? `Thesis: ${thesisName}` : ev.thesis_id ? `Thesis id: ${ev.thesis_id}` : null,
+                      ev.price != null ? `Price: $${Number(ev.price).toFixed(2)}` : null,
+                    ].filter(Boolean);
+                    const rowTitle = detailParts.length ? detailParts.join('\n') : undefined;
+                    return (
+                      <tr key={`${ev.date}-${ev.ticker}-${i}`} className="hover:bg-white/[0.02]" title={rowTitle}>
+                        <td className="px-5 py-3 font-mono text-xs text-text-secondary">{ev.date}</td>
+                        <td className="px-5 py-3 font-semibold">{ev.ticker}</td>
+                        <td className="px-5 py-3">
+                          <Badge variant={eventBadgeVariant(ev.event)}>{ev.event}</Badge>
+                        </td>
+                        <td
+                          className="px-5 py-3 text-right font-mono tabular-nums text-xs text-text-secondary"
+                          title={ev.prev_weight_pct != null ? `Previous weight: ${ev.prev_weight_pct.toFixed(2)}%` : undefined}
+                        >
+                          {ev.prev_weight_pct != null ? `${ev.prev_weight_pct.toFixed(2)}%` : '—'}
+                        </td>
+                        <td
+                          className="px-5 py-3 text-right font-mono tabular-nums text-xs"
+                          title="Weight after this event"
+                        >
+                          {ev.weight_pct != null ? `${ev.weight_pct.toFixed(2)}%` : '—'}
+                        </td>
+                        <td className="px-5 py-3 text-right font-mono tabular-nums text-xs text-text-secondary">
+                          {ev.weight_change_pct != null
+                            ? `${ev.weight_change_pct > 0 ? '+' : ''}${ev.weight_change_pct.toFixed(2)}pp`
+                            : '—'}
+                        </td>
+                        <td
+                          className={`px-5 py-3 text-right font-mono tabular-nums text-xs ${pnlColor(ev.cumulative_return_since_event_pct)}`}
+                          title={
+                            ev.cumulative_return_since_event_pct != null
+                              ? `Return from event date to last refresh`
+                              : undefined
+                          }
+                        >
+                          {ev.cumulative_return_since_event_pct != null
+                            ? formatPct(ev.cumulative_return_since_event_pct)
+                            : '—'}
+                        </td>
+                        <td
+                          className="px-5 py-3 text-text-muted text-xs max-w-[220px] truncate"
+                          title={ev.reason ?? undefined}
+                        >
+                          {ev.reason ?? '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {activityEvents.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="text-center py-10 text-text-muted">
-                        No position events recorded yet.
+                      <td colSpan={8} className="text-center py-10 text-text-muted">
+                        No trades or rebalances in view.
                       </td>
                     </tr>
                   )}

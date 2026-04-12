@@ -118,7 +118,7 @@ function PerformanceContent() {
         const sparse = selectedComparables.filter((b) => (map[b]?.history?.length ?? 0) < 2);
         if (sparse.length) {
           setComparableError(
-            `Sparse or missing rows in price_history for this range: ${sparse.join(', ')}. Preload those tickers or widen the window.`
+            `Not enough history in this range for: ${sparse.join(', ')}. Try a wider date range or different tickers.`
           );
         } else {
           setComparableError(null);
@@ -239,11 +239,7 @@ function PerformanceContent() {
     <>
       <PageHeader title="Performance" />
       <div className="p-10 max-w-[1400px] mx-auto w-full space-y-6 max-md:p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-text-muted">
-            NAV comparables load from <code className="text-text-secondary">price_history</code> for the date range.
-            Pick symbols from the full ticker list (majors listed first). Up to {MAX_COMPARABLES} overlays.
-          </p>
+        <div className="flex flex-wrap items-center justify-end gap-3">
           <PerformanceDateRange value={range} onChange={setRange} />
         </div>
 
@@ -292,7 +288,6 @@ function PerformanceContent() {
           snaps={snaps}
           drawdownData={drawdownData}
           rollingData={rollingData}
-          positions={positions}
         />
 
         <PositionPnlTable positions={positions} />

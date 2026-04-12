@@ -137,6 +137,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
         'date,ticker,event,weight_pct,prev_weight_pct,weight_change_pct,cumulative_return_since_event_pct,price,thesis_id,reason'
       )
       .order('date', { ascending: false })
+      // Activity tab shows newest first; raise or paginate if the ledger outgrows this window.
       .limit(200),
     supabase.from('price_history_tickers').select('ticker'),
   ]);

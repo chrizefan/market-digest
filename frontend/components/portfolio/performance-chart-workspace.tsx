@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useEffect, type ComponentProps } from 'react';
+import { ChevronDown } from 'lucide-react';
 import {
   XAxis,
   YAxis,
@@ -12,13 +13,10 @@ import {
   ComposedChart,
   Line,
   Bar,
-  BarChart,
   Cell,
 } from 'recharts';
 import type { NavChartPoint, PerfChartPoint } from '@/lib/types';
-import type { Position } from '@/lib/types';
 import { PerformanceDrawdownChart } from '@/components/portfolio/performance-drawdown-chart';
-import { PerformanceCashInvestedChart } from '@/components/portfolio/performance-cash-invested-chart';
 import { PerformanceRollingChart } from '@/components/portfolio/performance-rolling-chart';
 import type { PerformanceChartView } from '@/lib/performance-series';
 import { buildDailyReturnsWithNavIndex } from '@/lib/performance-series';
@@ -44,21 +42,74 @@ function lineColorForTicker(t: string): string {
 }
 
 const VIEW_OPTIONS: { id: PerformanceChartView; label: string; hint: string }[] = [
-  { id: 'nav', label: 'NAV & comparables', hint: 'Portfolio vs any symbol in price_history' },
-  { id: 'daily_returns', label: 'Daily returns + NAV', hint: 'Bar = day %, line = cumulative NAV (100 base)' },
-  { id: 'drawdown', label: 'Drawdown', hint: 'Underwater % from running peak' },
-  { id: 'allocation', label: 'Weights (snapshot)', hint: 'Current book by ticker' },
-  { id: 'cash', label: 'Cash vs invested', hint: 'From nav history when present' },
-  { id: 'rolling', label: 'Rolling risk', hint: '21-day Sharpe & ann. vol' },
+  { id: 'nav', label: 'NAV vs comparables', hint: 'Indexed series; legend removes an overlay' },
+  { id: 'daily_returns', label: 'Daily returns', hint: 'Day-over-day % with cumulative NAV' },
+  { id: 'drawdown', label: 'Drawdown', hint: 'Peak-to-trough underwater %' },
+  { id: 'rolling', label: 'Rolling risk', hint: 'Rolling Sharpe and annualized volatility' },
 ];
+
+type LegendPayloadItem = {
+  value?: string;
+  dataKey?: string | number;
+  color?: string;
+};
 
 function NavComparableChart({
   data,
   comparableKeys,
+  onLegendRemoveComparable,
 }: {
   data: PerfChartPoint[];
   comparableKeys: string[];
+  onLegendRemoveComparable: (ticker: string) => void;
 }) {
+  const legendContent = (props: { payload?: LegendPayloadItem[] }) => {
+    const { payload } = props;
+    if (!payload?.length) return null;
+    return (
+      <div className="flex flex-wrap justify-end gap-x-4 gap-y-1 w-full pr-1">
+        {payload.map((item) => {
+          const key = String(item.dataKey ?? item.value ?? '');
+          if (key === 'portfolio') {
+            return (
+              <span
+                key="portfolio"
+                className="inline-flex items-center gap-1.5 text-[11px] text-text-muted shrink-0"
+              >
+                <span className="w-2.5 h-2.5 rounded-sm bg-[#3B82F6]/90 shrink-0" />
+                Portfolio
+              </span>
+            );
+          }
+          if (!comparableKeys.includes(key)) return null;
+          const stroke = item.color ?? lineColorForTicker(key);
+          return (
+            <button
+              key={key}
+              type="button"
+              title="Remove from chart"
+              onClick={() => onLegendRemoveComparable(key)}
+              className="inline-flex items-center gap-1.5 text-[11px] text-text-secondary hover:text-text-primary transition-colors shrink-0 cursor-pointer font-mono"
+            >
+              <svg width={18} height={8} className="shrink-0 overflow-visible" aria-hidden>
+                <line
+                  x1={0}
+                  y1={4}
+                  x2={18}
+                  y2={4}
+                  stroke={stroke}
+                  strokeWidth={2}
+                  strokeDasharray="4 3"
+                />
+              </svg>
+              {item.value ?? key}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
@@ -91,7 +142,12 @@ function NavComparableChart({
             return [`${Number(val).toFixed(2)}`, name];
           }}
         />
-        <Legend />
+        <Legend
+          verticalAlign="top"
+          align="right"
+          content={legendContent as ComponentProps<typeof Legend>['content']}
+          wrapperStyle={{ top: 0, width: '100%' }}
+        />
         <Area
           type="monotone"
           dataKey="portfolio"
@@ -120,7 +176,7 @@ function NavComparableChart({
   );
 }
 
-function ComparablePicker({
+function ComparableDropdown({
   universe,
   selected,
   maxComparables,
@@ -137,95 +193,140 @@ function ComparablePicker({
   loading: boolean;
   error: string | null;
 }) {
+  const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
+  const rootRef = useRef<HTMLDivElement>(null);
+
   const filtered = useMemo(() => {
     const qq = q.trim().toUpperCase();
     if (!qq) return universe;
     return universe.filter((t) => t.includes(qq));
   }, [universe, q]);
 
-  const list = filtered.length > 180 ? filtered.slice(0, 180) : filtered;
-  const truncated = filtered.length > 180;
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQ('');
+      }
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  const atCap = selected.length >= maxComparables;
+
+  const toggleOpen = () => {
+    if (open) {
+      setOpen(false);
+      setQ('');
+    } else {
+      setQ('');
+      setOpen(true);
+    }
+  };
 
   return (
-    <div className="space-y-3">
-      {error && <p className="text-xs text-fin-red leading-snug">{error}</p>}
-      {loading && (
-        <p className="text-xs text-text-muted animate-pulse">Loading closes from price_history…</p>
-      )}
-
-      <div>
-        <span className="text-[10px] text-text-muted uppercase tracking-wider block mb-1.5">
-          Active comparables ({selected.length}/{maxComparables})
+    <div ref={rootRef} className="flex flex-wrap items-center gap-2">
+      {selected.map((t) => (
+        <span
+          key={t}
+          className="inline-flex items-center gap-0.5 pl-2 pr-1 py-0.5 rounded-md text-[11px] font-mono font-medium border border-fin-blue/35 bg-fin-blue/10 text-fin-blue"
+        >
+          {t}
+          <button
+            type="button"
+            onClick={() => onRemove(t)}
+            className="p-0.5 rounded hover:bg-white/10 text-text-secondary hover:text-text-primary leading-none"
+            aria-label={`Remove ${t}`}
+          >
+            ×
+          </button>
         </span>
-        <div className="flex flex-wrap gap-1.5 min-h-[28px]">
-          {selected.length === 0 && (
-            <span className="text-xs text-text-muted">None — add at least one ticker below.</span>
-          )}
-          {selected.map((t) => (
-            <span
-              key={t}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border bg-fin-blue/10 text-fin-blue border-fin-blue/35"
-            >
-              {t}
-              <button
-                type="button"
-                onClick={() => onRemove(t)}
-                className="hover:text-white opacity-80 hover:opacity-100 leading-none"
-                aria-label={`Remove ${t}`}
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-      </div>
+      ))}
 
-      <div>
-        <label className="text-[10px] text-text-muted uppercase tracking-wider block mb-1">
-          Search & add from price_history
-        </label>
-        <input
-          type="search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Type ticker (e.g. SPY, QQQ)…"
-          className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border-subtle text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-fin-blue/50"
-          autoComplete="off"
-        />
-      </div>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={toggleOpen}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border border-border-subtle bg-bg-secondary text-text-secondary hover:border-fin-blue/40 hover:text-text-primary transition-colors"
+          aria-expanded={open ? 'true' : 'false'}
+          aria-haspopup="listbox"
+          aria-controls="comparable-ticker-listbox"
+        >
+          Comparables
+          <ChevronDown size={14} className={`opacity-70 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
 
-      <div className="max-h-44 overflow-y-auto rounded-lg border border-border-subtle bg-bg-secondary/40 p-1">
-        {list.length === 0 ? (
-          <p className="text-xs text-text-muted px-2 py-3 text-center">No matches.</p>
-        ) : (
-          list.map((t) => {
-            const on = selected.includes(t);
-            const atCap = selected.length >= maxComparables;
-            return (
-              <button
-                key={t}
-                type="button"
-                onClick={() => (on ? onRemove(t) : onAdd(t))}
-                disabled={!on && atCap}
-                className={`w-full text-left px-2.5 py-1.5 rounded text-xs font-mono transition-colors ${
-                  on
-                    ? 'bg-fin-blue/20 text-fin-blue'
-                    : atCap
-                      ? 'text-text-muted cursor-not-allowed opacity-50'
-                      : 'text-text-secondary hover:bg-white/[0.06] hover:text-text-primary'
-                }`}
+        {open && (
+          <div className="absolute left-0 top-full z-[60] mt-1 w-[min(100vw-2rem,18rem)] rounded-lg border border-border-subtle bg-[#141414] shadow-xl overflow-hidden">
+            <input
+              id="comparable-ticker-search"
+              type="search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search all tickers…"
+              aria-label="Search tickers in price history"
+              className="w-full px-2.5 py-2 text-sm bg-bg-secondary border-b border-border-subtle text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-inset focus:ring-fin-blue/30"
+              autoComplete="off"
+              autoFocus
+            />
+            {filtered.length === 0 ? (
+              <div
+                id="comparable-ticker-listbox"
+                role="status"
+                className="text-xs text-text-muted px-3 py-4 text-center"
               >
-                {t}
-                {on ? ' · selected' : atCap ? ' · max reached' : ''}
-              </button>
-            );
-          })
+                No matches
+              </div>
+            ) : (
+              <div
+                id="comparable-ticker-listbox"
+                role="listbox"
+                aria-label="Comparable tickers"
+                className="max-h-52 overflow-y-auto py-1"
+              >
+                {filtered.map((t) => {
+                  const on = selected.includes(t);
+                  const disabled = !on && atCap;
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      role="option"
+                      aria-selected={on ? 'true' : 'false'}
+                      disabled={disabled}
+                      onClick={() => {
+                        if (on) onRemove(t);
+                        else if (!atCap) {
+                          onAdd(t);
+                          setOpen(false);
+                        }
+                      }}
+                      className={`w-full text-left px-3 py-1.5 text-xs font-mono transition-colors ${
+                        on
+                          ? 'bg-fin-blue/15 text-fin-blue'
+                          : disabled
+                            ? 'text-text-muted opacity-40 cursor-not-allowed'
+                            : 'text-text-secondary hover:bg-white/[0.06] hover:text-text-primary'
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <p className="text-[10px] text-text-muted px-2.5 py-1.5 border-t border-border-subtle bg-bg-secondary/80">
+              Up to {maxComparables} overlays
+            </p>
+          </div>
         )}
       </div>
-      {truncated && (
-        <p className="text-[10px] text-text-muted">Showing first 180 matches — refine search to see more.</p>
-      )}
+
+      {loading && <span className="text-[11px] text-text-muted">Loading…</span>}
+      {error && !open && <span className="text-[11px] text-fin-red/90 max-w-[220px] truncate" title={error}>{error}</span>}
     </div>
   );
 }
@@ -305,43 +406,6 @@ function DailyReturnsComboChart({ snaps }: { snaps: NavChartPoint[] }) {
   );
 }
 
-function AllocationBarChart({ positions }: { positions: Position[] }) {
-  const rows = [...positions]
-    .filter((p) => (p.weight_actual ?? 0) > 0)
-    .map((p) => ({ name: p.ticker, weight: p.weight_actual ?? 0 }))
-    .sort((a, b) => b.weight - a.weight);
-  if (!rows.length) {
-    return (
-      <div className="h-full min-h-[280px] flex items-center justify-center text-text-muted text-sm">
-        No positions to chart.
-      </div>
-    );
-  }
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart
-        layout="vertical"
-        data={rows}
-        margin={{ left: 48, right: 16, top: 8, bottom: 8 }}
-      >
-        <CartesianGrid stroke="rgba(255,255,255,0.05)" horizontal={false} />
-        <XAxis type="number" domain={[0, 'auto']} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11 }} />
-        <YAxis type="category" dataKey="name" width={44} tick={{ fontSize: 11 }} />
-        <Tooltip
-          contentStyle={{
-            background: '#1a1a1a',
-            border: '1px solid #2a2a2a',
-            borderRadius: '8px',
-            fontSize: '0.85rem',
-          }}
-          formatter={(v: number) => [`${Number(v).toFixed(1)}%`, 'Weight']}
-        />
-        <Bar dataKey="weight" fill="#3B82F6" radius={[0, 4, 4, 0]} name="Weight %" />
-      </BarChart>
-    </ResponsiveContainer>
-  );
-}
-
 const MAX_COMPARABLES = 8;
 
 export function PerformanceChartWorkspace({
@@ -357,7 +421,6 @@ export function PerformanceChartWorkspace({
   snaps,
   drawdownData,
   rollingData,
-  positions,
 }: {
   view: PerformanceChartView;
   onViewChange: (v: PerformanceChartView) => void;
@@ -371,7 +434,6 @@ export function PerformanceChartWorkspace({
   snaps: NavChartPoint[];
   drawdownData: Array<{ date: string; drawdown: number }>;
   rollingData: Array<{ date: string; sharpe: number | null; volAnn: number | null }>;
-  positions: Position[];
 }) {
   return (
     <div className="glass-card p-0 overflow-hidden">
@@ -399,7 +461,7 @@ export function PerformanceChartWorkspace({
 
         {view === 'nav' && (
           <div className="pt-2 border-t border-border-subtle/80">
-            <ComparablePicker
+            <ComparableDropdown
               universe={tickerUniverse}
               selected={selectedComparables}
               maxComparables={MAX_COMPARABLES}
@@ -414,28 +476,19 @@ export function PerformanceChartWorkspace({
 
       <div className="p-4">
         {view === 'nav' && (
-          <>
-            <p className="text-text-muted text-xs mb-3 leading-relaxed">
-              Portfolio and each comparable are indexed to <strong className="text-text-secondary">100</strong> on the
-              first day of the range. Series are loaded live from <code className="text-text-secondary">price_history</code>{' '}
-              for your selection (SPY by default when available).
-            </p>
-            <div className="h-[400px] w-full">
-              <NavComparableChart data={chartData} comparableKeys={selectedComparables} />
-            </div>
-          </>
+          <div className="h-[400px] w-full">
+            <NavComparableChart
+              data={chartData}
+              comparableKeys={selectedComparables}
+              onLegendRemoveComparable={onRemoveComparable}
+            />
+          </div>
         )}
 
         {view === 'daily_returns' && (
-          <>
-            <p className="text-text-muted text-xs mb-3">
-              Green / red bars are single-day portfolio returns; blue line is cumulative NAV indexed to 100 at the
-              start of the range.
-            </p>
-            <div className="h-[400px] w-full">
-              <DailyReturnsComboChart snaps={snaps} />
-            </div>
-          </>
+          <div className="h-[400px] w-full">
+            <DailyReturnsComboChart snaps={snaps} />
+          </div>
         )}
 
         {view === 'drawdown' && (
@@ -444,28 +497,10 @@ export function PerformanceChartWorkspace({
           </div>
         )}
 
-        {view === 'allocation' && (
-          <>
-            <p className="text-text-muted text-xs mb-3">Current weights from the latest position snapshot.</p>
-            <div className="h-[400px] w-full">
-              <AllocationBarChart positions={positions} />
-            </div>
-          </>
-        )}
-
-        {view === 'cash' && (
-          <div className="h-[400px] w-full">
-            <PerformanceCashInvestedChart snaps={snaps} />
-          </div>
-        )}
-
         {view === 'rolling' && (
-          <>
-            <p className="text-text-muted text-xs mb-3">Sharpe uses Rf = 0; vol is annualized.</p>
-            <div className="h-[400px] w-full">
-              <PerformanceRollingChart data={rollingData} />
-            </div>
-          </>
+          <div className="h-[400px] w-full">
+            <PerformanceRollingChart data={rollingData} />
+          </div>
         )}
       </div>
     </div>

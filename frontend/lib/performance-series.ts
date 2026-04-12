@@ -30,19 +30,11 @@ export type PerformanceChartView =
   | 'nav'
   | 'drawdown'
   | 'daily_returns'
-  | 'allocation'
-  | 'cash'
   | 'rolling';
 
 export function parseChartViewKey(v: string | null): PerformanceChartView {
-  const allowed: PerformanceChartView[] = [
-    'nav',
-    'drawdown',
-    'daily_returns',
-    'allocation',
-    'cash',
-    'rolling',
-  ];
+  if (v === 'allocation' || v === 'cash') return 'nav';
+  const allowed: PerformanceChartView[] = ['nav', 'drawdown', 'daily_returns', 'rolling'];
   if (v && allowed.includes(v as PerformanceChartView)) return v as PerformanceChartView;
   return 'nav';
 }

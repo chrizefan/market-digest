@@ -24,13 +24,60 @@ const PALETTE = [
   '#14B8A6',
 ];
 
+function SleeveTooltipBody({
+  active,
+  payload,
+  label,
+  seriesKeys,
+  formatKey,
+  aggregateOtherNote,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload?: Record<string, unknown> }>;
+  label?: string | number;
+  seriesKeys: string[];
+  formatKey: (key: string) => string;
+  aggregateOtherNote?: boolean;
+}) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0]?.payload;
+  if (!row) return null;
+  const date = String(label ?? row.date ?? '');
+  const entries = seriesKeys
+    .map((k) => ({ k, v: Number(row[k] ?? 0) }))
+    .filter((x) => x.v > 0.004)
+    .sort((a, b) => b.v - a.v);
+  if (!entries.length) return null;
+
+  return (
+    <div className="rounded-lg border border-border-subtle bg-[#141414] px-3 py-2 text-xs shadow-lg min-w-[160px]">
+      <p className="font-medium text-text-primary mb-1.5 font-mono">{date}</p>
+      <ul className="space-y-0.5 max-h-48 overflow-y-auto">
+        {entries.map(({ k, v }) => (
+          <li key={k} className="flex justify-between gap-4 tabular-nums">
+            <span className="text-text-secondary truncate">{formatKey(k)}</span>
+            <span className="text-text-primary shrink-0">{v.toFixed(1)}%</span>
+          </li>
+        ))}
+      </ul>
+      {aggregateOtherNote && seriesKeys.includes('_other') && (
+        <p className="text-[10px] text-text-muted mt-2 leading-snug border-t border-border-subtle pt-1.5">
+          &quot;Other&quot; combines smaller positions by peak weight.
+        </p>
+      )}
+    </div>
+  );
+}
+
 interface SleeveStackedChartProps {
   data: Array<Record<string, number | string>>;
   keys: string[];
   formatKey: (key: string) => string;
+  /** Explain merged ticker bucket in tooltip footer */
+  aggregateOtherNote?: boolean;
 }
 
-export function SleeveStackedChart({ data, keys, formatKey }: SleeveStackedChartProps) {
+export function SleeveStackedChart({ data, keys, formatKey, aggregateOtherNote }: SleeveStackedChartProps) {
   if (!data.length || !keys.length) {
     return (
       <div className="h-[320px] flex items-center justify-center text-text-muted text-sm">
@@ -50,13 +97,14 @@ export function SleeveStackedChart({ data, keys, formatKey }: SleeveStackedChart
         />
         <YAxis tick={{ fill: '#71717a', fontSize: 11 }} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
         <Tooltip
-          contentStyle={{
-            background: '#1a1a1a',
-            border: '1px solid #2a2a2a',
-            borderRadius: '8px',
-            fontSize: '0.85rem',
-          }}
-          formatter={(val: number, name: string) => [`${Number(val).toFixed(1)}%`, name]}
+          content={(props) => (
+            <SleeveTooltipBody
+              {...props}
+              seriesKeys={keys}
+              formatKey={formatKey}
+              aggregateOtherNote={aggregateOtherNote}
+            />
+          )}
         />
         <Legend formatter={(value: string) => <span className="text-text-secondary text-xs">{value}</span>} />
         {keys.map((k, i) => (

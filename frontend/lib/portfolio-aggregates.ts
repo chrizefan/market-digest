@@ -1,11 +1,67 @@
 import type { Position, PositionHistoryRow, Thesis } from './types';
 
-export type SleeveStackMode = 'category' | 'thesis';
+/** Max distinct tickers in stacked history before merging the rest into `_other`. */
+export const SLEEVE_TOP_N_TICKERS = 10;
 
-function sleeveKey(row: PositionHistoryRow, mode: SleeveStackMode): string {
+export type SleeveStackMode = 'category' | 'thesis' | 'ticker';
+
+function sleeveKey(row: PositionHistoryRow, mode: Exclude<SleeveStackMode, 'ticker'>): string {
   if (mode === 'thesis') return row.thesis_id || '_unlinked';
   if (row.ticker === 'CASH') return 'cash';
   return row.category || 'uncategorized';
+}
+
+/**
+ * Per-ticker weights by date, then keep top N tickers by **peak single-day weight** over the window;
+ * remaining names roll into `_other` each day.
+ */
+function buildTickerSleeveSeries(rows: PositionHistoryRow[]): {
+  data: Array<Record<string, number | string>>;
+  keys: string[];
+} {
+  const byDate = new Map<string, Map<string, number>>();
+  for (const r of rows) {
+    const t = r.ticker || '_unknown';
+    if (!byDate.has(r.date)) byDate.set(r.date, new Map());
+    const m = byDate.get(r.date)!;
+    m.set(t, (m.get(t) ?? 0) + r.weight_pct);
+  }
+  const dates = [...byDate.keys()].sort();
+
+  const peakByTicker = new Map<string, number>();
+  for (const m of byDate.values()) {
+    for (const [ticker, w] of m) {
+      peakByTicker.set(ticker, Math.max(peakByTicker.get(ticker) ?? 0, w));
+    }
+  }
+  const ranked = [...peakByTicker.entries()].sort((a, b) => b[1] - a[1]);
+  const topSet = new Set(ranked.slice(0, SLEEVE_TOP_N_TICKERS).map(([t]) => t));
+  const hasOther = ranked.length > SLEEVE_TOP_N_TICKERS;
+
+  const keys = ranked.slice(0, SLEEVE_TOP_N_TICKERS).map(([t]) => t);
+  if (hasOther) keys.push('_other');
+
+  const data = dates.map((date) => {
+    const row: Record<string, number | string> = { date };
+    const m = byDate.get(date)!;
+    let otherSum = 0;
+    for (const [ticker, w] of m) {
+      if (topSet.has(ticker)) {
+        row[ticker] = Math.round(w * 1000) / 1000;
+      } else {
+        otherSum += w;
+      }
+    }
+    if (hasOther) {
+      row._other = Math.round(otherSum * 1000) / 1000;
+    }
+    for (const k of keys) {
+      if (row[k] === undefined) row[k] = 0;
+    }
+    return row;
+  });
+
+  return { data, keys };
 }
 
 /** Stacked % weights by date for Recharts (one row per date, dynamic keys). */
@@ -13,6 +69,10 @@ export function buildSleeveStackSeries(
   rows: PositionHistoryRow[],
   mode: SleeveStackMode
 ): { data: Array<Record<string, number | string>>; keys: string[] } {
+  if (mode === 'ticker') {
+    return buildTickerSleeveSeries(rows);
+  }
+
   const byDate = new Map<string, Map<string, number>>();
   const allKeys = new Set<string>();
   for (const r of rows) {
@@ -37,6 +97,11 @@ export function buildSleeveStackSeries(
     return row;
   });
   return { data, keys };
+}
+
+export function tickerStackLabel(key: string): string {
+  if (key === '_other') return 'Other';
+  return key;
 }
 
 export function thesisStackLabel(key: string, theses: Thesis[]): string {
