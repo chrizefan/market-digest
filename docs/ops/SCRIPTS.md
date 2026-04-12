@@ -6,6 +6,7 @@ Operator truth for **when to run what** remains [`RUNBOOK.md`](../../RUNBOOK.md)
 
 | Script | Role |
 |--------|------|
+| [`scripts/verify-supabase-migrations.sh`](../../scripts/verify-supabase-migrations.sh) | CI/local: `supabase/config.toml` exists, `supabase/migrations/*.sql` naming and numeric order |
 | [`scripts/run_db_first.py`](../../scripts/run_db_first.py) | After publish: validate optional `data/agent-cache/daily/<date>/**/*.json` → **`refresh_performance_metrics.py`** → `execute_at_open.py` (unless `--skip-execute`) → **`validate_db_first.py`** |
 | [`scripts/validate_db_first.py`](../../scripts/validate_db_first.py) | Supabase row checks (`--mode full\|research\|pm`) |
 | [`scripts/verify_supabase_canonical.py`](../../scripts/verify_supabase_canonical.py) | Read-only: no `documents.document_key` containing legacy `outputs/`; optional `--date` requires `daily_snapshots` row |

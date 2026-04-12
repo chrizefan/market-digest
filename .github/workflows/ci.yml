@@ -70,6 +70,20 @@ jobs:
       - name: Check database.types.ts is in sync with migrations
         run: bash scripts/check-types-sync.sh
 
+  supabase-migrations:
+    name: Supabase migrations (lint + local apply)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Verify migration files and config.toml
+        run: bash scripts/verify-supabase-migrations.sh
+      - name: Start local stack and apply all migrations
+        run: supabase db start && supabase db reset --yes
+
   frontmatter:
     name: Skill Frontmatter Validation
     runs-on: ubuntu-latest
