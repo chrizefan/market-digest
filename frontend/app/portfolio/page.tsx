@@ -17,7 +17,6 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
-  BookOpen,
   Layers,
   History,
   Activity,
@@ -105,7 +104,7 @@ function bucketAllocationsForPie(items: AllocationDatum[]): PieSliceDatum[] {
   return [...head.map(({ name, value }) => ({ name, value })), { name: 'Other', value: other, tooltipExtra }];
 }
 
-type TabId = 'summary' | 'thesis' | 'history' | 'activity';
+type TabId = 'summary' | 'history' | 'activity';
 
 const PM_DOC_ORDER = [
   'deliberation.md',
@@ -154,7 +153,7 @@ function thesisNames(ids: string[], thesisById: Map<string, Thesis>): string {
     .join(', ');
 }
 
-const VALID_TABS: TabId[] = ['summary', 'thesis', 'history', 'activity'];
+const VALID_TABS: TabId[] = ['summary', 'history', 'activity'];
 
 function aggregateRunKindForPortfolioDocs(docsOnDate: Doc[]): MiniCalendarRunKind {
   let sawBaseline = false;
@@ -402,6 +401,66 @@ function PortfolioPageContent() {
     return defaultHistoryDate;
   }, [dateParam, historyDateSet, defaultHistoryDate]);
 
+  const thesisPositionsForHistoryDate = useMemo((): Pick<
+    Position,
+    'weight_actual' | 'thesis_ids'
+  >[] => {
+    if (!effHistoryDate) return [];
+    return positionHistory
+      .filter((r) => r.date === effHistoryDate)
+      .map((r) => ({
+        weight_actual: r.weight_pct,
+        thesis_ids: r.thesis_id ? [r.thesis_id] : [],
+      }));
+  }, [effHistoryDate, positionHistory]);
+
+  const byThesisWeightForHistoryDate = useMemo(
+    () => aggregateWeightByThesis(thesisPositionsForHistoryDate),
+    [thesisPositionsForHistoryDate]
+  );
+
+  const thesisBookRowsForHistoryDate = useMemo(() => {
+    const rows: { id: string; thesis: Thesis | null; weight: number }[] = [];
+    for (const t of theses) {
+      rows.push({ id: t.id, thesis: t, weight: byThesisWeightForHistoryDate.get(t.id) ?? 0 });
+    }
+    const unlinked = byThesisWeightForHistoryDate.get('_unlinked') ?? 0;
+    if (unlinked > 0.005) {
+      rows.push({ id: '_unlinked', thesis: null, weight: unlinked });
+    }
+    return rows.sort((a, b) => b.weight - a.weight);
+  }, [theses, byThesisWeightForHistoryDate]);
+
+  const thesisBarForChartForHistoryDate = useMemo(
+    () =>
+      thesisBookRowsForHistoryDate
+        .filter((r) => r.weight > 0)
+        .map((r) => ({
+          name: r.id === '_unlinked' ? 'Unlinked' : r.thesis?.name ?? r.id,
+          value: r.weight,
+        })),
+    [thesisBookRowsForHistoryDate]
+  );
+
+  const researchDocKeysOnHistoryDate = useMemo(() => {
+    const m = new Map<string, boolean>();
+    const docs = data?.docs;
+    if (!effHistoryDate || !docs) return m;
+    for (const d of docs) {
+      if (d.date === effHistoryDate) m.set(d.path, true);
+    }
+    return m;
+  }, [data, effHistoryDate]);
+
+  const researchStripLinksForHistoryDate = useMemo(() => {
+    if (!effHistoryDate) return [] as { label: string; docKey: string }[];
+    const out: { label: string; docKey: string }[] = [];
+    if (researchDocKeysOnHistoryDate.has('digest')) out.push({ label: 'Digest', docKey: 'digest' });
+    const mte = `market-thesis-exploration/${effHistoryDate}.json`;
+    if (researchDocKeysOnHistoryDate.has(mte)) out.push({ label: 'Market thesis', docKey: mte });
+    return out;
+  }, [effHistoryDate, researchDocKeysOnHistoryDate]);
+
   const portfolioHistoryRunKindByDate = useMemo(() => {
     const m = new Map<string, MiniCalendarRunKind>();
     const docs = data?.docs ?? [];
@@ -431,26 +490,31 @@ function PortfolioPageContent() {
     Boolean(dateParam && historyDateSet.has(dateParam) && defaultHistoryDate && dateParam !== defaultHistoryDate);
 
   useEffect(() => {
-    if (searchParams.get('tab') !== 'pm_process') return;
+    const rawTab = searchParams.get('tab');
+    if (rawTab !== 'pm_process' && rawTab !== 'thesis') return;
     const p = new URLSearchParams(searchParams.toString());
     p.set('tab', 'history');
-    if (!p.get('date') && data?.docs && lastUpdated) {
-      const dk = p.get('docKey');
-      if (dk) {
-        const matches = data.docs
-          .filter((d) => d.path === dk && getDocLibraryTier(d) === 'portfolio')
-          .sort((a, b) => b.date.localeCompare(a.date));
-        p.set('date', matches[0]?.date ?? lastUpdated);
-      } else {
-        p.set('date', lastUpdated);
+    if (rawTab === 'pm_process') {
+      if (!p.get('date') && data?.docs && lastUpdated) {
+        const dk = p.get('docKey');
+        if (dk) {
+          const matches = data.docs
+            .filter((d) => d.path === dk && getDocLibraryTier(d) === 'portfolio')
+            .sort((a, b) => b.date.localeCompare(a.date));
+          p.set('date', matches[0]?.date ?? lastUpdated);
+        } else {
+          p.set('date', lastUpdated);
+        }
       }
+    } else if (rawTab === 'thesis' && !p.get('date') && defaultHistoryDate) {
+      p.set('date', defaultHistoryDate);
     }
     router.replace(`${pathname}?${p.toString()}`, { scroll: false });
-  }, [searchParams, pathname, router, data?.docs, lastUpdated]);
+  }, [searchParams, pathname, router, data?.docs, lastUpdated, defaultHistoryDate]);
 
   useEffect(() => {
     const raw = searchParams.get('tab');
-    const mapped = raw === 'pm_process' ? 'history' : raw;
+    const mapped = raw === 'pm_process' || raw === 'thesis' ? 'history' : raw;
     const t = mapped as TabId | null;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sync tab from URL
     if (t && VALID_TABS.includes(t)) setTab(t);
@@ -552,8 +616,7 @@ function PortfolioPageContent() {
 
   const tabs: { id: TabId; label: string; icon: typeof Layers }[] = [
     { id: 'summary', label: 'Summary', icon: Layers },
-    { id: 'thesis', label: 'Thesis', icon: BookOpen },
-    { id: 'history', label: 'History', icon: History },
+    { id: 'history', label: 'History & thesis', icon: History },
     { id: 'activity', label: 'Activity', icon: Activity },
   ];
 
@@ -1145,156 +1208,6 @@ function PortfolioPageContent() {
           </>
         )}
 
-        {tab === 'thesis' && (
-          <div className="space-y-6">
-            <div className="glass-card p-6">
-              <SectionTitle>Weight by thesis (current book)</SectionTitle>
-              <div className="h-[280px]">
-                {thesisBarForChart.length === 0 ? (
-                  <p className="text-text-muted text-sm text-center py-12">No thesis-linked weights</p>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={thesisBarForChart} margin={{ left: 8, right: 16, top: 8, bottom: 48 }}>
-                      <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fill: '#71717a', fontSize: 10 }}
-                        interval={0}
-                        angle={-24}
-                        textAnchor="end"
-                        height={56}
-                      />
-                      <YAxis tick={{ fill: '#71717a', fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
-                      <Tooltip
-                        contentStyle={{
-                          background: '#1a1a1a',
-                          border: '1px solid #2a2a2a',
-                          borderRadius: '8px',
-                          fontSize: '0.85rem',
-                        }}
-                        formatter={(val: number) => [`${Number(val).toFixed(1)}%`, 'Weight']}
-                      />
-                      <Bar dataKey="value" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </div>
-
-            <div className="glass-card p-0 overflow-hidden">
-              <div className="px-5 py-4 border-b border-border-subtle bg-bg-secondary">
-                <h3 className="text-sm font-semibold">Thesis tracker</h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm min-w-[720px]">
-                  <thead>
-                    <tr className="text-text-muted text-xs uppercase tracking-wider border-b border-border-subtle">
-                      <th className="text-left px-5 py-3">Thesis</th>
-                      <th className="text-right px-5 py-3">Weight</th>
-                      <th className="text-left px-5 py-3">Vehicle</th>
-                      <th className="text-left px-5 py-3">Status</th>
-                      <th className="text-left px-5 py-3">Invalidation</th>
-                      <th className="px-5 py-3 w-10" aria-label="Expand" />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border-subtle">
-                    {thesisBookRows.map((row) => {
-                      const isOpen = expandedThesisId === row.id;
-                      const label = row.id === '_unlinked' ? 'Unlinked positions' : row.thesis?.name ?? row.id;
-                      return (
-                        <Fragment key={row.id}>
-                          <tr
-                            onClick={() => setExpandedThesisId(isOpen ? null : row.id)}
-                            className="hover:bg-white/[0.02] cursor-pointer transition-colors"
-                          >
-                            <td className="px-5 py-3 font-medium">{label}</td>
-                            <td className="px-5 py-3 text-right font-mono tabular-nums font-semibold">
-                              {row.weight.toFixed(1)}%
-                            </td>
-                            <td className="px-5 py-3 font-mono text-text-secondary text-xs">
-                              {row.thesis?.vehicle ?? '—'}
-                            </td>
-                            <td className="px-5 py-3 text-text-secondary text-xs">
-                              {row.thesis?.status ?? '—'}
-                            </td>
-                            <td className="px-5 py-3 text-text-muted text-xs max-w-[200px] truncate" title={row.thesis?.invalidation ?? undefined}>
-                              {row.thesis?.invalidation ?? '—'}
-                            </td>
-                            <td className="px-5 py-3 text-text-muted">
-                              {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                            </td>
-                          </tr>
-                          {isOpen && (
-                            <tr className="bg-white/[0.02]">
-                              <td colSpan={6} className="px-6 py-5 border-t border-border-subtle">
-                                {row.id === '_unlinked' ? (
-                                  <p className="text-text-muted text-sm leading-relaxed">
-                                    Positions not linked to a named thesis in the latest snapshot.
-                                  </p>
-                                ) : (
-                                  <>
-                                    <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
-                                      Summary
-                                    </h4>
-                                    <p className="text-text-secondary text-sm leading-relaxed whitespace-pre-wrap">
-                                      {row.thesis?.notes?.trim() || 'No summary in snapshot.'}
-                                    </p>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
-                                      <div className="rounded-lg border border-border-subtle bg-bg-secondary/80 p-3">
-                                        <span className="text-[10px] text-text-muted uppercase tracking-wider">Vehicle</span>
-                                        <p className="text-sm mt-1">{row.thesis?.vehicle ?? '—'}</p>
-                                      </div>
-                                      <div className="rounded-lg border border-border-subtle bg-bg-secondary/80 p-3">
-                                        <span className="text-[10px] text-text-muted uppercase tracking-wider">Status</span>
-                                        <p className="text-sm mt-1">{row.thesis?.status ?? '—'}</p>
-                                      </div>
-                                      <div className="rounded-lg border border-border-subtle bg-bg-secondary/80 p-3">
-                                        <span className="text-[10px] text-text-muted uppercase tracking-wider">Invalidation</span>
-                                        <p className="text-sm mt-1 leading-snug">{row.thesis?.invalidation ?? '—'}</p>
-                                      </div>
-                                    </div>
-                                  </>
-                                )}
-                                {researchStripLinks.length > 0 && lastUpdated && (
-                                  <div className="mt-5 flex flex-wrap items-center gap-2">
-                                    <span className="text-xs text-text-muted">Research</span>
-                                    {researchStripLinks.map((l) => (
-                                      <Link
-                                        key={l.docKey}
-                                        href={`/library?date=${encodeURIComponent(String(lastUpdated))}&docKey=${encodeURIComponent(l.docKey)}`}
-                                        className="text-xs px-2.5 py-1 rounded-md bg-fin-blue/10 text-fin-blue hover:bg-fin-blue/20 transition-colors"
-                                      >
-                                        {l.label}
-                                      </Link>
-                                    ))}
-                                    <Link
-                                      href="/library"
-                                      className="text-xs text-fin-blue/80 hover:text-fin-blue hover:underline"
-                                    >
-                                      Open library
-                                    </Link>
-                                  </div>
-                                )}
-                              </td>
-                            </tr>
-                          )}
-                        </Fragment>
-                      );
-                    })}
-                    {thesisBookRows.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="text-center py-8 text-text-muted">
-                          No theses in latest snapshot
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
         {tab === 'history' && (
           <div className="flex gap-6 max-lg:flex-col">
             <div className="w-56 shrink-0 space-y-4 max-lg:w-full max-lg:flex max-lg:gap-4 max-lg:flex-wrap">
@@ -1375,6 +1288,184 @@ function PortfolioPageContent() {
                 </div>
               </div>
 
+              <div className="space-y-4">
+                {effHistoryDate && lastUpdated && effHistoryDate !== lastUpdated ? (
+                  <p className="text-xs text-text-muted px-1">
+                    Weights below are for{' '}
+                    <span className="font-mono text-text-secondary">{effHistoryDate}</span>. Thesis names,
+                    notes, and metadata are from the latest digest snapshot (
+                    <span className="font-mono text-text-secondary">{lastUpdated}</span>).
+                  </p>
+                ) : null}
+                <div className="glass-card p-6">
+                  <SectionTitle className="mb-1">Weight by thesis</SectionTitle>
+                  <p className="text-xs text-text-muted mb-4">
+                    Book aggregated from position history for{' '}
+                    <span className="font-mono text-text-secondary">{effHistoryDate ?? '—'}</span>.
+                  </p>
+                  <div className="h-[280px]">
+                    {thesisBarForChartForHistoryDate.length === 0 ? (
+                      <p className="text-text-muted text-sm text-center py-12">
+                        No thesis-linked weights on this date
+                      </p>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={thesisBarForChartForHistoryDate}
+                          margin={{ left: 8, right: 16, top: 8, bottom: 48 }}
+                        >
+                          <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+                          <XAxis
+                            dataKey="name"
+                            tick={{ fill: '#71717a', fontSize: 10 }}
+                            interval={0}
+                            angle={-24}
+                            textAnchor="end"
+                            height={56}
+                          />
+                          <YAxis tick={{ fill: '#71717a', fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+                          <Tooltip
+                            contentStyle={{
+                              background: '#1a1a1a',
+                              border: '1px solid #2a2a2a',
+                              borderRadius: '8px',
+                              fontSize: '0.85rem',
+                            }}
+                            formatter={(val: number) => [`${Number(val).toFixed(1)}%`, 'Weight']}
+                          />
+                          <Bar dataKey="value" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </div>
+
+                <div className="glass-card p-0 overflow-hidden">
+                  <div className="px-5 py-4 border-b border-border-subtle bg-bg-secondary">
+                    <h3 className="text-sm font-semibold">Thesis tracker</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm min-w-[720px]">
+                      <thead>
+                        <tr className="text-text-muted text-xs uppercase tracking-wider border-b border-border-subtle">
+                          <th className="text-left px-5 py-3">Thesis</th>
+                          <th className="text-right px-5 py-3">Weight</th>
+                          <th className="text-left px-5 py-3">Vehicle</th>
+                          <th className="text-left px-5 py-3">Status</th>
+                          <th className="text-left px-5 py-3">Invalidation</th>
+                          <th className="px-5 py-3 w-10" aria-label="Expand" />
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border-subtle">
+                        {thesisBookRowsForHistoryDate.map((row) => {
+                          const isOpen = expandedThesisId === row.id;
+                          const label =
+                            row.id === '_unlinked' ? 'Unlinked positions' : row.thesis?.name ?? row.id;
+                          return (
+                            <Fragment key={row.id}>
+                              <tr
+                                onClick={() => setExpandedThesisId(isOpen ? null : row.id)}
+                                className="hover:bg-white/[0.02] cursor-pointer transition-colors"
+                              >
+                                <td className="px-5 py-3 font-medium">{label}</td>
+                                <td className="px-5 py-3 text-right font-mono tabular-nums font-semibold">
+                                  {row.weight.toFixed(1)}%
+                                </td>
+                                <td className="px-5 py-3 font-mono text-text-secondary text-xs">
+                                  {row.thesis?.vehicle ?? '—'}
+                                </td>
+                                <td className="px-5 py-3 text-text-secondary text-xs">
+                                  {row.thesis?.status ?? '—'}
+                                </td>
+                                <td
+                                  className="px-5 py-3 text-text-muted text-xs max-w-[200px] truncate"
+                                  title={row.thesis?.invalidation ?? undefined}
+                                >
+                                  {row.thesis?.invalidation ?? '—'}
+                                </td>
+                                <td className="px-5 py-3 text-text-muted">
+                                  {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                                </td>
+                              </tr>
+                              {isOpen && (
+                                <tr className="bg-white/[0.02]">
+                                  <td colSpan={6} className="px-6 py-5 border-t border-border-subtle">
+                                    {row.id === '_unlinked' ? (
+                                      <p className="text-text-muted text-sm leading-relaxed">
+                                        Positions on this date are not linked to a named thesis in position
+                                        history.
+                                      </p>
+                                    ) : (
+                                      <>
+                                        <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
+                                          Summary
+                                        </h4>
+                                        <p className="text-text-secondary text-sm leading-relaxed whitespace-pre-wrap">
+                                          {row.thesis?.notes?.trim() || 'No summary in snapshot.'}
+                                        </p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+                                          <div className="rounded-lg border border-border-subtle bg-bg-secondary/80 p-3">
+                                            <span className="text-[10px] text-text-muted uppercase tracking-wider">
+                                              Vehicle
+                                            </span>
+                                            <p className="text-sm mt-1">{row.thesis?.vehicle ?? '—'}</p>
+                                          </div>
+                                          <div className="rounded-lg border border-border-subtle bg-bg-secondary/80 p-3">
+                                            <span className="text-[10px] text-text-muted uppercase tracking-wider">
+                                              Status
+                                            </span>
+                                            <p className="text-sm mt-1">{row.thesis?.status ?? '—'}</p>
+                                          </div>
+                                          <div className="rounded-lg border border-border-subtle bg-bg-secondary/80 p-3">
+                                            <span className="text-[10px] text-text-muted uppercase tracking-wider">
+                                              Invalidation
+                                            </span>
+                                            <p className="text-sm mt-1 leading-snug">
+                                              {row.thesis?.invalidation ?? '—'}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </>
+                                    )}
+                                    {researchStripLinksForHistoryDate.length > 0 && effHistoryDate ? (
+                                      <div className="mt-5 flex flex-wrap items-center gap-2">
+                                        <span className="text-xs text-text-muted">Research</span>
+                                        {researchStripLinksForHistoryDate.map((l) => (
+                                          <Link
+                                            key={l.docKey}
+                                            href={`/library?date=${encodeURIComponent(effHistoryDate)}&docKey=${encodeURIComponent(l.docKey)}`}
+                                            className="text-xs px-2.5 py-1 rounded-md bg-fin-blue/10 text-fin-blue hover:bg-fin-blue/20 transition-colors"
+                                          >
+                                            {l.label}
+                                          </Link>
+                                        ))}
+                                        <Link
+                                          href="/library"
+                                          className="text-xs text-fin-blue/80 hover:text-fin-blue hover:underline"
+                                        >
+                                          Open library
+                                        </Link>
+                                      </div>
+                                    ) : null}
+                                  </td>
+                                </tr>
+                              )}
+                            </Fragment>
+                          );
+                        })}
+                        {thesisBookRowsForHistoryDate.length === 0 && (
+                          <tr>
+                            <td colSpan={6} className="text-center py-8 text-text-muted">
+                              No theses in latest snapshot
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
               <div className="glass-card p-0 overflow-hidden">
                 <div className="px-5 py-4 border-b border-border-subtle bg-bg-secondary">
                   <div className="flex flex-wrap items-center gap-2">
@@ -1389,7 +1480,8 @@ function PortfolioPageContent() {
                     !portfolioDocDates.has(effHistoryDate) &&
                     positionHistoryDates.has(effHistoryDate) ? (
                       <span className="block mt-1">
-                        No PM documents on this date; sleeve weights above still reflect this snapshot.
+                        No PM documents on this date; sleeve and thesis sections above still reflect this
+                        snapshot.
                       </span>
                     ) : null}
                   </p>

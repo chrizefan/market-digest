@@ -116,8 +116,10 @@ export function categoryStackLabel(key: string): string {
   return key.replace(/_/g, ' ');
 }
 
-/** Current weight % per thesis_id from live positions. */
-export function aggregateWeightByThesis(positions: Position[]): Map<string, number> {
+/** Weight % per thesis_id from holdings (live positions or a single history slice). */
+export function aggregateWeightByThesis(
+  positions: Pick<Position, 'weight_actual' | 'thesis_ids'>[]
+): Map<string, number> {
   const m = new Map<string, number>();
   for (const p of positions) {
     const ids = p.thesis_ids?.length ? p.thesis_ids : ['_unlinked'];
