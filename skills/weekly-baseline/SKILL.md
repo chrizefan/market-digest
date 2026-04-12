@@ -1,18 +1,28 @@
 ---
 name: weekly-baseline
 description: >
-  Sunday weekly baseline run. Full 9-phase pipeline that anchors the week for Mon-Sat deltas.
-  Triggers on Sundays (see scripts/new-day.sh → run_db_first), or when the user says "run weekly baseline",
-  "baseline run", or "full baseline". In DB-first mode, produces a fully materialized digest
-  snapshot JSON and publishes it to Supabase (no data/agent-cache/daily writes). Adds a Week Setup preamble
-  reviewing prior week evolution and sets the analytical frame for the upcoming week.
+  Sunday weekly anchor run. Same 9-phase structure as the orchestrator, but authoring is a comprehensive
+  weekly review: carry forward last week's material with selective rewrites, append-first enhancements,
+  and a forward-looking frame for the week ahead—not a blank-slate rewrite. Produces run_type=baseline
+  snapshot JSON in Supabase for Mon-Sat delta chaining.
 ---
 
 # digiquant-atlas — Weekly Baseline Skill
 
-This is the Sunday full-run skill. It executes the complete 9-phase pipeline with two additions:
-1. **Week Setup Preamble** — reviews last week's evolution before any analysis
-2. **Week Ahead Calendar** — sets the analytical frame for Mon–Sat deltas
+## Digest = research close-out
+
+The materialized **`digest`** (`documents.digest` + `daily_snapshots`) is the **final research deliverable** for the anchor date — the **single overview** synthesizing all sub-segments. It is produced at the end of this pipeline (orchestrator **Phase 7** + publish), **not** by the portfolio ([`cowork/tasks/portfolio-pm-rebalance.md`](../../cowork/tasks/portfolio-pm-rebalance.md)) task.
+
+## What Sunday is (and is not)
+
+- **Is:** A **weekly anchor** in the database (`run_type: baseline`, full materialized digest JSON for this date) plus a **phased, comprehensive review** of the prior week and a **forward-looking** setup for the week ahead.
+- **Is not:** A mandate to **discard** last week’s research and regenerate every paragraph from zero. Treat the latest prior `daily_snapshots.snapshot` and published `documents` as **starting material**—**compress** stale parts, **append** new evidence and levels, **rewrite selectively** where the thesis or regime was wrong.
+
+**Token posture:** Prefer **short delta-style updates** inside each phase when a segment is unchanged (e.g. “No material change vs Saturday; carry forward with one line on levels”), then **one deeper pass** only where last week’s narrative is wrong, thin, or contradicted by data. **Bias to `append`** in narrative fields; use **replace** for wrong facts, outdated levels, or regime labels that must be exact.
+
+On top of the orchestrator flow, this skill adds:
+1. **Week Setup Preamble** — full review of last week + calendar for next week  
+2. **Week Ahead** — explicit forward bias and triggers Mon–Sat deltas will lean on  
 
 ---
 
@@ -20,9 +30,9 @@ This is the Sunday full-run skill. It executes the complete 9-phase pipeline wit
 
 Before the standard Pre-Flight, complete the following steps:
 
-### Step 1: Prior Week Review
-Read these sources (in order) and internalize without summarizing to the user:
-- **Last materialized digest (context only):** Supabase `daily_snapshots` row for the **latest `date` strictly before** this baseline run (e.g. last Saturday or last trading day). Use its `snapshot` JSON as **read-only** continuity — you will still produce a **fresh** full baseline and manifest; explicitly overturn prior errors where needed.
+### Step 1: Prior Week Review (carry-forward source)
+Read these sources (in order) and internalize without dumping them verbatim to the user:
+- **Last materialized digest (primary carry-forward source):** Supabase `daily_snapshots` row for the **latest `date` strictly before** this baseline run (e.g. last Saturday or last trading day). Use its `snapshot` JSON as the **base text and structure** for this Sunday’s output: **keep** what still holds, **tighten** verbose stretches, **append** this weekend’s developments and forward-looking hooks, **rewrite** sections that were wrong or are now misleading.
 - Supabase `documents` for `document_key` matching `weekly/{{LAST_WEEK_LABEL}}.json` — if present
 - `config/portfolio.json` — current positions and last proposed_positions (note tickers only for now; actual weights reviewed in Phase 7D)
 
@@ -47,13 +57,22 @@ MEDIUM IMPACT: [events that could shift single segments]
 LOW IMPACT: [routine releases unlikely to move the needle]
 ```
 
-Announce to user: "Week Setup complete. Prior week reviewed. Starting full baseline pipeline (Phase 1 of 9)."
+Announce to user: "Week Setup complete. Prior week reviewed. Starting weekly anchor pipeline (Phase 1 of 9) — carry-forward, selective rewrites, week-ahead bias."
 
 ---
 
-## Full Pipeline
+## Full Pipeline (weekly review + enhancement)
 
-Follow ALL 9 phases from `skills/orchestrator/SKILL.md` exactly.
+Follow **all 9 phases** from `skills/orchestrator/SKILL.md` in order, but apply this **Sunday authoring rule** in every phase:
+
+| Do | Avoid |
+|----|--------|
+| Start from **last week’s published outputs** (digest snapshot + segment docs if present) | Blank-slate prose when prior text is still valid |
+| **Append** new data, catalysts, and “what we watch next week” | Re-stating unchanged macro/crypto/sector stories in full |
+| **Replace** only wrong numbers, dead theses, or contradicted regime calls | Cosmetic rephrasing of entire sections |
+| End each major block with a **forward-looking** line (what would change your mind Mon–Sat) | Pure backward-looking recap with no link to next week |
+
+Phases still run so nothing is skipped; **depth** scales with how much that segment moved vs Saturday’s state. Quiet segments can be **compressed** to a short carry-forward note plus level updates.
 
 Return here after Phase 7 (digest synthesis) to add the Week Ahead Setup section, then publish the DB snapshot.
 
@@ -62,7 +81,7 @@ Publish **`research_baseline_manifest`** for the week (schema: `templates/schema
 - `document_key`: `research-manifest/{{BASELINE_DATE}}.json` (or your team’s stable convention).
 - `week_anchor_date` / `baseline_digest_date`: align with this Sunday’s materialized digest date.
 - `documents[]`: list every research artifact key you will maintain Mon–Sat (phase outputs, `sectors/{sector}/{{DATE}}.json`, etc.).
-- Optional `prior_context_note`: what you are carrying forward vs explicitly reversing vs last week’s digest.
+- Optional `prior_context_note`: what you are **carrying forward**, **compressing**, **appending**, or **explicitly reversing** vs last week’s digest (helps Mon–Sat delta authors).
 
 Validate + `publish_document.py --payload -` with `--doc-type-label "Research Baseline Manifest"`.
 
@@ -122,6 +141,7 @@ All items from the standard Session Completion Checklist (`skills/orchestrator/S
 
 - [ ] Prior week rollup reviewed in Supabase or `config/portfolio.json` loaded
 - [ ] Week Ahead Calendar scanned (high-impact events identified)
+- [ ] Sunday output **builds on** prior `daily_snapshots` / docs (not an unnecessary full rewrite); forward-looking bias explicit
 - [ ] Week Ahead Setup captured **inside** the digest snapshot JSON (narrative fields)
 - [ ] Full digest snapshot JSON produced (schema `templates/digest-snapshot-schema.json`)
 - [ ] Snapshot published to Supabase via `scripts/materialize_snapshot.py --snapshot-json ...`

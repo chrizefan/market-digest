@@ -1,11 +1,10 @@
 ---
 name: portfolio-manager
 description: >
-  Portfolio construction and rebalance decision skill. Translates analyst outputs + digest research
-  into concrete position sizing and rebalance actions. Uses a three-phase anti-anchoring flow:
-  Phase A (collect blinded analyst views) → Phase B (clean-slate portfolio) → Phase C (compare vs
-  current, produce rebalance decisions). Triggers via orchestrator Phase 7C/7D, or
-  standalone: "rebalance check", "review portfolio", "should I change anything", "what should I own".
+  Portfolio construction and rebalance decision skill. In thesis-first Track B, ingests per-ticker
+  deliberation transcripts + optional pm_allocation_memo, then clean-slate portfolio (Phase B) and
+  compare vs current (Phase C). Legacy path: run deliberation inside Phase A. Triggers: orchestrator
+  Phase 7D, daily-delta Phase 7D, standalone rebalance review.
 ---
 
 # Portfolio Manager Skill
@@ -34,33 +33,39 @@ Load the following (already in session context if running after synthesis):
 2. `config/investment-profile.md` — risk tolerance (§4), asset preferences (§5), ETF universe (§5D), regime playbook (§6), benchmarks (§8)
 3. Supabase digest (`documents` where `document_key='digest'`) — for cross-asset synthesis
 4. **Research library** — `docs/research/LIBRARY.md`. Load before Phase B. Apply the Black-Litterman conviction-weight table (Section 4.2) for position sizing. Run the Ilmanen 4-quadrant regime check (Section 5.4) before constructing the clean-slate portfolio. Use Kelly ceiling check (Section 4.3) to validate no position exceeds conservative fraction.
+5. When published for `{{DATE}}`: **`deliberation_session_index`** (`deliberation-transcript-index/{{DATE}}.json`) and each listed per-ticker **`deliberation_transcript`**
+6. When published: **`pm_allocation_memo`** (`pm-allocation-memo/{{DATE}}.json`) — turnover discipline and target-weight rationale **after** deliberation ([`cowork/tasks/portfolio-pm-rebalance.md`](../../cowork/tasks/portfolio-pm-rebalance.md) Phase 6)
+7. Optional: **`market_thesis_exploration`**, **`thesis_vehicle_map`** — context for thesis IDs in notes
 
-**Do NOT load `config/portfolio.json` yet.** Portfolio blindness is maintained through Phase B.
+**Do NOT load `config/portfolio.json` yet** (except constraint fields if you already need them in Phase B — prefer `investment-profile` for limits). Portfolio **weights** stay blind through Phase B.
 
 ---
 
-## Phase A — Analyst-PM Deliberation (Blinded)
+## Phase A — Deliberation outputs (ingest) or run deliberation (legacy)
 
-> Phase A uses the multi-round deliberation protocol for higher-conviction outputs.
-> Analysts present → PM challenges weak positions → Analysts defend/revise → PM decides.
+### A1 — Thesis-first path (preferred)
 
-Follow `skills/deliberation/SKILL.md` completely.
+When **`deliberation_session_index`** exists for `{{DATE}}`:
 
-The deliberation produces (JSON-first, published to Supabase `documents.payload`):
-- Individual analyst reports (`asset_recommendation` JSON)
-- Deliberation transcript (`deliberation_transcript` JSON)
-- A **resolved summary table** with final weights and biases
+1. Load each **`body.entries[].document_key`** payload (per-ticker `deliberation_transcript`).
+2. Merge **`body.final_decisions`** across transcripts into one **resolved summary table** (one row per ticker; if duplicates, use the transcript with latest `meta.converged === true` or the highest round count).
+3. Load **`pm_allocation_memo`** when present — use **`body.target_weights_rationale`** and **`body.turnover_discipline`** as **binding guidance** for Phase B sizing: the clean-slate book must **not contradict** deliberation outcomes unless you document an explicit override in the rebalance JSON notes.
 
-The resolved summary table is the authoritative input to Phase B below.
+Announce: "Deliberation ingest complete. [N] tickers from session index."
 
-Announce after completing: "Deliberation complete. [N] positions resolved, [M] challenged, [K] revised."
+### A2 — Legacy path
+
+If **no** session index exists:
+
+- Follow `skills/deliberation/SKILL.md` completely (single-file or per-ticker outputs).
+- Or ingest a single legacy transcript `deliberation-transcript/{{DATE}}.json` if present.
 
 ---
 
 ## Phase B — Clean-Slate Portfolio Construction
 
-> You are building the ideal portfolio from scratch. Do NOT reference the current portfolio.
-> The only inputs are: analyst outputs, macro regime, thesis register, and risk constraints.
+> You are building the ideal portfolio from scratch. Do NOT reference the current portfolio **weights**.
+> Inputs: merged deliberation `final_decisions`, **`pm_allocation_memo`** (when present), macro regime, thesis context, and risk constraints.
 
 ### Step B1: Theme Aggregation
 Group analyst recommendations by theme bucket. Check theme-level constraints:
@@ -68,7 +73,7 @@ Group analyst recommendations by theme bucket. Check theme-level constraints:
 - If analysts recommend more than 40% in one theme, apply haircut proportionally to lowest-conviction assets in that theme
 
 ### Step B2: Apply Portfolio Constraints
-From `config/investment-profile.md §4` and `config/portfolio.json` constraints:
+From `config/investment-profile.md §4` and `config/portfolio.json` **constraints** (not weights):
 - Max single ETF weight per `constraints.max_single_etf_pct` (default 100% — no hard cap, but flag any position >25% for PM review)
 - Weight increment: 5% — round any non-5% recommendations to nearest 5%
 - Total must sum to 100% — allocate remaining to BIL (cash proxy) after all positions assigned
@@ -94,6 +99,8 @@ Also note any `proposed_positions[]` from prior agent runs — if any exist, com
 too (shows drift between consecutive recommendations).
 
 ### Step C2: Compute Deltas
+Respect **day-over-day stability**: prefer smaller moves when `pm_allocation_memo` or `investment-profile` calls for low turnover; flag large single-day shifts for explicit justification in **`rebalance_decision`** notes.
+
 For each ticker in the union of (clean-slate portfolio ∪ current portfolio):
 ```
 delta = recommended_weight - current_weight
@@ -166,9 +173,8 @@ Also update `"last_updated_date"` and `"last_updated_by": "agent"`.
 
 ## Session Completion Checklist (Phases A–C)
 
-- [ ] Analyst roster loaded (holdings + candidates)
-- [ ] Analysts run (JSON outputs)
-- [ ] Deliberation transcript written (JSON output)
+- [ ] Deliberation ingest or deliberation run complete (per-ticker transcripts + session index preferred)
+- [ ] `pm_allocation_memo` published when using thesis-first task ordering
 - [ ] Clean-slate portfolio constructed; constraint checks passed (`./scripts/validate-portfolio.sh --proposed`)
 - [ ] Rebalance comparison run; delta table produced (JSON output)
 - [ ] `config/portfolio.json` → `proposed_positions[]` updated

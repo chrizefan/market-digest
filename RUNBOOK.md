@@ -30,12 +30,28 @@ The weekday GitHub job runs [`refresh_performance_metrics.py --fill-calendar-thr
 
 **Claude Cowork:** project briefing and scheduled task recipes live under [`cowork/`](cowork/) — see [`cowork/README.md`](cowork/README.md) and paste [`cowork/PROJECT-PROMPT.md`](cowork/PROJECT-PROMPT.md) into the Cowork project instructions. **First-time setup:** [`cowork/SETUP-ATLAS-COWORK.md`](cowork/SETUP-ATLAS-COWORK.md) (agent-driven wizard → `cowork/OPERATOR-COWORK.md` + `config/schedule.json` → `cowork_operator`).
 
-**Weekly baseline vs weekly digest:** [`scripts/run_db_first.py`](scripts/run_db_first.py) treats **Sunday** as **baseline** and other days as **delta** (unless `--baseline` / `--delta`). There is **no** scheduled GitHub reminder for **`weekly_digest`**; publish to Supabase when due (`document_key` e.g. `weekly/YYYY-Www.json`) and use [`scripts/weekly-rollup.sh`](scripts/weekly-rollup.sh) for the operator prompt — not a filesystem `data/agent-cache/weekly/*.md` requirement.
+**Weekly baseline vs weekly digest:** [`scripts/run_db_first.py`](scripts/run_db_first.py) treats **Sunday** as **baseline** and other days as **delta** (unless `--baseline` / `--delta`). **Sunday baseline** in the DB is still a **full** `daily_snapshots` row (`run_type=baseline`); operator guidance is to **build it by reviewing last week** (carry-forward, append-first, selective rewrites, week-ahead bias)—not to throw away prior research and rewrite from scratch unless warranted. See [`skills/weekly-baseline/SKILL.md`](skills/weekly-baseline/SKILL.md). There is **no** scheduled GitHub reminder for **`weekly_digest`**; publish to Supabase when due (`document_key` e.g. `weekly/YYYY-Www.json`) and use [`scripts/weekly-rollup.sh`](scripts/weekly-rollup.sh) for the operator prompt — not a filesystem `data/agent-cache/weekly/*.md` requirement.
 
 ## Two tracks (research vs portfolio)
 
-- **Track A — Generic research** (positioning-blind): macro, sectors, crypto, sentiment, etc. **Do not** load `config/preferences.md` or `config/investment-profile.md`. Output: `research_delta` JSON → **`validate_artifact.py -`** → **`publish_document.py --payload -`** with a **unique** `document_key` per run, e.g. `research-delta/20260411T143022Z.json` (see [`skills/research-daily/SKILL.md`](skills/research-daily/SKILL.md)). Run [`run_db_first.py --skip-execute --validate-mode research`](scripts/run_db_first.py) after publish.
-- **Track B — Portfolio manager & analyst** (user-specific): reads latest research from Supabase + [`config/preferences.md`](config/preferences.md) + [`config/investment-profile.md`](config/investment-profile.md); produces `rebalance_decision` and related portfolio documents. Timing is controlled by [`config/schedule.json`](config/schedule.json) (`portfolio_manager_cadence`, `execution_assumption`, `rebalance_source_for_opens`). Run full validation: `--validate-mode full` or `pm`.
+- **Track A — Generic research** (positioning-blind): macro, sectors, crypto, sentiment, etc. **Do not** load `config/preferences.md` or `config/investment-profile.md`. Each research run **ends** with the **`digest`** — `documents.digest` + materialized `daily_snapshots` for the date — as the **single overview** of all sub-segments (Sunday: [`skills/weekly-baseline/SKILL.md`](skills/weekly-baseline/SKILL.md) / orchestrator Phase 7; Mon–Sat: [`skills/daily-delta/SKILL.md`](skills/daily-delta/SKILL.md) through Phase 7B). Optional additive `research_delta` JSON uses a **unique** `research-delta/…` key per publish ([`skills/research-daily/SKILL.md`](skills/research-daily/SKILL.md)). Run [`run_db_first.py --skip-execute --validate-mode research`](scripts/run_db_first.py) after publish.
+- **Track B — Portfolio manager & analyst** (user-specific): **reads** the research **`digest`** from Supabase (does **not** compile it) + [`config/preferences.md`](config/preferences.md) + [`config/investment-profile.md`](config/investment-profile.md); produces `rebalance_decision` and related portfolio documents. Timing is controlled by [`config/schedule.json`](config/schedule.json) (`portfolio_manager_cadence`, `execution_assumption`, `rebalance_source_for_opens`). Run full validation: `--validate-mode full` or `pm`.
+
+### Track B — fresh vs delta artifacts (thesis-first)
+
+| Payload `doc_type` | Typical `document_key` | Fresh vs delta |
+|--------------------|----------------------|----------------|
+| `market_thesis_exploration` | `market-thesis-exploration/{{DATE}}.json` | Full publish per day; refinements may use `document_delta` targeting the same key |
+| `thesis_vehicle_map` | `thesis-vehicle-map/{{DATE}}.json` | Same pattern as exploration |
+| `asset_recommendation` | `asset-recommendations/{{DATE}}/{{TICKER}}.json` | Fresh when materially new; optional `document_delta` for incremental analyst revisions |
+| `deliberation_transcript` | `deliberation-transcript/{{DATE}}/{{TICKER}}.json` | **Always fresh** per conference session |
+| `deliberation_session_index` | `deliberation-transcript-index/{{DATE}}.json` | **Always fresh** per session |
+| `pm_allocation_memo` | `pm-allocation-memo/{{DATE}}.json` | **Always fresh** after deliberation |
+| `portfolio_recommendation`, `rebalance_decision` | canonical keys per publish scripts | Fresh per publish (existing practice) |
+
+Apply migration [`020_track_b_thesis_doc_types.sql`](supabase/migrations/020_track_b_thesis_doc_types.sql) so `documents.doc_type` accepts the new labels. Use `--doc-type-label` on `publish_document.py` with the **Title Case** label from that migration when inserting.
+
+**Step validation:** After research close-out or each Track B publish batch, run [`scripts/validate_pipeline_step.py`](scripts/validate_pipeline_step.py) (`--step …` or `--chain research|track_b|full`, plus `--date`). See [`docs/ops/SCRIPTS.md`](docs/ops/SCRIPTS.md). Requires `jsonschema` for schema checks.
 
 ## Market-open execution and price backfill
 

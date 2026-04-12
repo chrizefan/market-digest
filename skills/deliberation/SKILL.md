@@ -1,18 +1,14 @@
 ---
 name: portfolio-deliberation
 description: >
-  Multi-round analyst-PM deliberation protocol. Analysts present thesis-driven position
-  recommendations, PM challenges weak or conflicting arguments, analysts defend or revise.
-  Iterates until convergence (max 3 rounds). Produces higher-conviction portfolio decisions
-  through structured debate. Triggers: "run deliberation", "challenge positions", or
-  automatically via Phase 7C of orchestrator/delta pipeline.
+  Multi-round analyst-PM deliberation. Per-ticker conference transcripts (fresh JSON each session),
+  unbounded rounds until PM sets converged. Devil's advocate PM vs analysts; optional recess for
+  light research. Triggers: "run deliberation", portfolio task Phase 5, Phase 7C orchestrator/delta.
 ---
 
 # Portfolio Deliberation Skill
 
-A structured "meeting room" debate between analyst sub-agents and the portfolio manager.
-All roles are played sequentially within a single session, with epistemic barriers enforced
-through committed intermediate outputs — analysts write reports before the PM reads them.
+Structured **conference** between analyst (per ticker) and portfolio manager. Roles run sequentially; analysts commit outputs before the PM responds. **Thesis-first Track B** uses **one `deliberation_transcript` JSON per ticker** plus a **session index** document.
 
 ---
 
@@ -25,202 +21,125 @@ through committed intermediate outputs — analysts write reports before the PM 
 | Anchoring to prior weights (subtle) | Explicit "what changed?" challenge catches stale reasoning |
 | Disagreements hidden in boilerplate | Contradictions surfaced and resolved in transcript |
 
-Token overhead: ~15-20% more than one-shot. Offset by fewer "Monitor" decisions that get
-re-evaluated next session anyway.
-
 ---
 
 ## Pre-Flight
 
 Load all context per `skills/portfolio-manager/SKILL.md` Pre-Flight section:
-- Macro regime output (DB-first: Supabase)
-- `config/preferences.md` — constraints and style
-- `config/investment-profile.md` — risk tolerance, regime playbook
-- `docs/research/LIBRARY.md` — research framework
-- Digest (DB-first: Supabase `documents.payload` + rendered markdown if needed)
-- **`research_changelog/{{DATE}}.json`** when present — use `items[]` as the authoritative “what changed since yesterday” list for research docs (complements digest `delta-request` paths).
 
-**Do NOT load `config/portfolio.json` weights.** Analyst blindness is maintained through Phase B.
+- Macro regime (Supabase `daily_snapshots`)
+- `config/preferences.md`, `config/investment-profile.md`
+- `docs/research/LIBRARY.md`
+- Digest (`documents` `digest`)
+- **`research_changelog/{{DATE}}.json`** when present
+- When available: **`market_thesis_exploration`**, **`thesis_vehicle_map`** for the date (ground debate in thesis IDs)
 
-### Weekday delta-scoped deliberation (`meta.kind: delta_scoped`)
+**Do NOT load `config/portfolio.json` weights** until the PM skill explicitly enters Phase C.
 
-On **Mon–Sat** when Phase 7C triggers (or when the user requests a focused debate), prefer a **shorter roster** (triggered tickers only). Simulate a hedge-fund desk: **analyst** states bull/base/bear and size implication; **PM** (with `preferences` + `investment-profile`) pushes back on risk, liquidity, mandate, and correlation; allow **multiple rounds** in `body.rounds` until `final_decisions` are explicit. Cite **`research_changelog`** lines when arguing from “new information” so the debate stays grounded in today’s deltas, not stale narrative.
+### Session identifiers
 
----
+- Set **`meta.session_id`** (e.g. `{{DATE}}-pm` or a short UUID) on **every** per-ticker transcript and on the **session index**.
+- Set **`meta.aggregate_index_document_key`** to `deliberation-transcript-index/{{DATE}}.json` on each per-ticker transcript.
 
-## Round 1 — Analyst Presentations
+### Weekday delta-scoped (`meta.kind: delta_scoped`)
 
-### Step 1.1: Determine Roster
-Read the latest opportunity screen artifact (DB-first: Supabase `documents`), which contains:
-- **Current Holdings** — every ticker in `portfolio.json` `positions[]` (mandatory coverage)
-- **Opportunity Candidates** — top 3-5 non-held tickers ranked by regime + signal score (Total ≥ +2)
-
-The combined list is the **analyst roster**.
-
-If the screener output doesn't exist (standalone invocation), fall back to:
-- Read `config/portfolio.json` for ticker names only (not weights)
-- No opportunity candidates (run screener first, or proceed with holdings only)
-
-### Step 1.2: Run Analysts
-For each ticker in the roster, follow `skills/asset-analyst/SKILL.md` completely.
-
-Run analysts sequentially. Announce each: "Analyst presenting: [TICKER]"
-
-### Step 1.3: Compile Round 1 Summary
-
-After all analysts have presented, build the summary table:
-
-```
-═══════════════════════════════════════════════════
-  ROUND 1 — ANALYST PRESENTATIONS
-═══════════════════════════════════════════════════
-| Ticker | Bias | Thesis Status | Bull Conviction | Bear Conviction | Rec Weight | Theme |
-|--------|------|---------------|-----------------|-----------------|------------|-------|
-```
-
-Announce: "Round 1 complete. [N] analysts presented. PM reviewing for challenges."
+Shorter roster (triggered tickers + at most 2 new candidates per `opportunity-screener` delta rules). Cite **`research_changelog`** when arguing from new information.
 
 ---
 
-## PM Review — Challenge Identification
+## Step 1 — Roster
 
-The PM reads ALL Round 1 analyst outputs and identifies positions to challenge.
+Read the latest **opportunity screen** artifact (Supabase `documents`): holdings (tickers only) + candidates.
 
-### Challenge Triggers
+Fallback: `portfolio.json` tickers only; no candidates unless screener run.
 
-The PM **MUST** challenge a position if any of these apply:
+---
+
+## Step 2 — Per-ticker conferences (publish order)
+
+For **each** ticker on the roster **in sequence**:
+
+### 2.1 Round 1 — Presentation
+
+- If a published **`asset_recommendation`** exists for this ticker and date, **summarize it** as Round 1 in `body.rounds` (do not rerun `skills/asset-analyst/SKILL.md` unless the PM marks it stale).
+- Otherwise run `skills/asset-analyst/SKILL.md` first, publish JSON, then summarize.
+
+### 2.2 Further rounds — PM challenge ↔ analyst response
+
+Repeat until **`meta.converged: true`** for this ticker:
+
+- PM may **challenge** (use trigger table below), **request recess for research**, or **accept** the current recommendation.
+- Analyst responds with **Defend / Revise / Concede** (same rules as before); on recess, analyst performs **limited** targeted research, **republishes** `asset_recommendation` with `meta.light_research_requested`, then continues the transcript in a new `body.rounds[]` entry labeled e.g. `Round N — Post-recess`.
+
+**No fixed maximum rounds** — terminate only when the PM sets **`meta.converged: true`** or explicitly **escalates** to the user (note in `body.footer_notes`).
+
+### Challenge triggers (PM MUST challenge when applicable)
 
 | # | Trigger | PM Challenge Framing |
 |---|---------|---------------------|
 | 1 | **Analyst bias = "Conflicted"** | "Pick a direction. What single data point would resolve your uncertainty?" |
-| 2 | **Both bull AND bear conviction are Medium or Low** | "Your arguments lack edge. What's the actual signal here — or is this a skip?" |
-| 3 | **Weight > 0% but thesis is ⚠️ or ❌** | "You're recommending capital in a damaged thesis. Defend this or cut to 0%." |
-| 4 | **Rec weight contradicts macro regime** | "Macro says [regime]. Your recommendation implies [opposite]. Reconcile or revise." |
-| 5 | **Two analysts make contradicting assumptions** | "Analyst A for [TICKER1] says [X], but Analyst B for [TICKER2] assumes [Y]. One of you is wrong." |
-| 6 | **Exit condition is vague / unmeasurable** | "Your exit condition isn't actionable. Give me a specific price, level, or date." |
-| 7 | **Identical recommendation to last session with no new evidence cited** | "You're recycling. What fresh signal from today's data supports this — or has conviction actually faded?" |
+| 2 | **Both bull AND bear conviction are Medium or Low** | "What's the actual signal — or is this a skip?" |
+| 3 | **Weight > 0% but thesis is ⚠️ or ❌** | "Defend capital in a damaged thesis or cut to 0%." |
+| 4 | **Rec weight contradicts macro regime** | "Reconcile with regime or revise." |
+| 5 | **Cross-ticker contradiction** | Surface explicit conflict with another symbol's assumptions. |
+| 6 | **Exit condition vague** | Demand measurable exit. |
+| 7 | **Recycling prior session with no new evidence** | "What changed today?" |
 
-### PM Challenge Output
+### 2.3 Final row for this ticker
 
-For each challenged position, the PM writes:
+Append to **`body.final_decisions`** at least one object for this **`ticker`** with `analyst_recommendation`, `pm_decision`, `invalidation_condition`.
 
-```
-CHALLENGE — [TICKER]
-Trigger: [which trigger # from above]
-Question: "[the specific challenge question]"
-PM Note: [1–2 sentences of PM's own reasoning — what the PM suspects is wrong]
-```
+### 2.4 Publish per-ticker transcript
 
-**If NO positions require challenge**: Write "PM Review: All positions passed. No challenges needed."
-→ Skip Round 2 entirely. Proceed to Final Decisions with Round 1 recommendations unchanged.
+- **Validate** against `templates/schemas/deliberation-transcript.schema.json`
+- **`document_key`:** `deliberation-transcript/{{DATE}}/{{TICKER}}.json`
+- **`meta.related_ticker`:** same as `TICKER`
+- **`meta.kind`:** `baseline_full` or `delta_scoped` per session
+- **`python3 scripts/publish_document.py`** with `--doc-type-label "Deliberation Transcript"`
 
 ---
 
-## Round 2 — Analyst Defense
+## Step 3 — Session index (fresh)
 
-For each challenged position, the analyst must respond with exactly ONE of three options:
+Publish **`deliberation_session_index`** (`templates/schemas/deliberation-session-index.schema.json`):
 
-### Option A: Defend
-- Provide **additional evidence** from today's session data not cited in Round 1
-- Must reference a specific data point (price, flow, level, quote, thesis signal)
-- If the analyst cannot find new supporting evidence, this option is **not available** — use B or C
-- May revise the weight upward OR hold firm
+- **`document_key`:** `deliberation-transcript-index/{{DATE}}.json`
+- **`meta.session_id`**, **`meta.kind`**, **`meta.all_converged`:** true only if every entry has `converged: true`
+- **`body.entries[]`:** `{ ticker, document_key, converged, rounds_completed }` for each ticker
 
-### Option B: Revise
-- Acknowledge the PM's challenge as valid
-- Adjust the recommendation: change bias, weight, thesis status, or exit condition
-- Explain specifically what the PM's challenge revealed
-
-### Option C: Concede
-- Agree the position lacks sufficient support
-- Reduce weight to 0% or the next lower tier
-- State clearly: "The PM is correct — [reason]. Revised to [X]%."
-
-### Round 2 Summary
-
-After all defenses, compile:
-
-```
-═══════════════════════════════════════════════════
-  ROUND 2 — DEFENSE SUMMARY
-═══════════════════════════════════════════════════
-| Ticker | Challenge Trigger | Response | Original Rec | Updated Rec | Weight Change |
-|--------|------------------|----------|-------------|-------------|---------------|
-```
+`--doc-type-label "Deliberation Session Index"`
 
 ---
 
-## PM Deliberation — Final Decisions
+## Cross-ticker conflicts
 
-After Round 2, the PM evaluates each challenged position:
-
-| PM Decision | When | Action |
-|-------------|------|--------|
-| **Accept** | Defense was compelling with new evidence | Use the analyst's updated recommendation |
-| **Override** | Defense was weak or analyst conceded, but PM disagrees with 0% | PM sets weight with explicit reasoning |
-| **Escalate** | Genuine 50/50 uncertainty, insufficient data to decide | Flag as OPEN QUESTION for user |
-
-### Round 3 (Rare — Optional)
-
-A third round runs ONLY if a Round 2 defense introduces genuinely new information that
-**contradicts another position's assumptions**. The PM identifies the cross-position conflict
-and both analysts respond. Max 1 Round 3 per session.
-
-**Termination**: After Round 3 (or Round 2 if no Round 3 triggered), the PM's decisions are **FINAL**.
-
-### Resolved Summary
-
-Compile the deliberation outcome:
-
-```
-═══════════════════════════════════════════════════
-  DELIBERATION RESOLVED — {{DATE}}
-═══════════════════════════════════════════════════
-| Ticker | Initial Rec | Challenged? | Defense | PM Decision | Final Weight | Final Bias |
-|--------|-------------|-------------|---------|-------------|-------------|------------|
-| IAU    | 20%         | No          | —       | Accept      | 20%         | Bullish    |
-| XLE    | 15%         | Yes (#4)    | Defend  | Accept      | 15%         | Bullish    |
-| XLV    | 10%         | Yes (#2)    | Revise  | Override→5% | 5%          | Neutral    |
-```
-
-**This resolved table is the authoritative input to Phase B (clean-slate portfolio construction).**
+If Round N for ticker A exposes a contradiction with ticker B, the PM **adds a round** on **both** transcripts (or a linked note in the session index `footer_notes`) so the conflict is explicit before `skills/portfolio-manager/SKILL.md` runs.
 
 ---
 
-## Integration: Where Deliberation Runs
+## Legacy compatibility
 
-### Baseline Days (Sunday — `skills/orchestrator/SKILL.md` Phase 7C)
-- **Full deliberation**: All positions + opportunity candidates
-- Expected: 2-4 challenges per session, 1-2 revisions
-- Always runs — this is the thorough weekly review
-
-### Delta Days (Mon–Sat — `skills/daily-delta/SKILL.md` Phase 7C/7D, only when triggered)
-- **Scoped deliberation**: Only positions that tripped a threshold trigger
-- PM challenge focuses specifically on the trigger condition
-- Expected: 1-2 positions, 1 round of challenge/defense
-- Skipped entirely on quiet delta days (per Phase 7C threshold monitor)
-
-### Standalone
-- Invoke directly: "run deliberation", "challenge my positions"
-- Loads most recent digest as research source
+If the operator has not yet adopted per-ticker keys, a **single** transcript may use `document_key` `deliberation-transcript/{{DATE}}.json` with **`meta.related_ticker: null`** and multiple `final_decisions` rows — `skills/portfolio-manager/SKILL.md` accepts either shape.
 
 ---
 
-## Output
+## Integration
 
-Save the full deliberation transcript as **JSON** (schema: `templates/schemas/deliberation-transcript.schema.json`):
-`data/agent-cache/daily/{{DATE}}/deliberation.json`
+- **Orchestrator Phase 7C** / **daily-delta Phase 7C–7D:** same protocol; scoped roster on weekdays.
+- **Portfolio task:** runs after **Phase 4** analyst publishes; **before** **`pm_allocation_memo`** and PM clean-slate.
 
-After deliberation completes, hand off the resolved summary table to
-`skills/portfolio-manager/SKILL.md` **Phase B** (clean-slate construction) and **Phase C** (comparison).
+---
+
+## Handoff
+
+`skills/portfolio-manager/SKILL.md` **ingests** all per-ticker transcripts + session index (+ **`pm_allocation_memo`** when published) to build the clean-slate portfolio.
 
 ---
 
 ## Quality Standards
 
-1. **PM challenges must be specific** — not "is this right?" but "your bull case #2 assumes X, but macro says Y"
-2. **Analyst defenses must cite data** — appeals to authority or vague "the trend supports" are insufficient
-3. **Concessions are a feature, not a failure** — a revised position is more valuable than a defended-but-wrong one
-4. **Escalate honestly** — when there isn't enough data to decide, say so; don't manufacture certainty
-5. **Contradictions between analysts are gold** — surface them, don't paper over them
-
+1. **PM challenges must be specific**
+2. **Defenses must cite data** (session payloads, changelog, or recess research)
+3. **Concessions are valuable**
+4. **Escalate honestly**
+5. **Contradictions are surfaced**, not hidden

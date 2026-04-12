@@ -157,6 +157,11 @@ def _print_agent_prompt(
     print("- portfolio recommendation: templates/schemas/portfolio-recommendation.schema.json")
     print("- rebalance decision: templates/schemas/rebalance-decision.schema.json")
     print("Publish + validate via this CLI after artifacts are produced.")
+    print("")
+    print("Step-wise pipeline checks (documents + JSON Schema): scripts/validate_pipeline_step.py")
+    print("  e.g. python3 scripts/validate_pipeline_step.py --date <D> --chain research")
+    print("       python3 scripts/validate_pipeline_step.py --date <D> --chain track_b")
+    print("       python3 scripts/validate_pipeline_step.py --list")
     print("=== END PROMPT ===")
     print("")
 

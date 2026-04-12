@@ -17,6 +17,11 @@ This skill runs Mon–Sat (non-Sunday). Instead of rewriting everything from scr
 
 Estimated token savings vs full run: **~70%** on a typical day.
 
+### Research vs portfolio split (weekdays)
+
+- **Through Phase 7B** (delta request + `materialize_snapshot` / published **`digest`**): **research close-out** — the digest is the **single overview** that rolls up all sub-segments. This is the **final step of the Track A** research task ([`cowork/tasks/research-daily-delta.md`](../../cowork/tasks/research-daily-delta.md)); the PM does **not** compile it.
+- **Phase 7C–7D**: **portfolio** layer (monitor + PM). When running **Track A only**, **stop after 7B**. Run 7C–7D from [`cowork/tasks/portfolio-pm-rebalance.md`](../../cowork/tasks/portfolio-pm-rebalance.md) (or a combined session if you intentionally merge tracks).
+
 ---
 
 ## Pre-Flight: Delta Context Load
@@ -285,13 +290,10 @@ For each position in `positions[]`, check today's session data against threshold
 
 **If ANY trigger fired:**
 - Announce: "Portfolio threshold triggered: [reason]. Running scoped deliberation."
-- Run `skills/deliberation/SKILL.md` for ONLY the triggered positions (not the full roster):
-  - Round 1: Analyst presents for each triggered ticker per `skills/asset-analyst/SKILL.md`
-  - PM Review: Challenge focuses specifically on the trigger condition
-  - Round 2: Analyst defends, revises, or concedes
-  - PM Decision: Accept / Override / Escalate
-  - Save analyst reports as `asset_recommendation` JSON artifacts (schema: `templates/schemas/asset-recommendation.schema.json`)
-  - Save deliberation transcript as `deliberation_transcript` JSON artifact (schema: `templates/schemas/deliberation-transcript.schema.json`)
+- Run `skills/deliberation/SKILL.md` for ONLY the triggered positions (not the full roster), using **per-ticker** transcripts (`deliberation-transcript/{{DATE}}/{{TICKER}}.json`) and a **`deliberation_session_index`** for the scoped set (`meta.kind: delta_scoped`).
+  - Unbounded rounds until `meta.converged` per ticker; recess + light research allowed per deliberation skill
+  - Save analyst reports as `asset_recommendation` JSON (published to `documents`)
+- Optionally publish a minimal **`pm_allocation_memo`** when any position weight changes materially.
 - Then proceed to Phase 7D below (full PM review).
 
 ---

@@ -10,6 +10,8 @@ Use this as the **single** Cowork task when you schedule one job on an **8h / 12
 
 ## 1) Research (execute applicable blocks **in order**)
 
+Each block must finish with **research close-out**: a published **`digest`** (+ `daily_snapshots` for `RUN_DATE`) as the **single overview** of all sub-segments. That is the **last step of Track A**, not part of the portfolio task.
+
 ### 1a — Month-end (optional but recommended on last trading day or first session after month close)
 
 If this session is your **month-end** run for the **month that just ended** (define your rule: e.g. last US equity session of the calendar month):
@@ -28,8 +30,9 @@ If this session is your **month-end** run for the **month that just ended** (def
 
 ## 2) Portfolio (Track B)
 
-After research artifacts for `RUN_DATE` exist in Supabase (including anything published in section 1):
+After section **1** has published **`digest`** for `RUN_DATE` (and related research artifacts):
 
+- Optional gate: `python3 scripts/validate_pipeline_step.py --date RUN_DATE --step track_b_precheck`
 - Execute **every step** in [`portfolio-pm-rebalance.md`](portfolio-pm-rebalance.md) for `RUN_DATE`.
 
 ---

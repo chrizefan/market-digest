@@ -101,7 +101,8 @@ def main() -> int:
         "--mode",
         choices=("full", "research", "pm"),
         default="full",
-        help="full: digest + positions + metrics; research: snapshot + digest OR research_delta; pm: full + rebalance_decision",
+        help="full: digest + positions + metrics; research: snapshot + digest OR research_delta; pm: full + rebalance_decision. "
+        "Stricter digest+schema: scripts/validate_pipeline_step.py --step research_closeout",
     )
     args = ap.parse_args()
     d = args.date

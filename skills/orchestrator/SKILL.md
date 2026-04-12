@@ -33,7 +33,7 @@ documents in Supabase, not as repo files.
 
 | Condition | Action |
 |-----------|--------|
-| **Sunday** (or user requests full baseline) | Use `skills/weekly-baseline/SKILL.md` — full 9-phase baseline → materialize snapshot JSON |
+| **Sunday** (or user requests full baseline) | Use `skills/weekly-baseline/SKILL.md` — same 9 phases, but **weekly review + carry-forward + selective rewrites** (append-first, week-ahead bias), then materialize `run_type=baseline` snapshot JSON |
 | **Mon–Sat** | Use `skills/daily-delta/SKILL.md` — delta ops JSON → materialize; **do not** run this full orchestrator |
 
 Optional: run `python3 scripts/run_db_first.py --dry-run` to print today’s mode hint and baseline anchor
@@ -45,6 +45,8 @@ for deltas (from Supabase).
 
 This is the complete 9-phase pipeline. Only run when confirmed in baseline mode.
 Follow all 9 phases sequentially. Do not skip phases. Each phase is a dedicated research task with its own output file.
+
+**Sunday (weekly-baseline):** Phases still run in full, but **authoring** prioritizes **inheriting last week’s published JSON**, **appending** new evidence and forward-looking hooks, and **rewriting only** what is wrong or stale—not a blank-slate regeneration. See `skills/weekly-baseline/SKILL.md`.
 
 ---
 
@@ -274,6 +276,8 @@ Verifies us-equities.md + all 11 sector files exist with content (≥10 lines ea
 
 > Now that all 20+ segment outputs exist, synthesize them into the final master digest. This is NOT a regurgitation — it is a synthesis. Pull the most important signals across all phases and generate a coherent, actionable daily brief.
 
+**Track boundary:** Phase 7 (through `materialize_snapshot` / `documents.digest`) is the **last step of research** — the digest is the **research** rollup of all sub-segments, **not** something the portfolio manager authors. Track B ([`cowork/tasks/portfolio-pm-rebalance.md`](../../cowork/tasks/portfolio-pm-rebalance.md)) **consumes** this digest after Track A publishes it.
+
 In DB-first mode, the master synthesis is the **digest snapshot JSON** (schema: `templates/digest-snapshot-schema.json`).
 The operator publishes it via `python3 scripts/materialize_snapshot.py` which stores the JSON in Supabase and renders markdown for display.
 
@@ -351,19 +355,21 @@ Validate the snapshot JSON (`validate_artifact.py`) and ensure required logical 
 > findings into a ranked list of tickers worth analyst coverage — both current holdings
 > (mandatory) and new opportunity candidates (screener-selected).
 
+**Thesis-first Track B (full portfolio task):** run [`skills/market-thesis-exploration/SKILL.md`](../market-thesis-exploration/SKILL.md) → [`skills/thesis-vehicle-map/SKILL.md`](../thesis-vehicle-map/SKILL.md) **before** this screen when executing [`cowork/tasks/portfolio-pm-rebalance.md`](../../cowork/tasks/portfolio-pm-rebalance.md). The screener’s **Step 0** then prefers published **`thesis_vehicle_map`**.
+
 Follow `skills/opportunity-screener/SKILL.md` completely:
 
-1. Load `config/watchlist.md` (full ~60 ticker universe) + today's segment outputs + macro regime
+1. Load `thesis_vehicle_map` for `{{DATE}}` when present; then `config/watchlist.md` + today's segment outputs + macro regime
 2. Score every ticker: regime alignment + signal scan (flows, options, CTA, thesis, sector bias)
-3. Rank and filter: current holdings are mandatory; top 3-5 non-held tickers with Total ≥ +2 become opportunity candidates
-4. Save to: `data/agent-cache/daily/{{DATE}}/opportunity-screen.md`
+3. Rank and filter: current holdings are mandatory; top 3-5 non-held tickers with Total ≥ +2 become opportunity candidates (subject to Step 0 map seeding)
+4. Publish **`opportunity_screen`** JSON to Supabase (`documents`); local `opportunity-screen.md` is optional scratch only
 
 The screener output defines the **analyst roster** for Phase 7C deliberation.
 
 Announce: "Screen complete. [N] tickers scanned, [M] opportunities identified. Analyst roster: [list]"
 
 ### Checkpoint: Phase 7B
-Verifies opportunity-screen.md exists. **Do not proceed to Phase 7C until validated.**
+Verifies **`opportunity_screen`** published to `documents` (or legacy opportunity-screen artifact). **Do not proceed to Phase 7C until validated.**
 
 ---
 
@@ -373,20 +379,16 @@ Verifies opportunity-screen.md exists. **Do not proceed to Phase 7C until valida
 > weak or conflicting positions, analysts defend or revise. Produces higher-conviction
 > portfolio inputs through structured debate.
 
-Follow `skills/portfolio-manager/SKILL.md` **Phase A** completely. Phase A now routes to
-`skills/deliberation/SKILL.md` which runs the full deliberation protocol:
+Follow `skills/deliberation/SKILL.md` for the **per-ticker conference** protocol (publish `deliberation-transcript/{{DATE}}/{{TICKER}}.json` + `deliberation-transcript-index/{{DATE}}.json`). **Unbounded rounds** until `meta.converged` per ticker.
 
-1. Read `data/agent-cache/daily/{{DATE}}/opportunity-screen.md` for the analyst roster (current holdings + screener-selected candidates)
-2. **Round 1**: Each analyst presents per `skills/asset-analyst/SKILL.md` → `positions/{{TICKER}}.md`
-4. **PM Review**: Identify challenges (conflicted bias, damaged thesis, regime contradiction, etc.)
-5. **Round 2**: Challenged analysts defend, revise, or concede
-6. **PM Decision**: Accept / Override / Escalate for each position
-7. Save deliberation transcript to: `data/agent-cache/daily/{{DATE}}/deliberation.md`
+1. Analyst roster from published **`opportunity_screen`** (or legacy opportunity-screen artifact) + holdings
+2. **`asset_recommendation`** JSON per ticker (Supabase), then deliberation rounds
+3. **`deliberation_session_index`** listing all per-ticker keys
 
-Announce after completing: "Deliberation complete. [N] resolved, [M] challenged, [K] revised."
+Announce after completing: "Deliberation complete. [N] tickers, session index published."
 
 ### Checkpoint: Phase 7C
-Verifies deliberation.md transcript and analyst position files in `positions/`. **Do not proceed to Phase 7D until validated.**
+Verifies per-ticker `deliberation_transcript` payloads and session index in **`documents`**. **Do not proceed to Phase 7D until validated.**
 
 ---
 
@@ -395,23 +397,18 @@ Verifies deliberation.md transcript and analyst position files in `positions/`. 
 > Clean-slate portfolio construction followed by comparison vs current positions.
 > This phase produces the rebalance decision — the most actionable output of the full pipeline.
 
-Follow `skills/portfolio-manager/SKILL.md` **Phases B and C** completely:
+When running the **thesis-first** task: publish **`pm_allocation_memo`** (`skills/pm-allocation-memo/SKILL.md`) **before** portfolio-manager Phases B/C.
 
-**Phase B (Clean-Slate — still blinded to weights):**
-1. Read all analyst outputs from `data/agent-cache/daily/{{DATE}}/positions/`
-2. Apply theme caps and weight constraints from `config/preferences.md`
-3. Build ideal target portfolio
-4. Save to: `data/agent-cache/daily/{{DATE}}/portfolio-recommended.md`
+Follow `skills/portfolio-manager/SKILL.md` **Phases A (ingest), B, and C** completely (DB-first JSON to Supabase):
 
-**Phase C (Comparison — NOW load current weights):**
-1. Load `config/portfolio.json` positions with weights
-2. Diff recommended vs current; apply ≥5% threshold
-3. Produce rebalance table with actions (Hold/Add/Trim/Exit/New)
-4. Save to: `data/agent-cache/daily/{{DATE}}/rebalance-decision.md`
-5. Update `config/portfolio.json` → `proposed_positions[]`
+**Phase A:** merge `final_decisions` from per-ticker deliberation transcripts (+ optional `pm_allocation_memo`).
+
+**Phase B (Clean-Slate — blinded to current weights):** build ideal target portfolio → `portfolio_recommendation` JSON.
+
+**Phase C (Comparison — load current weights):** diff vs `config/portfolio.json`; publish `rebalance_decision`; update `proposed_positions[]`.
 
 ### Checkpoint: Phase 7D
-Verifies portfolio-recommended.md, rebalance-decision.md, and portfolio.json proposed_positions. **Do not proceed to Phase 8 until validated.**
+Verifies `portfolio_recommendation` + `rebalance_decision` in **`documents`** and `portfolio.json` proposed_positions. **Do not proceed to Phase 8 until validated.**
 
 ---
 

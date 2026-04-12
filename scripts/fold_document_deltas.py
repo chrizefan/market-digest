@@ -188,6 +188,10 @@ def _human_doc_type_label(payload: Dict[str, Any]) -> str:
         "research_delta": "Research Delta",
         "weekly_digest": "Weekly Rollup",
         "monthly_digest": "Monthly Summary",
+        "market_thesis_exploration": "Market Thesis Exploration",
+        "thesis_vehicle_map": "Thesis Vehicle Map",
+        "pm_allocation_memo": "PM Allocation Memo",
+        "deliberation_session_index": "Deliberation Session Index",
     }
     return mapping.get(dt, "Deep Dive")
 

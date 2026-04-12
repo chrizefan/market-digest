@@ -9,7 +9,7 @@
 ## What this codebase is
 
 - **DB-first** market intelligence: agents produce **JSON artifacts** → publish to **Supabase** (`daily_snapshots`, `documents`, `positions`, …). UI markdown is **derived**.
-- **Three-tier cadence:** Sunday **baseline**, Mon–Sat **delta**, month-end rollup (see `RUNBOOK.md`).
+- **Three-tier cadence:** Sunday **baseline** (weekly anchor row + phased **review** of last week: carry-forward, append-first, selective rewrites, week-ahead bias—not necessarily a full rewrite), Mon–Sat **delta**, month-end rollup (see `RUNBOOK.md`, `skills/weekly-baseline/SKILL.md`).
 - **Two runnable tracks:**
   - **Track A — Research only:** positioning-blind; produce `research_delta` JSON and publish with **`validate_artifact.py -`** + **`publish_document.py --payload -`** (stdin). Unique `document_key` under `research-delta/…` (see `skills/research-daily/SKILL.md`). No `preferences` / `investment-profile` / `portfolio.json`. The repo **does not commit** `data/agent-cache/`; Supabase is canonical.
   - **Track B — Portfolio / analyst:** uses preferences + profile; `rebalance-decision.json` and related portfolio JSON.

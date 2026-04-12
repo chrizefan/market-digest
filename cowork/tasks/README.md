@@ -20,10 +20,10 @@ In **Cloud desktop**, with **Supabase MCP** connected, use the DB for prices/tec
 | Task file | Use when |
 |-----------|----------|
 | [`recurring-scheduled-run.md`](recurring-scheduled-run.md) | **Single recurring job** (e.g. every 8h/12h): branches by month-end / Sunday vs weekday, runs research module(s) then **portfolio**. |
-| [`research-weekly-baseline.md`](research-weekly-baseline.md) | **Track A** — weekly anchor / Sunday-style **baseline** research (`research_delta`, full scope). |
-| [`research-daily-delta.md`](research-daily-delta.md) | **Track A** — **delta** research for high-frequency or Mon–Sat slots (unique `research-delta/…` key per publish). |
+| [`research-weekly-baseline.md`](research-weekly-baseline.md) | **Track A** — weekly anchor; closes with published **`digest`** + snapshot (research overview of all segments). |
+| [`research-daily-delta.md`](research-daily-delta.md) | **Track A** — weekday delta; closes with **`digest`** through `daily-delta` Phase **7B** (stop before 7C–7D portfolio). |
 | [`research-monthly-synthesis.md`](research-monthly-synthesis.md) | **Month-end** — `monthly_digest` JSON → validate → `publish_document.py`. |
-| [`portfolio-pm-rebalance.md`](portfolio-pm-rebalance.md) | **Track B** — digest pipeline + PM, analyst, screener, **`rebalance_decision`** (after research exists for the date). |
+| [`portfolio-pm-rebalance.md`](portfolio-pm-rebalance.md) | **Track B** — **thesis-first** after **`digest`** exists: `market_thesis_exploration` → `thesis_vehicle_map` → screener → analysts → **per-ticker** `deliberation_transcript` + index → **`pm_allocation_memo`** → PM / **`rebalance_decision`**. |
 | [`research-document-deltas.md`](research-document-deltas.md) | **Track B** — manifest-driven **`document_delta`** publish + **`fold_document_deltas.py`** (optional separate job). |
 | [`manual-run.md`](manual-run.md) | Ad-hoc operator run; minimal steps. |
 

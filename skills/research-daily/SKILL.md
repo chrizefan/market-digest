@@ -65,6 +65,8 @@ Set `"no_change": true` and keep `segments` fields as short strings (e.g. "No ma
 python3 scripts/run_db_first.py --skip-execute --validate-mode research --date {{DATE}}
 ```
 
+**Digest (research overview):** this skill publishes **`research_delta`** only. The **`digest`** — single summary of all segments for the date — is produced at **research task close-out** via [`skills/daily-delta/SKILL.md`](../daily-delta/SKILL.md) **Phase 7B** (weekdays) or the full [`skills/weekly-baseline/SKILL.md`](../weekly-baseline/SKILL.md) / orchestrator **Phase 7** (Sunday). See [`cowork/tasks/research-daily-delta.md`](../../cowork/tasks/research-daily-delta.md) and [`cowork/tasks/research-weekly-baseline.md`](../../cowork/tasks/research-weekly-baseline.md).
+
 ## Related
 
 - Track B (portfolio): `skills/daily-delta/SKILL.md`, `skills/portfolio-manager/SKILL.md`, `cowork/tasks/portfolio-pm-rebalance.md`

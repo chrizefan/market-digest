@@ -127,7 +127,13 @@ function resolveLibraryDocumentView(document_key: string, payload: unknown): Lib
   if (key === 'delta-request.json' || dt === 'delta_request') return 'delta_request';
   if (key === 'portfolio-recommendation.json' || dt === 'portfolio_recommendation') return 'portfolio_recommendation';
   if (key === 'opportunity-screener.json' || dt === 'opportunity_screen') return 'opportunity_screener';
-  if (key.includes('deliberation') || dt === 'deliberation_transcript') return 'deliberation';
+  if (
+    key.includes('deliberation') ||
+    dt === 'deliberation_transcript' ||
+    dt === 'deliberation_session_index'
+  ) {
+    return 'deliberation';
+  }
   if (dt === 'evolution_sources') return 'evolution_sources';
   if (
     dt === 'research_changelog' ||

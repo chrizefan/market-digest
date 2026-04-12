@@ -17,7 +17,22 @@
         "kind": { "type": "string", "enum": ["baseline_full", "delta_scoped"] },
         "delta_number": { "type": ["number", "null"], "minimum": 0 },
         "triggers": { "type": "array", "items": { "type": "string", "maxLength": 400 } },
-        "positions_reviewed": { "type": "array", "items": { "type": "string", "maxLength": 12 } }
+        "positions_reviewed": { "type": "array", "items": { "type": "string", "maxLength": 12 } },
+        "session_id": { "type": ["string", "null"], "maxLength": 64 },
+        "related_ticker": {
+          "type": ["string", "null"],
+          "maxLength": 12,
+          "description": "When this transcript is the per-ticker conference for one symbol."
+        },
+        "converged": {
+          "type": ["boolean", "null"],
+          "description": "PM declares debate finished for this ticker; no fixed max rounds."
+        },
+        "aggregate_index_document_key": {
+          "type": ["string", "null"],
+          "maxLength": 512,
+          "description": "Pointer to deliberation-transcript-index/{{DATE}}.json for this session."
+        }
       }
     },
     "body": {

@@ -19,7 +19,32 @@
         "category": { "type": "string", "maxLength": 64 },
         "analyst": { "type": "string", "maxLength": 64 },
         "thesis_id": { "type": ["string", "null"], "maxLength": 32 },
-        "regime": { "type": ["string", "null"], "maxLength": 200 }
+        "regime": { "type": ["string", "null"], "maxLength": 200 },
+        "linked_thesis_ids": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 32 },
+          "description": "Track B: tie to market_thesis_exploration thesis_id values (preferred over single thesis_id)."
+        },
+        "research_citations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["ref_kind", "ref_id"],
+            "properties": {
+              "ref_kind": {
+                "type": "string",
+                "enum": ["document_key", "changelog_item", "digest_path", "note"]
+              },
+              "ref_id": { "type": "string", "maxLength": 512 },
+              "note": { "type": "string", "maxLength": 500 }
+            }
+          }
+        },
+        "light_research_requested": {
+          "type": "boolean",
+          "description": "True when PM asked for recess research during deliberation."
+        }
       }
     },
     "body": {

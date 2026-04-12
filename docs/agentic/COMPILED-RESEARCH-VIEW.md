@@ -22,6 +22,9 @@ Storing a **fully merged** digest for every weekday (baseline + all deltas) dupl
 4. **Research-only days**  
    `research-delta.json` is **additive** context. Folding for portfolio narrative may ignore it; the Research Library queries `documents` by `document_key` / `doc_type` directly.
 
+5. **Track B thesis-first docs (portfolio layer)**  
+   `market_thesis_exploration`, `thesis_vehicle_map`, and optionally revised `asset_recommendation` rows may use the same **`document_delta` → fold** machinery as research docs when you want incremental patches. **Do not** delta-edit `deliberation_transcript`, `deliberation_session_index`, or `pm_allocation_memo` — publish **new** rows each session. See [RUNBOOK.md](../../RUNBOOK.md) (Track B — fresh vs delta).
+
 ## Implementation notes
 
 - Server components or API routes should accept `as_of` and perform fold in code or via a SQL/RPC function if you move logic to Postgres.  

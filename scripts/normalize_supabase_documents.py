@@ -66,6 +66,10 @@ DOC_TYPE_TO_SCHEMA = {
     "research_baseline_manifest": "research-baseline-manifest.schema.json",
     "document_delta": "document-delta.schema.json",
     "research_changelog": "research-changelog.schema.json",
+    "market_thesis_exploration": "market-thesis-exploration.schema.json",
+    "thesis_vehicle_map": "thesis-vehicle-map.schema.json",
+    "pm_allocation_memo": "pm-allocation-memo.schema.json",
+    "deliberation_session_index": "deliberation-session-index.schema.json",
 }
 
 WEEKLY_BODY_KEYS = frozenset(

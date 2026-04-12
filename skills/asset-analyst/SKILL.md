@@ -27,9 +27,10 @@ manager (Phase B/C of `skills/portfolio-manager/SKILL.md`) handles the compariso
 1. **Ticker and category** — provided by the PM agent that invoked this skill
 2. **Session segment files** — already produced earlier in the current session. Pull data FROM THESE FILES rather than initiating new web searches (data was already gathered in Phases 1–5). Relevant sources:
    - **DB-first**: use Supabase `daily_snapshots.snapshot` + relevant `documents.payload` artifacts for the same date.
-3. **Active theses** Note which thesis IDs are relevant to this asset.
-4. **Macro regime** — from Supabase `daily_snapshots.regime` / `daily_snapshots.segment_biases`
-5. **Research library** — `docs/research/LIBRARY.md`. Load once per session before forming bull/bear arguments. Cite at least one paper per argument. Use the Quick Reference tables (bottom) for per-asset signal rules. For macro regime framing, apply the Ilmanen 4-quadrant model (Section 5.4).
+3. **Market thesis linkage (Track B)** — load published **`market_thesis_exploration`** and **`thesis_vehicle_map`** for the date when present. Set JSON **`meta.linked_thesis_ids`** to every `thesis_id` that this ticker expresses (from the vehicle map row(s)). Set **`meta.research_citations`** to concrete refs (`document_key`, `changelog_item`, or digest path strings) supporting the view.
+4. **Active theses** — note which thesis IDs are relevant; prefer **`linked_thesis_ids`** over legacy single **`meta.thesis_id`** when both apply.
+5. **Macro regime** — from Supabase `daily_snapshots.regime` / `daily_snapshots.segment_biases`
+6. **Research library** — `docs/research/LIBRARY.md`. Load once per session before forming bull/bear arguments. Cite at least one paper per argument. Use the Quick Reference tables (bottom) for per-asset signal rules. For macro regime framing, apply the Ilmanen 4-quadrant model (Section 5.4).
 
 ---
 
@@ -81,7 +82,12 @@ Justify the weight choice in 1-2 sentences. Do not default to the current weight
 
 ### Step 6: Write Output
 Write the completed report as **JSON** (schema: `templates/schemas/asset-recommendation.schema.json`).
-Save to: `data/agent-cache/daily/{{DATE}}/positions/{{TICKER}}.json`
+Save to: `data/agent-cache/daily/{{DATE}}/positions/{{TICKER}}.json` (optional local scratch), then **validate and publish** to Supabase:
+
+```bash
+python3 scripts/validate_artifact.py - < positions/{{TICKER}}.json
+python3 scripts/publish_document.py --payload - --document-key asset-recommendations/{{DATE}}/{{TICKER}}.json --title "Asset recommendation {{TICKER}} {{DATE}}" --doc-type-label "Asset Recommendation"
+```
 
 Create the `positions/` subdirectory if it doesn't exist.
 
@@ -90,7 +96,9 @@ Create the `positions/` subdirectory if it doesn't exist.
 ## Round 2 — PM Challenge Response (If Called Back)
 
 If the PM challenges this analyst's position during deliberation (see `skills/deliberation/SKILL.md`),
-add a response block to the relevant deliberation transcript round, and update the analyst JSON payload if needed.
+add a response block to the relevant **per-ticker** deliberation transcript round, and update the analyst JSON payload if needed.
+
+**Recess for research:** When the PM requests more evidence, set **`meta.light_research_requested`: true** on the revised `asset_recommendation`, perform **limited** targeted lookup (narrow queries only), then republish the JSON before the next deliberation round.
 
 Response rules:
 - **Defend**: Must cite a specific data point from session outputs NOT used in Round 1. If no new evidence exists, cannot Defend — must Revise or Concede.

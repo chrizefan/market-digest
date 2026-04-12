@@ -5,7 +5,7 @@ description: >
   today's digest research, macro regime, thesis register, and institutional signals to identify
   tickers worth analyst coverage. Runs after the digest snapshot is available, before the analyst-PM
   deliberation. Produces a ranked shortlist that feeds the analyst roster.
-  Triggers: automatically via Phase 7B of orchestrator, or standalone: "screen opportunities",
+  Triggers:   automatically via Phase 7B of orchestrator, or standalone: "screen opportunities",
   "what looks interesting", "scan the watchlist".
 ---
 
@@ -13,6 +13,8 @@ description: >
 
 Translate the day's research into a ranked list of tickers worth analyst attention.
 This is the bridge between "what happened in markets" and "what should we own."
+
+**Thesis-first Track B:** Prefer a published **`thesis_vehicle_map`** for `{{DATE}}` as the **primary** bridge from [`skills/market-thesis-exploration/SKILL.md`](../market-thesis-exploration/SKILL.md) — see Step 0. If the map is absent, fall back to watchlist-only scoring (legacy path).
 
 ---
 
@@ -29,14 +31,28 @@ through because nobody thought to look.
 
 Load all of the following (already in session context after synthesis):
 
-1. **`config/watchlist.md`** — Full ETF universe with categories (~60 tickers)
-2. **Supabase digest** — `documents` row for `document_key='digest'` (payload is canonical; markdown is derived)
-3. **Supabase macro regime** — `daily_snapshots.regime` / `daily_snapshots.segment_biases`
-4. **Systematic technicals** — Supabase `price_technicals` / `price_history`
-5. **`config/portfolio.json`** — Current holdings (ticker list only — NOT weights)
-6. **Segment outputs** already produced this session (DB-first: Supabase documents/payloads)
+1. **`thesis_vehicle_map`** (preferred) — Supabase `documents` payload for `document_key` `thesis-vehicle-map/{{DATE}}.json` when published
+2. **`config/watchlist.md`** — Full ETF universe with categories (~60 tickers)
+3. **Supabase digest** — `documents` row for `document_key='digest'` (payload is canonical; markdown is derived)
+4. **Supabase macro regime** — `daily_snapshots.regime` / `daily_snapshots.segment_biases`
+5. **Systematic technicals** — Supabase `price_technicals` / `price_history`
+6. **`config/portfolio.json`** — Current holdings (ticker list only — NOT weights)
+7. **Segment outputs** already produced this session (DB-first: Supabase documents/payloads)
 
 **Do NOT read `weight_pct` from portfolio.json.** Screener is blinded to current sizing.
+
+---
+
+## Step 0: Thesis vehicle map (preferred)
+
+If **`thesis_vehicle_map`** exists for `{{DATE}}`:
+
+- Extract the union of all `body.mappings[].candidate_tickers` as **map-seeded tickers** (dedupe).
+- You **still** run regime + signal + technical scoring for these names (and the full watchlist if capacity allows on baseline days).
+- In **Step 3c**, **Pool 2 — Opportunity candidates** must **include** map-seeded non-held tickers that score **Total ≥ +1** before filling remaining slots from generic watchlist ranks (up to the same session caps: 5 baseline / 2 delta).
+- Note `thesis_id` linkage in the screener JSON notes field or `meta` when you publish `opportunity_screen`.
+
+If the map is **missing**, proceed with legacy Steps 1–3 only.
 
 ---
 
