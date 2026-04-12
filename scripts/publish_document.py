@@ -80,10 +80,17 @@ def main() -> int:
     content = None if args.no_markdown else _render_markdown(payload)
     sb = _sb()
 
+    raw_doc_type = (
+        args.doc_type_label
+        if args.doc_type_label is not None
+        else str(payload.get("doc_type") or "")
+    )
+    doc_type_col = raw_doc_type.strip() if raw_doc_type and raw_doc_type.strip() else None
+
     row = {
         "date": date_str,
         "title": args.title,
-        "doc_type": args.doc_type_label or str(payload.get("doc_type") or ""),
+        "doc_type": doc_type_col,
         "phase": None,
         "category": args.category,
         "segment": str(payload.get("doc_type") or ""),

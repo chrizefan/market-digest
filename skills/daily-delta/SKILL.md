@@ -30,6 +30,17 @@ There is **no** `data/agent-cache/daily/{{DATE}}/_meta.json` in the Supabase-fir
 
 **If no baseline exists** before `{{DATE}}`: stop and have the operator run a **Sunday baseline** (or a one-off baseline) via `skills/weekly-baseline/SKILL.md` + `materialize_snapshot.py` before applying deltas.
 
+### Step 0.5: Week anchor vs compiler `--baseline-date` (critical)
+
+Two different dates appear in a weekday run — **do not use the Sunday anchor as `materialize_snapshot --baseline-date`** unless that Sunday row is literally the prior calendar day (e.g. Monday after Sunday).
+
+| Concept | Role | Typical value |
+|---------|------|----------------|
+| **`{{WEEK_ANCHOR_DATE}}`** | Latest `daily_snapshots` row with `run_type=baseline` and `date <= {{DATE}}`. Put this in **`delta-request.json` → `baseline_date`** and in the materialized snapshot’s **`baseline_date`** field after compile. | Sunday of the ISO week |
+| **`{{MATERIALIZE_BASELINE_DATE}}`** | The row **`materialize_snapshot.py` loads** before applying ops: **previous calendar day** if that row exists in `daily_snapshots`; if missing (gap), latest snapshot date **strictly before** `{{DATE}}`. | Mon → prior Sun; Tue → prior Mon; etc. |
+
+Run `python3 scripts/run_db_first.py --date {{DATE}}` (or `--dry-run`) and use the printed lines for both values.
+
 ### Step 1: Load Config
 - `config/watchlist.md` — full asset universe
 - `config/investment-profile.md` — investor profile, risk tolerance, asset preferences, regime playbook
@@ -193,14 +204,16 @@ This JSON is the ONLY required delta-day artifact from the agent.
 
 ## Phase 7B — Materialize & Publish (DB-first)
 
-Have the operator run the compiler to apply ops to the baseline snapshot and upsert the fully materialized snapshot into Supabase:
+Have the operator run the compiler to apply ops to **yesterday’s materialized snapshot** (not the week anchor unless they coincide):
 
 ```bash
 python3 scripts/materialize_snapshot.py \
   --date {{DATE}} \
-  --baseline-date {{BASELINE_DATE}} \
+  --baseline-date {{MATERIALIZE_BASELINE_DATE}} \
   --ops-json '<PASTE_DELTA_REQUEST_JSON_HERE>'
 ```
+
+Ensure the pasted delta-request JSON includes **`baseline_date`: `{{WEEK_ANCHOR_DATE}}`** (Sunday / week anchor) so the upserted snapshot records the correct anchor. `materialize_snapshot.py` prefers `baseline_date` from the ops envelope when present.
 
 This will also store a rendered Markdown digest in Supabase (`documents` with `file_path='DIGEST.md'`) unless `--no-markdown` is used.
 

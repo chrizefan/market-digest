@@ -63,6 +63,9 @@ DOC_TYPE_TO_SCHEMA = {
     "evolution_sources": "evolution-sources.schema.json",
     "evolution_proposals": "evolution-proposals.schema.json",
     "research_delta": "research-delta.schema.json",
+    "research_baseline_manifest": "research-baseline-manifest.schema.json",
+    "document_delta": "document-delta.schema.json",
+    "research_changelog": "research-changelog.schema.json",
 }
 
 WEEKLY_BODY_KEYS = frozenset(
@@ -1085,7 +1088,7 @@ def migrate_row(row: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], List[str
     return new_payload, []
 
 
-# Must match chk_documents_doc_type (see supabase/migrations/014_documents_research_delta_doc_type.sql).
+# Must match chk_documents_doc_type (see supabase/migrations/014_documents_research_delta_doc_type.sql, 019).
 DOC_TYPE_DB_COLUMN: Dict[str, str] = {
     "digest_snapshot": "Daily Digest",
     "delta_digest": "Daily Delta",
@@ -1093,6 +1096,9 @@ DOC_TYPE_DB_COLUMN: Dict[str, str] = {
     "monthly_digest": "Monthly Summary",
     "deep_dive": "Deep Dive",
     "research_delta": "Research Delta",
+    "research_baseline_manifest": "Research Baseline Manifest",
+    "document_delta": "Document Delta",
+    "research_changelog": "Research Changelog",
 }
 
 

@@ -55,6 +55,13 @@ python3 scripts/execute_at_open.py --date YYYY-MM-DD --prior-trading-day-rebalan
 
 Do **not** store a third “full compiled markdown” copy per weekday. The UI should **derive** the effective view by folding **Sunday baseline** + **delta ops** Mon→as-of (see [`docs/agentic/COMPILED-RESEARCH-VIEW.md`](docs/agentic/COMPILED-RESEARCH-VIEW.md)).
 
+### Two “baseline” concepts (do not confuse)
+
+1. **`snapshot.baseline_date` / `delta-request.baseline_date`** — the week’s **anchor** (typically the latest `run_type=baseline` snapshot on or before the run date, usually **Sunday**). Used for reporting, manifests, and “which week this delta belongs to.”
+2. **`materialize_snapshot.py --baseline-date`** — which **`daily_snapshots` row** to **load as JSON** before applying weekday ops. On weekdays this must be the **previous calendar day’s** materialized snapshot when that row exists (day-over-day chain). If that day is missing (gap), use the **latest** `daily_snapshots.date` **strictly before** the target date. [`scripts/run_db_first.py`](scripts/run_db_first.py) prints both values on delta runs.
+
+Per-document research deltas (`document_delta`, manifest) use the same **week anchor** in their envelope; digest ops still chain through `materialize_snapshot` as above.
+
 ## Canonical principles
 - **Supabase is the source of truth** for daily snapshots, documents, positions, theses, NAV, and metrics.
 - **JSON payloads are canonical**. Markdown is always **derived** for display. Agents should **`validate_artifact.py -`** and **`publish_document.py --payload -`** (stdin) so hosted runs need no repo-local files. Optional JSON under **`data/agent-cache/`** is **gitignored** scratch for local validation only.

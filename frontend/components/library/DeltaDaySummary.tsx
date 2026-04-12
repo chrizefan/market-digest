@@ -16,6 +16,7 @@ export default function DeltaDaySummary({
 }) {
   const pathCount = new Set([...meta.changed_paths, ...meta.op_paths].filter(Boolean)).size;
   const opCount = meta.op_paths.length;
+  const baseline = meta.baseline_date?.trim();
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-fin-blue/25 bg-fin-blue/[0.07] px-4 py-3 text-sm">
@@ -30,8 +31,15 @@ export default function DeltaDaySummary({
         ) : null}
       </span>
       <span className="text-xs text-text-muted w-full sm:w-auto sm:flex-1 sm:min-w-[200px]">
-        Files with a badge were updated. Open the <strong className="text-text-secondary">digest</strong> to diff vs the
-        previous digest or the weekly delta baseline.
+        Files with a badge were updated. Open the <strong className="text-text-secondary">digest</strong> to diff vs
+        the previous digest or the delta baseline
+        {baseline ? (
+          <>
+            {' '}
+            (<span className="font-mono text-text-secondary">{baseline}</span>)
+          </>
+        ) : null}
+        .
       </span>
       {digestAvailable ? (
         <button

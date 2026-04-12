@@ -8,6 +8,7 @@ export type DocLibraryTier = 'research' | 'portfolio' | 'evolution';
 const PORTFOLIO_KEYS = new Set(
   [
     'rebalance-decision.json',
+    'deliberation.md',
     'deliberation.json',
     'deliberation-transcript.json',
     'opportunity-screener.json',

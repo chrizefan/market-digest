@@ -8,22 +8,21 @@ import PageHeader from '@/components/page-header';
 import DeltaDaySummary from '@/components/library/DeltaDaySummary';
 import LibraryDocumentBody from '@/components/library/LibraryDocumentBody';
 import { useDashboard } from '@/lib/dashboard-context';
-import {
-  countDeltaTouchesForDoc,
-  docMatchesLibraryScope,
-  type LibraryScope,
-} from '@/lib/library-doc-tier';
+import { countDeltaTouchesForDoc, docMatchesLibraryScope } from '@/lib/library-doc-tier';
 import { getLibraryDocumentById, type LibraryDocumentResult } from '@/lib/queries';
 import type { Doc } from '@/lib/types';
+
+type RunDayKind = 'baseline' | 'delta' | 'unknown';
 
 /* ── Mini Calendar ── */
 interface MiniCalendarProps {
   dates: string[];
+  runKindByDate: Map<string, RunDayKind>;
   selected: string | null;
   onSelect: (date: string) => void;
 }
 
-function MiniCalendar({ dates, selected, onSelect }: MiniCalendarProps) {
+function MiniCalendar({ dates, runKindByDate, selected, onSelect }: MiniCalendarProps) {
   const [viewMonth, setViewMonth] = useState<{ year: number; month: number }>(() => {
     const today = new Date();
     return { year: today.getFullYear(), month: today.getMonth() };
@@ -59,13 +58,13 @@ function MiniCalendar({ dates, selected, onSelect }: MiniCalendarProps) {
   return (
     <div className="glass-card p-4">
       <div className="flex items-center justify-between mb-3">
-        <button onClick={prev} className="text-text-muted hover:text-white text-sm px-1">
+        <button type="button" onClick={prev} className="text-text-muted hover:text-white text-sm px-1">
           ‹
         </button>
         <span className="text-sm font-medium">
           {monthNames[month]} {year}
         </span>
-        <button onClick={next} className="text-text-muted hover:text-white text-sm px-1">
+        <button type="button" onClick={next} className="text-text-muted hover:text-white text-sm px-1">
           ›
         </button>
       </div>
@@ -80,42 +79,71 @@ function MiniCalendar({ dates, selected, onSelect }: MiniCalendarProps) {
           const iso = `${year}-${pad(month + 1)}-${pad(day)}`;
           const has = dateSet.has(iso);
           const sel = iso === selected;
+          const kind = has ? runKindByDate.get(iso) ?? 'unknown' : 'unknown';
+
+          const dayBtn = [
+            'w-7 h-7 rounded-full text-[11px] flex items-center justify-center transition-colors',
+            !has ? 'text-text-muted/30 cursor-default' : 'cursor-pointer',
+          ];
+
+          if (sel) {
+            dayBtn.push('bg-fin-blue text-white font-bold ring-2 ring-fin-blue ring-offset-2 ring-offset-[#0a0a0a]');
+          } else if (has) {
+            if (kind === 'baseline') {
+              dayBtn.push('bg-fin-amber/25 text-fin-amber border border-fin-amber/50 hover:bg-fin-amber/35');
+            } else if (kind === 'delta') {
+              dayBtn.push('text-fin-blue hover:bg-fin-blue/20');
+            } else {
+              dayBtn.push('text-text-secondary border border-border-subtle/80 hover:bg-white/[0.06]');
+            }
+          }
+
           return (
             <button
               key={i}
+              type="button"
               disabled={!has}
               onClick={() => has && onSelect(iso)}
-              className={[
-                'w-7 h-7 rounded-full text-[11px] flex items-center justify-center transition-colors',
-                sel ? 'bg-fin-blue text-white font-bold' : '',
-                has && !sel ? 'text-fin-blue hover:bg-fin-blue/20 cursor-pointer' : '',
-                !has ? 'text-text-muted/30 cursor-default' : '',
-              ].join(' ')}
+              className={dayBtn.join(' ')}
             >
               {day}
             </button>
           );
         })}
       </div>
+      <div className="mt-3 pt-3 border-t border-border-subtle space-y-1.5 text-[10px] text-text-muted">
+        <p className="uppercase tracking-wider">Run type</p>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-fin-amber/80 border border-fin-amber" />
+            <span>Baseline</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-fin-blue/80" />
+            <span>Delta</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full border border-border-subtle bg-bg-secondary" />
+            <span>Unknown</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
 /* ── Main Page ── */
-const CADENCES = ['Daily', 'Weekly', 'Monthly'] as const;
-type Cadence = (typeof CADENCES)[number];
-
 const CATEGORY_ORDER = [
   'Digest',
-  'Portfolio',
-  'Positions',
-  'Deep Dives',
-  'Weekly / Monthly',
-  'Evolution',
   'Market Analysis',
   'Equities',
   'Sectors',
   'Intelligence',
+  'Positions',
+  'Deep Dives',
+  'Weekly / Monthly',
+  'Portfolio',
+  'Evolution',
   'Other',
 ] as const;
 
@@ -148,12 +176,22 @@ function categorizeDoc(d: Doc): string {
   return 'Other';
 }
 
-const LIBRARY_SCOPES: LibraryScope[] = ['research', 'portfolio', 'evolution', 'all'];
+function aggregateRunKindForDate(docsOnDate: Doc[]): RunDayKind {
+  let sawBaseline = false;
+  let sawDelta = false;
+  for (const d of docsOnDate) {
+    const rt = (d.runType || '').toLowerCase();
+    if (rt === 'baseline') sawBaseline = true;
+    else if (rt === 'delta') sawDelta = true;
+  }
+  if (sawBaseline && sawDelta) return 'baseline';
+  if (sawBaseline) return 'baseline';
+  if (sawDelta) return 'delta';
+  return 'unknown';
+}
 
 function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlDocKey: string | null }) {
   const { data, loading, error } = useDashboard();
-  const [cadence, setCadence] = useState<Cadence>('Daily');
-  const [libraryScope, setLibraryScope] = useState<LibraryScope>('research');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [activeFile, setActiveFile] = useState<Doc | null>(null);
   const [libraryDoc, setLibraryDoc] = useState<LibraryDocumentResult | null>(null);
@@ -166,35 +204,51 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
     () => data?.delta_request_meta_by_date ?? {},
     [data?.delta_request_meta_by_date]
   );
-
-  const scopedDocs = useMemo(
-    () => docs.filter((d) => docMatchesLibraryScope(d, libraryScope)),
-    [docs, libraryScope]
+  const snapshotRunTypeByDate = useMemo(
+    () => data?.snapshot_run_type_by_date ?? {},
+    [data?.snapshot_run_type_by_date]
   );
 
-  const cadenceDocs = useMemo<Record<Cadence, Doc[]>>(() => {
-    const map: Record<Cadence, Doc[]> = { Daily: [], Weekly: [], Monthly: [] };
-    scopedDocs.forEach((d) => {
-      const c = (d.cadence || 'daily').toLowerCase();
-      if (c === 'weekly') map.Weekly.push(d);
-      else if (c === 'monthly') map.Monthly.push(d);
-      else map.Daily.push(d);
-    });
-    return map;
-  }, [scopedDocs]);
+  const researchDocs = useMemo(
+    () => docs.filter((d) => docMatchesLibraryScope(d, 'research')),
+    [docs]
+  );
 
-  const activeDocs = useMemo<Doc[]>(() => cadenceDocs[cadence] || [], [cadenceDocs, cadence]);
+  const docsByDate = useMemo(() => {
+    const m = new Map<string, Doc[]>();
+    for (const d of researchDocs) {
+      if (!d.date) continue;
+      const arr = m.get(d.date) || [];
+      arr.push(d);
+      m.set(d.date, arr);
+    }
+    return m;
+  }, [researchDocs]);
 
   const dates = useMemo<string[]>(() => {
-    const set = new Set(activeDocs.map((d) => d.date));
+    const set = new Set(researchDocs.map((d) => d.date).filter(Boolean));
     return [...set].sort().reverse();
-  }, [activeDocs]);
+  }, [researchDocs]);
+
+  const runKindByDate = useMemo(() => {
+    const m = new Map<string, RunDayKind>();
+    for (const date of dates) {
+      const onDay = docsByDate.get(date) ?? [];
+      let kind = aggregateRunKindForDate(onDay);
+      if (kind === 'unknown') {
+        const snap = snapshotRunTypeByDate[date];
+        if (snap === 'baseline' || snap === 'delta') kind = snap;
+      }
+      m.set(date, kind);
+    }
+    return m;
+  }, [dates, docsByDate, snapshotRunTypeByDate]);
 
   const effDate = selectedDate && dates.includes(selectedDate) ? selectedDate : dates[0] || null;
 
   const docsForEffDate = useMemo<Doc[]>(
-    () => (effDate ? activeDocs.filter((d) => d.date === effDate) : []),
-    [activeDocs, effDate]
+    () => (effDate ? researchDocs.filter((d) => d.date === effDate) : []),
+    [researchDocs, effDate]
   );
 
   const dateDocs = useMemo<Doc[]>(() => {
@@ -233,6 +287,8 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
     });
   }, [docsForEffDate]);
 
+  const latestDate = dates[0] || null;
+
   useEffect(() => {
     if (urlDate && dates.includes(urlDate)) {
       setSelectedDate(urlDate);
@@ -243,7 +299,7 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
 
   useEffect(() => {
     if (!urlDocKey) return;
-    const match = activeDocs.find((d) => d.date === effDate && d.path === urlDocKey);
+    const match = researchDocs.find((d) => d.date === effDate && d.path === urlDocKey);
     if (match) {
       setActiveFile(match);
       setLibraryDoc(null);
@@ -262,7 +318,7 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
         )
         .finally(() => setActiveLoading(false));
     }
-  }, [urlDocKey, activeDocs, effDate]);
+  }, [urlDocKey, researchDocs, effDate]);
 
   if (loading)
     return <div className="flex items-center justify-center h-screen text-text-secondary">Loading…</div>;
@@ -276,53 +332,9 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
         <div className="flex gap-6 max-lg:flex-col">
           {/* ── Left: Calendar + filters ── */}
           <div className="w-56 shrink-0 space-y-4 max-lg:w-full max-lg:flex max-lg:gap-4 max-lg:flex-wrap">
-            {/* Cadence tabs */}
-            <div className="flex gap-1 bg-bg-secondary rounded-lg p-1">
-              {CADENCES.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => {
-                    setCadence(c);
-                    setSelectedDate(null);
-                    setActiveFile(null);
-                    setLibraryDoc(null);
-                  }}
-                  className={[
-                    'flex-1 text-xs py-2 rounded-md font-medium transition-colors',
-                    c === cadence ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:text-white',
-                  ].join(' ')}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-
-            <div className="glass-card p-2 space-y-1">
-              <p className="text-[10px] text-text-muted uppercase tracking-wider px-1">Library scope</p>
-              <div className="flex flex-col gap-0.5">
-                {LIBRARY_SCOPES.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => {
-                      setLibraryScope(s);
-                      setSelectedDate(null);
-                      setActiveFile(null);
-                      setLibraryDoc(null);
-                    }}
-                    className={[
-                      'text-left text-xs px-2 py-1.5 rounded-md capitalize transition-colors',
-                      s === libraryScope ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:text-white',
-                    ].join(' ')}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <MiniCalendar
               dates={dates}
+              runKindByDate={runKindByDate}
               selected={effDate}
               onSelect={(d) => {
                 setSelectedDate(d);
@@ -331,9 +343,24 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
               }}
             />
 
+            {latestDate && effDate !== latestDate ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedDate(null);
+                  setActiveFile(null);
+                  setLibraryDoc(null);
+                }}
+                className="w-full text-xs py-2 rounded-lg border border-border-subtle text-text-secondary hover:text-white hover:bg-white/[0.04] transition-colors"
+              >
+                Jump to latest ({latestDate})
+              </button>
+            ) : null}
+
             {/* Filters */}
             <div className="glass-card p-3">
               <button
+                type="button"
                 onClick={() => setShowFilters(!showFilters)}
                 className="flex items-center gap-2 text-xs text-text-muted w-full"
               >
@@ -348,6 +375,7 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
               {showFilters && (
                 <div className="mt-2 space-y-1">
                   <button
+                    type="button"
                     onClick={() => setFilterCat(null)}
                     className={`block w-full text-left text-xs px-2 py-1 rounded ${
                       !filterCat ? 'text-fin-blue bg-fin-blue/10' : 'text-text-muted hover:text-white'
@@ -358,6 +386,7 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                   {categoryList.map((c) => (
                     <button
                       key={c}
+                      type="button"
                       onClick={() => setFilterCat(c === filterCat ? null : c)}
                       className={`block w-full text-left text-xs px-2 py-1 rounded ${
                         c === filterCat ? 'text-fin-blue bg-fin-blue/10' : 'text-text-muted hover:text-white'
@@ -368,26 +397,6 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                   ))}
                 </div>
               )}
-            </div>
-
-            {/* Quick date list */}
-            <div className="glass-card p-3 max-h-44 overflow-y-auto">
-              <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2">Recent Dates</p>
-              {dates.slice(0, 15).map((d) => (
-                <button
-                  key={d}
-                  onClick={() => {
-                    setSelectedDate(d);
-                    setActiveFile(null);
-                    setLibraryDoc(null);
-                  }}
-                  className={`block w-full text-left text-xs px-2 py-1 rounded font-mono ${
-                    d === effDate ? 'text-fin-blue bg-fin-blue/10 font-semibold' : 'text-text-muted hover:text-white'
-                  }`}
-                >
-                  {d}
-                </button>
-              ))}
             </div>
           </div>
 
@@ -402,7 +411,7 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
               </span>
             </div>
 
-            {libraryScope === 'research' && effDate && deltaMetaByDate[effDate] ? (
+            {effDate && deltaMetaByDate[effDate] ? (
               <DeltaDaySummary
                 meta={deltaMetaByDate[effDate]}
                 digestAvailable={!!digestDocForDate}
@@ -436,6 +445,7 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                     <span className="font-mono">{activeFile.title || activeFile.filename}</span>
                   </div>
                   <button
+                    type="button"
                     onClick={() => {
                       setActiveFile(null);
                       setLibraryDoc(null);
@@ -477,6 +487,7 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                       return (
                         <button
                           key={i}
+                          type="button"
                           onClick={async () => {
                             setActiveLoading(true);
                             setActiveFile(f);
@@ -543,14 +554,9 @@ export default function LibraryClient() {
   const urlDate = searchParams.get('date');
   const urlDocKey = searchParams.get('docKey');
 
-  // Keep the Suspense boundary *inside* the client component too, so the page
-  // can show a fallback quickly during client-side navigation updates.
-  // NOTE: `useSearchParams()` is used within the subtree; this component itself
-  // is wrapped in a server Suspense boundary in `page.tsx` for prerender safety.
   return (
     <Suspense fallback={<div className="flex items-center justify-center h-screen text-text-secondary">Loading…</div>}>
       <LibraryPageInner urlDate={urlDate} urlDocKey={urlDocKey} />
     </Suspense>
   );
 }
-

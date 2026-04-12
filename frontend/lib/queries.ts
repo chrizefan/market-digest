@@ -109,7 +109,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
 
   const [
     snapshotRes, positionsRes, thesesRes, navRes,
-    benchRes, metricsRes, docsRes, deltaDocsRes, eventsRes, tickerViewRes,
+    benchRes, metricsRes, docsRes, deltaDocsRes, eventsRes, tickerViewRes, snapshotRunTypesRes,
   ] = await Promise.all([
     supabase.from('daily_snapshots').select('*').order('date', { ascending: false }).limit(1).single(),
     supabase.from('positions').select('*').order('date', { ascending: false }).limit(1000),
@@ -140,6 +140,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
       // Activity tab shows newest first; raise or paginate if the ledger outgrows this window.
       .limit(200),
     supabase.from('price_history_tickers').select('ticker'),
+    supabase.from('daily_snapshots').select('date, run_type').order('date', { ascending: false }).limit(500),
   ]);
 
   if (docsRes.error) {
@@ -163,6 +164,20 @@ export async function getFullDashboardData(): Promise<DashboardData> {
   }
   if (tickerViewRes.error) {
     console.warn('Supabase price_history_tickers view (apply migration 018 if missing):', tickerViewRes.error);
+  }
+  if (snapshotRunTypesRes.error) {
+    console.error('Supabase daily_snapshots run_type query:', snapshotRunTypesRes.error);
+  }
+
+  const snapshot_run_type_by_date: Record<string, 'baseline' | 'delta'> = {};
+  const snapRunRows = (snapshotRunTypesRes.data ?? []) as Pick<
+    TableRow<'daily_snapshots'>,
+    'date' | 'run_type'
+  >[];
+  for (const row of snapRunRows) {
+    if (!row?.date) continue;
+    const rt = String(row.run_type || '').toLowerCase();
+    if (rt === 'baseline' || rt === 'delta') snapshot_run_type_by_date[row.date] = rt;
   }
 
   const snapshot: TableRow<'daily_snapshots'> = snapshotRes.data ?? ({} as TableRow<'daily_snapshots'>);
@@ -532,6 +547,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     ratios: [],
     docs,
     delta_request_meta_by_date,
+    snapshot_run_type_by_date,
     benchmarks,
     price_history_tickers,
     server_portfolio_metrics,

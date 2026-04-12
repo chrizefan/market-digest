@@ -229,6 +229,8 @@ export interface DashboardData {
   server_portfolio_metrics: ServerPortfolioMetrics | null;
   /** Per trading day: paths touched by delta-request.json (when published). */
   delta_request_meta_by_date: Record<string, DeltaRequestMeta>;
+  /** Fallback for calendar baseline vs delta when document rows omit `run_type`. */
+  snapshot_run_type_by_date: Record<string, 'baseline' | 'delta'>;
   benchmarks: BenchmarkHistoryMap;
   /** Distinct tickers in price_history (view); sorted with majors first. */
   price_history_tickers: string[];

@@ -1,11 +1,27 @@
 'use client';
 
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDashboard } from '@/lib/dashboard-context';
 import PageHeader from '@/components/page-header';
+import LibraryDocumentBody from '@/components/library/LibraryDocumentBody';
 import { Badge, SectionTitle, formatPct, pnlColor } from '@/components/ui';
-import { ChevronDown, ChevronUp, Info, BookOpen, Layers, History, Activity } from 'lucide-react';
+import { getDocLibraryTier } from '@/lib/library-doc-tier';
+import { getLibraryDocumentById } from '@/lib/queries';
+import type { Doc } from '@/lib/types';
+import {
+  ChevronDown,
+  ChevronUp,
+  Info,
+  BookOpen,
+  Layers,
+  History,
+  Activity,
+  ClipboardList,
+  FileText,
+  X,
+} from 'lucide-react';
 import {
   PieChart,
   Pie,
@@ -85,7 +101,31 @@ function bucketAllocationsForPie(items: AllocationDatum[]): PieSliceDatum[] {
   return [...head.map(({ name, value }) => ({ name, value })), { name: 'Other', value: other, tooltipExtra }];
 }
 
-type TabId = 'summary' | 'thesis' | 'history' | 'activity';
+type TabId = 'summary' | 'thesis' | 'pm_process' | 'history' | 'activity';
+
+const PM_DOC_ORDER = [
+  'deliberation.md',
+  'deliberation.json',
+  'deliberation-transcript.json',
+  'rebalance-decision.json',
+  'portfolio-recommendation.json',
+  'opportunity-screener.json',
+] as const;
+
+function pmDocSortKey(path: string): number {
+  const file = path.toLowerCase().split('/').pop() || path.toLowerCase();
+  const i = (PM_DOC_ORDER as readonly string[]).indexOf(file);
+  return i === -1 ? 999 : i;
+}
+
+function sortPmDocs(docs: Doc[]): Doc[] {
+  return [...docs].sort((a, b) => {
+    const ka = pmDocSortKey(a.path);
+    const kb = pmDocSortKey(b.path);
+    if (ka !== kb) return ka - kb;
+    return a.path.localeCompare(b.path);
+  });
+}
 
 function eventBadgeVariant(
   ev: DashboardPositionEvent['event']
@@ -103,13 +143,21 @@ function thesisNames(ids: string[], thesisById: Map<string, Thesis>): string {
     .join(', ');
 }
 
-export default function PortfolioPage() {
+const VALID_TABS: TabId[] = ['summary', 'thesis', 'pm_process', 'history', 'activity'];
+
+function PortfolioPageContent() {
   const { data, loading, error } = useDashboard();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [expandedThesisId, setExpandedThesisId] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>('summary');
   const [summaryAllocationMode, setSummaryAllocationMode] = useState<SummaryAllocationMode>('ticker');
   const [historyMode, setHistoryMode] = useState<SleeveStackMode>('category');
+  const [pmActiveFile, setPmActiveFile] = useState<Doc | null>(null);
+  const [pmLibraryDoc, setPmLibraryDoc] = useState<Awaited<ReturnType<typeof getLibraryDocumentById>> | null>(null);
+  const [pmLoading, setPmLoading] = useState(false);
 
   const positions = useMemo(() => data?.positions ?? [], [data]);
   const ratios = useMemo(() => data?.ratios ?? [], [data]);
@@ -210,21 +258,122 @@ export default function PortfolioPage() {
     return categoryStackLabel(k);
   };
 
-  const researchLinks = useMemo(
-    () =>
-      lastUpdated
-        ? [
-            { label: 'Digest', docKey: 'digest' },
-            { label: 'Deliberation', docKey: 'deliberation.md' },
-            { label: 'Rebalance', docKey: 'rebalance-decision.json' },
-          ]
-        : [],
-    [lastUpdated]
-  );
+  const latestRunDocByKey = useMemo(() => {
+    const m = new Map<string, boolean>();
+    if (!lastUpdated || !data?.docs) return m;
+    for (const d of data.docs) {
+      if (d.date === lastUpdated) m.set(d.path, true);
+    }
+    return m;
+  }, [data?.docs, lastUpdated]);
+
+  const researchStripLinks = useMemo(() => {
+    if (!lastUpdated) return [] as { label: string; docKey: string }[];
+    return ['digest']
+      .filter((k) => latestRunDocByKey.has(k))
+      .map((docKey) => ({ label: 'Digest', docKey }));
+  }, [lastUpdated, latestRunDocByKey]);
+
+  const pmStripLinks = useMemo(() => {
+    if (!lastUpdated) return [] as { label: string; docKey: string }[];
+    const candidates = [
+      { label: 'Deliberation', keys: ['deliberation.md', 'deliberation.json'] as const },
+      { label: 'Rebalance', keys: ['rebalance-decision.json'] as const },
+    ];
+    const out: { label: string; docKey: string }[] = [];
+    for (const c of candidates) {
+      const docKey = c.keys.find((k) => latestRunDocByKey.has(k));
+      if (docKey) out.push({ label: c.label, docKey });
+    }
+    return out;
+  }, [lastUpdated, latestRunDocByKey]);
+
+  const pmDocs = useMemo(() => {
+    if (!lastUpdated || !data?.docs) return [];
+    return sortPmDocs(
+      data.docs.filter((d) => d.date === lastUpdated && getDocLibraryTier(d) === 'portfolio')
+    );
+  }, [data?.docs, lastUpdated]);
+
+  useEffect(() => {
+    const t = searchParams.get('tab') as TabId | null;
+    if (t && VALID_TABS.includes(t)) setTab(t);
+  }, [searchParams]);
+
+  const docKeyParam = searchParams.get('docKey');
+
+  useEffect(() => {
+    if (!lastUpdated || !data?.docs) return;
+    if (searchParams.get('tab') !== 'pm_process') return;
+    if (!docKeyParam) {
+      setPmActiveFile(null);
+      setPmLibraryDoc(null);
+      return;
+    }
+    const doc = data.docs.find(
+      (d) => d.date === lastUpdated && d.path === docKeyParam && getDocLibraryTier(d) === 'portfolio'
+    );
+    if (!doc) {
+      setPmActiveFile(null);
+      setPmLibraryDoc(null);
+      return;
+    }
+    setPmActiveFile(doc);
+    setPmLoading(true);
+    setPmLibraryDoc(null);
+    getLibraryDocumentById(doc.id)
+      .then(setPmLibraryDoc)
+      .catch(() =>
+        setPmLibraryDoc({
+          id: doc.id,
+          date: doc.date,
+          document_key: doc.path,
+          view: 'markdown',
+          markdown: '_Failed to load document._',
+          payload: null,
+        })
+      )
+      .finally(() => setPmLoading(false));
+  }, [docKeyParam, lastUpdated, data?.docs, searchParams]);
+
+  function navigateTab(next: TabId) {
+    setTab(next);
+    if (next !== 'pm_process') {
+      setPmActiveFile(null);
+      setPmLibraryDoc(null);
+    }
+    const p = new URLSearchParams(searchParams.toString());
+    if (next === 'summary') {
+      p.delete('tab');
+      p.delete('docKey');
+    } else {
+      p.set('tab', next);
+      if (next !== 'pm_process') p.delete('docKey');
+    }
+    const s = p.toString();
+    router.replace(s ? `${pathname}?${s}` : pathname, { scroll: false });
+  }
+
+  function openPmDocument(doc: Doc) {
+    setTab('pm_process');
+    const p = new URLSearchParams(searchParams.toString());
+    p.set('tab', 'pm_process');
+    p.set('docKey', doc.path);
+    router.replace(`${pathname}?${p.toString()}`, { scroll: false });
+  }
+
+  function closePmDocument() {
+    setPmActiveFile(null);
+    setPmLibraryDoc(null);
+    const p = new URLSearchParams(searchParams.toString());
+    p.delete('docKey');
+    router.replace(`${pathname}?${p.toString()}`, { scroll: false });
+  }
 
   const tabs: { id: TabId; label: string; icon: typeof Layers }[] = [
     { id: 'summary', label: 'Summary', icon: Layers },
     { id: 'thesis', label: 'Thesis book', icon: BookOpen },
+    { id: 'pm_process', label: 'PM & process', icon: ClipboardList },
     { id: 'history', label: 'History', icon: History },
     { id: 'activity', label: 'Activity', icon: Activity },
   ];
@@ -250,7 +399,7 @@ export default function PortfolioPage() {
             <button
               key={id}
               type="button"
-              onClick={() => setTab(id)}
+              onClick={() => navigateTab(id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 tab === id
                   ? 'bg-fin-blue/15 text-fin-blue border border-fin-blue/40'
@@ -265,21 +414,41 @@ export default function PortfolioPage() {
 
         {tab === 'summary' && (
           <>
-            {researchLinks.length > 0 && (
-              <div className="glass-card px-5 py-4 flex flex-wrap items-center gap-3">
-                <span className="text-xs text-text-muted uppercase tracking-wider">Research</span>
-                <div className="flex flex-wrap gap-2">
-                  {researchLinks.map((l) => (
-                    <Link
-                      key={l.docKey}
-                      href={`/library?date=${encodeURIComponent(String(lastUpdated))}&docKey=${encodeURIComponent(l.docKey)}`}
-                      className="text-xs px-3 py-1.5 rounded-md bg-fin-blue/10 text-fin-blue hover:bg-fin-blue/20 transition-colors"
-                    >
-                      {l.label}
-                    </Link>
-                  ))}
-                </div>
-                <span className="text-xs text-text-muted">as of {lastUpdated}</span>
+            {(researchStripLinks.length > 0 || pmStripLinks.length > 0) && (
+              <div className="glass-card px-5 py-4 space-y-3">
+                {researchStripLinks.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-xs text-text-muted uppercase tracking-wider">Research</span>
+                    <div className="flex flex-wrap gap-2">
+                      {researchStripLinks.map((l) => (
+                        <Link
+                          key={l.docKey}
+                          href={`/library?date=${encodeURIComponent(String(lastUpdated))}&docKey=${encodeURIComponent(l.docKey)}`}
+                          className="text-xs px-3 py-1.5 rounded-md bg-fin-blue/10 text-fin-blue hover:bg-fin-blue/20 transition-colors"
+                        >
+                          {l.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {pmStripLinks.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-xs text-text-muted uppercase tracking-wider">PM &amp; process</span>
+                    <div className="flex flex-wrap gap-2">
+                      {pmStripLinks.map((l) => (
+                        <Link
+                          key={l.docKey}
+                          href={`/portfolio?tab=pm_process&docKey=${encodeURIComponent(l.docKey)}`}
+                          className="text-xs px-3 py-1.5 rounded-md bg-fin-amber/10 text-fin-amber hover:bg-fin-amber/20 transition-colors"
+                        >
+                          {l.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <span className="text-xs text-text-muted block">as of {lastUpdated}</span>
               </div>
             )}
 
@@ -707,10 +876,10 @@ export default function PortfolioPage() {
                                     </div>
                                   </>
                                 )}
-                                {researchLinks.length > 0 && lastUpdated && (
+                                {researchStripLinks.length > 0 && lastUpdated && (
                                   <div className="mt-5 flex flex-wrap items-center gap-2">
                                     <span className="text-xs text-text-muted">Research</span>
-                                    {researchLinks.map((l) => (
+                                    {researchStripLinks.map((l) => (
                                       <Link
                                         key={l.docKey}
                                         href={`/library?date=${encodeURIComponent(String(lastUpdated))}&docKey=${encodeURIComponent(l.docKey)}`}
@@ -719,6 +888,12 @@ export default function PortfolioPage() {
                                         {l.label}
                                       </Link>
                                     ))}
+                                    <Link
+                                      href="/library"
+                                      className="text-xs text-fin-blue/80 hover:text-fin-blue hover:underline"
+                                    >
+                                      Open library
+                                    </Link>
                                   </div>
                                 )}
                               </td>
@@ -738,6 +913,76 @@ export default function PortfolioPage() {
                 </table>
               </div>
             </div>
+          </div>
+        )}
+
+        {tab === 'pm_process' && (
+          <div className="space-y-6">
+            <div className="glass-card p-0 overflow-hidden">
+              <div className="px-5 py-4 border-b border-border-subtle bg-bg-secondary">
+                <h3 className="text-sm font-semibold">Portfolio management artifacts</h3>
+                <p className="text-xs text-text-muted mt-1">
+                  Deliberation, rebalance decisions, and related outputs for the latest run ({lastUpdated ?? '—'}).
+                </p>
+              </div>
+              {pmDocs.length === 0 ? (
+                <div className="px-5 py-10 text-center text-text-muted text-sm">
+                  No portfolio process documents for this date.
+                </div>
+              ) : (
+                <div className="divide-y divide-border-subtle">
+                  {pmDocs.map((d) => {
+                    const active = pmActiveFile?.id === d.id;
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => openPmDocument(d)}
+                        className={`w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02] transition-colors ${
+                          active ? 'bg-fin-amber/5' : ''
+                        }`}
+                      >
+                        <FileText size={14} className="text-fin-amber/70 shrink-0" />
+                        <span className="font-mono text-sm">{d.title || d.filename || d.path}</span>
+                        <span className="ml-auto text-[11px] text-text-muted">{d.phase ?? ''}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {pmActiveFile ? (
+              <div className="glass-card p-0 overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-3 border-b border-border-subtle bg-bg-secondary">
+                  <div className="flex items-center gap-2 text-sm min-w-0">
+                    <FileText size={14} className="text-fin-amber shrink-0" />
+                    <span className="font-mono truncate">{pmActiveFile.title || pmActiveFile.filename}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closePmDocument}
+                    className="text-text-muted hover:text-white shrink-0"
+                    aria-label="Close document"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="p-6 max-w-none text-sm leading-relaxed overflow-auto max-h-[70vh]">
+                  {pmLoading || !pmLibraryDoc ? (
+                    <div className="text-text-secondary">Loading document…</div>
+                  ) : (
+                    <LibraryDocumentBody
+                      view={pmLibraryDoc.view}
+                      markdown={pmLibraryDoc.markdown}
+                      payload={pmLibraryDoc.payload}
+                      documentKey={pmLibraryDoc.document_key}
+                      docDate={pmLibraryDoc.date}
+                    />
+                  )}
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
 
@@ -867,5 +1112,13 @@ export default function PortfolioPage() {
         )}
       </div>
     </>
+  );
+}
+
+export default function PortfolioPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen text-text-secondary">Loading…</div>}>
+      <PortfolioPageContent />
+    </Suspense>
   );
 }

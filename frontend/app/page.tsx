@@ -36,11 +36,16 @@ export default function OverviewPage() {
     ? docs.filter((d) => d.date === latestDate)
     : [];
   const latestRunDocByKey = new Map(latestRunDocs.map((d) => [d.path, d]));
-  const quickLinks = [
-    { label: 'Digest', docKey: 'digest' },
-    { label: 'Deliberation', docKey: 'deliberation.md' },
-    { label: 'Rebalance', docKey: 'rebalance-decision.json' },
-  ].filter((x) => latestRunDocByKey.has(x.docKey));
+  const researchQuickLinks = [{ label: 'Digest', docKey: 'digest' }].filter((x) =>
+    latestRunDocByKey.has(x.docKey)
+  );
+  const pmQuickLinks = [
+    { label: 'Deliberation', keys: ['deliberation.md', 'deliberation.json'] as const },
+    { label: 'Rebalance', keys: ['rebalance-decision.json'] as const },
+  ].flatMap((c) => {
+    const docKey = c.keys.find((k) => latestRunDocByKey.has(k));
+    return docKey ? [{ label: c.label, docKey }] : [];
+  });
 
   return (
     <>
@@ -149,23 +154,49 @@ export default function OverviewPage() {
 
           {/* Actionable + Risks */}
           <div className="space-y-4">
-            {(quickLinks.length > 0 || latestDeepDives.length > 0) && (
+            {(researchQuickLinks.length > 0 || pmQuickLinks.length > 0 || latestDeepDives.length > 0) && (
               <div className="glass-card p-5">
                 <div className="flex items-center justify-between gap-3 mb-3">
-                  <h3 className="text-sm font-semibold">Latest Research</h3>
-                  <Link href="/library" className="text-xs text-fin-blue hover:underline">Open Library</Link>
+                  <h3 className="text-sm font-semibold">Latest research &amp; PM</h3>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <Link href="/library" className="text-xs text-fin-blue hover:underline">
+                      Research library
+                    </Link>
+                    <Link href="/portfolio?tab=pm_process" className="text-xs text-fin-amber hover:underline">
+                      PM &amp; process
+                    </Link>
+                  </div>
                 </div>
-                {quickLinks.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {quickLinks.map((l) => (
-                      <Link
-                        key={l.docKey}
-                        href={`/library?date=${encodeURIComponent(String(latestDate || ''))}&docKey=${encodeURIComponent(l.docKey)}`}
-                        className="text-xs px-3 py-1 rounded-md bg-fin-blue/10 text-fin-blue hover:bg-fin-blue/20 transition-colors"
-                      >
-                        {l.label}
-                      </Link>
-                    ))}
+                {researchQuickLinks.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2">Research</p>
+                    <div className="flex flex-wrap gap-2">
+                      {researchQuickLinks.map((l) => (
+                        <Link
+                          key={l.docKey}
+                          href={`/library?date=${encodeURIComponent(String(latestDate || ''))}&docKey=${encodeURIComponent(l.docKey)}`}
+                          className="text-xs px-3 py-1 rounded-md bg-fin-blue/10 text-fin-blue hover:bg-fin-blue/20 transition-colors"
+                        >
+                          {l.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {pmQuickLinks.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2">PM &amp; process</p>
+                    <div className="flex flex-wrap gap-2">
+                      {pmQuickLinks.map((l) => (
+                        <Link
+                          key={l.docKey}
+                          href={`/portfolio?tab=pm_process&docKey=${encodeURIComponent(l.docKey)}`}
+                          className="text-xs px-3 py-1 rounded-md bg-fin-amber/10 text-fin-amber hover:bg-fin-amber/20 transition-colors"
+                        >
+                          {l.label}
+                        </Link>
+                      ))}
+                    </div>
                   </div>
                 )}
                 {latestDeepDives.length > 0 && (

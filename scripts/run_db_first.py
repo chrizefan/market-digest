@@ -6,7 +6,7 @@ import json
 import os
 import subprocess
 import sys
-from datetime import date as dt_date, datetime
+from datetime import date as dt_date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -78,6 +78,28 @@ def _latest_baseline_date(sb, before_or_on: str) -> Optional[str]:
     return str(rows[0]["date"])[:10]
 
 
+def _prior_calendar_date(d: str) -> str:
+    """ISO date immediately before d (for digest delta compiler chain)."""
+    cur = datetime.fromisoformat(d).date()
+    return (cur - timedelta(days=1)).isoformat()
+
+
+def _latest_snapshot_date_strictly_before(sb, before_date: str) -> Optional[str]:
+    """Most recent daily_snapshots.date strictly before before_date (fallback if prior calendar day missing)."""
+    res = (
+        sb.table("daily_snapshots")
+        .select("date")
+        .lt("date", before_date)
+        .order("date", desc=True)
+        .limit(1)
+        .execute()
+    )
+    rows = getattr(res, "data", None) or []
+    if not rows:
+        return None
+    return str(rows[0]["date"])[:10]
+
+
 def _execute_at_open_argv(d: str) -> list[str]:
     argv = [sys.executable, "scripts/execute_at_open.py", "--date", d]
     sched = ROOT / "config" / "schedule.json"
@@ -93,7 +115,12 @@ def _execute_at_open_argv(d: str) -> list[str]:
     return argv
 
 
-def _print_agent_prompt(run_type: str, d: str, baseline_date: Optional[str]) -> None:
+def _print_agent_prompt(
+    run_type: str,
+    d: str,
+    week_anchor_date: Optional[str],
+    materialize_baseline_date: Optional[str],
+) -> None:
     print("")
     print("=== AGENT PROMPT (JSON-first, DB-first) ===")
     if run_type == "baseline":
@@ -102,7 +129,17 @@ def _print_agent_prompt(run_type: str, d: str, baseline_date: Optional[str]) -> 
         print("Return JSON only.")
     else:
         print(f"Run the DAILY DELTA digest for {d}.")
-        print(f"Baseline date (Supabase): {baseline_date or '[MISSING]'}")
+        print(
+            f"Week anchor (snapshot.baseline_date in delta-request JSON): {week_anchor_date or '[MISSING — run Sunday baseline first]'}"
+        )
+        print(
+            f"materialize_snapshot --baseline-date (load THIS row from daily_snapshots, then apply ops): "
+            f"{materialize_baseline_date or '[MISSING]'}"
+        )
+        print(
+            "Digest compiler chain: weekday ops apply to the **previous calendar day’s** materialized snapshot "
+            "(not re-diffed from Sunday alone). delta-request.baseline_date stays the week’s Sunday anchor."
+        )
         print("Emit a single Delta Request JSON (schema: templates/delta-request-schema.json).")
         print("Return JSON only.")
     print("")
@@ -146,10 +183,25 @@ def main() -> int:
     d = args.date
     run_type = _detect_run_type(args.baseline, args.delta, d)
 
-    baseline_date = None
-    if run_type == "delta" and not args.dry_run:
-        sb = _sb()
-        baseline_date = _latest_baseline_date(sb, d)
+    week_anchor_date = None
+    materialize_baseline_date = None
+    if run_type == "delta":
+        prior = _prior_calendar_date(d)
+        if args.dry_run:
+            materialize_baseline_date = prior
+            week_anchor_date = None
+        else:
+            sb = _sb()
+            week_anchor_date = _latest_baseline_date(sb, d)
+            check = (
+                sb.table("daily_snapshots")
+                .select("date")
+                .eq("date", prior)
+                .limit(1)
+                .execute()
+            )
+            rows = getattr(check, "data", None) or []
+            materialize_baseline_date = prior if rows else _latest_snapshot_date_strictly_before(sb, d)
 
     # Preflight checks
     for p in [
@@ -162,7 +214,7 @@ def main() -> int:
             print(f"❌ missing required path: {p}", file=sys.stderr)
             return 2
 
-    _print_agent_prompt(run_type, d, baseline_date)
+    _print_agent_prompt(run_type, d, week_anchor_date, materialize_baseline_date)
 
     # After the agent publishes to Supabase, this CLI refreshes metrics and validates DB state.
     # 1) Validate artifacts on disk (if present)
