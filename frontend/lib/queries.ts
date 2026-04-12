@@ -18,6 +18,8 @@ import type {
   HoldingTechnicalSnapshot,
   MacroSeriesPoint,
   ThesisHistoryPoint,
+  PipelineObservabilityBundle,
+  PipelineTickerDoc,
 } from './types';
 import { renderDigestMarkdownFromSnapshot, type DigestSnapshot } from './render-digest-from-snapshot';
 import { renderDocumentMarkdownFromPayload } from './render-document-from-payload';
@@ -127,11 +129,15 @@ function resolveLibraryDocumentView(document_key: string, payload: unknown): Lib
   if (key === 'delta-request.json' || dt === 'delta_request') return 'delta_request';
   if (key === 'portfolio-recommendation.json' || dt === 'portfolio_recommendation') return 'portfolio_recommendation';
   if (key === 'opportunity-screener.json' || dt === 'opportunity_screen') return 'opportunity_screener';
-  if (
-    key.includes('deliberation') ||
+  const isDeliberationTranscriptPath =
     dt === 'deliberation_transcript' ||
-    dt === 'deliberation_session_index'
-  ) {
+    (key.includes('deliberation-transcript/') && !key.includes('deliberation-transcript-index'));
+  const isLegacyDeliberationArtifact =
+    key === 'deliberation.json' ||
+    key.endsWith('/deliberation.json') ||
+    key === 'deliberation.md' ||
+    key.endsWith('/deliberation.md');
+  if (isDeliberationTranscriptPath || isLegacyDeliberationArtifact) {
     return 'deliberation';
   }
   if (dt === 'evolution_sources') return 'evolution_sources';
@@ -143,6 +149,95 @@ function resolveLibraryDocumentView(document_key: string, payload: unknown): Lib
     return 'markdown';
   }
   return 'markdown';
+}
+
+function payloadAsRecord(raw: unknown): Record<string, unknown> | null {
+  if (raw != null && typeof raw === 'object' && !Array.isArray(raw)) {
+    return raw as Record<string, unknown>;
+  }
+  return null;
+}
+
+function tickerFromNestedDocKey(document_key: string, folder: string, date: string): string {
+  const pref = `${folder}/${date}/`;
+  const low = document_key.toLowerCase();
+  const p = pref.toLowerCase();
+  const idx = low.indexOf(p);
+  if (idx === -1) {
+    const tail = document_key.split('/').pop() || '';
+    return tail.replace(/\.json$/i, '') || '?';
+  }
+  return document_key.slice(idx + pref.length).replace(/\.json$/i, '') || '?';
+}
+
+async function fetchPipelineObservabilityForDate(dashboardDate: string): Promise<PipelineObservabilityBundle> {
+  const sb = supabase as SB;
+  const kExpl = `market-thesis-exploration/${dashboardDate}.json`;
+  const kMap = `thesis-vehicle-map/${dashboardDate}.json`;
+  const kMemo = `pm-allocation-memo/${dashboardDate}.json`;
+  const kIdx = `deliberation-transcript-index/${dashboardDate}.json`;
+  const [exactRes, arRes, delRes] = await Promise.all([
+    sb
+      .from('documents')
+      .select('document_key, payload')
+      .eq('date', dashboardDate)
+      .in('document_key', [kExpl, kMap, kMemo, kIdx]),
+    sb
+      .from('documents')
+      .select('document_key, payload')
+      .eq('date', dashboardDate)
+      .ilike('document_key', `asset-recommendations/${dashboardDate}/%`),
+    sb
+      .from('documents')
+      .select('document_key, payload')
+      .eq('date', dashboardDate)
+      .ilike('document_key', `deliberation-transcript/${dashboardDate}/%`),
+  ]);
+  if (exactRes.error) console.warn('Supabase pipeline exact docs:', exactRes.error);
+  if (arRes.error) console.warn('Supabase asset-recommendation docs:', arRes.error);
+  if (delRes.error) console.warn('Supabase deliberation-transcript docs:', delRes.error);
+
+  const byKey = new Map<string, unknown>();
+  for (const row of (exactRes.data ?? []) as Pick<TableRow<'documents'>, 'document_key' | 'payload'>[]) {
+    if (row?.document_key != null && row.payload != null) byKey.set(row.document_key, row.payload);
+  }
+  const get = (dk: string): Record<string, unknown> | null => payloadAsRecord(byKey.get(dk));
+
+  const asset_recommendations: PipelineTickerDoc[] = [];
+  for (const row of (arRes.data ?? []) as Pick<TableRow<'documents'>, 'document_key' | 'payload'>[]) {
+    if (!row?.document_key) continue;
+    const pl = payloadAsRecord(row.payload);
+    if (!pl) continue;
+    asset_recommendations.push({
+      document_key: row.document_key,
+      ticker: tickerFromNestedDocKey(row.document_key, 'asset-recommendations', dashboardDate),
+      payload: pl,
+    });
+  }
+  asset_recommendations.sort((a, b) => a.ticker.localeCompare(b.ticker));
+
+  const deliberation_transcripts: PipelineTickerDoc[] = [];
+  for (const row of (delRes.data ?? []) as Pick<TableRow<'documents'>, 'document_key' | 'payload'>[]) {
+    if (!row?.document_key) continue;
+    const pl = payloadAsRecord(row.payload);
+    if (!pl) continue;
+    deliberation_transcripts.push({
+      document_key: row.document_key,
+      ticker: tickerFromNestedDocKey(row.document_key, 'deliberation-transcript', dashboardDate),
+      payload: pl,
+    });
+  }
+  deliberation_transcripts.sort((a, b) => a.ticker.localeCompare(b.ticker));
+
+  return {
+    snapshot_date: dashboardDate,
+    market_thesis_exploration: get(kExpl),
+    thesis_vehicle_map: get(kMap),
+    pm_allocation_memo: get(kMemo),
+    deliberation_session_index: get(kIdx),
+    deliberation_transcripts,
+    asset_recommendations,
+  };
 }
 
 /**
@@ -629,6 +724,12 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     }
   }
 
+  const dashboardDate = snapshot.date ?? latestPosDate ?? null;
+  let pipeline_observability: PipelineObservabilityBundle | null = null;
+  if (dashboardDate) {
+    pipeline_observability = await fetchPipelineObservabilityForDate(dashboardDate);
+  }
+
   return {
     portfolio: {
       meta: {
@@ -709,6 +810,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     snapshot_context_bullets,
     holding_technicals,
     macro_series_preview,
+    pipeline_observability,
   };
 }
 

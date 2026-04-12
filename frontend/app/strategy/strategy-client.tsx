@@ -3,9 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useDashboard } from '@/lib/dashboard-context';
 import PageHeader from '@/components/page-header';
 import { Badge } from '@/components/ui';
+import { renderDocumentMarkdownFromPayload } from '@/lib/render-document-from-payload';
 import {
   AlertTriangle, ArrowUpRight, Target, TrendingUp, ArrowRightLeft,
 } from 'lucide-react';
@@ -105,6 +108,14 @@ export default function StrategyClient() {
   const regimeLabel = strategy.regime_label || 'neutral';
   const rc = regimeColors[regimeLabel] || regimeColors.neutral;
 
+  const pipe = data.pipeline_observability;
+  const marketThesisMarkdown = pipe?.market_thesis_exploration
+    ? renderDocumentMarkdownFromPayload(pipe.market_thesis_exploration)
+    : null;
+  const vehicleMapMarkdown = pipe?.thesis_vehicle_map
+    ? renderDocumentMarkdownFromPayload(pipe.thesis_vehicle_map)
+    : null;
+
   return (
     <>
       <PageHeader title="Strategy & Thesis" />
@@ -133,6 +144,40 @@ export default function StrategyClient() {
             </Badge>
           </div>
         </div>
+
+        {(marketThesisMarkdown || vehicleMapMarkdown) && (
+          <div className="space-y-4">
+            {marketThesisMarkdown ? (
+              <div className="glass-card p-0 overflow-hidden">
+                <div className="px-5 py-4 border-b border-border-subtle bg-bg-secondary">
+                  <h3 className="text-sm font-semibold">Market thesis exploration</h3>
+                  <p className="text-xs text-text-muted mt-1">
+                    Research-facing theses for{' '}
+                    <span className="font-mono text-text-secondary">{pipe?.snapshot_date}</span>
+                    {' '}(Track B pipeline)
+                  </p>
+                </div>
+                <div className="px-5 py-4 prose prose-invert max-w-none text-sm leading-relaxed">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{marketThesisMarkdown}</ReactMarkdown>
+                </div>
+              </div>
+            ) : null}
+            {vehicleMapMarkdown ? (
+              <div className="glass-card p-0 overflow-hidden">
+                <div className="px-5 py-4 border-b border-border-subtle bg-bg-secondary">
+                  <h3 className="text-sm font-semibold">Thesis → vehicle map</h3>
+                  <p className="text-xs text-text-muted mt-1">
+                    Candidate instruments linked to exploration thesis IDs (
+                    <span className="font-mono text-text-secondary">{pipe?.snapshot_date}</span>)
+                  </p>
+                </div>
+                <div className="px-5 py-4 prose prose-invert max-w-none text-sm leading-relaxed">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{vehicleMapMarkdown}</ReactMarkdown>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        )}
 
         {theses.length > 0 && (
           <div className="glass-card p-0 overflow-hidden">

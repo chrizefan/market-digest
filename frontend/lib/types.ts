@@ -251,6 +251,24 @@ export interface Doc {
   content?: string;
 }
 
+/** One per-ticker pipeline document bundled for dashboard observability. */
+export interface PipelineTickerDoc {
+  document_key: string;
+  ticker: string;
+  payload: Record<string, unknown>;
+}
+
+/** Track B / PM pipeline JSON loaded for the dashboard as-of date (markdown derived in UI). */
+export interface PipelineObservabilityBundle {
+  snapshot_date: string;
+  market_thesis_exploration: Record<string, unknown> | null;
+  thesis_vehicle_map: Record<string, unknown> | null;
+  pm_allocation_memo: Record<string, unknown> | null;
+  deliberation_session_index: Record<string, unknown> | null;
+  deliberation_transcripts: PipelineTickerDoc[];
+  asset_recommendations: PipelineTickerDoc[];
+}
+
 /** The complete data object returned by getFullDashboardData(). */
 export interface DashboardData {
   portfolio: Portfolio;
@@ -280,6 +298,8 @@ export interface DashboardData {
   holding_technicals: Record<string, HoldingTechnicalSnapshot>;
   /** Recent points per series_id for macro preview (curated list). */
   macro_series_preview: Record<string, MacroSeriesPoint[]>;
+  /** Published thesis / PM pipeline artifacts for `portfolio.meta.last_updated` when present. */
+  pipeline_observability: PipelineObservabilityBundle | null;
 }
 
 // ---------------------------------------------------------------------------

@@ -24,6 +24,16 @@ function pathKey(path: string): string {
 export function getDocLibraryTier(d: Pick<Doc, 'path' | 'segment' | 'type'>): DocLibraryTier {
   const p = (d.path || '').toLowerCase();
   if (p.startsWith('evolution/')) return 'evolution';
+  if (p.startsWith('market-thesis-exploration/')) return 'research';
+  if (
+    p.startsWith('thesis-vehicle-map/') ||
+    p.startsWith('pm-allocation-memo/') ||
+    p.startsWith('deliberation-transcript-index/') ||
+    p.startsWith('deliberation-transcript/') ||
+    p.startsWith('asset-recommendations/')
+  ) {
+    return 'portfolio';
+  }
   const file = pathKey(p);
   if (PORTFOLIO_KEYS.has(file)) return 'portfolio';
   const seg = (d.segment || '').toLowerCase();

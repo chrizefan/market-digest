@@ -2,6 +2,8 @@
 
 import { Fragment, Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDashboard } from '@/lib/dashboard-context';
 import PageHeader from '@/components/page-header';
@@ -9,6 +11,7 @@ import LibraryDocumentBody from '@/components/library/LibraryDocumentBody';
 import { Badge, SectionTitle, formatPct, pnlColor } from '@/components/ui';
 import { getDocLibraryTier } from '@/lib/library-doc-tier';
 import { getLibraryDocumentById } from '@/lib/queries';
+import { renderDocumentMarkdownFromPayload } from '@/lib/render-document-from-payload';
 import type { Doc } from '@/lib/types';
 import {
   ChevronDown,
@@ -114,9 +117,16 @@ const PM_DOC_ORDER = [
 ] as const;
 
 function pmDocSortKey(path: string): number {
-  const file = path.toLowerCase().split('/').pop() || path.toLowerCase();
+  const low = path.toLowerCase();
+  if (low.startsWith('pm-allocation-memo/')) return 0;
+  if (low.includes('deliberation-transcript-index/')) return 1;
+  if (low.startsWith('deliberation-transcript/')) return 2;
+  if (low.startsWith('asset-recommendations/')) return 3;
+  if (low.startsWith('thesis-vehicle-map/')) return 4;
+  if (low.startsWith('market-thesis-exploration/')) return 5;
+  const file = low.split('/').pop() || low;
   const i = (PM_DOC_ORDER as readonly string[]).indexOf(file);
-  return i === -1 ? 999 : i;
+  return i === -1 ? 50 : 10 + i;
 }
 
 function sortPmDocs(docs: Doc[]): Doc[] {
@@ -285,14 +295,19 @@ function PortfolioPageContent() {
 
   const researchStripLinks = useMemo(() => {
     if (!lastUpdated) return [] as { label: string; docKey: string }[];
-    return ['digest']
-      .filter((k) => latestRunDocByKey.has(k))
-      .map((docKey) => ({ label: 'Digest', docKey }));
+    const out: { label: string; docKey: string }[] = [];
+    if (latestRunDocByKey.has('digest')) out.push({ label: 'Digest', docKey: 'digest' });
+    const mte = `market-thesis-exploration/${lastUpdated}.json`;
+    if (latestRunDocByKey.has(mte)) out.push({ label: 'Market thesis', docKey: mte });
+    return out;
   }, [lastUpdated, latestRunDocByKey]);
 
   const pmStripLinks = useMemo(() => {
     if (!lastUpdated) return [] as { label: string; docKey: string }[];
     const candidates = [
+      { label: 'PM memo', keys: [`pm-allocation-memo/${lastUpdated}.json`] as const },
+      { label: 'Deliberation index', keys: [`deliberation-transcript-index/${lastUpdated}.json`] as const },
+      { label: 'Vehicle map', keys: [`thesis-vehicle-map/${lastUpdated}.json`] as const },
       { label: 'Deliberation', keys: ['deliberation.md', 'deliberation.json'] as const },
       { label: 'Rebalance', keys: ['rebalance-decision.json'] as const },
     ];
@@ -303,6 +318,54 @@ function PortfolioPageContent() {
     }
     return out;
   }, [lastUpdated, latestRunDocByKey]);
+
+  const pipe = data?.pipeline_observability ?? null;
+
+  const processObsMarkdown = useMemo(() => {
+    if (!pipe) {
+      return { memo: null as string | null, vehicle: null as string | null, index: null as string | null };
+    }
+    return {
+      memo: pipe.pm_allocation_memo ? renderDocumentMarkdownFromPayload(pipe.pm_allocation_memo) : null,
+      vehicle: pipe.thesis_vehicle_map ? renderDocumentMarkdownFromPayload(pipe.thesis_vehicle_map) : null,
+      index: pipe.deliberation_session_index ? renderDocumentMarkdownFromPayload(pipe.deliberation_session_index) : null,
+    };
+  }, [pipe]);
+
+  const deliberationIndexRows = useMemo(() => {
+    if (!pipe?.deliberation_session_index) {
+      return [] as { ticker: string; document_key: string; converged: boolean | null; rounds: string }[];
+    }
+    const idx = pipe.deliberation_session_index;
+    const body =
+      typeof idx.body === 'object' && idx.body !== null && !Array.isArray(idx.body)
+        ? (idx.body as Record<string, unknown>)
+        : null;
+    const raw = body?.entries;
+    if (!Array.isArray(raw)) return [];
+    const rows: { ticker: string; document_key: string; converged: boolean | null; rounds: string }[] = [];
+    for (const e of raw) {
+      if (!e || typeof e !== 'object' || Array.isArray(e)) continue;
+      const o = e as Record<string, unknown>;
+      rows.push({
+        ticker: String(o.ticker || ''),
+        document_key: String(o.document_key || ''),
+        converged: typeof o.converged === 'boolean' ? o.converged : null,
+        rounds: o.rounds_completed != null ? String(o.rounds_completed) : '—',
+      });
+    }
+    return rows;
+  }, [pipe]);
+
+  const hasPipelineObservability =
+    !!pipe &&
+    Boolean(
+      pipe.pm_allocation_memo ||
+        pipe.thesis_vehicle_map ||
+        pipe.deliberation_session_index ||
+        pipe.asset_recommendations.length > 0 ||
+        pipe.deliberation_transcripts.length > 0
+    );
 
   const portfolioDocDates = useMemo(() => {
     const s = new Set<string>();
@@ -567,6 +630,175 @@ function PortfolioPageContent() {
                 <span className="text-xs text-text-muted block">as of {lastUpdated}</span>
               </div>
             )}
+
+            {hasPipelineObservability && lastUpdated && pipe?.snapshot_date === lastUpdated ? (
+              <div className="glass-card p-0 overflow-hidden">
+                <div className="px-5 py-4 border-b border-border-subtle bg-bg-secondary">
+                  <h3 className="text-sm font-semibold">Pipeline observability</h3>
+                  <p className="text-xs text-text-muted mt-1">
+                    Thesis → vehicles → analyst → deliberation → PM memo, rendered from published JSON for{' '}
+                    <span className="font-mono text-text-secondary">{pipe.snapshot_date}</span>.
+                  </p>
+                </div>
+                <div className="p-5 space-y-6">
+                  {processObsMarkdown.memo ? (
+                    <details open className="group">
+                      <summary className="cursor-pointer text-sm font-semibold text-text-primary list-none flex items-center gap-2">
+                        <ChevronDown
+                          size={16}
+                          className="text-text-muted shrink-0 transition-transform group-open:rotate-180"
+                          aria-hidden
+                        />
+                        PM allocation memo
+                      </summary>
+                      <div className="mt-3 prose prose-invert max-w-none text-sm leading-relaxed">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{processObsMarkdown.memo}</ReactMarkdown>
+                      </div>
+                    </details>
+                  ) : null}
+                  {processObsMarkdown.vehicle ? (
+                    <details open className="group border-t border-border-subtle/80 pt-5">
+                      <summary className="cursor-pointer text-sm font-semibold text-text-primary list-none flex items-center gap-2">
+                        <ChevronDown
+                          size={16}
+                          className="text-text-muted shrink-0 transition-transform group-open:rotate-180"
+                          aria-hidden
+                        />
+                        Thesis → vehicle map
+                      </summary>
+                      <div className="mt-3 prose prose-invert max-w-none text-sm leading-relaxed">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{processObsMarkdown.vehicle}</ReactMarkdown>
+                      </div>
+                    </details>
+                  ) : null}
+                  {processObsMarkdown.index ? (
+                    <details open className="group border-t border-border-subtle/80 pt-5">
+                      <summary className="cursor-pointer text-sm font-semibold text-text-primary list-none flex items-center gap-2">
+                        <ChevronDown
+                          size={16}
+                          className="text-text-muted shrink-0 transition-transform group-open:rotate-180"
+                          aria-hidden
+                        />
+                        Deliberation session index
+                      </summary>
+                      <div className="mt-3 prose prose-invert max-w-none text-sm leading-relaxed">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{processObsMarkdown.index}</ReactMarkdown>
+                      </div>
+                    </details>
+                  ) : null}
+                  {deliberationIndexRows.length > 0 ? (
+                    <div className="border-t border-border-subtle/80 pt-5">
+                      <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
+                        Open a per-ticker transcript
+                      </h4>
+                      <div className="overflow-x-auto rounded-lg border border-border-subtle">
+                        <table className="w-full text-sm min-w-[520px]">
+                          <thead>
+                            <tr className="text-text-muted text-xs uppercase tracking-wider border-b border-border-subtle bg-bg-secondary/50">
+                              <th className="text-left px-3 py-2">Ticker</th>
+                              <th className="text-left px-3 py-2">Converged</th>
+                              <th className="text-right px-3 py-2">Rounds</th>
+                              <th className="text-left px-3 py-2">Transcript</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border-subtle">
+                            {deliberationIndexRows.map((row) => (
+                              <tr key={row.document_key || row.ticker}>
+                                <td className="px-3 py-2 font-mono font-medium">{row.ticker || '—'}</td>
+                                <td className="px-3 py-2 text-text-secondary">
+                                  {row.converged === true ? 'Yes' : row.converged === false ? 'No' : '—'}
+                                </td>
+                                <td className="px-3 py-2 text-right tabular-nums text-text-secondary">{row.rounds}</td>
+                                <td className="px-3 py-2">
+                                  {row.document_key ? (
+                                    <Link
+                                      href={`/portfolio?tab=history&date=${encodeURIComponent(lastUpdated)}&docKey=${encodeURIComponent(row.document_key)}`}
+                                      className="text-fin-amber text-xs hover:underline"
+                                    >
+                                      Open in History
+                                    </Link>
+                                  ) : (
+                                    '—'
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ) : null}
+                  {pipe.asset_recommendations.length > 0 ? (
+                    <div className="border-t border-border-subtle/80 pt-5 space-y-2">
+                      <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+                        Analyst reports (by ticker)
+                      </h4>
+                      <div className="space-y-2">
+                        {pipe.asset_recommendations.map((doc) => {
+                          const md = renderDocumentMarkdownFromPayload(doc.payload);
+                          if (!md) return null;
+                          return (
+                            <details key={doc.document_key} className="group rounded-lg border border-border-subtle bg-bg-secondary/30">
+                              <summary className="cursor-pointer px-4 py-3 text-sm font-semibold font-mono list-none flex items-center gap-2">
+                                <ChevronDown
+                                  size={16}
+                                  className="text-text-muted shrink-0 transition-transform group-open:rotate-180"
+                                  aria-hidden
+                                />
+                                {doc.ticker}
+                              </summary>
+                              <div className="px-4 pb-4 prose prose-invert max-w-none text-sm leading-relaxed border-t border-border-subtle/60 pt-3">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{md}</ReactMarkdown>
+                                <Link
+                                  href={`/portfolio?tab=history&date=${encodeURIComponent(lastUpdated)}&docKey=${encodeURIComponent(doc.document_key)}`}
+                                  className="inline-block mt-3 text-xs text-fin-amber hover:underline not-prose"
+                                >
+                                  Open raw document in History
+                                </Link>
+                              </div>
+                            </details>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
+                  {pipe.deliberation_transcripts.length > 0 ? (
+                    <div className="border-t border-border-subtle/80 pt-5 space-y-2">
+                      <h4 className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+                        Deliberation transcripts (by ticker)
+                      </h4>
+                      <div className="space-y-2">
+                        {pipe.deliberation_transcripts.map((doc) => {
+                          const md = renderDocumentMarkdownFromPayload(doc.payload);
+                          if (!md) return null;
+                          return (
+                            <details key={doc.document_key} className="group rounded-lg border border-border-subtle bg-bg-secondary/30">
+                              <summary className="cursor-pointer px-4 py-3 text-sm font-semibold font-mono list-none flex items-center gap-2">
+                                <ChevronDown
+                                  size={16}
+                                  className="text-text-muted shrink-0 transition-transform group-open:rotate-180"
+                                  aria-hidden
+                                />
+                                {doc.ticker}
+                              </summary>
+                              <div className="px-4 pb-4 prose prose-invert max-w-none text-sm leading-relaxed border-t border-border-subtle/60 pt-3">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{md}</ReactMarkdown>
+                                <Link
+                                  href={`/portfolio?tab=history&date=${encodeURIComponent(lastUpdated)}&docKey=${encodeURIComponent(doc.document_key)}`}
+                                  className="inline-block mt-3 text-xs text-fin-amber hover:underline not-prose"
+                                >
+                                  Open structured view in History
+                                </Link>
+                              </div>
+                            </details>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
 
             <div className="glass-card p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
