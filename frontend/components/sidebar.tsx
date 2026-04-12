@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useState, ElementType } from 'react';
 import {
   LayoutDashboard, PieChart, TrendingUp, Target, Clock,
@@ -18,14 +18,16 @@ const NAV: NavItem[] = [
   { href: '/',              label: 'Overview',           icon: LayoutDashboard },
   { href: '/portfolio',     label: 'Portfolio',          icon: PieChart },
   { href: '/performance',   label: 'Performance',        icon: TrendingUp },
-  { href: '/strategy',      label: 'Strategy & Thesis',  icon: Target },
+  { href: '/portfolio?tab=history', label: 'Analysis', icon: Target },
   { href: '/library',       label: 'Research Library',   icon: Clock },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const base = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
   const [open, setOpen] = useState(false);
+  const portfolioTab = searchParams.get('tab');
 
   return (
     <>
@@ -71,7 +73,12 @@ export default function Sidebar() {
         <nav className="flex-1 py-4 flex flex-col">
           {NAV.map(({ href, label, icon: Icon }) => {
             const fullHref = `${base}${href}`;
-            const isActive = pathname === fullHref || pathname === href;
+            let isActive = pathname === fullHref || pathname === href;
+            if (href === '/portfolio?tab=history') {
+              isActive = pathname === '/portfolio' && portfolioTab === 'history';
+            } else if (href === '/portfolio') {
+              isActive = pathname === '/portfolio' && portfolioTab !== 'history';
+            }
             return (
               <Link
                 key={href}

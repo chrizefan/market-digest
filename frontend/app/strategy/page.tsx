@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import StrategyClient from './strategy-client';
+import StrategyRedirect from './strategy-redirect';
 
 export default function StrategyPage() {
   return (
@@ -8,7 +8,7 @@ export default function StrategyPage() {
         <div className="flex min-h-screen items-center justify-center text-text-secondary">Loading…</div>
       }
     >
-      <StrategyClient />
+      <StrategyRedirect />
     </Suspense>
   );
 }

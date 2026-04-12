@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, Suspense, useEffect, useMemo, useState } from 'react';
+import { Fragment, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -40,6 +40,7 @@ import {
 } from 'recharts';
 import type { Position, Thesis, DashboardPositionEvent } from '@/lib/types';
 import { SleeveStackedChart } from '@/components/portfolio/sleeve-stacked-chart';
+import StrategyThesisPanel from '@/components/portfolio/StrategyThesisPanel';
 import {
   buildSleeveStackSeries,
   thesisStackLabel,
@@ -614,9 +615,28 @@ function PortfolioPageContent() {
     router.replace(`${pathname}?${p.toString()}`, { scroll: false });
   }
 
+  const thesisHref = useCallback(
+    (thesisId: string) => {
+      const p = new URLSearchParams(searchParams.toString());
+      p.set('tab', 'history');
+      p.set('thesis', thesisId);
+      return `${pathname}?${p.toString()}`;
+    },
+    [searchParams, pathname]
+  );
+
+  const clearThesisHref = useMemo(() => {
+    const p = new URLSearchParams(searchParams.toString());
+    p.delete('thesis');
+    const s = p.toString();
+    return s ? `${pathname}?${s}` : pathname;
+  }, [searchParams, pathname]);
+
+  const highlightThesisParam = searchParams.get('thesis');
+
   const tabs: { id: TabId; label: string; icon: typeof Layers }[] = [
     { id: 'summary', label: 'Summary', icon: Layers },
-    { id: 'history', label: 'History & thesis', icon: History },
+    { id: 'history', label: 'Analysis', icon: History },
     { id: 'activity', label: 'Activity', icon: Activity },
   ];
 
@@ -1233,6 +1253,12 @@ function PortfolioPageContent() {
             </div>
 
             <div className="flex-1 min-w-0 space-y-6">
+              <StrategyThesisPanel
+                highlightThesisId={highlightThesisParam}
+                thesisHref={thesisHref}
+                clearThesisHref={clearThesisHref}
+              />
+
               <div className="glass-card p-6 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <SectionTitle className="mb-0">Sleeve evolution</SectionTitle>

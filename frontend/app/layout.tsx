@@ -1,5 +1,5 @@
 import './globals.css';
-import { ReactNode } from 'react';
+import { ReactNode, Suspense } from 'react';
 import { Inter, Space_Mono } from 'next/font/google';
 import { DashboardProvider } from '@/lib/dashboard-context';
 import Sidebar from '@/components/sidebar';
@@ -34,7 +34,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Starfield />
         <DashboardProvider>
           <div className="flex min-h-screen">
-            <Sidebar />
+            <Suspense fallback={<aside className="w-[260px] shrink-0 border-r border-border-subtle bg-bg-glass" />}>
+              <Sidebar />
+            </Suspense>
             <main className="flex-1 flex flex-col overflow-y-auto max-h-screen">
               {children}
             </main>
