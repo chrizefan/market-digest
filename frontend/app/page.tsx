@@ -276,7 +276,14 @@ export default function OverviewPage() {
                     <Link href="/library" className="text-xs text-fin-blue hover:underline">
                       Research library
                     </Link>
-                    <Link href="/portfolio?tab=pm_process" className="text-xs text-fin-amber hover:underline">
+                    <Link
+                      href={
+                        latestDate
+                          ? `/portfolio?tab=history&date=${encodeURIComponent(latestDate)}`
+                          : '/portfolio?tab=history'
+                      }
+                      className="text-xs text-fin-amber hover:underline"
+                    >
                       PM &amp; process
                     </Link>
                   </div>
@@ -304,7 +311,7 @@ export default function OverviewPage() {
                       {pmQuickLinks.map((l) => (
                         <Link
                           key={l.docKey}
-                          href={`/portfolio?tab=pm_process&docKey=${encodeURIComponent(l.docKey)}`}
+                          href={`/portfolio?tab=history&date=${encodeURIComponent(String(latestDate || ''))}&docKey=${encodeURIComponent(l.docKey)}`}
                           className="text-xs px-3 py-1 rounded-md bg-fin-amber/10 text-fin-amber hover:bg-fin-amber/20 transition-colors"
                         >
                           {l.label}

@@ -9,6 +9,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts';
 
 const PALETTE = [
@@ -75,9 +76,25 @@ interface SleeveStackedChartProps {
   formatKey: (key: string) => string;
   /** Explain merged ticker bucket in tooltip footer */
   aggregateOtherNote?: boolean;
+  /** Highlight the selected snapshot date (synced with PM artifacts / URL). */
+  selectedDate?: string | null;
+  /** Fired when the user clicks the chart at a date (locks selection). */
+  onChartDateSelect?: (isoDate: string) => void;
 }
 
-export function SleeveStackedChart({ data, keys, formatKey, aggregateOtherNote }: SleeveStackedChartProps) {
+type ChartClickState = {
+  activeLabel?: string | number;
+  activeTooltipIndex?: number;
+};
+
+export function SleeveStackedChart({
+  data,
+  keys,
+  formatKey,
+  aggregateOtherNote,
+  selectedDate,
+  onChartDateSelect,
+}: SleeveStackedChartProps) {
   if (!data.length || !keys.length) {
     return (
       <div className="h-[320px] flex items-center justify-center text-text-muted text-sm">
@@ -86,9 +103,31 @@ export function SleeveStackedChart({ data, keys, formatKey, aggregateOtherNote }
     );
   }
 
+  const dateSet = new Set(data.map((row) => String(row.date ?? '')));
+
+  function handleChartClick(state: unknown) {
+    if (!onChartDateSelect) return;
+    const s = state as ChartClickState | null | undefined;
+    let iso: string | null = null;
+    if (s?.activeLabel != null) {
+      const cand = String(s.activeLabel);
+      if (dateSet.has(cand)) iso = cand;
+    }
+    if (!iso && s?.activeTooltipIndex != null && data[s.activeTooltipIndex]) {
+      const row = data[s.activeTooltipIndex];
+      const d = String(row.date ?? '');
+      if (dateSet.has(d)) iso = d;
+    }
+    if (iso) onChartDateSelect(iso);
+  }
+
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+      <AreaChart
+        data={data}
+        margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+        onClick={onChartDateSelect ? handleChartClick : undefined}
+      >
         <CartesianGrid stroke="rgba(255,255,255,0.05)" />
         <XAxis
           dataKey="date"
@@ -107,6 +146,14 @@ export function SleeveStackedChart({ data, keys, formatKey, aggregateOtherNote }
           )}
         />
         <Legend formatter={(value: string) => <span className="text-text-secondary text-xs">{value}</span>} />
+        {selectedDate && dateSet.has(selectedDate) ? (
+          <ReferenceLine
+            x={selectedDate}
+            stroke="rgba(96, 165, 250, 0.9)"
+            strokeDasharray="4 4"
+            strokeWidth={1}
+          />
+        ) : null}
         {keys.map((k, i) => (
           <Area
             key={k}

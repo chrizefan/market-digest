@@ -18,10 +18,11 @@ import {
   Layers,
   History,
   Activity,
-  ClipboardList,
   FileText,
   X,
+  Calendar,
 } from 'lucide-react';
+import MiniCalendar, { type MiniCalendarRunKind } from '@/components/library/MiniCalendar';
 import {
   PieChart,
   Pie,
@@ -101,7 +102,7 @@ function bucketAllocationsForPie(items: AllocationDatum[]): PieSliceDatum[] {
   return [...head.map(({ name, value }) => ({ name, value })), { name: 'Other', value: other, tooltipExtra }];
 }
 
-type TabId = 'summary' | 'thesis' | 'pm_process' | 'history' | 'activity';
+type TabId = 'summary' | 'thesis' | 'history' | 'activity';
 
 const PM_DOC_ORDER = [
   'deliberation.md',
@@ -143,7 +144,21 @@ function thesisNames(ids: string[], thesisById: Map<string, Thesis>): string {
     .join(', ');
 }
 
-const VALID_TABS: TabId[] = ['summary', 'thesis', 'pm_process', 'history', 'activity'];
+const VALID_TABS: TabId[] = ['summary', 'thesis', 'history', 'activity'];
+
+function aggregateRunKindForPortfolioDocs(docsOnDate: Doc[]): MiniCalendarRunKind {
+  let sawBaseline = false;
+  let sawDelta = false;
+  for (const d of docsOnDate) {
+    const rt = (d.runType || '').toLowerCase();
+    if (rt === 'baseline') sawBaseline = true;
+    else if (rt === 'delta') sawDelta = true;
+  }
+  if (sawBaseline && sawDelta) return 'baseline';
+  if (sawBaseline) return 'baseline';
+  if (sawDelta) return 'delta';
+  return 'unknown';
+}
 
 function PortfolioPageContent() {
   const { data, loading, error } = useDashboard();
@@ -289,15 +304,91 @@ function PortfolioPageContent() {
     return out;
   }, [lastUpdated, latestRunDocByKey]);
 
-  const pmDocs = useMemo(() => {
-    if (!lastUpdated || !data?.docs) return [];
+  const portfolioDocDates = useMemo(() => {
+    const s = new Set<string>();
+    for (const d of data?.docs ?? []) {
+      if (d.date && getDocLibraryTier(d) === 'portfolio') s.add(d.date);
+    }
+    return s;
+  }, [data?.docs]);
+
+  const positionHistoryDates = useMemo(() => {
+    const s = new Set<string>();
+    for (const r of positionHistory) {
+      if (r.date) s.add(r.date);
+    }
+    return s;
+  }, [positionHistory]);
+
+  const historyTimelineDates = useMemo(() => {
+    const s = new Set<string>([...portfolioDocDates, ...positionHistoryDates]);
+    return [...s].sort().reverse();
+  }, [portfolioDocDates, positionHistoryDates]);
+
+  const historyDateSet = useMemo(() => new Set(historyTimelineDates), [historyTimelineDates]);
+
+  const defaultHistoryDate = useMemo(() => {
+    if (lastUpdated && historyDateSet.has(lastUpdated)) return lastUpdated;
+    return historyTimelineDates[0] ?? null;
+  }, [lastUpdated, historyDateSet, historyTimelineDates]);
+
+  const dateParam = searchParams.get('date');
+
+  const effHistoryDate = useMemo(() => {
+    if (dateParam && historyDateSet.has(dateParam)) return dateParam;
+    return defaultHistoryDate;
+  }, [dateParam, historyDateSet, defaultHistoryDate]);
+
+  const portfolioHistoryRunKindByDate = useMemo(() => {
+    const m = new Map<string, MiniCalendarRunKind>();
+    const docs = data?.docs ?? [];
+    const snapshotRunTypeByDate = data?.snapshot_run_type_by_date ?? {};
+    for (const date of historyTimelineDates) {
+      const onDay = docs.filter((d) => d.date === date && getDocLibraryTier(d) === 'portfolio');
+      let kind = aggregateRunKindForPortfolioDocs(onDay);
+      if (kind === 'unknown') {
+        const snap = snapshotRunTypeByDate[date];
+        if (snap === 'baseline' || snap === 'delta') kind = snap;
+      }
+      m.set(date, kind);
+    }
+    return m;
+  }, [data?.docs, data?.snapshot_run_type_by_date, historyTimelineDates]);
+
+  const docsForPm = data?.docs;
+  const pmDocsForHistory = useMemo(() => {
+    if (!effHistoryDate || !docsForPm) return [];
     return sortPmDocs(
-      data.docs.filter((d) => d.date === lastUpdated && getDocLibraryTier(d) === 'portfolio')
+      docsForPm.filter((d) => d.date === effHistoryDate && getDocLibraryTier(d) === 'portfolio')
     );
-  }, [data, lastUpdated]);
+  }, [docsForPm, effHistoryDate]);
+
+  const historyLatestDate = historyTimelineDates[0] ?? null;
+  const showHistoryDateBanner =
+    Boolean(dateParam && historyDateSet.has(dateParam) && defaultHistoryDate && dateParam !== defaultHistoryDate);
 
   useEffect(() => {
-    const t = searchParams.get('tab') as TabId | null;
+    if (searchParams.get('tab') !== 'pm_process') return;
+    const p = new URLSearchParams(searchParams.toString());
+    p.set('tab', 'history');
+    if (!p.get('date') && data?.docs && lastUpdated) {
+      const dk = p.get('docKey');
+      if (dk) {
+        const matches = data.docs
+          .filter((d) => d.path === dk && getDocLibraryTier(d) === 'portfolio')
+          .sort((a, b) => b.date.localeCompare(a.date));
+        p.set('date', matches[0]?.date ?? lastUpdated);
+      } else {
+        p.set('date', lastUpdated);
+      }
+    }
+    router.replace(`${pathname}?${p.toString()}`, { scroll: false });
+  }, [searchParams, pathname, router, data?.docs, lastUpdated]);
+
+  useEffect(() => {
+    const raw = searchParams.get('tab');
+    const mapped = raw === 'pm_process' ? 'history' : raw;
+    const t = mapped as TabId | null;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sync tab from URL
     if (t && VALID_TABS.includes(t)) setTab(t);
   }, [searchParams]);
@@ -305,8 +396,8 @@ function PortfolioPageContent() {
   const docKeyParam = searchParams.get('docKey');
 
   useEffect(() => {
-    if (!lastUpdated || !data?.docs) return;
-    if (searchParams.get('tab') !== 'pm_process') return;
+    if (!effHistoryDate || !data?.docs) return;
+    if (searchParams.get('tab') !== 'history') return;
     if (!docKeyParam) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- sync PM doc viewer from URL
       setPmActiveFile(null);
@@ -314,7 +405,7 @@ function PortfolioPageContent() {
       return;
     }
     const doc = data.docs.find(
-      (d) => d.date === lastUpdated && d.path === docKeyParam && getDocLibraryTier(d) === 'portfolio'
+      (d) => d.date === effHistoryDate && d.path === docKeyParam && getDocLibraryTier(d) === 'portfolio'
     );
     if (!doc) {
       setPmActiveFile(null);
@@ -337,30 +428,35 @@ function PortfolioPageContent() {
         })
       )
       .finally(() => setPmLoading(false));
-  }, [docKeyParam, lastUpdated, data?.docs, searchParams]);
+  }, [docKeyParam, effHistoryDate, data?.docs, searchParams]);
 
   function navigateTab(next: TabId) {
     setTab(next);
-    if (next !== 'pm_process') {
-      setPmActiveFile(null);
-      setPmLibraryDoc(null);
-    }
+    setPmActiveFile(null);
+    setPmLibraryDoc(null);
     const p = new URLSearchParams(searchParams.toString());
     if (next === 'summary') {
       p.delete('tab');
       p.delete('docKey');
+      p.delete('date');
     } else {
       p.set('tab', next);
-      if (next !== 'pm_process') p.delete('docKey');
+      if (next !== 'history') {
+        p.delete('docKey');
+        p.delete('date');
+      } else if (!p.get('date') && defaultHistoryDate) {
+        p.set('date', defaultHistoryDate);
+      }
     }
     const s = p.toString();
     router.replace(s ? `${pathname}?${s}` : pathname, { scroll: false });
   }
 
   function openPmDocument(doc: Doc) {
-    setTab('pm_process');
+    setTab('history');
     const p = new URLSearchParams(searchParams.toString());
-    p.set('tab', 'pm_process');
+    p.set('tab', 'history');
+    p.set('date', doc.date);
     p.set('docKey', doc.path);
     router.replace(`${pathname}?${p.toString()}`, { scroll: false });
   }
@@ -373,10 +469,27 @@ function PortfolioPageContent() {
     router.replace(`${pathname}?${p.toString()}`, { scroll: false });
   }
 
+  function selectHistoryDate(iso: string) {
+    if (!historyDateSet.has(iso)) return;
+    const p = new URLSearchParams(searchParams.toString());
+    p.set('tab', 'history');
+    p.set('date', iso);
+    p.delete('docKey');
+    router.replace(`${pathname}?${p.toString()}`, { scroll: false });
+  }
+
+  function clearHistoryDateParam() {
+    const p = new URLSearchParams(searchParams.toString());
+    p.delete('date');
+    p.delete('docKey');
+    setPmActiveFile(null);
+    setPmLibraryDoc(null);
+    router.replace(`${pathname}?${p.toString()}`, { scroll: false });
+  }
+
   const tabs: { id: TabId; label: string; icon: typeof Layers }[] = [
     { id: 'summary', label: 'Summary', icon: Layers },
-    { id: 'thesis', label: 'Thesis book', icon: BookOpen },
-    { id: 'pm_process', label: 'PM & process', icon: ClipboardList },
+    { id: 'thesis', label: 'Thesis', icon: BookOpen },
     { id: 'history', label: 'History', icon: History },
     { id: 'activity', label: 'Activity', icon: Activity },
   ];
@@ -442,7 +555,7 @@ function PortfolioPageContent() {
                       {pmStripLinks.map((l) => (
                         <Link
                           key={l.docKey}
-                          href={`/portfolio?tab=pm_process&docKey=${encodeURIComponent(l.docKey)}`}
+                          href={`/portfolio?tab=history&date=${encodeURIComponent(String(lastUpdated))}&docKey=${encodeURIComponent(l.docKey)}`}
                           className="text-xs px-3 py-1.5 rounded-md bg-fin-amber/10 text-fin-amber hover:bg-fin-amber/20 transition-colors"
                         >
                           {l.label}
@@ -950,111 +1063,163 @@ function PortfolioPageContent() {
           </div>
         )}
 
-        {tab === 'pm_process' && (
-          <div className="space-y-6">
-            <div className="glass-card p-0 overflow-hidden">
-              <div className="px-5 py-4 border-b border-border-subtle bg-bg-secondary">
-                <h3 className="text-sm font-semibold">Portfolio management artifacts</h3>
-                <p className="text-xs text-text-muted mt-1">
-                  Deliberation, rebalance decisions, and related outputs for the latest run ({lastUpdated ?? '—'}).
-                </p>
-              </div>
-              {pmDocs.length === 0 ? (
-                <div className="px-5 py-10 text-center text-text-muted text-sm">
-                  No portfolio process documents for this date.
-                </div>
-              ) : (
-                <div className="divide-y divide-border-subtle">
-                  {pmDocs.map((d) => {
-                    const active = pmActiveFile?.id === d.id;
-                    return (
-                      <button
-                        key={d.id}
-                        type="button"
-                        onClick={() => openPmDocument(d)}
-                        className={`w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02] transition-colors ${
-                          active ? 'bg-fin-amber/5' : ''
-                        }`}
-                      >
-                        <FileText size={14} className="text-fin-amber/70 shrink-0" />
-                        <span className="font-mono text-sm">{d.title || d.filename || d.path}</span>
-                        <span className="ml-auto text-[11px] text-text-muted">{d.phase ?? ''}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {pmActiveFile ? (
-              <div className="glass-card p-0 overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-3 border-b border-border-subtle bg-bg-secondary">
-                  <div className="flex items-center gap-2 text-sm min-w-0">
-                    <FileText size={14} className="text-fin-amber shrink-0" />
-                    <span className="font-mono truncate">{pmActiveFile.title || pmActiveFile.filename}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={closePmDocument}
-                    className="text-text-muted hover:text-white shrink-0"
-                    aria-label="Close document"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-                <div className="p-6 max-w-none text-sm leading-relaxed overflow-auto max-h-[70vh]">
-                  {pmLoading || !pmLibraryDoc ? (
-                    <div className="text-text-secondary">Loading document…</div>
-                  ) : (
-                    <LibraryDocumentBody
-                      view={pmLibraryDoc.view}
-                      markdown={pmLibraryDoc.markdown}
-                      payload={pmLibraryDoc.payload}
-                      documentKey={pmLibraryDoc.document_key}
-                      docDate={pmLibraryDoc.date}
-                    />
-                  )}
-                </div>
-              </div>
-            ) : null}
-          </div>
-        )}
-
         {tab === 'history' && (
-          <div className="glass-card p-6 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <SectionTitle className="mb-0">Sleeve evolution</SectionTitle>
-              <div className="flex rounded-lg border border-border-subtle overflow-hidden text-xs">
+          <div className="flex gap-6 max-lg:flex-col">
+            <div className="w-56 shrink-0 space-y-4 max-lg:w-full max-lg:flex max-lg:gap-4 max-lg:flex-wrap">
+              {historyTimelineDates.length > 0 ? (
+                <MiniCalendar
+                  dates={historyTimelineDates}
+                  runKindByDate={portfolioHistoryRunKindByDate}
+                  selected={effHistoryDate}
+                  onSelect={selectHistoryDate}
+                />
+              ) : (
+                <div className="glass-card p-4 text-xs text-text-muted">No dated history yet.</div>
+              )}
+              {historyLatestDate && effHistoryDate && effHistoryDate !== historyLatestDate ? (
                 <button
                   type="button"
-                  onClick={() => setHistoryMode('ticker')}
-                  className={`px-3 py-1.5 font-medium ${historyMode === 'ticker' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
+                  onClick={clearHistoryDateParam}
+                  className="w-full text-xs py-2 rounded-lg border border-border-subtle text-text-secondary hover:text-white hover:bg-white/[0.04] transition-colors"
                 >
-                  Ticker
+                  Jump to latest ({historyLatestDate})
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setHistoryMode('category')}
-                  className={`px-3 py-1.5 font-medium border-l border-border-subtle ${historyMode === 'category' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
-                >
-                  Category
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHistoryMode('thesis')}
-                  className={`px-3 py-1.5 font-medium border-l border-border-subtle ${historyMode === 'thesis' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
-                >
-                  Thesis
-                </button>
-              </div>
+              ) : null}
             </div>
-            <div className="h-[380px]" aria-label="Sleeve weights stacked over time">
-              <SleeveStackedChart
-                data={sleeveData}
-                keys={sleeveKeys}
-                formatKey={formatSleeveKey}
-                aggregateOtherNote={historyMode === 'ticker'}
-              />
+
+            <div className="flex-1 min-w-0 space-y-6">
+              <div className="glass-card p-6 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <SectionTitle className="mb-0">Sleeve evolution</SectionTitle>
+                  <div className="flex rounded-lg border border-border-subtle overflow-hidden text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setHistoryMode('ticker')}
+                      className={`px-3 py-1.5 font-medium ${historyMode === 'ticker' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
+                    >
+                      Ticker
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHistoryMode('category')}
+                      className={`px-3 py-1.5 font-medium border-l border-border-subtle ${historyMode === 'category' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
+                    >
+                      Category
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHistoryMode('thesis')}
+                      className={`px-3 py-1.5 font-medium border-l border-border-subtle ${historyMode === 'thesis' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
+                    >
+                      Thesis
+                    </button>
+                  </div>
+                </div>
+                {showHistoryDateBanner ? (
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-fin-blue/30 bg-fin-blue/10 px-3 py-2 text-xs">
+                    <span className="text-text-secondary">
+                      Viewing snapshot{' '}
+                      <span className="font-mono text-text-primary">{dateParam}</span>
+                      <span className="text-text-muted"> — click the chart or calendar to change.</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={clearHistoryDateParam}
+                      className="shrink-0 px-2 py-1 rounded border border-border-subtle hover:bg-white/[0.06] text-text-primary"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                ) : null}
+                <div className="h-[380px]" aria-label="Sleeve weights stacked over time">
+                  <SleeveStackedChart
+                    data={sleeveData}
+                    keys={sleeveKeys}
+                    formatKey={formatSleeveKey}
+                    aggregateOtherNote={historyMode === 'ticker'}
+                    selectedDate={effHistoryDate}
+                    onChartDateSelect={selectHistoryDate}
+                  />
+                </div>
+              </div>
+
+              <div className="glass-card p-0 overflow-hidden">
+                <div className="px-5 py-4 border-b border-border-subtle bg-bg-secondary">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Calendar size={16} className="text-fin-amber shrink-0" aria-hidden />
+                    <h3 className="text-sm font-semibold">Portfolio management artifacts</h3>
+                  </div>
+                  <p className="text-xs text-text-muted mt-1">
+                    Deliberation, rebalance decisions, recommendations, and screener output for{' '}
+                    <span className="font-mono text-text-secondary">{effHistoryDate ?? '—'}</span>.
+                    {effHistoryDate &&
+                    pmDocsForHistory.length === 0 &&
+                    !portfolioDocDates.has(effHistoryDate) &&
+                    positionHistoryDates.has(effHistoryDate) ? (
+                      <span className="block mt-1">
+                        No PM documents on this date; sleeve weights above still reflect this snapshot.
+                      </span>
+                    ) : null}
+                  </p>
+                </div>
+                {pmDocsForHistory.length === 0 ? (
+                  <div className="px-5 py-10 text-center text-text-muted text-sm">
+                    No portfolio process documents for this date.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border-subtle">
+                    {pmDocsForHistory.map((d) => {
+                      const active = pmActiveFile?.id === d.id;
+                      return (
+                        <button
+                          key={d.id}
+                          type="button"
+                          onClick={() => openPmDocument(d)}
+                          className={`w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02] transition-colors ${
+                            active ? 'bg-fin-amber/5' : ''
+                          }`}
+                        >
+                          <FileText size={14} className="text-fin-amber/70 shrink-0" />
+                          <span className="font-mono text-sm">{d.title || d.filename || d.path}</span>
+                          <span className="ml-auto text-[11px] text-text-muted">{d.phase ?? ''}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {pmActiveFile ? (
+                <div className="glass-card p-0 overflow-hidden">
+                  <div className="flex items-center justify-between px-5 py-3 border-b border-border-subtle bg-bg-secondary">
+                    <div className="flex items-center gap-2 text-sm min-w-0">
+                      <FileText size={14} className="text-fin-amber shrink-0" />
+                      <span className="font-mono truncate">{pmActiveFile.title || pmActiveFile.filename}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={closePmDocument}
+                      className="text-text-muted hover:text-white shrink-0"
+                      aria-label="Close document"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div className="p-6 max-w-none text-sm leading-relaxed overflow-auto max-h-[70vh]">
+                    {pmLoading || !pmLibraryDoc ? (
+                      <div className="text-text-secondary">Loading document…</div>
+                    ) : (
+                      <LibraryDocumentBody
+                        view={pmLibraryDoc.view}
+                        markdown={pmLibraryDoc.markdown}
+                        payload={pmLibraryDoc.payload}
+                        documentKey={pmLibraryDoc.document_key}
+                        docDate={pmLibraryDoc.date}
+                      />
+                    )}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         )}
