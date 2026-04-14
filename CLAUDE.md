@@ -41,6 +41,9 @@ supabase/    Schema migrations
 
 ## Development Guidelines
 
+### Web fetch (all agents)
+When following a URL to read any article, news page, speech transcript, or regulatory filing — use `defuddle parse <url> --md` instead of WebFetch. Strips nav/ads/clutter before the LLM reads, saving input tokens. Not for API endpoints, `.json`, or `.md` files.
+
 ### When editing skill files:
 1. Read the existing file completely before editing
 2. Preserve YAML frontmatter (`name`, `description`)
