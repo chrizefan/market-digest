@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { FileText, Search, X } from 'lucide-react';
+import { FileText, Search } from 'lucide-react';
 import type { Doc } from '@/lib/types';
 import {
   RESEARCH_CATEGORY_ORDER,
@@ -9,7 +9,7 @@ import {
   categorizeResearchDoc,
   isKnowledgeBaseDoc,
 } from '@/lib/research-doc-categorize';
-import LibraryDocumentBody from '@/components/library/LibraryDocumentBody';
+import DocumentExpandInline from '@/components/library/DocumentExpandInline';
 import { getLibraryDocumentById, type LibraryDocumentResult } from '@/lib/queries';
 
 export default function KnowledgeBasePanel({ docs }: { docs: Doc[] }) {
@@ -61,7 +61,12 @@ export default function KnowledgeBasePanel({ docs }: { docs: Doc[] }) {
     });
   }, [filtered]);
 
-  async function openDoc(f: Doc) {
+  async function toggleDoc(f: Doc) {
+    if (activeFile?.id === f.id) {
+      setActiveFile(null);
+      setLibraryDoc(null);
+      return;
+    }
     setActiveLoading(true);
     setActiveFile(f);
     setLibraryDoc(null);
@@ -81,10 +86,7 @@ export default function KnowledgeBasePanel({ docs }: { docs: Doc[] }) {
     }
   }
 
-  function closeDoc() {
-    setActiveFile(null);
-    setLibraryDoc(null);
-  }
+  const activeHidden = activeFile != null && !filtered.some((d) => d.id === activeFile.id);
 
   return (
     <div className="space-y-4">
@@ -135,38 +137,18 @@ export default function KnowledgeBasePanel({ docs }: { docs: Doc[] }) {
         </div>
       ) : null}
 
-      {activeFile ? (
+      {activeHidden && activeFile ? (
         <div className="glass-card p-0 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3 border-b border-border-subtle bg-bg-secondary">
-            <div className="flex items-center gap-2 text-sm min-w-0">
-              <FileText size={14} className="text-fin-blue shrink-0" />
-              <span className="font-mono truncate">{canonicalResearchTitle(activeFile)}</span>
-              {activeFile.date ? (
-                <span className="text-[11px] text-text-muted shrink-0 font-mono">{activeFile.date}</span>
-              ) : null}
-            </div>
-            <button
-              type="button"
-              onClick={closeDoc}
-              className="text-text-muted hover:text-white shrink-0"
-              aria-label="Close document"
-            >
-              <X size={16} />
-            </button>
-          </div>
-          <div className="p-6 max-w-none text-sm leading-relaxed overflow-auto max-h-[70vh]">
-            {activeLoading || !libraryDoc ? (
-              <div className="text-text-secondary">Loading document…</div>
-            ) : (
-              <LibraryDocumentBody
-                view={libraryDoc.view}
-                markdown={libraryDoc.markdown}
-                payload={libraryDoc.payload}
-                documentKey={libraryDoc.document_key}
-                docDate={libraryDoc.date}
-              />
-            )}
-          </div>
+          <DocumentExpandInline
+            title={canonicalResearchTitle(activeFile)}
+            subtitle={activeFile.date ?? null}
+            loading={activeLoading}
+            libraryDoc={libraryDoc}
+            onCollapse={() => {
+              setActiveFile(null);
+              setLibraryDoc(null);
+            }}
+          />
         </div>
       ) : null}
 
@@ -185,18 +167,36 @@ export default function KnowledgeBasePanel({ docs }: { docs: Doc[] }) {
               <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">{cat}</h3>
             </div>
             <div className="divide-y divide-border-subtle">
-              {files.map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => openDoc(f)}
-                  className="w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02] transition-colors"
-                >
-                  <FileText size={14} className="text-fin-blue/60 shrink-0" />
-                  <span className="font-mono text-sm truncate">{canonicalResearchTitle(f)}</span>
-                  <span className="ml-auto text-[11px] text-text-muted font-mono shrink-0">{f.date ?? ''}</span>
-                </button>
-              ))}
+              {files.map((f) => {
+                const expanded = activeFile?.id === f.id;
+                return (
+                  <div key={f.id}>
+                    <button
+                      type="button"
+                      onClick={() => void toggleDoc(f)}
+                      className={`w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02] transition-colors ${
+                        expanded ? 'bg-fin-blue/[0.06]' : ''
+                      }`}
+                    >
+                      <FileText size={14} className="text-fin-blue/60 shrink-0" />
+                      <span className="font-mono text-sm truncate">{canonicalResearchTitle(f)}</span>
+                      <span className="ml-auto text-[11px] text-text-muted font-mono shrink-0">{f.date ?? ''}</span>
+                    </button>
+                    {expanded ? (
+                      <DocumentExpandInline
+                        title={canonicalResearchTitle(f)}
+                        subtitle={f.date ?? null}
+                        loading={activeLoading}
+                        libraryDoc={libraryDoc}
+                        onCollapse={() => {
+                          setActiveFile(null);
+                          setLibraryDoc(null);
+                        }}
+                      />
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           </div>
         ))

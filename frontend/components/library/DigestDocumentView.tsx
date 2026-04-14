@@ -108,8 +108,10 @@ export default function DigestDocumentView({
 
   useEffect(() => {
     let cancelled = false;
+    /* eslint-disable react-hooks/set-state-in-effect -- fetch lifecycle: show loading until anchors resolve */
     setContextLoading(true);
     setError(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
     fetchDigestDiffContext(docDate)
       .then((ctx) => {
         if (!cancelled) setContext(ctx);
@@ -129,14 +131,12 @@ export default function DigestDocumentView({
   }, [docDate]);
 
   useEffect(() => {
-    if (viewMode === 'compiled') {
-      setPair(null);
-      setPairLoading(false);
-      return;
-    }
+    if (viewMode === 'compiled') return;
     let cancelled = false;
+    /* eslint-disable react-hooks/set-state-in-effect -- fetch lifecycle for diff pair */
     setPairLoading(true);
     setError(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
     const customArg = compareKind === 'custom_date' ? customCompareDate : undefined;
     loadDigestLibraryDiff(docDate, compareKind, customArg)
       .then(({ pair: p }) => {
@@ -215,7 +215,15 @@ export default function DigestDocumentView({
         <span className="text-text-muted">View</span>
         <select
           value={viewMode}
-          onChange={(e) => setViewMode(e.target.value as ViewMode)}
+          onChange={(e) => {
+            const v = e.target.value as ViewMode;
+            setViewMode(v);
+            if (v === 'compiled') {
+              setPair(null);
+              setPairLoading(false);
+              setError(null);
+            }
+          }}
           className="rounded-md border border-border-subtle bg-bg-secondary px-2 py-1.5 text-xs text-text-primary"
         >
           <option value="compiled">Current (compiled)</option>

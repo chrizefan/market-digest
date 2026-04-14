@@ -409,8 +409,14 @@ export default function PortfolioShellInner() {
   }
 
   function openPmDocument(doc: Doc) {
-    setTab('analysis');
     const p = new URLSearchParams(searchParams.toString());
+    const curKey = p.get('docKey');
+    const curDate = p.get('date');
+    if (curKey === doc.path && curDate === doc.date && searchParams.get('tab') === 'analysis') {
+      closePmDocument();
+      return;
+    }
+    setTab('analysis');
     p.set('tab', 'analysis');
     p.set('date', doc.date);
     p.set('docKey', doc.path);

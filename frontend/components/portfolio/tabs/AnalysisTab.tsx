@@ -2,10 +2,10 @@
 
 import { Fragment, useState } from 'react';
 import Link from 'next/link';
-import { Calendar, ChevronDown, ChevronUp, FileText, X } from 'lucide-react';
+import { Calendar, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { SectionTitle } from '@/components/ui';
 import MiniCalendar, { type MiniCalendarRunKind } from '@/components/library/MiniCalendar';
-import LibraryDocumentBody from '@/components/library/LibraryDocumentBody';
+import DocumentExpandInline from '@/components/library/DocumentExpandInline';
 import { SleeveStackedChart } from '@/components/portfolio/sleeve-stacked-chart';
 import StrategyThesisPanel from '@/components/portfolio/StrategyThesisPanel';
 import type { Doc, Thesis } from '@/lib/types';
@@ -379,55 +379,34 @@ export default function AnalysisTab(props: {
                 {pmDocsForHistory.map((d) => {
                   const active = pmActiveFile?.id === d.id;
                   return (
-                    <button
-                      key={d.id}
-                      type="button"
-                      onClick={() => onOpenPmDocument(d)}
-                      className={`w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02] transition-colors ${
-                        active ? 'bg-fin-amber/5' : ''
-                      }`}
-                    >
-                      <FileText size={14} className="text-fin-amber/70 shrink-0" />
-                      <span className="font-mono text-sm">{d.title || d.filename || d.path}</span>
-                      <span className="ml-auto text-[11px] text-text-muted">{d.phase ?? ''}</span>
-                    </button>
+                    <div key={d.id}>
+                      <button
+                        type="button"
+                        onClick={() => onOpenPmDocument(d)}
+                        className={`w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02] transition-colors ${
+                          active ? 'bg-fin-amber/5' : ''
+                        }`}
+                      >
+                        <FileText size={14} className="text-fin-amber/70 shrink-0" />
+                        <span className="font-mono text-sm">{d.title || d.filename || d.path}</span>
+                        <span className="ml-auto text-[11px] text-text-muted">{d.phase ?? ''}</span>
+                      </button>
+                      {active && pmActiveFile ? (
+                        <DocumentExpandInline
+                          accent="amber"
+                          title={pmActiveFile.title || pmActiveFile.filename || pmActiveFile.path}
+                          subtitle={pmActiveFile.date ?? null}
+                          loading={pmLoading}
+                          libraryDoc={pmLibraryDoc}
+                          onCollapse={onClosePmDocument}
+                        />
+                      ) : null}
+                    </div>
                   );
                 })}
               </div>
             )}
           </div>
-
-          {pmActiveFile ? (
-            <div className="glass-card p-0 overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-3 border-b border-border-subtle bg-bg-secondary">
-                <div className="flex items-center gap-2 text-sm min-w-0">
-                  <FileText size={14} className="text-fin-amber shrink-0" />
-                  <span className="font-mono truncate">{pmActiveFile.title || pmActiveFile.filename}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={onClosePmDocument}
-                  className="text-text-muted hover:text-white shrink-0"
-                  aria-label="Close document"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-              <div className="p-6 max-w-none text-sm leading-relaxed overflow-auto max-h-[70vh]">
-                {pmLoading || !pmLibraryDoc ? (
-                  <div className="text-text-secondary">Loading document…</div>
-                ) : (
-                  <LibraryDocumentBody
-                    view={pmLibraryDoc.view}
-                    markdown={pmLibraryDoc.markdown}
-                    payload={pmLibraryDoc.payload}
-                    documentKey={pmLibraryDoc.document_key}
-                    docDate={pmLibraryDoc.date}
-                  />
-                )}
-              </div>
-            </div>
-          ) : null}
         </section>
       </div>
     </div>

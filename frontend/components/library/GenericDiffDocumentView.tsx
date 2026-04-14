@@ -130,8 +130,10 @@ export default function GenericDiffDocumentView({
 
   useEffect(() => {
     let cancelled = false;
+    /* eslint-disable react-hooks/set-state-in-effect -- fetch lifecycle for compare anchors */
     setAnchorsLoading(true);
     setError(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
     fetchDocumentDiffAnchors(docDate, documentKey, payload)
       .then((a) => {
         if (!cancelled) setAnchors({ prev: a.previousDayDate, base: a.deltaBaselineDate });
@@ -148,14 +150,12 @@ export default function GenericDiffDocumentView({
   }, [docDate, documentKey, payload]);
 
   useEffect(() => {
-    if (viewMode === 'compiled') {
-      setPair(null);
-      setPairLoading(false);
-      return;
-    }
+    if (viewMode === 'compiled') return;
     let cancelled = false;
+    /* eslint-disable react-hooks/set-state-in-effect -- fetch lifecycle for diff pair */
     setPairLoading(true);
     setError(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
     loadDocumentDiff(docDate, documentKey, payload, {
       compare: compareKind,
       customCompareDate: compareKind === 'custom_date' ? customCompareDate : undefined,
@@ -225,7 +225,15 @@ export default function GenericDiffDocumentView({
         <span className="text-text-muted">View</span>
         <select
           value={viewMode}
-          onChange={(e) => setViewMode(e.target.value as ViewMode)}
+          onChange={(e) => {
+            const v = e.target.value as ViewMode;
+            setViewMode(v);
+            if (v === 'compiled') {
+              setPair(null);
+              setPairLoading(false);
+              setError(null);
+            }
+          }}
           className="rounded-md border border-border-subtle bg-bg-secondary px-2 py-1.5 text-xs text-text-primary"
         >
           <option value="compiled">Current (compiled)</option>
