@@ -10,6 +10,7 @@ import DigestDocumentView from './DigestDocumentView';
 import EvolutionSourcesDocumentView from './EvolutionSourcesDocumentView';
 import PortfolioRecommendationDocumentView from './PortfolioRecommendationDocumentView';
 import OpportunityScreenerDocumentView from './OpportunityScreenerDocumentView';
+import GenericDiffDocumentView from './GenericDiffDocumentView';
 
 export default function LibraryDocumentBody({
   view,
@@ -43,6 +44,16 @@ export default function LibraryDocumentBody({
       return <PortfolioRecommendationDocumentView payload={payload} fallbackMarkdown={markdown} />;
     case 'opportunity_screener':
       return <OpportunityScreenerDocumentView payload={payload} fallbackMarkdown={markdown} />;
+    case 'diffable':
+      return (
+        <GenericDiffDocumentView
+          key={`${docDate}__${documentKey}`}
+          docDate={docDate}
+          documentKey={documentKey}
+          payload={payload}
+          fallbackMarkdown={markdown}
+        />
+      );
     default:
       return (
         <div className="prose prose-invert max-w-none text-sm leading-relaxed">

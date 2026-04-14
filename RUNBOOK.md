@@ -53,6 +53,28 @@ Apply migration [`020_track_b_thesis_doc_types.sql`](supabase/migrations/020_tra
 
 **Step validation:** After research close-out or each Track B publish batch, run [`scripts/validate_pipeline_step.py`](scripts/validate_pipeline_step.py) (`--step …` or `--chain research|track_b|full`, plus `--date`). See [`docs/ops/SCRIPTS.md`](docs/ops/SCRIPTS.md). Requires `jsonschema` for schema checks.
 
+## Historical backfill (simulated replay)
+
+To replay historical days as if the pipeline had run with correct date-bounded research:
+
+```bash
+# 1. Export current state (backup before any rewrites)
+python3 scripts/backfill_export_state.py --start YYYY-MM-DD --end YYYY-MM-DD
+
+# 2. Normalize schema violations in existing rows
+python3 scripts/backfill_normalize_schemas.py --start YYYY-MM-DD --end YYYY-MM-DD
+
+# 3. Get as-of date context + agent prompt for a specific date
+python3 scripts/backfill_context.py --date YYYY-MM-DD --print-prompt
+
+# 4. After publishing new snapshots, validate all dates
+python3 scripts/backfill_simulated_runs.py --validate-all
+```
+
+**As-of date constraints:** all web research must use `before:DATE` query constraints; prices/macro come from Supabase filtered to `<= DATE` (see `backfill_context.py`). The `cowork/tasks/backfill-historical-day.md` recipe is the canonical task definition for each historical day.
+
+**Pre-executed:** Apr 5–14, 2026 backfill completed 2026-04-14 (468 documents, all days OK).
+
 ## Market-open execution and price backfill
 
 Pre-market runs publish a **same-day** `rebalance_decision` before **that day’s** `price_history.open` exists. [`execute_at_open.py`](scripts/execute_at_open.py) may record `position_events` with **`price: null`**. After the session opens (or after prices sync), run:

@@ -41,6 +41,15 @@ Operator truth for **when to run what** remains [`RUNBOOK.md`](../../RUNBOOK.md)
 | [`scripts/validate-portfolio.sh`](../../scripts/validate-portfolio.sh) | `portfolio.json` vs profile |
 | [`scripts/repair_supabase_portfolio_data.py`](../../scripts/repair_supabase_portfolio_data.py) | One-off repairs |
 
+## Historical backfill (simulated replay)
+
+| Script | Role |
+|--------|------|
+| [`scripts/backfill_simulated_runs.py`](../../scripts/backfill_simulated_runs.py) | Orchestrate the 10-day Apr 5–14 historical backfill: `--dry-run` (plan), `--export-only` (backup), `--normalize-schemas` (patch Apr 5-11 schema), `--date D --prompt` (print agent prompt), `--validate-all` |
+| [`scripts/backfill_export_state.py`](../../scripts/backfill_export_state.py) | Pre-backfill backup: exports `daily_snapshots`, `documents`, `positions` rows for a date range to `data/backfill-backup/` |
+| [`scripts/backfill_normalize_schemas.py`](../../scripts/backfill_normalize_schemas.py) | Normalize schema violations in existing snapshots: `conviction`, `posture`, `sector_scorecard` (dict→array), `segment_biases` (string→biasObject) |
+| [`scripts/backfill_context.py`](../../scripts/backfill_context.py) | Generate as-of-date research context from Supabase (prices, macro, prior snapshot) with strict `<= DATE` filtering; `--print-prompt` outputs full agent prompt |
+
 ## Migration / legacy (keep; use rarely)
 
 | Script | Role |

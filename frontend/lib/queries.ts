@@ -106,7 +106,8 @@ export type LibraryDocumentView =
   | 'deliberation'
   | 'evolution_sources'
   | 'portfolio_recommendation'
-  | 'opportunity_screener';
+  | 'opportunity_screener'
+  | 'diffable';
 
 export interface LibraryDocumentResult {
   id: string;
@@ -148,6 +149,18 @@ function resolveLibraryDocumentView(document_key: string, payload: unknown): Lib
   ) {
     return 'markdown';
   }
+
+  // Delta research docs and portfolio date-keyed docs get the diff view
+  if (key.startsWith('deltas/')) return 'diffable';
+  const PORTFOLIO_DATE_PREFIXES = [
+    'market-thesis-exploration/',
+    'thesis-vehicle-map/',
+    'pm-allocation-memo/',
+    'deliberation-transcript-index/',
+    'asset-rec/',
+  ];
+  if (PORTFOLIO_DATE_PREFIXES.some((pfx) => key.startsWith(pfx))) return 'diffable';
+
   return 'markdown';
 }
 
@@ -1190,4 +1203,121 @@ export async function getPositionEvents(
     if (ticker) q = q.eq('ticker', ticker);
     return q.limit(200);
   });
+}
+
+// ─── Generic document diff (used by the library diff view) ───────────────────
+
+export type DocumentDiffPair = {
+  targetDate: string;
+  compareDate: string;
+  compareKey: string;
+  /** Mode used to find the comparison document */
+  compareMode: 'baseline_doc' | 'previous_day';
+  beforeMarkdown: string;
+  afterMarkdown: string;
+};
+
+/**
+ * Derive what document to compare `targetDate / documentKey` against.
+ *
+ * - Research delta docs (`deltas/foo.delta.md`): compare against the baseline
+ *   version (`foo.md`) at `payload.baseline_date`.
+ * - Portfolio date-keyed docs (`pm-allocation-memo/DATE.json`, etc.): compare
+ *   against the same doc type from the most recent prior day.
+ */
+export async function loadDocumentDiff(
+  targetDate: string,
+  documentKey: string,
+  payload: Record<string, unknown> | null
+): Promise<DocumentDiffPair | null> {
+  if (!isSupabaseConfigured() || !supabase) return null;
+  const sb = supabase;
+  const key = documentKey.toLowerCase();
+
+  type DocPick = Pick<TableRow<'documents'>, 'date' | 'document_key' | 'content' | 'payload'>;
+
+  // ── Research delta: strip deltas/ prefix and .delta from the key ──────────
+  if (key.startsWith('deltas/')) {
+    const baselineDate = String(
+      (payload?.baseline_date as string | undefined) ?? ''
+    ).trim();
+    if (!baselineDate || baselineDate === targetDate) return null;
+
+    // Derive the baseline doc key: deltas/macro.delta.md → macro.md
+    //                              deltas/sectors/technology.delta.md → sectors/technology.md
+    const stripped = documentKey.slice('deltas/'.length).replace(/\.delta\.md$/i, '.md');
+
+    const { data: rows, error } = await sb
+      .from('documents')
+      .select('date, document_key, content, payload')
+      .in('date', [targetDate, baselineDate])
+      .in('document_key', [documentKey, stripped]);
+    if (error) throw error;
+
+    const byKey = new Map<string, DocPick>();
+    for (const r of (rows ?? []) as DocPick[]) {
+      byKey.set(`${r.date}__${r.document_key}`, r);
+    }
+
+    const beforeRow = byKey.get(`${baselineDate}__${stripped}`);
+    const afterRow = byKey.get(`${targetDate}__${documentKey}`);
+    if (!beforeRow || !afterRow) return null;
+
+    const beforeMarkdown = beforeRow.content?.trim() || '_No content._';
+    const afterMarkdown = afterRow.content?.trim() || '_No content._';
+
+    return {
+      targetDate,
+      compareDate: baselineDate,
+      compareKey: stripped,
+      compareMode: 'baseline_doc',
+      beforeMarkdown,
+      afterMarkdown,
+    };
+  }
+
+  // ── Portfolio date-keyed: find previous day's equivalent doc ──────────────
+  // Replace the date segment in the key to locate the prior doc.
+  const datePattern = /\d{4}-\d{2}-\d{2}/g;
+  const keyWithPlaceholder = documentKey.replace(datePattern, '__DATE__');
+
+  // Find all documents matching the same template pattern before targetDate
+  const { data: allPrior, error: priorErr } = await sb
+    .from('documents')
+    .select('date, document_key, content')
+    .lt('date', targetDate)
+    .order('date', { ascending: false })
+    .limit(50);
+  if (priorErr) throw priorErr;
+
+  const priorDocs = (allPrior ?? []) as Pick<TableRow<'documents'>, 'date' | 'document_key' | 'content'>[];
+  const matchingPrior = priorDocs.find((r) => {
+    const candidateKey = r.document_key.replace(datePattern, '__DATE__');
+    return candidateKey === keyWithPlaceholder;
+  });
+
+  if (!matchingPrior) return null;
+
+  // Fetch current doc content (we may already have it from the caller, but fetch cleanly)
+  const { data: currentRow, error: currErr } = await sb
+    .from('documents')
+    .select('content')
+    .eq('date', targetDate)
+    .eq('document_key', documentKey)
+    .maybeSingle();
+  if (currErr) throw currErr;
+  if (!currentRow) return null;
+
+  const beforeMarkdown = matchingPrior.content?.trim() || '_No content._';
+  const afterMarkdown =
+    (currentRow as Pick<TableRow<'documents'>, 'content'>).content?.trim() || '_No content._';
+
+  return {
+    targetDate,
+    compareDate: matchingPrior.date,
+    compareKey: matchingPrior.document_key,
+    compareMode: 'previous_day',
+    beforeMarkdown,
+    afterMarkdown,
+  };
 }

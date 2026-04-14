@@ -26,6 +26,7 @@ In **Cloud desktop**, with **Supabase MCP** connected, use the DB for prices/tec
 | [`portfolio-pm-rebalance.md`](portfolio-pm-rebalance.md) | **Track B** — **thesis-first** after **`digest`** exists: `market_thesis_exploration` → `thesis_vehicle_map` → screener → analysts → **per-ticker** `deliberation_transcript` + index → **`pm_allocation_memo`** → PM / **`rebalance_decision`**. |
 | [`research-document-deltas.md`](research-document-deltas.md) | **Track B** — manifest-driven **`document_delta`** publish + **`fold_document_deltas.py`** (optional separate job). |
 | [`manual-run.md`](manual-run.md) | Ad-hoc operator run; minimal steps. |
+| [`backfill-historical-day.md`](backfill-historical-day.md) | **Backfill** — historical simulation for one date with as-of constraints. Use with `scripts/backfill_context.py --date D --print-prompt`. |
 
 **Project-level prompt:** paste contents of [`../PROJECT-PROMPT.md`](../PROJECT-PROMPT.md) into Cowork **project** settings so every task inherits the same ground rules.
 
