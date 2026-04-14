@@ -5,9 +5,14 @@ import type { Change } from 'diff';
 import { diffLines, diffWords } from 'diff';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { loadDocumentDiff, type DocumentDiffPair } from '@/lib/queries';
+import {
+  fetchDocumentDiffAnchors,
+  loadDocumentDiff,
+  type DocumentDiffCompareKind,
+  type DocumentDiffPair,
+} from '@/lib/queries';
 
-type Mode = 'review' | 'split' | 'formatted';
+type ViewMode = 'compiled' | 'inline' | 'split';
 
 function isTableLine(s: string): boolean {
   return s.trimStart().startsWith('|');
@@ -78,18 +83,26 @@ function WordSwapBlock({ oldText, newText }: { oldText: string; newText: string 
   );
 }
 
-function compareModeLabel(pair: DocumentDiffPair): string {
-  if (pair.compareMode === 'baseline_doc') {
-    return `Baseline (${pair.compareDate})`;
+function compareTargetLabel(kind: DocumentDiffCompareKind, anchors: { prev: string | null; base: string | null }): string {
+  if (kind === 'delta_baseline') {
+    return anchors.base ? `Delta baseline (${anchors.base})` : 'Delta baseline';
   }
-  return `Previous day (${pair.compareDate})`;
+  if (kind === 'custom_date') return 'Custom date…';
+  return anchors.prev ? `Previous date (${anchors.prev})` : 'Previous date';
 }
 
-function compareModeTitle(pair: DocumentDiffPair): string {
-  if (pair.compareMode === 'baseline_doc') {
-    return `Showing delta vs baseline document "${pair.compareKey}" from ${pair.compareDate}`;
+function compareModeFootnote(pair: DocumentDiffPair): string {
+  switch (pair.compareMode) {
+    case 'baseline_doc':
+      return `Delta vs baseline file "${pair.compareKey}" from ${pair.compareDate}`;
+    case 'delta_baseline':
+      return `Same artifact at delta baseline ${pair.compareDate}`;
+    case 'custom_date':
+      return `Same artifact at ${pair.compareDate}`;
+    case 'previous_day':
+    default:
+      return `Prior run ${pair.compareDate}`;
   }
-  return `Showing diff vs previous day's version from ${pair.compareDate}`;
 }
 
 export default function GenericDiffDocumentView({
@@ -103,17 +116,50 @@ export default function GenericDiffDocumentView({
   payload: Record<string, unknown> | null;
   fallbackMarkdown: string;
 }) {
-  const [mode, setMode] = useState<Mode>('review');
-  const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>('compiled');
+  const [compareKind, setCompareKind] = useState<DocumentDiffCompareKind>('previous_day');
+  const [customCompareDate, setCustomCompareDate] = useState('');
+  const [anchorsLoading, setAnchorsLoading] = useState(true);
+  const [pairLoading, setPairLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [anchors, setAnchors] = useState<{ prev: string | null; base: string | null }>({
+    prev: null,
+    base: null,
+  });
   const [pair, setPair] = useState<DocumentDiffPair | null>(null);
 
   useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect -- async diff load lifecycle */
     let cancelled = false;
-    setLoading(true);
+    setAnchorsLoading(true);
     setError(null);
-    loadDocumentDiff(docDate, documentKey, payload)
+    fetchDocumentDiffAnchors(docDate, documentKey, payload)
+      .then((a) => {
+        if (!cancelled) setAnchors({ prev: a.previousDayDate, base: a.deltaBaselineDate });
+      })
+      .catch(() => {
+        if (!cancelled) setAnchors({ prev: null, base: null });
+      })
+      .finally(() => {
+        if (!cancelled) setAnchorsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [docDate, documentKey, payload]);
+
+  useEffect(() => {
+    if (viewMode === 'compiled') {
+      setPair(null);
+      setPairLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setPairLoading(true);
+    setError(null);
+    loadDocumentDiff(docDate, documentKey, payload, {
+      compare: compareKind,
+      customCompareDate: compareKind === 'custom_date' ? customCompareDate : undefined,
+    })
       .then((p) => {
         if (!cancelled) setPair(p);
       })
@@ -124,13 +170,12 @@ export default function GenericDiffDocumentView({
         }
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setPairLoading(false);
       });
-    /* eslint-enable react-hooks/set-state-in-effect */
     return () => {
       cancelled = true;
     };
-  }, [docDate, documentKey, payload]);
+  }, [docDate, documentKey, payload, compareKind, customCompareDate, viewMode]);
 
   const lineItems = useMemo(() => {
     if (!pair) return [];
@@ -139,13 +184,91 @@ export default function GenericDiffDocumentView({
 
   const hasDiff = useMemo(() => lineItems.some((it) => it.kind !== 'equal'), [lineItems]);
 
-  if (loading) {
-    return <p className="text-text-muted text-sm">Loading diff…</p>;
+  const canPrev = !!anchors.prev;
+  const canBase = !!anchors.base;
+  const customReady = compareKind !== 'custom_date' || /^\d{4}-\d{2}-\d{2}$/.test(customCompareDate.trim());
+
+  if (anchorsLoading) {
+    return <p className="text-text-muted text-sm">Loading document…</p>;
+  }
+
+  const toolbar = (
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end text-xs">
+      <label className="flex flex-col gap-1 min-w-[200px]">
+        <span className="text-text-muted">Compare to</span>
+        <select
+          value={compareKind}
+          onChange={(e) => setCompareKind(e.target.value as DocumentDiffCompareKind)}
+          className="rounded-md border border-border-subtle bg-bg-secondary px-2 py-1.5 text-xs text-text-primary"
+        >
+          <option value="previous_day" disabled={!canPrev}>
+            {compareTargetLabel('previous_day', anchors)}
+          </option>
+          <option value="delta_baseline" disabled={!canBase}>
+            {compareTargetLabel('delta_baseline', anchors)}
+          </option>
+          <option value="custom_date">Custom date…</option>
+        </select>
+      </label>
+      {compareKind === 'custom_date' ? (
+        <label className="flex flex-col gap-1 min-w-[160px]">
+          <span className="text-text-muted">Compare date</span>
+          <input
+            type="date"
+            value={customCompareDate}
+            onChange={(e) => setCustomCompareDate(e.target.value)}
+            className="rounded-md border border-border-subtle bg-bg-secondary px-2 py-1.5 text-xs text-text-primary font-mono"
+          />
+        </label>
+      ) : null}
+      <label className="flex flex-col gap-1 min-w-[180px]">
+        <span className="text-text-muted">View</span>
+        <select
+          value={viewMode}
+          onChange={(e) => setViewMode(e.target.value as ViewMode)}
+          className="rounded-md border border-border-subtle bg-bg-secondary px-2 py-1.5 text-xs text-text-primary"
+        >
+          <option value="compiled">Current (compiled)</option>
+          <option value="inline">Inline diff</option>
+          <option value="split">Side-by-side</option>
+        </select>
+      </label>
+    </div>
+  );
+
+  if (viewMode === 'compiled') {
+    return (
+      <div className="space-y-4">
+        {toolbar}
+        <div className="prose prose-invert max-w-none text-sm leading-relaxed">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{fallbackMarkdown}</ReactMarkdown>
+        </div>
+      </div>
+    );
+  }
+
+  if (!customReady) {
+    return (
+      <div className="space-y-4">
+        {toolbar}
+        <p className="text-text-muted text-sm">Choose a date to compare against.</p>
+      </div>
+    );
+  }
+
+  if (pairLoading) {
+    return (
+      <div className="space-y-4">
+        {toolbar}
+        <p className="text-text-muted text-sm">Loading comparison…</p>
+      </div>
+    );
   }
 
   if (error) {
     return (
       <div className="space-y-3">
+        {toolbar}
         <p className="text-fin-red text-xs">{error}</p>
         <div className="prose prose-invert max-w-none text-sm">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{fallbackMarkdown}</ReactMarkdown>
@@ -156,9 +279,10 @@ export default function GenericDiffDocumentView({
 
   if (!pair) {
     return (
-      <div className="space-y-3">
-        <p className="text-text-muted text-xs">
-          No prior version found to compare against — showing current document.
+      <div className="space-y-4">
+        {toolbar}
+        <p className="text-text-muted text-sm">
+          No comparison document for this choice — showing the current version below.
         </p>
         <div className="prose prose-invert max-w-none text-sm leading-relaxed">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{fallbackMarkdown}</ReactMarkdown>
@@ -169,61 +293,19 @@ export default function GenericDiffDocumentView({
 
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center text-xs">
-        <span className="text-text-muted shrink-0" title={compareModeTitle(pair)}>
-          Diff vs{' '}
-          <span className="font-mono text-fin-blue">{compareModeLabel(pair)}</span>
-        </span>
+      {toolbar}
+      <p className="text-text-muted text-[11px]" title={compareModeFootnote(pair)}>
+        Diff vs <span className="font-mono text-fin-blue">{pair.compareDate}</span>
+        <span className="text-text-muted"> · {compareModeFootnote(pair)}</span>
+      </p>
 
-        <div className="flex flex-wrap rounded-md border border-border-subtle overflow-hidden lg:ml-auto w-full sm:w-auto">
-          <button
-            type="button"
-            onClick={() => setMode('review')}
-            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-              mode === 'review'
-                ? 'bg-fin-blue/25 text-fin-blue'
-                : 'text-text-muted hover:text-white bg-bg-secondary'
-            }`}
-          >
-            Inline diff
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('split')}
-            className={`px-3 py-1.5 text-xs font-medium transition-colors border-l border-border-subtle ${
-              mode === 'split'
-                ? 'bg-fin-blue/25 text-fin-blue'
-                : 'text-text-muted hover:text-white bg-bg-secondary'
-            }`}
-          >
-            Side-by-side
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('formatted')}
-            className={`px-3 py-1.5 text-xs font-medium transition-colors border-l border-border-subtle ${
-              mode === 'formatted'
-                ? 'bg-fin-blue/25 text-fin-blue'
-                : 'text-text-muted hover:text-white bg-bg-secondary'
-            }`}
-          >
-            Current
-          </button>
-        </div>
-      </div>
-
-      {/* Inline diff */}
-      {mode === 'review' && (
+      {viewMode === 'inline' ? (
         <div>
           {!hasDiff ? (
-            <p className="text-text-muted text-sm mb-3">
-              No text changes vs prior version (try side-by-side or current view).
-            </p>
+            <p className="text-text-muted text-sm mb-3">No text changes vs comparison version.</p>
           ) : (
             <p className="text-[10px] uppercase tracking-wider text-text-muted mb-2">
-              Line diff with word highlights where a line was replaced · removed (red) · added
-              (green)
+              Line diff with word highlights where a line was replaced · removed (red) · added (green)
             </p>
           )}
           <div className="rounded-lg border border-border-subtle bg-bg-secondary/40 text-sm leading-relaxed max-h-[min(62vh,720px)] overflow-auto">
@@ -264,19 +346,14 @@ export default function GenericDiffDocumentView({
             })}
           </div>
         </div>
-      )}
-
-      {/* Side-by-side */}
-      {mode === 'split' && (
+      ) : (
         <div>
           <p className="text-[10px] uppercase tracking-wider text-text-muted mb-2">
-            Prior version (left) · current (right)
+            Comparison (left) · current (right)
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[min(62vh,720px)] overflow-auto">
             <div className="rounded-lg border border-border-subtle bg-bg-secondary/30 p-3 min-h-0 overflow-auto">
-              <p className="text-[10px] font-mono text-text-muted mb-2">
-                {pair.compareMode === 'baseline_doc' ? 'Baseline' : 'Prior day'} — {pair.compareDate}
-              </p>
+              <p className="text-[10px] font-mono text-text-muted mb-2">Compare — {pair.compareDate}</p>
               <div className="prose prose-invert max-w-none text-sm leading-relaxed">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{pair.beforeMarkdown}</ReactMarkdown>
               </div>
@@ -288,13 +365,6 @@ export default function GenericDiffDocumentView({
               </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Current (formatted) */}
-      {mode === 'formatted' && (
-        <div className="prose prose-invert max-w-none text-sm leading-relaxed">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{pair.afterMarkdown}</ReactMarkdown>
         </div>
       )}
     </div>

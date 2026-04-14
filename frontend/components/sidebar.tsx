@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { ElementType } from 'react';
 import { LayoutDashboard, PieChart, BookOpen, Database, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AtlasMark } from '@/components/atlas-mark';
 import { useAppShell } from '@/components/app-shell-context';
 
 interface NavItem {
@@ -22,8 +23,17 @@ const NAV: NavItem[] = [
 function routeActive(pathname: string, base: string, href: string): boolean {
   const norm = pathname.replace(/\/+$/, '') || '/';
   if (href === '/') {
-    const segs = norm.split('/').filter(Boolean);
-    return segs.length === 0 || segs.length === 1;
+    // Only the real home route — not every top-level path (those have one segment too).
+    const baseNorm = base.replace(/\/+$/, '');
+    if (baseNorm) {
+      if (norm === baseNorm) return true;
+      if (norm.startsWith(`${baseNorm}/`)) {
+        const afterBase = norm.slice(baseNorm.length + 1);
+        return afterBase.split('/').filter(Boolean).length === 0;
+      }
+      return false;
+    }
+    return norm.split('/').filter(Boolean).length === 0;
   }
   if (href === '/portfolio') {
     return /\/portfolio(\/|$)/.test(pathname) || /\/performance(\/|$)/.test(pathname);
@@ -77,30 +87,7 @@ export default function Sidebar() {
             className={`flex items-center justify-between gap-2 w-full ${sidebarCollapsed ? 'md:hidden' : ''}`}
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              <svg width="28" height="28" viewBox="0 0 48 48" fill="none" aria-hidden="true" className="shrink-0">
-                <path
-                  stroke="white"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4.2774,32.5293a11.6485,11.6485,0,0,1,23.2219,1.32h0c0,3.2166.0022,11.6479.0022,11.6479"
-                />
-                <path
-                  stroke="white"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3.3047,29.8574q-.0277-.4816-.0279-.97a16.61,16.61,0,1,1,33.2209,0v0c0,4.5869.0031,16.6095.0031,16.6095"
-                />
-                <circle stroke="white" strokeWidth="2" cx="16.5007" cy="33.4992" r="5.0328" />
-                <path
-                  stroke="white"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M45.5,24A21.5,21.5,0,1,0,24,45.5H45.5Z"
-                />
-              </svg>
+              <AtlasMark className="shrink-0" />
               <span className="text-base font-medium tracking-tight truncate">Atlas</span>
             </div>
             <button
@@ -115,30 +102,7 @@ export default function Sidebar() {
           <div
             className={`${sidebarCollapsed ? 'hidden md:flex' : 'hidden'} flex-col items-center gap-3 w-full py-1`}
           >
-            <svg width="28" height="28" viewBox="0 0 48 48" fill="none" aria-hidden="true" className="shrink-0">
-              <path
-                stroke="white"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4.2774,32.5293a11.6485,11.6485,0,0,1,23.2219,1.32h0c0,3.2166.0022,11.6479.0022,11.6479"
-              />
-              <path
-                stroke="white"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3.3047,29.8574q-.0277-.4816-.0279-.97a16.61,16.61,0,1,1,33.2209,0v0c0,4.5869.0031,16.6095.0031,16.6095"
-              />
-              <circle stroke="white" strokeWidth="2" cx="16.5007" cy="33.4992" r="5.0328" />
-              <path
-                stroke="white"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M45.5,24A21.5,21.5,0,1,0,24,45.5H45.5Z"
-              />
-            </svg>
+            <AtlasMark className="shrink-0" />
             <button
               type="button"
               onClick={toggleSidebar}

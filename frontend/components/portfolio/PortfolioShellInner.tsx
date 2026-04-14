@@ -158,41 +158,6 @@ export default function PortfolioShellInner() {
     return categoryStackLabel(k);
   };
 
-  const latestRunDocByKey = useMemo(() => {
-    const m = new Map<string, boolean>();
-    if (!lastUpdated || !data?.docs) return m;
-    for (const d of data.docs) {
-      if (d.date === lastUpdated) m.set(d.path, true);
-    }
-    return m;
-  }, [data, lastUpdated]);
-
-  const researchStripLinks = useMemo(() => {
-    if (!lastUpdated) return [] as { label: string; docKey: string }[];
-    const out: { label: string; docKey: string }[] = [];
-    if (latestRunDocByKey.has('digest')) out.push({ label: 'Digest', docKey: 'digest' });
-    const mte = `market-thesis-exploration/${lastUpdated}.json`;
-    if (latestRunDocByKey.has(mte)) out.push({ label: 'Market thesis', docKey: mte });
-    return out;
-  }, [lastUpdated, latestRunDocByKey]);
-
-  const pmStripLinks = useMemo(() => {
-    if (!lastUpdated) return [] as { label: string; docKey: string }[];
-    const candidates = [
-      { label: 'PM memo', keys: [`pm-allocation-memo/${lastUpdated}.json`] as const },
-      { label: 'Deliberation index', keys: [`deliberation-transcript-index/${lastUpdated}.json`] as const },
-      { label: 'Vehicle map', keys: [`thesis-vehicle-map/${lastUpdated}.json`] as const },
-      { label: 'Deliberation', keys: ['deliberation.md', 'deliberation.json'] as const },
-      { label: 'Rebalance', keys: ['rebalance-decision.json'] as const },
-    ];
-    const out: { label: string; docKey: string }[] = [];
-    for (const c of candidates) {
-      const docKey = c.keys.find((k) => latestRunDocByKey.has(k));
-      if (docKey) out.push({ label: c.label, docKey });
-    }
-    return out;
-  }, [lastUpdated, latestRunDocByKey]);
-
   const portfolioDocDates = useMemo(() => {
     const s = new Set<string>();
     for (const d of data?.docs ?? []) {
@@ -540,8 +505,6 @@ export default function PortfolioShellInner() {
         {tab === 'allocations' && (
           <AllocationsTab
             lastUpdated={lastUpdated}
-            researchStripLinks={researchStripLinks}
-            pmStripLinks={pmStripLinks}
             pieTicker={pieDataBucketed}
             pieCategory={pieCategoryBucketed}
             pieThesis={pieThesisBucketed}

@@ -2,11 +2,11 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Calendar, ChevronDown, ChevronRight, Filter, FileText, Search, X } from 'lucide-react';
+import { Calendar, ChevronDown, ChevronRight, Filter, FileText, Search } from 'lucide-react';
 
 import { SUBPAGE_MAX } from '@/components/subpage-tab-bar';
 import DeltaDaySummary from '@/components/library/DeltaDaySummary';
-import LibraryDocumentBody from '@/components/library/LibraryDocumentBody';
+import DocumentExpandInline from '@/components/library/DocumentExpandInline';
 import { useDashboard } from '@/lib/dashboard-context';
 import {
   countDeltaTouchesForDoc,
@@ -151,6 +151,9 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
 
   const latestDate = dates[0] || null;
 
+  const activeFileHidden =
+    activeFile != null && !dateDocs.some((d) => d.id === activeFile.id);
+
   useEffect(() => {
     if (urlDate && dates.includes(urlDate)) {
       setSelectedDate(urlDate);
@@ -288,8 +291,14 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                 digestAvailable={!!digestDocForDate}
                 onOpenDigest={() => {
                   if (!digestDocForDate) return;
+                  if (activeFile?.id === digestDocForDate.id) {
+                    setActiveFile(null);
+                    setLibraryDoc(null);
+                    return;
+                  }
                   setActiveFile(digestDocForDate);
                   setActiveLoading(true);
+                  setLibraryDoc(null);
                   getLibraryDocumentById(digestDocForDate.id)
                     .then(setLibraryDoc)
                     .catch(() =>
@@ -307,53 +316,36 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
               />
             ) : null}
 
-            {/* Viewer */}
-            {activeFile ? (
+            {activeFileHidden && activeFile ? (
               <div className="glass-card p-0 overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-3 border-b border-border-subtle bg-bg-secondary">
-                  <div className="flex items-center gap-2 text-sm">
-                    <FileText size={14} className="text-fin-blue" />
-                    <span className="font-mono">{canonicalResearchTitle(activeFile)}</span>
-                    {(activeFile.runType || '').toLowerCase() === 'delta' ? (
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30">
+                <DocumentExpandInline
+                  title={canonicalResearchTitle(activeFile)}
+                  subtitle={activeFile.date ?? null}
+                  badge={
+                    (activeFile.runType || '').toLowerCase() === 'delta' ? (
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30 shrink-0">
                         Δ updated
                       </span>
-                    ) : null}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveFile(null);
-                      setLibraryDoc(null);
-                    }}
-                    className="text-text-muted hover:text-white"
-                    aria-label="Close document"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-                <div className="p-6 max-w-none text-sm leading-relaxed overflow-auto max-h-[70vh]">
-                  {activeLoading || !libraryDoc ? (
-                    <div className="text-text-secondary">Loading document…</div>
-                  ) : (
-                    <LibraryDocumentBody
-                      view={libraryDoc.view}
-                      markdown={libraryDoc.markdown}
-                      payload={libraryDoc.payload}
-                      documentKey={libraryDoc.document_key}
-                      docDate={libraryDoc.date}
-                    />
-                  )}
-                </div>
+                    ) : null
+                  }
+                  loading={activeLoading}
+                  libraryDoc={libraryDoc}
+                  onCollapse={() => {
+                    setActiveFile(null);
+                    setLibraryDoc(null);
+                  }}
+                />
               </div>
-            ) : grouped.length > 0 ? (
+            ) : null}
+
+            {grouped.length > 0 ? (
               grouped.map(([cat, files]) => (
                 <div key={cat} className="glass-card p-0 overflow-hidden">
                   <div className="px-5 py-3 bg-bg-secondary border-b border-border-subtle">
                     <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">{cat}</h3>
                   </div>
                   <div className="divide-y divide-border-subtle">
-                    {files.map((f, i) => {
+                    {files.map((f) => {
                       const dm = effDate ? deltaMetaByDate[effDate] : null;
                       const cl = effDate ? researchChangelogByDate[effDate] : null;
                       const touchDelta =
@@ -366,72 +358,100 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                       const isDocDelta = (f.runType || '').toLowerCase() === 'delta';
                       const touchCount = touchDelta + touchChangelog;
                       const touched = isDocDelta || touchCount > 0;
+                      const expanded = activeFile?.id === f.id;
                       return (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={async () => {
-                            setActiveLoading(true);
-                            setActiveFile(f);
-                            setLibraryDoc(null);
-                            try {
-                              const row = await getLibraryDocumentById(f.id);
-                              setLibraryDoc(row);
-                            } catch {
-                              setLibraryDoc({
-                                id: f.id,
-                                date: f.date,
-                                document_key: f.path,
-                                view: 'markdown',
-                                markdown: '_Failed to load content._',
-                                payload: null,
-                              });
-                            } finally {
-                              setActiveLoading(false);
-                            }
-                          }}
-                          className="w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02] transition-colors"
-                        >
-                          <span className="relative flex h-2 w-2 shrink-0">
-                            {touched ? (
+                        <div key={f.id}>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (activeFile?.id === f.id) {
+                                setActiveFile(null);
+                                setLibraryDoc(null);
+                                return;
+                              }
+                              setActiveLoading(true);
+                              setActiveFile(f);
+                              setLibraryDoc(null);
+                              try {
+                                const row = await getLibraryDocumentById(f.id);
+                                setLibraryDoc(row);
+                              } catch {
+                                setLibraryDoc({
+                                  id: f.id,
+                                  date: f.date,
+                                  document_key: f.path,
+                                  view: 'markdown',
+                                  markdown: '_Failed to load content._',
+                                  payload: null,
+                                });
+                              } finally {
+                                setActiveLoading(false);
+                              }
+                            }}
+                            className={`w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02] transition-colors ${
+                              expanded ? 'bg-fin-blue/[0.06]' : ''
+                            }`}
+                          >
+                            <span className="relative flex h-2 w-2 shrink-0">
+                              {touched ? (
+                                <span
+                                  className="absolute inset-0 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]"
+                                  title="Updated today"
+                                />
+                              ) : (
+                                <span className="absolute inset-0 rounded-full bg-transparent" />
+                              )}
+                            </span>
+                            <FileText size={14} className="text-fin-blue/60 shrink-0" />
+                            <span className="font-mono text-sm">{canonicalResearchTitle(f)}</span>
+                            {/* Delta badge: Δ for run_type=delta docs; numeric count for legacy path-touch system */}
+                            {isDocDelta ? (
                               <span
-                                className="absolute inset-0 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]"
-                                title="Updated today"
-                              />
-                            ) : (
-                              <span className="absolute inset-0 rounded-full bg-transparent" />
-                            )}
-                          </span>
-                          <FileText size={14} className="text-fin-blue/60 shrink-0" />
-                          <span className="font-mono text-sm">{canonicalResearchTitle(f)}</span>
-                          {/* Delta badge: Δ for run_type=delta docs; numeric count for legacy path-touch system */}
-                          {isDocDelta ? (
-                            <span
-                              className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30"
-                              title="Updated on this delta day"
-                            >
-                              Δ
-                            </span>
-                          ) : touchCount > 0 ? (
-                            <span
-                              className="text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30"
-                              title="Delta paths touching this document"
-                            >
-                              {touchCount}
-                            </span>
+                                className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30"
+                                title="Updated on this delta day"
+                              >
+                                Δ
+                              </span>
+                            ) : touchCount > 0 ? (
+                              <span
+                                className="text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30"
+                                title="Delta paths touching this document"
+                              >
+                                {touchCount}
+                              </span>
+                            ) : null}
+                            <span className="ml-auto text-[11px] text-text-muted">{f.phase ?? ''}</span>
+                          </button>
+                          {expanded ? (
+                            <DocumentExpandInline
+                              title={canonicalResearchTitle(f)}
+                              subtitle={f.date ?? null}
+                              badge={
+                                isDocDelta ? (
+                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30 shrink-0">
+                                    Δ updated
+                                  </span>
+                                ) : null
+                              }
+                              loading={activeLoading}
+                              libraryDoc={libraryDoc}
+                              onCollapse={() => {
+                                setActiveFile(null);
+                                setLibraryDoc(null);
+                              }}
+                            />
                           ) : null}
-                          <span className="ml-auto text-[11px] text-text-muted">{f.phase ?? ''}</span>
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
                 </div>
               ))
-            ) : (
+            ) : !activeFileHidden ? (
               <div className="glass-card p-10 text-center text-text-muted text-sm">
                 No files found for this date{filterCat ? ` in "${filterCat}"` : ''}.
               </div>
-            )}
+            ) : null}
           </div>
         </div>
     </div>

@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import {
   PieChart,
   Pie,
@@ -80,67 +79,16 @@ function PieBlock({
 
 export default function AllocationsTab(props: {
   lastUpdated: string | null;
-  researchStripLinks: { label: string; docKey: string }[];
-  pmStripLinks: { label: string; docKey: string }[];
   pieTicker: PieSliceDatum[];
   pieCategory: PieSliceDatum[];
   pieThesis: PieSliceDatum[];
   positions: Position[];
   thesisById: Map<string, Thesis>;
 }) {
-  const {
-    lastUpdated,
-    researchStripLinks,
-    pmStripLinks,
-    pieTicker,
-    pieCategory,
-    pieThesis,
-    positions,
-    thesisById,
-  } = props;
+  const { lastUpdated, pieTicker, pieCategory, pieThesis, positions, thesisById } = props;
 
   return (
     <div className="space-y-8">
-      {(researchStripLinks.length > 0 || pmStripLinks.length > 0) && (
-        <div className="glass-card px-5 py-4 space-y-3">
-          {researchStripLinks.length > 0 && (
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-xs text-text-muted uppercase tracking-wider">Research</span>
-              <div className="flex flex-wrap gap-2">
-                {researchStripLinks.map((l) => (
-                  <Link
-                    key={l.docKey}
-                    href={`/research?tab=daily&date=${encodeURIComponent(String(lastUpdated))}&docKey=${encodeURIComponent(l.docKey)}`}
-                    className="text-xs px-3 py-1.5 rounded-md bg-fin-blue/10 text-fin-blue hover:bg-fin-blue/20 transition-colors"
-                  >
-                    {l.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-          {pmStripLinks.length > 0 && (
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-xs text-text-muted uppercase tracking-wider">PM &amp; process</span>
-              <div className="flex flex-wrap gap-2">
-                {pmStripLinks.map((l) => (
-                  <Link
-                    key={l.docKey}
-                    href={`/portfolio?tab=analysis&date=${encodeURIComponent(String(lastUpdated))}&docKey=${encodeURIComponent(l.docKey)}`}
-                    className="text-xs px-3 py-1.5 rounded-md bg-fin-amber/10 text-fin-amber hover:bg-fin-amber/20 transition-colors"
-                  >
-                    {l.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-          {lastUpdated ? (
-            <span className="text-xs text-text-muted block">As of {lastUpdated}</span>
-          ) : null}
-        </div>
-      )}
-
       <div>
         <SectionTitle className="mb-4">Allocation mix</SectionTitle>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
