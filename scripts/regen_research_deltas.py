@@ -2066,12 +2066,13 @@ def upsert_document(sb, seg: str, date: str, content: str, dry_run: bool) -> boo
         print(f"  SKIP: no doc key for {seg}")
         return False
 
+    baseline_date = "2026-04-05" if date <= "2026-04-11" else "2026-04-12"
     payload = {
         "content": content,
         "date": date,
         "segment": seg,
         "doc_type": "Research Delta",
-        "baseline_date": "2026-04-05" if date <= "2026-04-11" else "2026-04-12",
+        "baseline_date": baseline_date,
         "run_type": "delta",
         "schema_version": "1.0",
     }
@@ -2081,15 +2082,17 @@ def upsert_document(sb, seg: str, date: str, content: str, dry_run: bool) -> boo
         return True
 
     try:
+        # Update BOTH the top-level content column AND the payload.
+        # The frontend reads doc.content (top-level column) first (queries.ts line ~939).
         result = sb.table("documents").update(
-            {"payload": payload}
+            {"payload": payload, "content": content}
         ).eq("document_key", doc_key).eq("date", date).execute()
 
         if result.data:
             print(f"  ✓ Updated {doc_key} @ {date} ({len(content)} chars)")
             return True
         else:
-            # Try insert
+            # Row doesn't exist yet — insert it
             row = {
                 "document_key": doc_key,
                 "date": date,
@@ -2097,6 +2100,7 @@ def upsert_document(sb, seg: str, date: str, content: str, dry_run: bool) -> boo
                 "doc_type": "Research Delta",
                 "run_type": "delta",
                 "category": "output",
+                "content": content,
                 "payload": payload,
             }
             sb.table("documents").upsert(row, on_conflict="document_key,date").execute()

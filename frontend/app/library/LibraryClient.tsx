@@ -35,6 +35,24 @@ const CATEGORY_ORDER = [
   'Other',
 ] as const;
 
+/**
+ * Returns a stable, date-independent display name for a document.
+ * Strips the " Delta — YYYY-MM-DD" suffix that the pipeline appends to delta titles
+ * so baseline and delta versions of the same file look identical in the list.
+ */
+function canonicalTitle(d: Doc): string {
+  const raw = d.title || d.filename || d.path || '';
+  // "Macro Delta — 2026-04-08"  →  "Macro"
+  // "Sector Delta — Technology — 2026-04-08"  →  "Technology"
+  // "Bonds Delta — 2026-04-08"  →  "Bonds"
+  const clean = raw
+    .replace(/\s*—\s*\d{4}-\d{2}-\d{2}$/, '')   // strip trailing date
+    .replace(/^Sector Delta\s*—\s*/i, '')          // strip "Sector Delta — " prefix
+    .replace(/\s+Delta$/i, '')                      // strip trailing " Delta"
+    .trim();
+  return clean || raw;
+}
+
 function categorizeDoc(d: Doc): string {
   const key = (d.path || d.filename || '').toLowerCase();
   const seg = (d.segment || '').toLowerCase();
@@ -357,7 +375,12 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border-subtle bg-bg-secondary">
                   <div className="flex items-center gap-2 text-sm">
                     <FileText size={14} className="text-fin-blue" />
-                    <span className="font-mono">{activeFile.title || activeFile.filename}</span>
+                    <span className="font-mono">{canonicalTitle(activeFile)}</span>
+                    {(activeFile.runType || '').toLowerCase() === 'delta' ? (
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30">
+                        Δ updated
+                      </span>
+                    ) : null}
                   </div>
                   <button
                     type="button"
@@ -400,8 +423,11 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                           ? countDeltaTouchesForDoc(f.path, dm.changed_paths, dm.op_paths)
                           : 0;
                       const touchChangelog = countResearchChangelogTouchesForDoc(f.path, cl);
+                      // A document is "touched" if it is itself a delta doc (run_type=delta)
+                      // OR the legacy delta-request/research-changelog paths point to it.
+                      const isDocDelta = (f.runType || '').toLowerCase() === 'delta';
                       const touchCount = touchDelta + touchChangelog;
-                      const touched = touchCount > 0;
+                      const touched = isDocDelta || touchCount > 0;
                       return (
                         <button
                           key={i}
@@ -432,15 +458,23 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                             {touched ? (
                               <span
                                 className="absolute inset-0 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]"
-                                title="Touched by delta this day"
+                                title="Updated today"
                               />
                             ) : (
                               <span className="absolute inset-0 rounded-full bg-transparent" />
                             )}
                           </span>
                           <FileText size={14} className="text-fin-blue/60 shrink-0" />
-                          <span className="font-mono text-sm">{f.title || f.filename}</span>
-                          {touchCount > 0 ? (
+                          <span className="font-mono text-sm">{canonicalTitle(f)}</span>
+                          {/* Delta badge: Δ for run_type=delta docs; numeric count for legacy path-touch system */}
+                          {isDocDelta ? (
+                            <span
+                              className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30"
+                              title="Updated on this delta day"
+                            >
+                              Δ
+                            </span>
+                          ) : touchCount > 0 ? (
                             <span
                               className="text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30"
                               title="Delta paths touching this document"
