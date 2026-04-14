@@ -14,6 +14,22 @@ Produces a standalone research note on any single asset, sector, theme, or instr
 
 ---
 
+## Web Fetch Protocol (token-efficient)
+
+When fetching news articles, earnings pages, analyst notes, or any standard web page during Sections A–D:
+
+```bash
+# Prefer defuddle over WebFetch — strips nav/ads/clutter before the LLM reads
+defuddle parse <url> --md
+
+# Install if missing
+npm install -g defuddle
+```
+
+Do NOT use defuddle for `.md` URLs or Supabase/API endpoints — use WebFetch or MCP directly.
+
+---
+
 ## Step 1: Identify the Subject
 
 Determine what's being analyzed:

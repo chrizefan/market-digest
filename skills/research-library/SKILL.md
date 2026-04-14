@@ -27,6 +27,30 @@ Provide **short, citable** rules from the repo’s research notes—without load
 
 Do **not** paste entire papers. Summarize decision rules only.
 
+## Obsidian-markdown conventions
+
+When writing or updating `memory/THESES.md` or `docs/research/papers/*.md`, use obsidian-markdown syntax for navigability:
+
+**Wikilinks** — cross-reference papers to theses and vice versa:
+```markdown
+See [[macro-regime]] for regime classification framework.
+Active thesis: [[THESES#Trend Following Regime]].
+```
+
+**Callouts** — structured signal classification:
+```markdown
+> [!tip] Conviction signal
+> Momentum + macro alignment confirmed → add weight.
+
+> [!warning] Invalidation risk
+> RSI > 75 and Fed pivot delay → reduce exposure.
+
+> [!danger] Exit trigger
+> Price < 200-day SMA for 3 consecutive closes.
+```
+
+Use `> [!tip]` for constructive signals, `> [!warning]` for conflicting signals, `> [!danger]` for invalidation triggers. Code and numerical output unchanged.
+
 ## Memory update
 
 If research materially changes an active thesis, note it in the relevant `memory/*/ROLLING.md` and/or thesis tracker flow.

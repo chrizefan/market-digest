@@ -143,6 +143,25 @@ Each thesis entry:
 **YYYY-MM-DD**: [Status change or new evidence update]
 ```
 
+**Obsidian callout conventions** (use when status changes or in update entries):
+
+```markdown
+> [!tip] Conviction signal
+> Momentum + macro alignment confirmed → add weight.
+
+> [!warning] At risk
+> Conflicting signal: [specific indicator]. Monitor closely.
+
+> [!danger] Exit trigger approaching
+> [Specific condition] — reduce or exit if confirmed.
+```
+
+Wikilinks to research papers:
+```markdown
+Supported by [[factor-investing#Section 2]] momentum evidence.
+Cross-reference: [[macro-regime#Regime Table]].
+```
+
 ---
 
 ## Memory File Shell Traversal
