@@ -22,6 +22,8 @@ For richer crypto data use MCP tools:
   - Market overview: `GET /coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20`
   - Trending: `GET /search/trending`
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any crypto news article, narrative piece, on-chain data page, or regulatory filing URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

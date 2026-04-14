@@ -10,6 +10,8 @@ description: Deep-dive analysis of the Communication Services sector (XLC). Cove
 - `config/preferences.md`
 - Macro regime output from `macro.md`
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any digital ad market article, streaming news, telecom earnings page, or comms sector URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

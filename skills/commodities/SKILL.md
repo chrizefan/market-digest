@@ -11,6 +11,8 @@ description: Run commodities analysis as part of the daily digest. Covers energy
 - Macro regime output
 - Bonds output (real yields — key driver for gold)
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any OPEC news page, EIA report page, commodity news article, or central bank buying announcement URL. Not for API endpoints, `.json`, or `.md` files.
+
 ## Research Steps
 
 ### 1. Energy

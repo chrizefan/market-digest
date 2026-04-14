@@ -10,6 +10,8 @@ description: Deep-dive analysis of the Industrials sector (XLI, ITA). Covers aer
 - `config/preferences.md`
 - Macro regime output from `macro.md`
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any PMI release page, defense contract announcement, infrastructure news, or industrials earnings URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

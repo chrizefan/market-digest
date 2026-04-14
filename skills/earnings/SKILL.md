@@ -10,6 +10,8 @@ description: >
 
 # Earnings Analysis Skill
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any earnings release page, analyst note, guidance announcement, press release, or financial article URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Session Types

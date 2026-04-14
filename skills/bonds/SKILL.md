@@ -21,6 +21,8 @@ Supplement with `mcp_fred_*` tools for data not in the fetch files:
 - **Fed Funds**: `DFF` for current effective rate
 - **5Y5Y forward**: `T5YIFR`
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any Fed speech, credit market article, or sovereign debt news page URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

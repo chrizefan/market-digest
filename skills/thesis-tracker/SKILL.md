@@ -30,6 +30,8 @@ Note any recent confirmations, contradictions, or shifts that are relevant to th
 
 ## Step 3: Current Market Search
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch when following any search result URL to read an article or analysis page. Not for API endpoints, `.json`, or `.md` files.
+
 For each active thesis, run a targeted web search to get the latest data point most relevant to that thesis.
 
 Examples:

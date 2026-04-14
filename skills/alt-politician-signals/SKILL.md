@@ -11,6 +11,8 @@ Politicians and regulators move markets — both through what they buy/sell pers
 ## Inputs
 - `docs/ops/data-sources.md` (sources for congressional trading + official statements)
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any Capitol Trades, Quiver Quantitative, EDGAR filing, agency website, or news article URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

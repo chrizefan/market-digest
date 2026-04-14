@@ -10,6 +10,8 @@ description: Deep-dive analysis of the Healthcare sector (XLV, IBB, XBI). Covers
 - `config/preferences.md` (XLV is a current portfolio holding)
 - Macro regime output from `macro.md`
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any FDA action page, earnings release, drug approval article, or healthcare news URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

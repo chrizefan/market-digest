@@ -11,6 +11,8 @@ description: Deep-dive analysis of the Technology sector (XLK, SOXX, QQQ). Cover
 - Macro regime output from `macro.md` (read current session's macro output)
 - Institutional flows output (if already generated this session)
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any earnings page, analyst note, product announcement, or tech news article URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps
