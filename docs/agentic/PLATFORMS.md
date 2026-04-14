@@ -74,7 +74,6 @@ MDC files in `.cursor/rules/` support frontmatter for smart rule application:
 |------|-------------|
 | `.cursor/rules/01-overview.mdc` | Always (`alwaysApply: true`) |
 | `.cursor/rules/02-skills-workflow.mdc` | When editing `skills/**/*.md` |
-| `.cursor/rules/03-memory-outputs.mdc` | When editing `memory/**/*.md` |
 
 Cursor reads these automatically — no setup needed.
 
@@ -208,5 +207,5 @@ Full server details and prerequisites: `config/data-sources.md` → "MCP Servers
 | Agent mode | ✅ | ✅ (`@workspace`) | ✅ Composer | ✅ Cascade |
 | Multi-file context | ✅ | ✅ | ✅ | ✅ |
 | Sub-agent delegation | ✅ | Partial | Partial | Partial |
-| Memory persistence | Via ROLLING.md | Via ROLLING.md | Via ROLLING.md | Via ROLLING.md |
+| Memory persistence | Via Supabase | Via Supabase | Via Supabase | Via Supabase |
 | Best for | Full pipeline runs | Code editing + scripts | Interactive research | Long sessions |

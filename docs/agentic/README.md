@@ -34,7 +34,7 @@ python3 scripts/run_db_first.py
 
 **Full pipeline (combined):** [`skills/orchestrator/SKILL.md`](../../skills/orchestrator/SKILL.md) or [`skills/weekly-baseline/SKILL.md`](../../skills/weekly-baseline/SKILL.md) / [`skills/daily-delta/SKILL.md`](../../skills/daily-delta/SKILL.md) per day type.
 
-**Single segment:** read `skills/{segment}/SKILL.md`, write **JSON** where the skill specifies, append `memory/**/ROLLING.md`, publish per [`RUNBOOK.md`](../../RUNBOOK.md).
+**Single segment:** read `skills/{segment}/SKILL.md`, write **JSON** where the skill specifies, publish to Supabase per [`RUNBOOK.md`](../../RUNBOOK.md).
 
 ## Platform setup
 
@@ -58,7 +58,7 @@ See [`PLATFORMS.md`](PLATFORMS.md) for details.
 | [`WORKFLOWS.md`](WORKFLOWS.md) | Step workflows (includes GitHub Actions) |
 | [`PLATFORMS.md`](PLATFORMS.md) | IDE / platform setup |
 | [`AGENTS.md`](AGENTS.md) | Stub → root [`AGENTS.md`](../../AGENTS.md) |
-| [`MEMORY-SYSTEM.md`](MEMORY-SYSTEM.md) | ROLLING.md + BIAS-TRACKER |
+| [`MEMORY-SYSTEM.md`](MEMORY-SYSTEM.md) | Legacy memory format spec (superseded by Supabase) |
 | [`SKILLS-CATALOG.md`](SKILLS-CATALOG.md) | Skill package index (filesystem is authoritative) |
 | [`PROMPTS.md`](PROMPTS.md) | Copy-paste patterns (legacy `.md` paths noted where applicable) |
 | [`COMPILED-RESEARCH-VIEW.md`](COMPILED-RESEARCH-VIEW.md) | On-read baseline + delta fold |
@@ -69,7 +69,7 @@ Named roles live in `agents/` (see table in root [`AGENTS.md`](../../AGENTS.md))
 
 ## Key rules
 
-1. Memory files are **append-only**.
+1. Publish to **Supabase** (`daily_snapshots`, `documents`) — not to local memory files.
 2. Prefer **JSON artifacts** and Supabase publish over hand-editing derived markdown.
 3. Read `config/watchlist.md` every session; read `config/preferences.md` and `config/investment-profile.md` only for **Track B**, not Track A.
 4. Use `{DATE}` / `YYYY-MM-DD` in paths, not hardcoded dates.

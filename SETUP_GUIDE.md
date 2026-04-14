@@ -77,20 +77,17 @@ Canonical behavior and skill routing live in `AGENTS.md` and `docs/agentic/SKILL
 In the Project's **Knowledge** section, upload:
 - `config/watchlist.md`
 - `config/preferences.md`
-- `memory/THESES.md`
-- All `memory/*/ROLLING.md` files (6 files)
 - All `skills/**/SKILL.md` files (all skill packages)
 - `templates/digest-snapshot-schema.json` (daily canonical JSON)
 
-> **Note on file updates**: Each time Claude updates a memory file or you edit config, you'll need to re-upload the updated version to the Project Knowledge. This is the current limitation of Claude Projects — there's no live file sync. The git repo is your source of truth; the Project Knowledge is Claude's working copy.
+> **Note on session context**: Pipeline outputs (digests, segment analyses, thesis state) are stored in Supabase (`daily_snapshots`, `documents`). Config files in `config/` are the operator's working copy. The git repo is your source of truth for config and skill files; Supabase is canonical for pipeline data.
 
 ### 3.4 Workflow for keeping Project Knowledge current
 
-After each digest session where Claude updates memory files:
-1. Copy the updated `memory/*/ROLLING.md` content Claude produces
-2. Update your local files
-3. Run `./scripts/git-commit.sh`
-4. Re-upload the updated ROLLING.md files to Project Knowledge
+After each digest session:
+1. Pipeline JSON is published to Supabase automatically via `scripts/materialize_snapshot.py`
+2. Run `./scripts/git-commit.sh` to commit any updated config files
+3. Re-upload changed config files to Project Knowledge if needed
 
 This takes ~2 minutes once you have the habit.
 
@@ -109,9 +106,9 @@ This prints a ready-made prompt to paste into Claude.
 ### 4.2 Paste the prompt into your digiquant-atlas Claude Project
 
 Claude will:
-1. Read all your config and memory files
+1. Read all your config files and prior Supabase context
 2. Search the web for current market data across all segments
-3. Update each rolling memory file
+3. Produce structured JSON artifacts and publish to Supabase
 4. Produce the master digest
 
 ### 4.3 Review the digest
@@ -131,11 +128,11 @@ Read it. The first one is calibration — if anything is wrong in focus, tone, o
 ### Every morning (~15-20 min)
 
 ```bash
-./scripts/new-day.sh        # creates today's file + prints prompt
+./scripts/new-day.sh        # detects run type (baseline/delta) + prints prompt
 # → paste prompt into Claude Project
 # → Claude runs digest (takes 5-10 min)
 # → read the digest
-./scripts/git-commit.sh     # commits config and memory updates
+./scripts/git-commit.sh     # commits config updates
 ```
 
 ### Every Friday
@@ -158,7 +155,7 @@ Read it. The first one is calibration — if anything is wrong in focus, tone, o
 ### When you want to add a new thesis
 
 Tell Claude in the Project: *"Add a new thesis: [your view]"*
-Claude will use `skills/thesis/SKILL.md` to structure it properly and add it to `memory/THESES.md`.
+Claude will use `skills/thesis/SKILL.md` to structure it properly and publish it to the thesis tracker in Supabase `documents`.
 
 ### When you want a deep dive
 
@@ -174,15 +171,13 @@ Claude will use `skills/premarket-pulse/SKILL.md` for a fast 5-minute read.
 
 ## Part 6: Maintenance
 
-### Keeping memory files fresh
+### Keeping Supabase data current
 
-The rolling memory files accumulate entries over time. Every 4-6 weeks, you can ask Claude to **summarize and compress** old entries — keeping themes but reducing length. This keeps the files readable and prevents context bloat.
-
-Prompt to use: *"Summarize and compress memory/equity/ROLLING.md — keep all key themes and thesis evolution, but condense entries older than 30 days into a single summary paragraph."*
+Pipeline outputs accumulate in Supabase over time. The `daily_snapshots` and `documents` tables are the canonical record. Use `python3 scripts/update_tearsheet.py` if you need to recover or resync Supabase from local scratch files.
 
 ### Updating your theses
 
-Review `memory/THESES.md` weekly. Close theses that have resolved. This is the discipline that makes the system valuable over time.
+Review active theses in Supabase `documents` (thesis entries) weekly. Close theses that have resolved. This is the discipline that makes the system valuable over time.
 
 ### Archiving / migration
 
@@ -195,8 +190,8 @@ New runs are DB-first (Supabase). Retired markdown-era shell helpers are under `
 **Claude produces generic market commentary instead of focused digest**
 → Check that `config/preferences.md` is uploaded to Project Knowledge and has your specifics filled in.
 
-**Memory files aren't being updated**
-→ Explicitly ask: *"Update the rolling memory files with today's key findings"* at the end of the session.
+**Pipeline output isn't appearing in Supabase**
+→ Explicitly ask: *"Publish today's findings to Supabase using scripts/materialize_snapshot.py"* at the end of the session.
 
 **Digest is too long / too short**
 → Edit the "Format preferences" section of `config/preferences.md` to specify length and depth.

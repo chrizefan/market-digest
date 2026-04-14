@@ -24,7 +24,6 @@ Setup:
 - data/agent-cache/daily/{DATE}/ may exist after ./scripts/new-day.sh
 
 Execute phases; produce JSON artifacts and publish to Supabase (materialize_snapshot.py, update_tearsheet.py — RUNBOOK.md).
-Update memory files at end of session.
 ```
 
 ---
@@ -35,12 +34,12 @@ Update memory files at end of session.
 Today is {DATE}.
 
 Read skills/macro/SKILL.md for instructions.
-First read memory/macro/ROLLING.md for prior context.
+Load prior macro context from Supabase daily_snapshots or documents for recent dates.
 Read config/preferences.md only if this run feeds portfolio (Track B).
 
 Run the macro analysis.
 Write JSON (and/or segment artifact paths per skill); if legacy: data/agent-cache/daily/{DATE}/macro.md
-Append findings to: memory/macro/ROLLING.md
+Publish findings to Supabase per RUNBOOK.md.
 ```
 
 ---
@@ -51,12 +50,12 @@ Append findings to: memory/macro/ROLLING.md
 Today is {DATE}.
 
 Read skills/crypto/SKILL.md.
-Read memory/crypto/ROLLING.md for prior context.
+Load prior crypto context from Supabase daily_snapshots or documents for recent dates.
 Read config/watchlist.md for tracked crypto assets.
 
 Run crypto analysis.
 Write to: data/agent-cache/daily/{DATE}/crypto.md
-Append to: memory/crypto/ROLLING.md
+Publish to Supabase per RUNBOOK.md.
 ```
 
 ---
