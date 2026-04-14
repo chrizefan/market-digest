@@ -22,12 +22,13 @@ type RunDayKind = MiniCalendarRunKind;
 /* ── Main Page ── */
 const CATEGORY_ORDER = [
   'Digest',
+  'Research Papers',
+  'Deep Dives',
   'Market Analysis',
   'Equities',
   'Sectors',
   'Intelligence',
   'Positions',
-  'Deep Dives',
   'Weekly / Monthly',
   'Portfolio',
   'Evolution',
@@ -40,8 +41,10 @@ function categorizeDoc(d: Doc): string {
   const type = (d.type || '').toLowerCase();
 
   if (key === 'digest') return 'Digest';
+  if (key.startsWith('research/papers/')) return 'Research Papers';
+  if (key.startsWith('research/deep-dives/') || key.startsWith('research/themes/') || key.startsWith('deep-dives/')) return 'Deep Dives';
+  if (key.startsWith('research/')) return 'Deep Dives';
   if (key.startsWith('weekly/') || key.startsWith('monthly/')) return 'Weekly / Monthly';
-  if (key.startsWith('deep-dives/')) return 'Deep Dives';
   if (key.startsWith('evolution/')) return 'Evolution';
   if (seg.includes('rebalance') || seg.includes('deliberation') || seg.includes('portfolio') || seg.includes('opportunity'))
     return 'Portfolio';

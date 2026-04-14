@@ -27,6 +27,7 @@ In **Cloud desktop**, with **Supabase MCP** connected, use the DB for prices/tec
 | [`research-document-deltas.md`](research-document-deltas.md) | **Track B** — manifest-driven **`document_delta`** publish + **`fold_document_deltas.py`** (optional separate job). |
 | [`manual-run.md`](manual-run.md) | Ad-hoc operator run; minimal steps. |
 | [`backfill-historical-day.md`](backfill-historical-day.md) | **Backfill** — historical simulation for one date with as-of constraints. Use with `scripts/backfill_context.py --date D --print-prompt`. |
+| [`deep-dive.md`](deep-dive.md) | **Research Library** — produce and publish a long-form deep dive or doctrine paper to Supabase (`research/deep-dives/`, `research/papers/`). Surfaces in Library under Deep Dives / Research Papers. |
 
 **Project-level prompt:** paste contents of [`../PROJECT-PROMPT.md`](../PROJECT-PROMPT.md) into Cowork **project** settings so every task inherits the same ground rules.
 

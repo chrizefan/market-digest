@@ -2,12 +2,13 @@
 """
 publish_research.py — Publish a research note (markdown) to Supabase documents.
 
-Stores research notes in the documents table with category='research' and a
-stable document_key under the research/ namespace. Markdown content is stored
-directly in documents.content; payload holds structured metadata.
+Stores research notes in the documents table under the research/ namespace.
+category is set to 'deep-dive' (valid constraint value). Markdown content is
+stored in documents.content; payload holds structured metadata.
 
 Document key patterns:
   research/deep-dives/{TICKER}-{DATE}     e.g. research/deep-dives/NVDA-2026-04-14
+  research/papers/{SLUG}                  e.g. research/papers/macro-regime
   research/concepts/{SLUG}                e.g. research/concepts/dual-momentum
   research/themes/{SLUG}-{DATE}           e.g. research/themes/ai-capex-cycle-2026-04-14
 
@@ -83,7 +84,7 @@ def cmd_publish(args: argparse.Namespace) -> int:
 
     payload = {
         "date": date_str,
-        "doc_type": f"research-{args.type}",
+        "research_type": args.type,
         "title": args.title,
         "document_key": args.key,
         "tags": args.tags or [],
@@ -93,9 +94,9 @@ def cmd_publish(args: argparse.Namespace) -> int:
     row = {
         "date": date_str,
         "title": args.title,
-        "doc_type": f"research-{args.type}",
+        "doc_type": "Deep Dive",
         "phase": None,
-        "category": "research",
+        "category": "deep-dive",
         "segment": args.type,
         "sector": None,
         "run_type": None,
@@ -146,8 +147,8 @@ def main() -> int:
     ap.add_argument("--key", help="document_key e.g. research/deep-dives/NVDA-2026-04-14")
     ap.add_argument("--title", help="Human-readable title")
     ap.add_argument("--type", default="deep-dive",
-                    choices=["deep-dive", "concept", "theme", "sector", "macro"],
-                    help="Research note type")
+                    choices=["deep-dive", "paper", "concept", "theme", "sector", "macro"],
+                    help="Research note type (paper = static doctrine; deep-dive = dated analysis)")
     ap.add_argument("--file", help="Path to markdown file")
     ap.add_argument("--content", help="'-' to read markdown from stdin")
     ap.add_argument("--date", help="YYYY-MM-DD (default: today)")
