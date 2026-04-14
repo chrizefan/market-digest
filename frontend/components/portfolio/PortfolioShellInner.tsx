@@ -6,16 +6,8 @@ import { useDashboard } from '@/lib/dashboard-context';
 import PageHeader from '@/components/page-header';
 import { getDocLibraryTier } from '@/lib/library-doc-tier';
 import { getLibraryDocumentById } from '@/lib/queries';
-import { renderDocumentMarkdownFromPayload } from '@/lib/render-document-from-payload';
 import type { Doc } from '@/lib/types';
-import {
-  Layers,
-  History,
-  Activity,
-  FileText,
-  TrendingUp,
-  Target,
-} from 'lucide-react';
+import { Layers, Activity, TrendingUp, Route } from 'lucide-react';
 import type { MiniCalendarRunKind } from '@/components/library/MiniCalendar';
 import type { Position, Thesis } from '@/lib/types';
 import {
@@ -26,12 +18,10 @@ import {
   aggregateWeightByThesis,
   type SleeveStackMode,
 } from '@/lib/portfolio-aggregates';
-import { sortPmDocs } from './tabs/palette-and-format';
+import { bucketAllocationsForPie, sortPmDocs } from './tabs/palette-and-format';
 import AllocationsTab from './tabs/AllocationsTab';
-import PositionsTab from './tabs/PositionsTab';
 import PerformanceTab from './tabs/PerformanceTab';
-import ThesesTab from './tabs/ThesesTab';
-import PMAnalysisTab from './tabs/PMAnalysisTab';
+import AnalysisTab from './tabs/AnalysisTab';
 import ActivityTab from './tabs/ActivityTab';
 
 interface AllocationDatum {
@@ -39,25 +29,9 @@ interface AllocationDatum {
   value: number;
 }
 
-type SummaryAllocationMode = 'ticker' | 'category' | 'thesis';
+type TabId = 'allocations' | 'performance' | 'analysis' | 'activity';
 
-const MAX_PIE_SLICES = 14;
-
-type PieSliceDatum = { name: string; value: number; tooltipExtra?: string };
-
-function bucketAllocationsForPie(items: AllocationDatum[]): PieSliceDatum[] {
-  const pos = items.filter((x) => x.value > 0.0001).sort((a, b) => b.value - a.value);
-  if (pos.length <= MAX_PIE_SLICES) return pos.map(({ name, value }) => ({ name, value }));
-  const head = pos.slice(0, MAX_PIE_SLICES - 1);
-  const tail = pos.slice(MAX_PIE_SLICES - 1);
-  const other = tail.reduce((s, x) => s + x.value, 0);
-  const tooltipExtra = tail.map((t) => `${t.name}: ${t.value.toFixed(1)}%`).join(' · ');
-  return [...head.map(({ name, value }) => ({ name, value })), { name: 'Other', value: other, tooltipExtra }];
-}
-
-type TabId = 'allocations' | 'performance' | 'theses' | 'positions' | 'pm_analysis' | 'activity';
-
-const VALID_TABS: TabId[] = ['allocations', 'performance', 'theses', 'positions', 'pm_analysis', 'activity'];
+const VALID_TABS: TabId[] = ['allocations', 'performance', 'analysis', 'activity'];
 
 function aggregateRunKindForPortfolioDocs(docsOnDate: Doc[]): MiniCalendarRunKind {
   let sawBaseline = false;
@@ -79,7 +53,6 @@ export default function PortfolioShellInner() {
   const router = useRouter();
   const pathname = usePathname();
   const [tab, setTab] = useState<TabId>('allocations');
-  const [summaryAllocationMode, setSummaryAllocationMode] = useState<SummaryAllocationMode>('ticker');
   const [historyMode, setHistoryMode] = useState<SleeveStackMode>('category');
   const [pmActiveFile, setPmActiveFile] = useState<Doc | null>(null);
   const [pmLibraryDoc, setPmLibraryDoc] = useState<Awaited<ReturnType<typeof getLibraryDocumentById>> | null>(null);
@@ -92,7 +65,6 @@ export default function PortfolioShellInner() {
   const positionHistory = useMemo(() => data?.position_history ?? [], [data]);
   const positionEvents = useMemo(() => data?.position_events ?? [], [data]);
   const lastUpdated = data?.portfolio?.meta?.last_updated ?? null;
-  const holdingTechnicals = useMemo(() => data?.holding_technicals ?? {}, [data]);
 
   const thesisById = useMemo(() => new Map(theses.map((t) => [t.id, t])), [theses]);
 
@@ -160,6 +132,16 @@ export default function PortfolioShellInner() {
     [thesisBookRows]
   );
 
+  const pieCategoryBucketed = useMemo(
+    () => bucketAllocationsForPie(categoryBarData.map(({ name, value }) => ({ name, value }))),
+    [categoryBarData]
+  );
+
+  const pieThesisBucketed = useMemo(
+    () => bucketAllocationsForPie(thesisBarRich.map(({ name, value }) => ({ name, value }))),
+    [thesisBarRich]
+  );
+
   const activityEvents = useMemo(
     () => positionEvents.filter((ev) => ev.event !== 'HOLD'),
     [positionEvents]
@@ -210,54 +192,6 @@ export default function PortfolioShellInner() {
     }
     return out;
   }, [lastUpdated, latestRunDocByKey]);
-
-  const pipe = data?.pipeline_observability ?? null;
-
-  const processObsMarkdown = useMemo(() => {
-    if (!pipe) {
-      return { memo: null as string | null, vehicle: null as string | null, index: null as string | null };
-    }
-    return {
-      memo: pipe.pm_allocation_memo ? renderDocumentMarkdownFromPayload(pipe.pm_allocation_memo) : null,
-      vehicle: pipe.thesis_vehicle_map ? renderDocumentMarkdownFromPayload(pipe.thesis_vehicle_map) : null,
-      index: pipe.deliberation_session_index ? renderDocumentMarkdownFromPayload(pipe.deliberation_session_index) : null,
-    };
-  }, [pipe]);
-
-  const deliberationIndexRows = useMemo(() => {
-    if (!pipe?.deliberation_session_index) {
-      return [] as { ticker: string; document_key: string; converged: boolean | null; rounds: string }[];
-    }
-    const idx = pipe.deliberation_session_index;
-    const body =
-      typeof idx.body === 'object' && idx.body !== null && !Array.isArray(idx.body)
-        ? (idx.body as Record<string, unknown>)
-        : null;
-    const raw = body?.entries;
-    if (!Array.isArray(raw)) return [];
-    const rows: { ticker: string; document_key: string; converged: boolean | null; rounds: string }[] = [];
-    for (const e of raw) {
-      if (!e || typeof e !== 'object' || Array.isArray(e)) continue;
-      const o = e as Record<string, unknown>;
-      rows.push({
-        ticker: String(o.ticker || ''),
-        document_key: String(o.document_key || ''),
-        converged: typeof o.converged === 'boolean' ? o.converged : null,
-        rounds: o.rounds_completed != null ? String(o.rounds_completed) : '—',
-      });
-    }
-    return rows;
-  }, [pipe]);
-
-  const hasPipelineObservability =
-    !!pipe &&
-    Boolean(
-      pipe.pm_allocation_memo ||
-        pipe.thesis_vehicle_map ||
-        pipe.deliberation_session_index ||
-        pipe.asset_recommendations.length > 0 ||
-        pipe.deliberation_transcripts.length > 0
-    );
 
   const portfolioDocDates = useMemo(() => {
     const s = new Set<string>();
@@ -384,7 +318,16 @@ export default function PortfolioShellInner() {
     const raw = searchParams.get('tab');
     if (!raw) return;
     if (VALID_TABS.includes(raw as TabId)) return;
-    if (raw !== 'summary' && raw !== 'history' && raw !== 'pm_process' && raw !== 'thesis') return;
+    if (
+      raw !== 'summary' &&
+      raw !== 'history' &&
+      raw !== 'pm_process' &&
+      raw !== 'thesis' &&
+      raw !== 'positions' &&
+      raw !== 'theses' &&
+      raw !== 'pm_analysis'
+    )
+      return;
 
     const p = new URLSearchParams(searchParams.toString());
     if (raw === 'summary') {
@@ -392,11 +335,16 @@ export default function PortfolioShellInner() {
       p.delete('docKey');
       p.delete('date');
       p.delete('thesis');
+    } else if (raw === 'positions') {
+      p.delete('tab');
+      p.delete('docKey');
+      p.delete('date');
+      p.delete('thesis');
     } else if (raw === 'history') {
-      p.set('tab', searchParams.get('thesis') ? 'theses' : 'pm_analysis');
+      p.set('tab', 'analysis');
       if (!p.get('date') && defaultHistoryDate) p.set('date', defaultHistoryDate);
     } else if (raw === 'pm_process') {
-      p.set('tab', 'pm_analysis');
+      p.set('tab', 'analysis');
       if (!p.get('date') && data?.docs && lastUpdated) {
         const dk = p.get('docKey');
         if (dk) {
@@ -409,8 +357,10 @@ export default function PortfolioShellInner() {
         }
       }
     } else if (raw === 'thesis') {
-      p.set('tab', 'theses');
+      p.set('tab', 'analysis');
       if (!p.get('date') && defaultHistoryDate) p.set('date', defaultHistoryDate);
+    } else if (raw === 'theses' || raw === 'pm_analysis') {
+      p.set('tab', 'analysis');
     }
     const target = p.toString();
     router.replace(target ? `${pathname}?${target}` : pathname, { scroll: false });
@@ -420,9 +370,11 @@ export default function PortfolioShellInner() {
     const raw = searchParams.get('tab');
     let mapped: TabId = 'allocations';
     if (!raw || raw === 'summary') mapped = 'allocations';
-    else if (raw === 'history') mapped = searchParams.get('thesis') ? 'theses' : 'pm_analysis';
-    else if (raw === 'pm_process') mapped = 'pm_analysis';
-    else if (raw === 'thesis') mapped = 'theses';
+    else if (raw === 'history') mapped = 'analysis';
+    else if (raw === 'pm_process') mapped = 'analysis';
+    else if (raw === 'thesis') mapped = 'analysis';
+    else if (raw === 'theses' || raw === 'pm_analysis') mapped = 'analysis';
+    else if (raw === 'positions') mapped = 'allocations';
     else if (VALID_TABS.includes(raw as TabId)) mapped = raw as TabId;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sync tab from URL
     setTab(mapped);
@@ -432,7 +384,7 @@ export default function PortfolioShellInner() {
 
   useEffect(() => {
     if (!effHistoryDate || !data?.docs) return;
-    if (searchParams.get('tab') !== 'pm_analysis') return;
+    if (searchParams.get('tab') !== 'analysis') return;
     if (!docKeyParam) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- sync PM doc viewer from URL
       setPmActiveFile(null);
@@ -467,7 +419,7 @@ export default function PortfolioShellInner() {
 
   function navigateTab(next: TabId) {
     setTab(next);
-    if (next !== 'pm_analysis') {
+    if (next !== 'analysis') {
       setPmActiveFile(null);
       setPmLibraryDoc(null);
     }
@@ -479,18 +431,12 @@ export default function PortfolioShellInner() {
       p.delete('thesis');
     } else {
       p.set('tab', next);
-      if (next !== 'theses' && next !== 'pm_analysis') {
+      if (next !== 'analysis') {
         p.delete('docKey');
         p.delete('date');
         p.delete('thesis');
       } else {
         if (!p.get('date') && defaultHistoryDate) p.set('date', defaultHistoryDate);
-        if (next === 'theses') {
-          p.delete('docKey');
-        }
-        if (next === 'pm_analysis') {
-          p.delete('thesis');
-        }
       }
     }
     const s = p.toString();
@@ -498,11 +444,12 @@ export default function PortfolioShellInner() {
   }
 
   function openPmDocument(doc: Doc) {
-    setTab('pm_analysis');
+    setTab('analysis');
     const p = new URLSearchParams(searchParams.toString());
-    p.set('tab', 'pm_analysis');
+    p.set('tab', 'analysis');
     p.set('date', doc.date);
     p.set('docKey', doc.path);
+    p.delete('thesis');
     router.replace(`${pathname}?${p.toString()}`, { scroll: false });
   }
 
@@ -514,16 +461,14 @@ export default function PortfolioShellInner() {
     router.replace(`${pathname}?${p.toString()}`, { scroll: false });
   }
 
-  function selectPortfolioDate(iso: string, target: 'theses' | 'pm_analysis') {
+  function selectAnalysisDate(iso: string) {
     if (!historyDateSet.has(iso)) return;
     const p = new URLSearchParams(searchParams.toString());
-    p.set('tab', target);
+    p.set('tab', 'analysis');
     p.set('date', iso);
     p.delete('docKey');
-    if (target === 'theses') {
-      setPmActiveFile(null);
-      setPmLibraryDoc(null);
-    }
+    setPmActiveFile(null);
+    setPmLibraryDoc(null);
     router.replace(`${pathname}?${p.toString()}`, { scroll: false });
   }
 
@@ -540,7 +485,7 @@ export default function PortfolioShellInner() {
   const thesisHref = useCallback(
     (thesisId: string) => {
       const p = new URLSearchParams(searchParams.toString());
-      p.set('tab', 'theses');
+      p.set('tab', 'analysis');
       p.set('thesis', thesisId);
       if (!p.get('date') && defaultHistoryDate) p.set('date', defaultHistoryDate);
       return `${pathname}?${p.toString()}`;
@@ -560,9 +505,7 @@ export default function PortfolioShellInner() {
   const tabs: { id: TabId; label: string; icon: typeof Layers }[] = [
     { id: 'allocations', label: 'Allocations', icon: Layers },
     { id: 'performance', label: 'Performance', icon: TrendingUp },
-    { id: 'theses', label: 'Theses', icon: History },
-    { id: 'positions', label: 'Positions', icon: Target },
-    { id: 'pm_analysis', label: 'PM analysis', icon: FileText },
+    { id: 'analysis', label: 'Analysis', icon: Route },
     { id: 'activity', label: 'Activity', icon: Activity },
   ];
 
@@ -604,35 +547,22 @@ export default function PortfolioShellInner() {
             lastUpdated={lastUpdated}
             researchStripLinks={researchStripLinks}
             pmStripLinks={pmStripLinks}
-            hasPipelineObservability={hasPipelineObservability}
-            pipe={pipe}
-            processObsMarkdown={processObsMarkdown}
-            deliberationIndexRows={deliberationIndexRows}
-            summaryAllocationMode={summaryAllocationMode}
-            setSummaryAllocationMode={setSummaryAllocationMode}
-            pieDataBucketed={pieDataBucketed}
-            categoryBarData={categoryBarData}
-            thesisBarRich={thesisBarRich}
-          />
-        )}
-
-        {tab === 'positions' && (
-          <PositionsTab
+            pieTicker={pieDataBucketed}
+            pieCategory={pieCategoryBucketed}
+            pieThesis={pieThesisBucketed}
             positions={positions}
             thesisById={thesisById}
-            holdingTechnicals={holdingTechnicals}
-            lastUpdated={lastUpdated}
           />
         )}
 
         {tab === 'performance' && <PerformanceTab />}
 
-        {tab === 'theses' && (
-          <ThesesTab
+        {tab === 'analysis' && (
+          <AnalysisTab
             historyTimelineDates={historyTimelineDates}
             portfolioHistoryRunKindByDate={portfolioHistoryRunKindByDate}
             effHistoryDate={effHistoryDate}
-            onSelectHistoryDate={(iso) => selectPortfolioDate(iso, 'theses')}
+            onSelectHistoryDate={selectAnalysisDate}
             historyLatestDate={historyLatestDate}
             onClearHistoryDate={clearHistoryDateParam}
             highlightThesisParam={highlightThesisParam}
@@ -649,17 +579,6 @@ export default function PortfolioShellInner() {
             thesisBookRowsForHistoryDate={thesisBookRowsForHistoryDate}
             researchStripLinksForHistoryDate={researchStripLinksForHistoryDate}
             lastUpdated={lastUpdated}
-          />
-        )}
-
-        {tab === 'pm_analysis' && (
-          <PMAnalysisTab
-            historyTimelineDates={historyTimelineDates}
-            portfolioHistoryRunKindByDate={portfolioHistoryRunKindByDate}
-            effHistoryDate={effHistoryDate}
-            onSelectHistoryDate={(iso) => selectPortfolioDate(iso, 'pm_analysis')}
-            historyLatestDate={historyLatestDate}
-            onClearHistoryDate={clearHistoryDateParam}
             pmDocsForHistory={pmDocsForHistory}
             portfolioDocDates={portfolioDocDates}
             positionHistoryDates={positionHistoryDates}

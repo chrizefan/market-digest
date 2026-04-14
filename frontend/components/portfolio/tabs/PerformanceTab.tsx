@@ -233,81 +233,113 @@ export default function PerformanceTab() {
       </div>
     );
 
+  const priceChartAnchorDate =
+    snaps.length > 0 ? snaps[snaps.length - 1].date : (data.portfolio.meta.last_updated ?? null);
+
   const totalReturnLabel = range === 'itd' ? 'Since inception' : 'Selected range';
   const totalReturnValue =
     range === 'itd' ? formatPct(metrics.portfolio_pnl) : formatPct(rangeReturn);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-end gap-3">
-        <PerformanceDateRange value={range} onChange={setRange} />
-      </div>
+    <div className="space-y-10">
+      <section className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0 space-y-1">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+              1 · Portfolio summary
+            </p>
+            <p className="text-xs text-text-muted">
+              NAV-based figures for the window below; position charts anchor to the last day in range.
+            </p>
+          </div>
+          <div className="shrink-0">
+            <PerformanceDateRange value={range} onChange={setRange} />
+          </div>
+        </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label="Portfolio NAV"
-          value={fmtNav(latestNav)}
-          icon={TrendingUp}
-          iconColor="text-fin-blue"
-          subtitle="End of range (level)"
-        />
-        <StatCard
-          label="Total Return"
-          value={totalReturnValue}
-          valueClass={pnlColor(range === 'itd' ? metrics.portfolio_pnl : rangeReturn)}
-          icon={BarChart3}
-          iconColor="text-fin-green"
-          subtitle={totalReturnLabel}
-        />
-        <StatCard
-          label="Daily P&L"
-          value={dailyRet != null ? formatPct(dailyRet) : '—'}
-          valueClass={pnlColor(dailyRet)}
-          icon={Activity}
-          iconColor="text-fin-amber"
-          subtitle="Last day in range"
-        />
-        <StatCard
-          label="Active Positions"
-          value={positions.length}
-          icon={Target}
-          iconColor="text-fin-purple"
-        />
-      </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            label="Portfolio NAV"
+            value={fmtNav(latestNav)}
+            icon={TrendingUp}
+            iconColor="text-fin-blue"
+            subtitle="End of range (level)"
+          />
+          <StatCard
+            label="Total Return"
+            value={totalReturnValue}
+            valueClass={pnlColor(range === 'itd' ? metrics.portfolio_pnl : rangeReturn)}
+            icon={BarChart3}
+            iconColor="text-fin-green"
+            subtitle={totalReturnLabel}
+          />
+          <StatCard
+            label="Daily P&L"
+            value={dailyRet != null ? formatPct(dailyRet) : '—'}
+            valueClass={pnlColor(dailyRet)}
+            icon={Activity}
+            iconColor="text-fin-amber"
+            subtitle="Last day in range"
+          />
+          <StatCard
+            label="Active Positions"
+            value={positions.length}
+            icon={Target}
+            iconColor="text-fin-purple"
+          />
+        </div>
+      </section>
 
-      <PerformanceChartWorkspace
-        view={view}
-        onViewChange={setView}
-        chartData={chartData}
-        selectedComparables={selectedComparables}
-        onAddComparable={onAddComparable}
-        onRemoveComparable={onRemoveComparable}
-        tickerUniverse={tickerUniverse}
-        comparableLoading={comparableLoading}
-        comparableError={comparableError}
-        snaps={snaps}
-        drawdownData={drawdownData}
-        rollingData={rollingData}
-      />
+      <section className="space-y-3">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+          2 · Return, drawdown &amp; risk
+        </p>
+        <PerformanceChartWorkspace
+          view={view}
+          onViewChange={setView}
+          chartData={chartData}
+          selectedComparables={selectedComparables}
+          onAddComparable={onAddComparable}
+          onRemoveComparable={onRemoveComparable}
+          tickerUniverse={tickerUniverse}
+          comparableLoading={comparableLoading}
+          comparableError={comparableError}
+          snaps={snaps}
+          drawdownData={drawdownData}
+          rollingData={rollingData}
+        />
+      </section>
 
-      <PositionPnlTable positions={positions} />
+      <section className="space-y-3">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">3 · Positions</p>
+        <PositionPnlTable
+          key={priceChartAnchorDate ?? 'no-anchor'}
+          positions={positions}
+          priceChartAnchorDate={priceChartAnchorDate}
+        />
+      </section>
 
-      <div className="glass-card overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/[0.02] transition-colors"
-        >
-          <h3 className="text-lg font-semibold">Advanced statistics</h3>
-          {showAdvanced ? (
-            <ChevronUp size={18} className="text-text-muted" />
-          ) : (
-            <ChevronDown size={18} className="text-text-muted" />
-          )}
-        </button>
-        {showAdvanced && serverMetrics && <ServerMetricsStrip m={serverMetrics} />}
-        {showAdvanced && <AdvancedStatsPanel snaps={snaps} benchmarks={benchmarks} />}
-      </div>
+      <section className="space-y-3">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+          4 · Model diagnostics
+        </p>
+        <div className="glass-card overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/[0.02] transition-colors"
+          >
+            <h3 className="text-lg font-semibold">Advanced statistics</h3>
+            {showAdvanced ? (
+              <ChevronUp size={18} className="text-text-muted" />
+            ) : (
+              <ChevronDown size={18} className="text-text-muted" />
+            )}
+          </button>
+          {showAdvanced && serverMetrics && <ServerMetricsStrip m={serverMetrics} />}
+          {showAdvanced && <AdvancedStatsPanel snaps={snaps} benchmarks={benchmarks} />}
+        </div>
+      </section>
     </div>
   );
 }

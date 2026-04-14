@@ -8,11 +8,7 @@ import PageHeader from '@/components/page-header';
 import DeltaDaySummary from '@/components/library/DeltaDaySummary';
 import LibraryDocumentBody from '@/components/library/LibraryDocumentBody';
 import { useDashboard } from '@/lib/dashboard-context';
-import {
-  countDeltaTouchesForDoc,
-  countResearchChangelogTouchesForDoc,
-  docMatchesLibraryScope,
-} from '@/lib/library-doc-tier';
+import { docMatchesLibraryScope } from '@/lib/library-doc-tier';
 import { getLibraryDocumentById, type LibraryDocumentResult } from '@/lib/queries';
 import type { Doc } from '@/lib/types';
 import MiniCalendar, { type MiniCalendarRunKind } from '@/components/library/MiniCalendar';
@@ -20,6 +16,7 @@ import {
   RESEARCH_CATEGORY_ORDER,
   canonicalResearchTitle,
   categorizeResearchDoc,
+  isDailyResearchDoc,
 } from '@/lib/research-doc-categorize';
 import KnowledgeBasePanel from '@/components/research/KnowledgeBasePanel';
 
@@ -92,10 +89,6 @@ function ResearchPageInner({
     () => data?.delta_request_meta_by_date ?? {},
     [data?.delta_request_meta_by_date]
   );
-  const researchChangelogByDate = useMemo(
-    () => data?.research_changelog_by_date ?? {},
-    [data?.research_changelog_by_date]
-  );
   const snapshotRunTypeByDate = useMemo(
     () => data?.snapshot_run_type_by_date ?? {},
     [data?.snapshot_run_type_by_date]
@@ -106,21 +99,24 @@ function ResearchPageInner({
     [docs]
   );
 
+  /** Dated run outputs for the Daily tab (excludes knowledge-base reference docs). */
+  const dailyResearchDocs = useMemo(() => researchDocs.filter(isDailyResearchDoc), [researchDocs]);
+
   const docsByDate = useMemo(() => {
     const m = new Map<string, Doc[]>();
-    for (const d of researchDocs) {
+    for (const d of dailyResearchDocs) {
       if (!d.date) continue;
       const arr = m.get(d.date) || [];
       arr.push(d);
       m.set(d.date, arr);
     }
     return m;
-  }, [researchDocs]);
+  }, [dailyResearchDocs]);
 
   const dates = useMemo<string[]>(() => {
-    const set = new Set(researchDocs.map((d) => d.date).filter(Boolean));
+    const set = new Set(dailyResearchDocs.map((d) => d.date).filter(Boolean));
     return [...set].sort().reverse();
-  }, [researchDocs]);
+  }, [dailyResearchDocs]);
 
   const runKindByDate = useMemo(() => {
     const m = new Map<string, RunDayKind>();
@@ -139,8 +135,8 @@ function ResearchPageInner({
   const effDate = selectedDate && dates.includes(selectedDate) ? selectedDate : dates[0] || null;
 
   const docsForEffDate = useMemo<Doc[]>(
-    () => (effDate ? researchDocs.filter((d) => d.date === effDate) : []),
-    [researchDocs, effDate]
+    () => (effDate ? dailyResearchDocs.filter((d) => d.date === effDate) : []),
+    [dailyResearchDocs, effDate]
   );
 
   const dateDocs = useMemo<Doc[]>(() => {
@@ -255,7 +251,13 @@ function ResearchPageInner({
         </div>
 
         {tab === 'knowledge' ? (
-          <KnowledgeBasePanel docs={researchDocs} />
+          <>
+            <p className="text-xs text-text-muted max-w-2xl">
+              Reference library: deep dives, research papers, and recurring notes across all dates. Use the Daily tab
+              for snapshot-specific outputs.
+            </p>
+            <KnowledgeBasePanel docs={researchDocs} />
+          </>
         ) : (
           <div className="flex gap-6 max-lg:flex-col">
             <div className="w-56 shrink-0 space-y-4 max-lg:w-full max-lg:flex max-lg:gap-4 max-lg:flex-wrap">
@@ -347,6 +349,9 @@ function ResearchPageInner({
             </div>
 
             <div className="flex-1 min-w-0 space-y-4">
+              <p className="text-xs text-text-muted max-w-2xl">
+                Run-day artifacts only (digest, exploration, deltas). Long-form reference lives under Knowledge base.
+              </p>
               <div className="flex items-center gap-3">
                 <Calendar size={16} className="text-fin-blue" />
                 <h2 className="text-lg font-semibold">{effDate || 'No date selected'}</h2>
@@ -391,9 +396,11 @@ function ResearchPageInner({
                     <div className="flex items-center gap-2 text-sm">
                       <FileText size={14} className="text-fin-blue" />
                       <span className="font-mono">{canonicalResearchTitle(activeFile)}</span>
-                      {(activeFile.runType || '').toLowerCase() === 'delta' ? (
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30">
-                          Δ updated
+                      {effDate &&
+                      !deltaMetaByDate[effDate] &&
+                      (activeFile.runType || '').toLowerCase() === 'delta' ? (
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.06] text-text-muted border border-border-subtle">
+                          delta file
                         </span>
                       ) : null}
                     </div>
@@ -434,14 +441,9 @@ function ResearchPageInner({
                     </div>
                     <div className="divide-y divide-border-subtle">
                       {files.map((f, i) => {
-                        const dm = effDate ? deltaMetaByDate[effDate] : null;
-                        const cl = effDate ? researchChangelogByDate[effDate] : null;
-                        const touchDelta =
-                          dm && effDate ? countDeltaTouchesForDoc(f.path, dm.changed_paths, dm.op_paths) : 0;
-                        const touchChangelog = countResearchChangelogTouchesForDoc(f.path, cl);
+                        const deltaDay = Boolean(effDate && deltaMetaByDate[effDate]);
                         const isDocDelta = (f.runType || '').toLowerCase() === 'delta';
-                        const touchCount = touchDelta + touchChangelog;
-                        const touched = isDocDelta || touchCount > 0;
+                        const showRowDeltaHint = !deltaDay && isDocDelta;
                         return (
                           <button
                             key={i}
@@ -473,31 +475,14 @@ function ResearchPageInner({
                             }}
                             className="w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02] transition-colors"
                           >
-                            <span className="relative flex h-2 w-2 shrink-0">
-                              {touched ? (
-                                <span
-                                  className="absolute inset-0 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]"
-                                  title="Updated today"
-                                />
-                              ) : (
-                                <span className="absolute inset-0 rounded-full bg-transparent" />
-                              )}
-                            </span>
                             <FileText size={14} className="text-fin-blue/60 shrink-0" />
                             <span className="font-mono text-sm">{canonicalResearchTitle(f)}</span>
-                            {isDocDelta ? (
+                            {showRowDeltaHint ? (
                               <span
-                                className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30"
-                                title="Updated on this delta day"
+                                className="text-[10px] font-mono text-text-muted shrink-0"
+                                title="Published as a delta refresh for this date"
                               >
-                                Δ
-                              </span>
-                            ) : touchCount > 0 ? (
-                              <span
-                                className="text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30"
-                                title="Delta paths touching this document"
-                              >
-                                {touchCount}
+                                delta
                               </span>
                             ) : null}
                             <span className="ml-auto text-[11px] text-text-muted">{f.phase ?? ''}</span>

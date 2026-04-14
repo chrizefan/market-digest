@@ -64,3 +64,18 @@ export function sortPmDocs(docs: Doc[]): Doc[] {
     return a.path.localeCompare(b.path);
   });
 }
+
+export type PieSliceDatum = { name: string; value: number; tooltipExtra?: string };
+
+const MAX_PIE_SLICES = 14;
+
+/** Bucket small slices into "Other" for readable pie charts. */
+export function bucketAllocationsForPie(items: { name: string; value: number }[]): PieSliceDatum[] {
+  const pos = items.filter((x) => x.value > 0.0001).sort((a, b) => b.value - a.value);
+  if (pos.length <= MAX_PIE_SLICES) return pos.map(({ name, value }) => ({ name, value }));
+  const head = pos.slice(0, MAX_PIE_SLICES - 1);
+  const tail = pos.slice(MAX_PIE_SLICES - 1);
+  const other = tail.reduce((s, x) => s + x.value, 0);
+  const tooltipExtra = tail.map((t) => `${t.name}: ${t.value.toFixed(1)}%`).join(' · ');
+  return [...head.map(({ name, value }) => ({ name, value })), { name: 'Other', value: other, tooltipExtra }];
+}

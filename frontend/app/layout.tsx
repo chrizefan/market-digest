@@ -2,6 +2,7 @@ import './globals.css';
 import { ReactNode, Suspense } from 'react';
 import { Inter, Space_Mono } from 'next/font/google';
 import { DashboardProvider } from '@/lib/dashboard-context';
+import { AppShellProvider } from '@/components/app-shell-context';
 import Sidebar from '@/components/sidebar';
 import Starfield from '@/components/starfield';
 
@@ -33,14 +34,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className={`min-h-screen bg-bg-primary text-text-primary antialiased ${inter.variable} ${spaceMono.variable}`}>
         <Starfield />
         <DashboardProvider>
-          <div className="flex min-h-screen">
-            <Suspense fallback={<aside className="w-[260px] shrink-0 border-r border-border-subtle bg-bg-glass" />}>
-              <Sidebar />
-            </Suspense>
-            <main className="flex-1 flex flex-col overflow-y-auto max-h-screen">
-              {children}
-            </main>
-          </div>
+          <AppShellProvider>
+            <div className="flex min-h-screen">
+              <Suspense fallback={<aside className="w-[260px] shrink-0 border-r border-border-subtle bg-bg-glass" />}>
+                <Sidebar />
+              </Suspense>
+              <main className="flex-1 flex flex-col overflow-y-auto max-h-screen min-w-0">
+                {children}
+              </main>
+            </div>
+          </AppShellProvider>
         </DashboardProvider>
       </body>
     </html>

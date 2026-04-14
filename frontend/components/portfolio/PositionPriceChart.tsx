@@ -21,18 +21,31 @@ function eventLineColor(ev: PositionPriceChartData['events'][0]['event']): strin
   return '#71717a';
 }
 
+function subtractIsoDays(iso: string, days: number): string {
+  const parts = iso.split('-').map(Number);
+  if (parts.length < 3) return iso;
+  const [y, m, d] = parts;
+  const t = Date.UTC(y, m - 1, d);
+  const next = new Date(t - days * 86400000);
+  return next.toISOString().slice(0, 10);
+}
+
 type Row = { date: string; close: number; [k: string]: string | number | null | undefined };
 
 const positionChartCache = new Map<string, PositionPriceChartData>();
 
-export default function PositionPriceChart({
+const DEFAULT_LOOKBACK = 400;
+
+function ChartBody({
   ticker,
-  fromDate,
+  rangeStart,
+  lookbackDays,
 }: {
   ticker: string;
-  fromDate: string;
+  rangeStart: string;
+  lookbackDays: number;
 }) {
-  const cacheKey = `${String(ticker).toUpperCase()}|${fromDate}`;
+  const cacheKey = `${String(ticker).toUpperCase()}|${rangeStart}`;
   const [data, setData] = useState<PositionPriceChartData | null>(
     () => positionChartCache.get(cacheKey) ?? null
   );
@@ -42,7 +55,7 @@ export default function PositionPriceChart({
   useEffect(() => {
     if (positionChartCache.has(cacheKey)) return;
     let cancelled = false;
-    fetchPositionPriceChart(ticker, fromDate)
+    fetchPositionPriceChart(ticker, rangeStart)
       .then((d) => {
         if (!cancelled) {
           positionChartCache.set(cacheKey, d);
@@ -61,12 +74,22 @@ export default function PositionPriceChart({
     return () => {
       cancelled = true;
     };
-  }, [ticker, fromDate, cacheKey]);
+  }, [ticker, rangeStart, cacheKey]);
 
   const chartRows = useMemo<Row[]>(() => {
     if (!data?.priceHistory?.length) return [];
     return data.priceHistory.map((p) => ({ date: p.date, close: p.close }));
   }, [data]);
+
+  const chartEnd = chartRows.length ? chartRows[chartRows.length - 1].date : null;
+
+  const markers = useMemo(() => {
+    const evs = (data?.events ?? []).filter((e) => e.event !== 'HOLD');
+    if (!chartRows.length) return evs;
+    const first = chartRows[0].date;
+    const last = chartRows[chartRows.length - 1].date;
+    return evs.filter((e) => e.date >= first && e.date <= last);
+  }, [data?.events, chartRows]);
 
   if (loading) {
     return (
@@ -90,14 +113,21 @@ export default function PositionPriceChart({
     );
   }
 
-  const markers = (data?.events ?? []).filter((e) => e.event !== 'HOLD');
-
   return (
-    <div className="space-y-2">
-      <p className="text-xs text-text-muted">
-        <span className="font-mono text-text-secondary">{ticker}</span> close from {fromDate}
+    <>
+      <p className="text-xs text-text-muted mb-2">
+        <span className="font-mono text-text-secondary">{ticker}</span>
+        {' · '}
+        closes from <span className="font-mono text-text-secondary">{rangeStart}</span>
+        {chartEnd ? (
+          <>
+            {' '}
+            to <span className="font-mono text-text-secondary">{chartEnd}</span>
+          </>
+        ) : null}
+        <span className="text-text-muted"> (~{lookbackDays}d lookback before anchor)</span>
       </p>
-      <div className="h-[240px] w-full">
+      <div className="h-[280px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartRows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
@@ -137,7 +167,7 @@ export default function PositionPriceChart({
         </ResponsiveContainer>
       </div>
       {markers.length > 0 ? (
-        <ul className="text-[11px] text-text-muted space-y-1 max-h-24 overflow-y-auto">
+        <ul className="text-[11px] text-text-muted space-y-1 max-h-28 overflow-y-auto mt-3">
           {markers.map((ev, i) => (
             <li key={`${ev.date}-${i}`} className="flex flex-wrap gap-x-2">
               <span className="font-mono text-text-secondary">{ev.date}</span>
@@ -148,6 +178,32 @@ export default function PositionPriceChart({
           ))}
         </ul>
       ) : null}
+    </>
+  );
+}
+
+export default function PositionPriceChart({
+  ticker,
+  anchorDate,
+}: {
+  ticker: string;
+  anchorDate: string;
+}) {
+  const [lookbackDays, setLookbackDays] = useState(DEFAULT_LOOKBACK);
+  const rangeStart = useMemo(() => subtractIsoDays(anchorDate, lookbackDays), [anchorDate, lookbackDays]);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={() => setLookbackDays((d) => d + 365)}
+          className="px-3 py-1.5 rounded-md border border-border-subtle text-text-secondary hover:text-text-primary hover:bg-white/[0.04] text-[11px] font-medium"
+        >
+          Load more history (+1y)
+        </button>
+      </div>
+      <ChartBody key={`${ticker}|${rangeStart}`} ticker={ticker} rangeStart={rangeStart} lookbackDays={lookbackDays} />
     </div>
   );
 }

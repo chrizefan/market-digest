@@ -31,8 +31,8 @@ export default function DeltaDaySummary({
         ) : null}
       </span>
       <span className="text-xs text-text-muted w-full sm:w-auto sm:flex-1 sm:min-w-[200px]">
-        Files with a badge were updated. Open the <strong className="text-text-secondary">digest</strong> to diff vs
-        the previous digest or the delta baseline
+        Open the <strong className="text-text-secondary">digest</strong> to compare against the prior snapshot or the
+        delta baseline
         {baseline ? (
           <>
             {' '}

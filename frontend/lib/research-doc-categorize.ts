@@ -60,7 +60,13 @@ export function categorizeResearchDoc(d: Doc): string {
   return 'Other';
 }
 
+/** Long-form / reference research surfaced on the Knowledge base tab (not the daily run list). */
 export function isKnowledgeBaseDoc(d: Doc): boolean {
   const cat = categorizeResearchDoc(d);
-  return cat === 'Deep Dives' || cat === 'Weekly / Monthly';
+  return cat === 'Deep Dives' || cat === 'Weekly / Monthly' || cat === 'Research Papers';
+}
+
+/** Per-day run artifacts, digest, and dated research outputs (excludes knowledge-base reference docs). */
+export function isDailyResearchDoc(d: Doc): boolean {
+  return !isKnowledgeBaseDoc(d);
 }
