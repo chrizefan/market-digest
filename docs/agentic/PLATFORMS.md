@@ -39,7 +39,7 @@ claude
 ```bash
 claude -p "Run the 7-phase pipeline for today $(date +%Y-%m-%d)"
 claude -p "Run just the macro segment"
-claude -p "Search memory for any notes on NVDA"
+claude -p "Query Supabase daily_snapshots for any notes on NVDA"
 ```
 
 **Current config**: `CLAUDE.md` ✅
@@ -133,7 +133,7 @@ model: claude-3-5-sonnet-20241022
 
 These platforms read `AGENTS.md` from the repo root. The file contains:
 - Full behavioral rules (Always/Never blocks)
-- Complete memory protocol
+- Complete pipeline and behavioral protocol
 - 7-phase pipeline reference
 - Output file naming convention
 

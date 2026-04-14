@@ -8,7 +8,7 @@
 
 ## Overview
 
-digiquant-atlas is an AI-orchestrated daily market intelligence system. A large-language model agent reads configuration files and rolling memory logs, executes structured skill files as instruction sets, writes 28+ output files per session, then appends findings to a 25-file append-only memory system.
+digiquant-atlas is an AI-orchestrated daily market intelligence system. A large-language model agent reads configuration files and prior context from Supabase, executes structured skill files as instruction sets, writes 28+ output files per session, then publishes findings to Supabase `daily_snapshots` and `documents`.
 
 The system operates on a **three-tier cadence**:
 
@@ -58,8 +58,8 @@ Before any phase executes, the agent performs a structured context load:
 
 1. **Read `_meta.json`** — confirm run type (`baseline` or `delta`), extract baseline date, week label
 2. **Load config** — `config/watchlist.md`, `config/preferences.md`
-3. **Load all 25 memory files** — the 23 ROLLING.md files + `BIAS-TRACKER.md` + `THESES.md`
-4. **Load yesterday's DIGEST.md** — establishes continuity baseline for today's changes
+3. **Load prior context from Supabase** — query `daily_snapshots` and `documents` for recent dates
+4. **Load yesterday's snapshot from Supabase** — establishes continuity baseline for today's changes
 5. **Announce**: `"Context loaded. Starting Phase 1 of 9."`
 
 ---
@@ -78,7 +78,7 @@ Before any phase executes, the agent performs a structured context load:
 | 1C | `skills/alternative-data/SKILL-options-derivatives.md` | `alt-data/options-derivatives.md` |
 | 1D | `skills/alternative-data/SKILL-politician-signals.md` | `alt-data/politician-signals.md` |
 
-Memory updates: `memory/alternative-data/{sentiment,cta-positioning,options,politician}/ROLLING.md`
+Supabase updates: publishes segment documents to `documents` (alternative-data: sentiment, cta-positioning, options, politician)
 
 **What each sub-agent covers:**
 - **1A Sentiment & News**: AAII/CNN Fear & Greed, retail sentiment, social media signal, top news catalysts
@@ -97,7 +97,7 @@ Memory updates: `memory/alternative-data/{sentiment,cta-positioning,options,poli
 | 2A | `skills/institutional/SKILL-institutional-flows.md` | `institutional-flows.md` |
 | 2B | `skills/institutional/SKILL-hedge-fund-intel.md` | `hedge-fund-intel.md` |
 
-Memory updates: `memory/institutional/{flows,hedge-funds}/ROLLING.md`
+Supabase updates: publishes segment documents to `documents` (institutional: flows, hedge-funds)
 
 **What each sub-agent covers:**
 - **2A Flows**: ETF inflows/outflows by asset class and sector, dark pool unusual activity, 13D/13G/Form 4 filings, options-implied institutional positioning
@@ -112,7 +112,7 @@ Memory updates: `memory/institutional/{flows,hedge-funds}/ROLLING.md`
 
 Skill: `skills/SKILL-macro.md`
 Output: `data/agent-cache/daily/{{DATE}}/macro.md`
-Memory: `memory/macro/ROLLING.md`
+Supabase: publishes macro document to `documents`
 
 **4-Factor Regime Model:**
 
@@ -139,7 +139,7 @@ Output: a regime label (e.g., `Growth Slowing / Inflation Sticky / Policy Tighte
 | 4D | `skills/SKILL-crypto.md` | `crypto.md` |
 | 4E | `skills/SKILL-international.md` | `international.md` |
 
-Memory updates: `memory/{bonds,commodities,forex,crypto,international}/ROLLING.md`
+Supabase updates: publishes segment documents to `documents` (bonds, commodities, forex, crypto, international)
 
 **Coverage:**
 - **4A Bonds**: Yield curve (2s10s, 10s30s), real rates, TIPS breakevens, duration positioning, credit spreads (IG/HY), MBS
@@ -170,7 +170,7 @@ Memory updates: `memory/{bonds,commodities,forex,crypto,international}/ROLLING.m
 | 5L | `skills/sectors/SKILL-sector-comms.md` | `sectors/comms.md` |
 | 5M | *(orchestrator synthesis)* | Sector Scorecard (compiled into `DIGEST.md`) |
 
-Memory updates: `memory/equity/ROLLING.md` + all 11 `memory/sectors/{sector}/ROLLING.md`
+Supabase updates: publishes equity and all 11 sector documents to `documents`
 
 **Phase 5A covers**: SPY/QQQ/IWM, market breadth (NYSE A/D line, new 52W highs/lows), factor performance (value, growth, momentum, quality, small cap).
 
@@ -182,22 +182,22 @@ SECTOR SCORECARD — {{DATE}}
 
 ---
 
-### Phase 6 — Memory Consolidation & Bias Tracker
+### Phase 6 — Supabase Consolidation & Bias Tracker
 
-> System-wide memory commit. Runs after all research is complete.
+> System-wide Supabase publish. Runs after all research is complete.
 
 | Sub-Phase | Action |
 |-----------|--------|
-| 6A | Append new row to `memory/BIAS-TRACKER.md` (14 columns: date, macro regime, equity/crypto/bond/commodity/forex bias, VIX, inst. flow, options sentiment, CTA direction, HF consensus, Fed odds, notes) |
-| 6B | Confirm all 25 memory files were appended this session |
+| 6A | Publish new bias row to Supabase `daily_snapshots` (14 columns: date, macro regime, equity/crypto/bond/commodity/forex bias, VIX, inst. flow, options sentiment, CTA direction, HF consensus, Fed odds, notes) |
+| 6B | Confirm all segment documents were published to Supabase `documents` this session |
 
-**Complete memory file manifest (25 files):**
+**Complete segment document manifest (25 segments):**
 - Core market (7): macro, equity, crypto, bonds, commodities, forex, international
 - Sectors (11): technology, healthcare, energy, financials, consumer-staples, consumer-disc, industrials, utilities, materials, real-estate, comms
 - Alternative data (4): sentiment, cta-positioning, options, politician
 - Institutional (2): flows, hedge-funds
-- Portfolio (1): `memory/portfolio/ROLLING.md`
-- Cross-asset trackers (2): `BIAS-TRACKER.md`, `THESES.md`
+- Portfolio (1): portfolio evolution and rebalance history
+- Cross-asset trackers (2): bias rows in `daily_snapshots`, thesis data in `documents`
 
 ---
 

@@ -68,11 +68,11 @@ Today is {DATE}.
 Read skills/sector-{SECTOR}/SKILL.md (replace {SECTOR} with: technology, healthcare, energy, financials,
 consumer-disc, consumer-staples, industrials, materials, utilities, real-estate, or comms)
 
-Read memory/sectors/{SECTOR}/ROLLING.md for prior research.
+Load prior sector research from Supabase daily_snapshots or documents for recent dates.
 Read today's macro.md if available: data/agent-cache/daily/{DATE}/macro.md
 
 Write to: data/agent-cache/daily/{DATE}/sectors/{SECTOR}.md
-Append to: memory/sectors/{SECTOR}/ROLLING.md
+Publish findings to Supabase per RUNBOOK.md.
 ```
 
 ---
@@ -85,9 +85,9 @@ Macro context: [paste key points from macro.md or describe regime]
 
 Run all 11 sector analyses in parallel. For each sector:
 - Read: skills/sector-{sector}/SKILL.md
-- Read: memory/sectors/{sector}/ROLLING.md
+- Load prior context from Supabase daily_snapshots or documents for recent dates
 - Write: data/agent-cache/daily/{DATE}/sectors/{sector}.md
-- Append: memory/sectors/{sector}/ROLLING.md
+- Publish findings to Supabase per RUNBOOK.md
 
 Sectors: technology, healthcare, financials, energy, consumer-disc,
 consumer-staples, industrials, materials, utilities, real-estate, comms
@@ -106,9 +106,9 @@ Run Phase 1 alternative data analysis:
 3. Read skills/alt-options-derivatives/SKILL.md → options/vol
 4. Read skills/alt-politician-signals/SKILL.md → politician/official signals
 
-Read each corresponding memory file in memory/alternative-data/ for prior context.
+Load prior alternative data context from Supabase daily_snapshots or documents for recent dates.
 Write combined output to: data/agent-cache/daily/{DATE}/alt-data.md
-Update each memory/alternative-data/*/ROLLING.md
+Publish findings to Supabase per RUNBOOK.md.
 ```
 
 ---
@@ -123,9 +123,9 @@ Run Phase 2 institutional analysis:
 2. Read skills/inst-hedge-fund-intel/SKILL.md
 3. Read config/hedge-funds.md for tracked hedge funds
 
-Read memory/institutional/flows/ROLLING.md and memory/institutional/hedge-fund/ROLLING.md.
+Load prior institutional context from Supabase daily_snapshots or documents for recent dates.
 Write to: data/agent-cache/daily/{DATE}/institutional.md
-Update both institutional memory files.
+Publish findings to Supabase per RUNBOOK.md.
 ```
 
 ---
@@ -152,11 +152,10 @@ Read ALL of the following:
 - All files in data/agent-cache/daily/{DATE}/sectors/
 
 Produce a digest snapshot JSON (schema: templates/digest-snapshot-schema.json) and publish via scripts/materialize_snapshot.py.
-Read memory/BIAS-TRACKER.md for prior bias context.
+Load prior bias context from Supabase daily_snapshots bias rows.
 Read config/preferences.md for portfolio positioning.
 
 Store to Supabase (DB-first). Markdown is derived from JSON.
-Append today's row to memory/BIAS-TRACKER.md (14-column table).
 ```
 
 ---
@@ -167,7 +166,7 @@ Append today's row to memory/BIAS-TRACKER.md (14-column table).
 Run a deep dive on: {TICKER}
 
 1. Read skills/deep-dive/SKILL.md for the research framework
-2. Search memory/ for any prior notes: run memory-search.sh {TICKER} or grep all ROLLING.md files
+2. Query Supabase daily_snapshots and documents for any prior notes on {TICKER}
 3. Read config/watchlist.md to see if it's tracked and at what size
 4. Check config/preferences.md for relevant biases or theses
 
@@ -188,18 +187,18 @@ Write to: data/agent-cache/deep-dives/{TICKER}-{DATE}.md
 ```
 Today is {DATE}.
 
-Read memory/THESES.md for all active theses.
+Load all active theses from the thesis tracker in Supabase documents.
 Read config/preferences.md for portfolio positioning and risk tolerance.
-Read memory/BIAS-TRACKER.md (last 5 rows) for recent bias trends.
+Load recent bias rows from Supabase daily_snapshots (last 5 entries) for recent bias trends.
 
-Load today's digest from Supabase or snapshot JSON for {DATE}; legacy path: data/agent-cache/daily/{DATE}/DIGEST.md or archive.
+Load today's digest from Supabase daily_snapshots or snapshot JSON for {DATE}.
 
 For each active thesis:
 - Assess current evidence For vs Against
 - Update status: Building | Confirmed | Extended | At Risk | Exited
 - Note any new developments relevant to the thesis
 
-Append your review to memory/THESES.md under today's date.
+Publish updated thesis entries to Supabase documents.
 ```
 
 ---
@@ -211,28 +210,29 @@ Week ending: {DATE}
 
 Read this week's digests from Supabase (documents / daily_snapshots) or JSON under data/agent-cache/daily/*/snapshot.json.
 
-Read memory/BIAS-TRACKER.md entries for this week.
+Load bias rows for this week from Supabase daily_snapshots.
 Write weekly JSON (schema: templates/schemas/weekly-digest.schema.json).
 Write to: data/agent-cache/weekly/{YYYY}-W{WW}.json
-Do NOT update memory files — read-only synthesis.
+Do NOT publish new Supabase rows — read-only synthesis.
 ```
 
 ---
 
-## Memory Context Load
+## Historical Context Load
 
 Use this at the start of any session that needs deep historical context:
 
 ```
-Before we begin, load all relevant memory context for today's session.
+Before we begin, load all relevant context for today's session.
 
 Read the following files:
 - config/watchlist.md
 - config/preferences.md
-- memory/macro/ROLLING.md (last 10 entries)
-- memory/equity/ROLLING.md (last 10 entries)
-- memory/BIAS-TRACKER.md (last 7 rows)
-- memory/THESES.md
+
+Query Supabase for recent history:
+- daily_snapshots: last 10 entries for macro regime and segment biases
+- daily_snapshots: last 7 entries for bias trend
+- documents: active theses (thesis tracker entries)
 
 Summarize:
 1. Current macro regime and recent bias trend
@@ -259,10 +259,9 @@ Please:
    - YAML frontmatter with name: and description:
    - Steps numbered ### 1. through ### N.
    - ## Output Format section with {{DATE}} placeholder
-   - ## Memory Update section
-4. Create memory/{domain}/ROLLING.md stub file
-5. Reference in skills/orchestrator/SKILL.md if it's a pipeline phase
-6. Add to docs/agentic/SKILLS-CATALOG.md
+   - ## Supabase Publish section (documents or daily_snapshots per RUNBOOK.md)
+4. Reference in skills/orchestrator/SKILL.md if it's a pipeline phase
+5. Add to docs/agentic/SKILLS-CATALOG.md
 ```
 
 ---
@@ -271,11 +270,11 @@ Please:
 
 ```
 Important conventions for this project:
-- Memory files (memory/**/ROLLING.md) are APPEND-ONLY. Never rewrite existing content.
+- Supabase (daily_snapshots, documents) is the canonical data store — publish there, not to local files
 - macOS sed: use sed -i "" not sed -i (BSD)
 - Skill YAML frontmatter name:/description: — changes need cascading updates
 - data/agent-cache/daily/ JSON and snapshots are agent-generated — do not hand-edit canonical JSON
-- Prefer Supabase + JSON; markdown under data/agent-cache/ is legacy or derived
+- Prefer Supabase + JSON; markdown under data/agent-cache/ is scratch/derived only
 - Use {DATE} / YYYY-MM-DD in paths, never hardcoded dates
-- find memory/ -name "ROLLING.md" for memory discovery
+- Query Supabase daily_snapshots or documents to find prior research across domains
 ```

@@ -43,16 +43,16 @@ python3 scripts/run_db_first.py
 Today is YYYY-MM-DD.
 Read skills/orchestrator/SKILL.md (or weekly-baseline / daily-delta per day type).
 Read config/watchlist.md; for portfolio work also preferences + investment-profile.
-Read relevant memory/*/ROLLING.md for prior context.
+Load prior context from Supabase daily_snapshots and documents for recent dates.
 DB-first: JSON → materialize_snapshot.py / publish_document.py; close with run_db_first.py.
 ```
 
 ```bash
-# 3. Commit repo config/memory only (Supabase already holds digest data)
+# 3. Commit repo config only (Supabase already holds digest data)
 ./scripts/git-commit.sh
 ```
 
-**Output:** Supabase (`daily_snapshots`, `documents`, `positions`, …) + updated memory
+**Output:** Supabase (`daily_snapshots`, `documents`, `positions`, …)
 
 ---
 
@@ -63,9 +63,8 @@ Run just one phase or segment without the full pipeline (no dedicated Bash print
 **Manual prompt pattern:**
 ```
 Read skills/{segment}/SKILL.md (or the appropriate skill package) and run the analysis for {DATE}.
-First read memory/{segment}/ROLLING.md for prior context.
-Write JSON artifacts as needed and publish to Supabase (see RUNBOOK.md)
-Append findings to memory/{segment}/ROLLING.md
+Load prior context from Supabase daily_snapshots or documents for recent dates.
+Write JSON artifacts as needed and publish to Supabase (see RUNBOOK.md).
 ```
 
 **Available segments**: macro, bonds, commodities, forex, crypto, international, equities, earnings, alt-data, institutional, plus any of the 11 sector names.
@@ -78,11 +77,10 @@ After running phases 1-6 manually or partially, use this prompt (DB-first):
 
 **Manual synthesis prompt:**
 ```
-Daily digest is DB-first: load prior context from Supabase (`daily_snapshots`, `documents`) and memory/BIAS-TRACKER.md.
+Daily digest is DB-first: load prior context from Supabase (`daily_snapshots`, `documents`).
 Produce a digest snapshot JSON (schema: `templates/digest-snapshot-schema.json`) and publish via `scripts/materialize_snapshot.py`. Markdown is rendered from JSON.
 
-Synthesize into snapshot JSON and publish via `scripts/materialize_snapshot.py` (see RUNBOOK.md)
-Update memory/BIAS-TRACKER.md with today's row.
+Synthesize into snapshot JSON and publish via `scripts/materialize_snapshot.py` (see RUNBOOK.md).
 ```
 
 ---
@@ -101,10 +99,10 @@ Update memory/BIAS-TRACKER.md with today's row.
 ```
 Read this week's research from Supabase (documents / daily_snapshots) or from
 local `data/agent-cache/daily/{DATE}/` JSON when you intentionally mirror artifacts to disk.
-Read memory/BIAS-TRACKER.md for the week's bias history.
+Load bias rows for this week from Supabase daily_snapshots.
 Write a weekly JSON artifact (schema: templates/schemas/weekly-digest.schema.json).
 Synthesize into data/agent-cache/weekly/{YYYY}-W{WW}.json
-Do NOT update memory files — read-only synthesis.
+Do NOT publish new Supabase rows — read-only synthesis.
 ```
 
 ---
@@ -122,8 +120,8 @@ Do NOT update memory files — read-only synthesis.
 **Manual prompt:**
 ```
 Read all data/agent-cache/weekly/ files from this month.
-Read memory/BIAS-TRACKER.md for the month's entries.
-Read each memory/*/ROLLING.md and summarize the month's key observations per domain.
+Query Supabase daily_snapshots for the month's bias rows.
+Query Supabase daily_snapshots and documents for this month's key observations per domain.
 Write a monthly JSON artifact (schema: `templates/schemas/monthly-digest.schema.json`).
 Write to `data/agent-cache/monthly/{YYYY-MM}.json`
 ```
@@ -143,8 +141,8 @@ Write to `data/agent-cache/monthly/{YYYY-MM}.json`
 Read skills/thesis/SKILL.md.
 Build a new research thesis for: [TOPIC/TICKER/THEME]
 Read config/preferences.md for context on trading style.
-Read relevant memory/*/ROLLING.md files for existing research.
-Append the completed thesis to memory/THESES.md with today's date.
+Query Supabase daily_snapshots and documents for existing research on the relevant domain.
+Publish the completed thesis to Supabase documents with today's date.
 ```
 
 ### Reviewing Active Theses
@@ -156,10 +154,10 @@ Append the completed thesis to memory/THESES.md with today's date.
 **Manual prompt:**
 ```
 Read skills/thesis-tracker/SKILL.md.
-Read memory/THESES.md for all active theses.
+Query thesis data in Supabase documents for all active theses.
 Read today's digest from Supabase or data/agent-cache/daily/{DATE}/ snapshot JSON — not legacy DIGEST.md unless from archive.
 Score each thesis: [Building | Confirmed | Extended | At Risk | Exited]
-Append your review to memory/THESES.md under today's date.
+Publish your review to Supabase documents under today's date.
 ```
 
 ---
@@ -172,7 +170,7 @@ For ad-hoc in-depth research on a specific ticker or topic:
 ```
 Read skills/deep-dive/SKILL.md.
 Run a deep dive on: {TICKER or TOPIC}
-Read memory/equity/ROLLING.md and relevant sector ROLLING.md for prior notes.
+Query Supabase daily_snapshots and documents for prior equity and sector research notes.
 Read config/watchlist.md to see if it's a tracked position.
 Output: prefer data/agent-cache/deep-dives/{slug}.json (schema: templates/schemas/deep-dive.schema.json); markdown is derived.
 ```
@@ -189,12 +187,12 @@ When adding/removing tickers from the watchlist:
 
 **Manual steps:**
 1. Edit `config/watchlist.md`
-2. If adding a new ticker — add an entry in the relevant sector ROLLING.md with context
+2. If adding a new ticker — publish a context note to Supabase documents for the relevant sector
 3. Update `config/portfolio.json` if it's an active position
 
 ---
 
-## Memory Search
+## Research Search
 
 Find prior research on any topic:
 
@@ -204,7 +202,7 @@ Find prior research on any topic:
 ./scripts/memory-search.sh "credit spreads"
 ```
 
-Returns matching lines from all 23 ROLLING.md files + BIAS-TRACKER.md.
+Returns matching content from Supabase `daily_snapshots` and `documents`.
 
 ---
 
@@ -217,7 +215,7 @@ Returns matching lines from all 23 ROLLING.md files + BIAS-TRACKER.md.
 Shows:
 - Today's folder status (created or not)
 - Which output files exist vs. missing
-- Last-modified dates for all memory files
+- Supabase row counts for recent dates
 - Active thesis count
 
 ---
@@ -228,9 +226,9 @@ Shows:
 # After any session with outputs
 ./scripts/git-commit.sh
 
-# Manual commit (memory + config only — scratch under data/agent-cache/ is gitignored)
-git add memory/ config/
-git commit -m "$(date +%Y-%m-%d): memory + config update"
+# Manual commit (config only — digest data lives in Supabase; scratch under data/agent-cache/ is gitignored)
+git add config/
+git commit -m "$(date +%Y-%m-%d): config update"
 git push
 ```
 
@@ -252,11 +250,10 @@ Re-run or patch the digest snapshot JSON, then republish with scripts/materializ
 Validate with: python3 scripts/validate_db_first.py --date YYYY-MM-DD
 ```
 
-**If memory is corrupted (entries got rewritten):**
+**If a Supabase document or snapshot is incorrect:**
 ```
-Check git history: git log memory/ --all
-Restore the last clean version: git checkout {HASH} -- memory/{file}
-Append any new content after restoring
+Recover from Supabase via fetch_research_library.py or query daily_snapshots for the affected date.
+Re-publish the corrected document via publish_document.py or materialize_snapshot.py.
 ```
 
 **If a skill file has a syntax error:**
