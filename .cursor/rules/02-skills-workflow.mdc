@@ -20,15 +20,21 @@ description: One-line description used as routing key
 ## Required Sections
 Each skill must contain these sections in order:
 1. YAML frontmatter (`name:`, `description:`)
-2. `## Purpose` — one paragraph
-3. Numbered steps: `### 1. Read Context`, `### 2. Gather Data`, etc.
-4. `## Output Format` — what to write and where
-5. `## Memory Update` — REQUIRED — which ROLLING.md to append + format spec
+2. Purpose / overview paragraph
+3. Numbered steps: `### 1. Step Title`, `### 2. Step Title`, …
+4. Output format or publish instructions (Supabase document_key + `publish_document.py`)
+
+## Web Fetch in Skills
+Any skill that fetches web content must include the defuddle note:
+```markdown
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for articles,
+> news pages, or filings. Not for API endpoints, `.json`, or `.md` files.
+```
 
 ## Output Path Convention
-- Always use `{{DATE}}` placeholder: `data/agent-cache/daily/{{DATE}}/segment.md`
-- Never hardcode actual dates in skill files
-- Sector outputs go in subfolder: `data/agent-cache/daily/{{DATE}}/sectors/technology.md`
+- Supabase-first: outputs are JSON published via `publish_document.py --payload -`
+- Optional local scratch: `data/agent-cache/daily/{{DATE}}/segment.json` (gitignored)
+- Use `{{DATE}}` placeholder — never hardcode dates
 
 ## Step Numbering
 - Format: `### 1. Step Title` (with period after number)
@@ -45,8 +51,7 @@ Run each sub-agent in parallel:
 ```
 
 ## Adding a New Sector Skill
-1. Create `skills/sector-sector-name/SKILL.md`
-2. Add `memory/sectors/sector-name/ROLLING.md`
+1. Create `skills/sector-{name}/SKILL.md` with YAML frontmatter
+2. Add defuddle web fetch note in the skill
 3. Reference in `skills/orchestrator/SKILL.md` Phase 5 section
 4. Add to `docs/agentic/SKILLS-CATALOG.md` table
-5. Update `scripts/new-day.sh` to create the output folder

@@ -24,6 +24,8 @@ For structured country-level macro data use `mcp_world-bank_get_indicator_for_co
 
 Useful country codes: `CN` (China), `JP` (Japan), `DE` (Germany), `GB` (UK), `BR` (Brazil), `IN` (India), `KR` (South Korea), `MX` (Mexico), `TR` (Turkey).
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any regional news article, central bank statement, PBOC/BOJ/ECB policy page, or geopolitical report URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

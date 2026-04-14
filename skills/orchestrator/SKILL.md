@@ -29,6 +29,30 @@ documents in Supabase, not as repo files.
 
 ---
 
+## Token Mode Protocol
+
+Caveman mode is **active by default** throughout this pipeline for all process work.
+
+**Keep caveman ON for:**
+- Phase start/end announcements and checkpoint verifications
+- Triage decisions and sector depth-tier classifications
+- Data layer checks and pre-flight status messages
+- Inter-phase reasoning about what to update or skip
+- Any conversational message to the user about pipeline state
+
+**Switch to normal mode** (`normal mode`) immediately before authoring content that publishes to Supabase:
+- Segment narrative blocks (macro, bonds, equity, sector analyses, etc.)
+- Digest snapshot JSON narrative/rationale fields
+- Portfolio recommendation and rebalance decision rationale
+- Deliberation transcript content
+- Evolution post-mortem observations and proposals
+
+Switch back to caveman (`caveman mode`) immediately after each artifact is published.
+
+**Quick test**: if the text ends up in a Supabase field → full tokens. If it stays in the conversation → caveman.
+
+---
+
 ## Run mode detection (no filesystem meta)
 
 | Condition | Action |
@@ -428,7 +452,7 @@ This refreshes performance metrics, runs `execute_at_open.py` when appropriate, 
 The frontend reads from Supabase at runtime. If validation fails, check `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` and that today’s snapshot row exists in `daily_snapshots`.
 
 ### 8C: Commit and push
-Run: `./scripts/git-commit.sh` to commit **config / memory / docs** changes only. Digest data is already in Supabase.
+Run: `./scripts/git-commit.sh` to commit **config / docs** changes only. Digest data is already in Supabase.
 
 ### Checkpoint: Phase 8
 Verifies Supabase tables have current data for today's date. **Do not proceed to Phase 9 until validated.**

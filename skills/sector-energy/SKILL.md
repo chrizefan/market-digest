@@ -11,6 +11,8 @@ description: Deep-dive analysis of the Energy sector (XLE, OIH, FCG, DBO). Cover
 - Macro regime output from `macro.md`
 - Commodities output (WTI/Brent levels already established)
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any OPEC statement, EIA report page, rig count article, or energy news URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

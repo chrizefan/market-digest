@@ -20,6 +20,8 @@ For live rates, cross-currency calculations, and historical comparisons use the 
 - `mcp_frankfurter-f_get_historical_exchange_rates` — rates over a date range for trend analysis
 - `mcp_frankfurter-f_convert_currency_latest` — convert a specific amount between two currencies
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any central bank statement, geopolitical news article, or FX analysis page URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

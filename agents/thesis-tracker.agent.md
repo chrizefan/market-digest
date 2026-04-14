@@ -55,7 +55,7 @@ Building → Confirmed → Extended → Exited
 ### Build Mode (Creating New Thesis)
 
 1. Follow `skills/SKILL-thesis.md`
-2. Gather supporting evidence from memory and current research
+2. Gather supporting evidence from Supabase daily_snapshots and current research
 3. Define: thesis statement, entry rationale, exit triggers, time horizon
 4. Structure the thesis using the standard format (see below)
 5. Output the completed thesis in standard format for inclusion in the next DIGEST.md
@@ -67,7 +67,7 @@ Building → Confirmed → Extended → Exited
 3. Write a brief post-mortem: what went right, what went wrong
 4. Note the exit in the output — update `config/portfolio.json` thesis_ids as needed
 
-## Thesis Format in THESES.md
+## Thesis Format
 
 ```markdown
 ## {THESIS NAME}

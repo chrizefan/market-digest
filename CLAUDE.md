@@ -11,12 +11,14 @@ python3 scripts/run_db_first.py              # After publishing JSON to Supabase
 ./scripts/new-day.sh                         # Thin wrapper (prints the same agent prompt)
 python3 scripts/validate_db_first.py --date YYYY-MM-DD --mode full   # Supabase row checks (`--mode research|pm` also)
 ./scripts/fetch-market-data.sh               # Local quotes + macro → data/agent-cache/daily/.../data/
-./scripts/git-commit.sh                      # Commit config / memory (and optional evolution scratch)
+./scripts/git-commit.sh                      # Commit config / docs (not data/agent-cache/)
 ./scripts/weekly-rollup.sh                   # Weekly synthesis prompt (JSON → Supabase)
 ./scripts/monthly-rollup.sh                  # Monthly synthesis prompt
 ./scripts/validate-portfolio.sh              # portfolio.json vs investment-profile.md
 python3 scripts/update_tearsheet.py          # Recovery: rescan scratch tree + refresh Supabase documents/metrics
 python3 scripts/preload-history.py           # OHLCV cache under data/price-history/
+python3 scripts/fetch_research_library.py    # List/fetch research notes from Supabase (category=research)
+python3 scripts/publish_research.py          # Publish deep dive or concept note to Supabase research library
 ```
 
 Legacy markdown-era helpers live under `archive/legacy-scripts/` (reference only).
@@ -40,6 +42,9 @@ supabase/    Schema migrations
 ---
 
 ## Development Guidelines
+
+### Web fetch (all agents)
+When following a URL to read any article, news page, speech transcript, or regulatory filing — use `defuddle parse <url> --md` instead of WebFetch. Strips nav/ads/clutter before the LLM reads, saving input tokens. Not for API endpoints, `.json`, or `.md` files.
 
 ### When editing skill files:
 1. Read the existing file completely before editing

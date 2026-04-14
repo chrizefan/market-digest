@@ -14,6 +14,22 @@ Produces a standalone research note on any single asset, sector, theme, or instr
 
 ---
 
+## Web Fetch Protocol (token-efficient)
+
+When fetching news articles, earnings pages, analyst notes, or any standard web page during Sections A–D:
+
+```bash
+# Prefer defuddle over WebFetch — strips nav/ads/clutter before the LLM reads
+defuddle parse <url> --md
+
+# Install if missing
+npm install -g defuddle
+```
+
+Do NOT use defuddle for `.md` URLs or Supabase/API endpoints — use WebFetch or MCP directly.
+
+---
+
 ## Step 1: Identify the Subject
 
 Determine what's being analyzed:
@@ -99,9 +115,42 @@ Produce a clear research note conclusion:
 
 ## Output Note
 
-Save deep dives to: `data/agent-cache/deep-dives/[DATE]-[ASSET].md`
+### Check for prior research first
 
-Flag if this deep dive changes or validates any thesis in `config/preferences.md`.
+Before running a new deep dive, check Supabase for a recent one on this subject:
 
-Deep dives in `data/agent-cache/deep-dives/` are persistent research notes — they accumulate across sessions as a living research library. When starting a deep dive, check if a recent one (within 7 days) already exists for this subject before running a new one.
+```bash
+python3 scripts/fetch_research_library.py --ticker {TICKER}
+```
+
+If a note exists within 7 days, load it and assess whether a refresh is needed.
+
+### Publish to research library
+
+After completing the deep dive, publish to Supabase research library:
+
+```bash
+python3 scripts/publish_research.py \
+  --key research/deep-dives/{TICKER}-{DATE} \
+  --title "{TICKER} Deep Dive" \
+  --type deep-dive \
+  --ticker {TICKER} \
+  --date {DATE} \
+  --content -   # pipe the markdown note via stdin
+```
+
+Or from a scratch file:
+
+```bash
+python3 scripts/publish_research.py \
+  --key research/deep-dives/{TICKER}-{DATE} \
+  --title "{TICKER} Deep Dive" \
+  --type deep-dive \
+  --file data/agent-cache/deep-dives/{DATE}-{TICKER}.md \
+  --date {DATE}
+```
+
+If this deep dive surfaces a reusable framework or concept (not asset-specific), publish with `--type concept` and key `research/concepts/{SLUG}` instead.
+
+Flag if findings change or validate any active thesis in `config/preferences.md`.
 

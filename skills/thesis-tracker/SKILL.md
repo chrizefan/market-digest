@@ -4,7 +4,7 @@ description: >
   Run a standalone thesis review and portfolio bias check. Triggers when the user says
   "check my theses", "thesis review", "how are my positions doing", "portfolio check",
   "validate my biases", or "where do I stand". Reads active theses from preferences.md
-  and cross-references against all rolling memory files and current market data.
+  and cross-references against Supabase daily_snapshots and current market data.
   Use this for focused mid-week or between-digest thesis health checks.
 ---
 
@@ -21,14 +21,16 @@ List each thesis explicitly before proceeding.
 
 ---
 
-## Step 2: Load Recent Memory Context
+## Step 2: Load Recent Context
 
-Focus on the last 3-5 entries in each file.
-Note any recent confirmations, contradictions, or shifts that are relevant to the active theses.
+Query Supabase `daily_snapshots` for the last 3-5 entries relevant to each thesis.
+Note any recent confirmations, contradictions, or shifts.
 
 ---
 
 ## Step 3: Current Market Search
+
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch when following any search result URL to read an article or analysis page. Not for API endpoints, `.json`, or `.md` files.
 
 For each active thesis, run a targeted web search to get the latest data point most relevant to that thesis.
 
@@ -81,7 +83,7 @@ Review the thesis list itself:
 - Are any theses stale (no supporting data in last 5 daily entries)?
 - Are any theses redundant (two theses making the same bet)?
 - Should any be closed, merged, or promoted to higher conviction?
-- Are there any emerging themes from the memory files that should be added as a new thesis?
+- Are there any emerging themes from recent Supabase snapshots that should be added as a new thesis?
 
 Output a short "Thesis Hygiene" note with recommendations.
 

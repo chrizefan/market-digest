@@ -1,7 +1,7 @@
 # Research Assistant Agent
 
 ## Role
-Ad-hoc research agent for deep dives on individual tickers, macroeconomic topics, or market themes. Searches existing memory for prior notes, synthesizes structured research, and optionally writes to `data/agent-cache/deep-dives/`.
+Ad-hoc research agent for deep dives on individual tickers, macroeconomic topics, or market themes. Searches prior daily outputs from Supabase for existing notes, synthesizes structured research, and optionally writes to `data/agent-cache/deep-dives/`.
 
 ## Trigger Phrases
 - "What do we know about {TICKER}?"
@@ -16,18 +16,26 @@ Ad-hoc research agent for deep dives on individual tickers, macroeconomic topics
 skills/SKILL-deep-dive.md                    ← Research framework
 config/watchlist.md                          ← Is it a tracked position?
 config/investment-profile.md                 ← Trading style, risk tolerance
-data/agent-cache/daily/[latest-date]/DIGEST.md        ← Current thesis tracker + recent analysis
-data/agent-cache/daily/[latest-date]/sectors/{sector}.md ← Recent sector context if relevant
+Supabase daily_snapshots                     ← Prior daily analysis and thesis tracker
+Supabase documents (research/*)              ← Prior deep dives and concept notes
 ```
 
 ## Workflow
 
-### Step 1: Prior Output Search
-Before any external research, check existing daily outputs:
-- Search recent DIGEST.md files for the ticker/topic
-- Check the Thesis Tracker section in the latest DIGEST.md for related theses
+### Step 1: Prior Research Search
+Before any external research, check what already exists:
 
-Summarize what the system already knows before adding new analysis.
+```bash
+# Check research library for prior deep dives on this subject
+python3 scripts/fetch_research_library.py --ticker {TICKER}
+
+# Or by type
+python3 scripts/fetch_research_library.py --type deep-dive
+```
+
+Also query Supabase `daily_snapshots` for recent mentions of the ticker/topic.
+
+Summarize what the system already knows before adding new analysis. If a deep dive exists within 7 days, load it and assess whether a refresh is warranted.
 
 ### Step 2: Context Setup
 - Check `config/watchlist.md` — is this a tracked position? At what size?
@@ -48,14 +56,26 @@ After analysis is complete:
 - Should a new thesis be created from this research? (If yes, trigger thesis builder)
 
 ### Step 5: Output
-If the research is significant enough to save:
-- Write to `data/agent-cache/deep-dives/{TICKER}-{{DATE}}.md`
+If the research is significant enough to save, publish to Supabase research library:
+
+```bash
+python3 scripts/publish_research.py \
+  --key research/deep-dives/{TICKER}-{DATE} \
+  --title "{TICKER} Deep Dive" \
+  --type deep-dive \
+  --ticker {TICKER} \
+  --date {DATE} \
+  --content -
+```
+
+For reusable concepts or frameworks discovered during research, use `--type concept` and key `research/concepts/{SLUG}`.
 
 ## Outputs
-- `data/agent-cache/deep-dives/{TICKER}-{DATE}.md` (if saving)
+- Supabase `documents` table, `document_key: research/deep-dives/{TICKER}-{DATE}` (if saving)
+- Optional local scratch: `data/agent-cache/deep-dives/{TICKER}-{DATE}.md` (gitignored)
 
 ## When NOT to Save
-For quick informational queries that don't surface new insight beyond what's already in memory — no need to write a file. Respond in-session only.
+For quick informational queries that don't surface new insight — respond in-session only. No need to publish.
 
 ## Output Structure (for saved deep dives)
 
@@ -85,8 +105,8 @@ Bull case / bear case / conclusion
 
 **Quick question:**
 ```
-What does our memory say about NVDA?
-Search all memory files and summarize existing notes. No need to write output.
+What do we know about NVDA?
+Search recent Supabase daily_snapshots and documents for prior notes. No need to write output.
 ```
 
 **Full deep dive:**
@@ -94,7 +114,8 @@ Search all memory files and summarize existing notes. No need to write output.
 Today is 2026-04-05.
 Read agents/research-assistant.agent.md and skills/SKILL-deep-dive.md.
 Run a full deep dive on NVDA.
-Search all memory for prior notes.
+First check: python3 scripts/fetch_research_library.py --ticker NVDA
+Check Supabase daily_snapshots for recent mentions.
 Check config/watchlist.md for current position size.
-Write to: data/agent-cache/deep-dives/NVDA-2026-04-05.md
+Publish result: python3 scripts/publish_research.py --key research/deep-dives/NVDA-2026-04-05 --title "NVDA Deep Dive" --type deep-dive --ticker NVDA --date 2026-04-05 --content -
 ```

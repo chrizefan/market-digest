@@ -27,7 +27,6 @@ templates/schemas/JSON schemas for artifacts
 scripts/          Automation (run_db_first.py, materialize_snapshot.py, …)
 data/agent-cache/ Optional local scratch (gitignored except `.gitkeep`); **Supabase** is canonical — see [RUNBOOK.md](RUNBOOK.md)
 archive/          `legacy-scripts/` (retired markdown-era reference only)
-memory/           Append-only ROLLING.md research logs
 docs/research/    Curated research doctrine (see skills/research-library)
 frontend/         Next.js dashboard
 supabase/         SQL migrations

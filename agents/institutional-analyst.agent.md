@@ -19,8 +19,6 @@ skills/inst-institutional-flows/SKILL.md
 skills/inst-hedge-fund-intel/SKILL.md
 config/hedge-funds.md              ← Tracked hedge funds + their known profiles
 config/watchlist.md
-memory/institutional/flows/ROLLING.md
-memory/institutional/hedge-fund/ROLLING.md
 data/agent-cache/daily/{{DATE}}/alt-data.md ← Phase 1 output (if available)
 ```
 
@@ -35,7 +33,6 @@ Execute `skills/inst-institutional-flows/SKILL.md`:
 - Large block trades on watchlist names
 - ETF flow data (SPY, QQQ, IWM, sector ETFs)
 - Options-implied large institutional hedges
-- Read `memory/institutional/flows/ROLLING.md` for recent patterns
 
 ### Step 3: Hedge Fund Intel
 Execute `skills/inst-hedge-fund-intel/SKILL.md`:
@@ -44,7 +41,6 @@ Execute `skills/inst-hedge-fund-intel/SKILL.md`:
 - Prime brokerage positioning data (if available in research feeds)
 - Known fund thesis shifts from research/media
 - Note any significant add/trim/exit patterns
-- Read `memory/institutional/hedge-fund/ROLLING.md` for recent observations
 
 ### Step 4: Synthesize Institutional Output
 Combine flow + hedge fund findings. Identify:
@@ -63,10 +59,6 @@ Structure:
 - Institutional vs. Retail Divergence (if Phase 1 available)
 - Key Signals for Downstream Phases
 
-## Memory Updates
-- Append to `memory/institutional/flows/ROLLING.md`
-- Append to `memory/institutional/hedge-fund/ROLLING.md`
-
 ## Config Reference
 
 `config/hedge-funds.md` contains tracked hedge funds with:
@@ -82,8 +74,6 @@ Today is 2026-04-05.
 Read agents/institutional-analyst.agent.md.
 Read config/hedge-funds.md for tracked funds context.
 Run Phase 2 institutional analysis.
-Read memory/institutional/flows/ROLLING.md and memory/institutional/hedge-fund/ROLLING.md.
 If data/agent-cache/daily/2026-04-05/alt-data.md exists, read it for retail context.
 Write to: data/agent-cache/daily/2026-04-05/institutional.md
-Update both institutional memory files.
 ```

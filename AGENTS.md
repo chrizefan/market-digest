@@ -31,9 +31,12 @@ Operator close-out: python3 scripts/run_db_first.py
 ```bash
 ./scripts/new-day.sh              # Same as run_db_first.py (no folder scaffold)
 python3 scripts/run_db_first.py   # Metrics refresh + execute_at_open + validate_db_first
-./scripts/git-commit.sh           # Commit config/memory (not data/agent-cache/)
+./scripts/git-commit.sh           # Commit config/docs (not data/agent-cache/)
 ./scripts/weekly-rollup.sh        # Prints weekly JSON → Supabase prompt
 ./scripts/monthly-rollup.sh      # Prints monthly JSON → Supabase prompt
+python3 scripts/fetch_research_library.py          # List research library index from Supabase
+python3 scripts/fetch_research_library.py --ticker NVDA  # Filter by ticker
+python3 scripts/publish_research.py --key research/deep-dives/NVDA-DATE --title "..." --type deep-dive --content -
 ```
 
 ---
@@ -41,12 +44,14 @@ python3 scripts/run_db_first.py   # Metrics refresh + execute_at_open + validate
 ## Core Rules
 
 - **Search the web** for prices/yields/news — never use training data cutoff values
+- **Web fetch**: when following a URL to read an article, news page, speech, or filing — use `defuddle parse <url> --md` instead of WebFetch to strip clutter and save tokens. Not for API endpoints, `.json`, or `.md` files.
 - **Read `config/watchlist.md` + `config/investment-profile.md`** at session start
 - **Canonical digest** lives in Supabase (`daily_snapshots.snapshot`, `documents`); do not rely on local `DIGEST.md`
 - **State a bias** (Bullish/Bearish/Neutral/Conflicted) with rationale for every segment
 - Run **Phase 1 (alt-data) BEFORE Phase 3 (macro)** — positioning informs regime read
 - Daily δ: always write mandatory deltas: macro, us-equities, crypto
 - Analysis and bias are fine; specific buy/sell investment advice is not
+- **Token mode**: caveman ON for all process work (announcements, triage, checkpoints, reasoning). Say `normal mode` before authoring any content that publishes to Supabase (narratives, JSON rationale, recommendations). Say `caveman mode` after publishing. Quick test: text going into a DB field → full tokens; text staying in conversation → caveman.
 
 ---
 

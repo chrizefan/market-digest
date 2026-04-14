@@ -11,6 +11,8 @@ Follow the smart money. ETF flows reveal institutional sector rotation in real-t
 ## Inputs
 - `docs/ops/data-sources.md` (ETF flow sources, block trade sources, EDGAR links)
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any ETF flow page, EDGAR filing, block trade site, or news article URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

@@ -12,6 +12,8 @@ Run this skill **before** macro and segment analysis. Its output colors how down
 - `docs/ops/data-sources.md` — full list of tracked accounts and signal sources
 - Previous day's digest snapshot / derived digest markdown (for narrative continuity)
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any article, news page, Reddit thread, or post URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

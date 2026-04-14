@@ -11,6 +11,8 @@ description: Deep-dive analysis of the Materials sector (XLB). Covers chemicals,
 - Commodities output (copper, gold)
 - Macro regime + international/China output
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any commodity price article, China demand signal page, or materials earnings URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

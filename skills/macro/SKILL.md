@@ -29,6 +29,7 @@ description: Run global macro analysis as part of the daily digest. Covers econo
    - Additional FRED series via `mcp_fred_*`: `CPIAUCSL` (CPI), `PCEPI` (PCE), `UNRATE`, `GDP`, `T10Y2Y` (2s10s spread), `T10Y3M` (3m10y spread), `VIXCLS`
 
 > DB-first: do not require `data/agent-cache/daily`. If you need fresh numbers, run `./scripts/fetch-market-data.sh` (writes to legacy archive paths only) or use MCP sources.
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any news article, Fed speech transcript, central bank statement, or economic release page. Not for API endpoints, `.json`, or `.md` files.
 
 ## Research Steps
 

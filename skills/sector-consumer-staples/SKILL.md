@@ -11,6 +11,8 @@ description: Deep-dive analysis of the Consumer Staples sector (XLP). Covers foo
 - Macro regime output from `macro.md`
 - Commodities output (food/energy input costs)
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any earnings release, pricing power article, or consumer staples news URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

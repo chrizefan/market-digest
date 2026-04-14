@@ -11,6 +11,8 @@ Options markets reveal institutional hedging, speculative bets, and gamma dynami
 ## Inputs
 - `docs/ops/data-sources.md` (options/vol sources)
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any options data page, analysis article, or vol commentary URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

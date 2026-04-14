@@ -10,6 +10,8 @@ description: Deep-dive analysis of the Financials sector (XLF, KRE, KBE). Covers
 - `config/preferences.md`
 - Macro regime + bonds output from current session
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any bank earnings page, Fed regulatory announcement, or financial sector news article URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

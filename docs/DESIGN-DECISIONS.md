@@ -19,7 +19,7 @@
 10. [ADR-010: Portfolio.json as Source of Truth for Positions](#adr-010-portfoliojson-as-source-of-truth-for-positions)
 11. [ADR-011: MCP Fallback for Data Fetching](#adr-011-mcp-fallback-for-data-fetching)
 12. [ADR-012: Single-Agent Sequential Execution](#adr-012-single-agent-sequential-execution)
-13. [ADR-013: Memory System Design (ROLLING.md per Segment)](#adr-013-memory-system-design-rollingmd-per-segment)
+13. [ADR-013: Research Continuity Design (Supabase per Segment)](#adr-013-research-continuity-design-supabase-per-segment)
 14. [ADR-014: Sector Tiering (Full vs Compressed)](#adr-014-sector-tiering-full-vs-compressed)
 15. [ADR-015: ETF-Only Investment Universe](#adr-015-etf-only-investment-universe)
 
@@ -581,7 +581,7 @@ Use a **single AI agent session** that sequentially reads different skill files 
 
 ---
 
-## ADR-013: Memory System Design (ROLLING.md per Segment)
+## ADR-013: Research Continuity Design (Supabase per Segment)
 
 **Status**: Accepted
 **Date**: 2026-02
@@ -592,36 +592,24 @@ AI agents start each session with no memory of prior sessions. The pipeline need
 
 ### Decision
 
-Each segment maintains a `memory/{segment}/ROLLING.md` file with daily entries:
-
-```markdown
-## 2026-04-06
-- Regime: Bearish — Iran war, VIX 32
-- Key: 10Y broke 4.80%, yield inversion deepened
-- Signal: CTA forced liquidation in progress
-
-## 2026-04-05
-- Regime: Cautious — pre-escalation
-- Key: 10Y at 4.65%, stable
-```
-
-At the start of each phase, the agent reads the last 3 entries from the relevant ROLLING.md file. This provides enough context for trend identification without overwhelming the context window.
+Agent continuity is provided by Supabase. At session start, each phase queries the prior entries from `daily_snapshots` (bias/regime rows) and `documents` (segment narratives). The last 3 entries per segment provide enough trend context without overwhelming the context window. New outputs are published at session end via `publish_document.py` or `materialize_snapshot.py`.
 
 ### Alternatives Considered
 
 | Alternative | Why Rejected |
 |-------------|-------------|
 | **Full history in prompt** | Context window overflow for mature systems |
+| **Local ROLLING.md files** | Superseded — required git commits after every run; no web access |
 | **Vector database (RAG)** | Adds infrastructure; overkill for sequential daily entries |
-| **No memory** (stateless) | Loses analytical continuity; each day starts cold |
+| **No continuity** (stateless) | Loses analytical continuity; each day starts cold |
 | **Summary-only** (one paragraph) | Loses granular details needed for trend analysis |
 
 ### Trade-offs
 
-- **Pro**: Simple file-based storage; git-versioned
-- **Pro**: Enables "What changed since yesterday?" analysis
-- **Con**: ROLLING.md files grow unbounded (need periodic archival)
-- **Con**: Agent must manually write entries at end of each phase
+- **Pro**: No git commits required after pipeline runs
+- **Pro**: Frontend reads same Supabase data — single source of truth
+- **Pro**: Enables "What changed since yesterday?" analysis via SQL
+- **Con**: Requires Supabase credentials configured in `config/supabase.env`
 
 ---
 

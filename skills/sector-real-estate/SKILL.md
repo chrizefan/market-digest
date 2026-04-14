@@ -11,6 +11,8 @@ description: Deep-dive analysis of the Real Estate sector (XLRE, VNQ). Covers eq
 - Bonds output from current session (10Y yield is the primary pricing factor)
 - Macro regime output
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any REIT earnings page, housing data article, rate sensitivity news, or real estate sector URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

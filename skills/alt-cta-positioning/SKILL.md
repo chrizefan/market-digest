@@ -12,6 +12,8 @@ CTAs (Commodity Trading Advisors) and systematic funds move markets mechanically
 - `docs/ops/data-sources.md` (CFTC, futures positioning sources)
 - Previous session's CTA output for week-over-week comparison
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any CFTC page, COT report URL, or news article. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

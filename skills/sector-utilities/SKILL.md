@@ -11,6 +11,8 @@ description: Deep-dive analysis of the Utilities sector (XLU). Covers regulated 
 - Bonds output from current session (10Y yield is the primary driver)
 - Macro regime output from `macro.md`
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any regulatory filing, rate case decision, utility earnings page, or rate-sensitivity article URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

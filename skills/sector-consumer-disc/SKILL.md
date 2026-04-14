@@ -10,6 +10,8 @@ description: Deep-dive analysis of the Consumer Discretionary sector (XLY). Cove
 - `config/preferences.md`
 - Macro regime output from `macro.md`
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any retail sales article, consumer confidence page, or earnings release URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps

@@ -24,6 +24,8 @@ The world's best investors — both fundamental and systematic — leave signal 
 - **Mixed**: funds disagree
 - **No Signal**: no material intelligence available
 
+> **Web fetch**: use `defuddle parse <url> --md` instead of WebFetch for any media interview page, EDGAR filing, investor letter, or fund commentary URL. Not for API endpoints, `.json`, or `.md` files.
+
 ---
 
 ## Research Steps
