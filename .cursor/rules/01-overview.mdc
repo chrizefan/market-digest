@@ -3,35 +3,56 @@ description: Market Digest system overview, architecture, and behavioral rules
 alwaysApply: true
 ---
 
-# Market Digest — System Overview
+# digiquant-atlas — System Overview
 
 ## Purpose
-A daily market intelligence system producing structured research across equities, macro, crypto, bonds, commodities, forex, and international markets. Uses a 7-phase pipeline where each phase builds on the previous.
+Daily market intelligence system using a **9-phase** AI-orchestrated pipeline. **Supabase-first**: canonical state lives in `daily_snapshots` and `documents` tables. Markdown is derived for display.
 
-## 7-Phase Pipeline
-| Phase | Name | Skill File | Reads From |
-|-------|------|-----------|------------|
-| 1 | Alternative Data | `skills/premarket-pulse/SKILL.md` + alt-data skills | External feeds |
-| 2 | Institutional Intel | `skills/inst-institutional-flows/SKILL.md` + `skills/inst-hedge-fund-intel/SKILL.md` | Phase 1 outputs |
-| 3 | Macro Regime | `skills/macro/SKILL.md` | Phases 1-2 + memory |
-| 4 | Asset Classes | bonds/commodities/forex/crypto/intl skills | Phase 3 macro |
-| 5 | Equities + Sectors | `skills/equity/SKILL.md` + 11 sector skills | Phases 3-4 |
-| 6 | Earnings & Events | `skills/earnings/SKILL.md` | Phases 3-5 |
-| 7 | Synthesis | `skills/digest/SKILL.md` | All phases |
+## 9-Phase Pipeline
+| Phase | Name | Skill File |
+|-------|------|-----------|
+| 1 | Alternative Data | `skills/premarket-pulse/SKILL.md` + alt-data skills |
+| 2 | Institutional Intel | `skills/inst-institutional-flows/SKILL.md` + hedge-fund skill |
+| 3 | Macro Regime | `skills/macro/SKILL.md` |
+| 4 | Asset Classes | bonds / commodities / forex / crypto / intl skills |
+| 5 | Equities + Sectors | `skills/equity/SKILL.md` + 11 sector skills |
+| 6 | Earnings & Events | `skills/earnings/SKILL.md` |
+| 7 | Digest Synthesis | `skills/orchestrator/SKILL.md` Phase 7 |
+| 8 | Portfolio Layer | deliberation → PM → rebalance |
+| 9 | Evolution | post-mortem + proposals |
 
 ## Critical Files
 - `skills/orchestrator/SKILL.md` — read this FIRST for any full session
 - `config/watchlist.md` — tracked assets
 - `config/preferences.md` — trading style + active theses
-- `memory/BIAS-TRACKER.md` — daily cross-asset bias (14-column table)
 - `AGENTS.md` — cross-platform behavioral rules
+
+## Web Fetch Protocol
+When following any URL to read an article, news page, speech, or filing:
+```bash
+defuddle parse <url> --md   # strips nav/ads/clutter before reading
+```
+Do NOT use defuddle for `.md` files, `.json` endpoints, or Supabase/API URLs — use WebFetch directly.
+
+## Token Mode Protocol
+- **Caveman ON** (terse) for: phase announcements, triage decisions, checkpoints, inter-phase reasoning
+- **Normal mode** for: any content publishing to Supabase — narratives, rationale fields, recommendations
+- Switch: say `normal mode` before authoring DB content, `caveman mode` after publishing
+
+## Research Library
+Two-tier knowledge base:
+- **Tier 1** — Static doctrine papers in `docs/research/papers/` (git-tracked, 7 files)
+- **Tier 2** — Dynamic research notes in Supabase `documents` (`document_key: research/*`)
+
+```bash
+python3 scripts/fetch_research_library.py             # index
+python3 scripts/fetch_research_library.py --ticker X  # filter
+python3 scripts/publish_research.py --key research/deep-dives/X-DATE --title "..." --type deep-dive --content -
+```
 
 ## Behavioral Rules
 - **Always** read `config/` files at session start
-- **Always** read corresponding `memory/*/ROLLING.md` before writing research
-- **Never** delete or rewrite memory file history
+- **Always** query Supabase `daily_snapshots` for prior context before each phase
 - **Never** hand-edit canonical rows in Supabase; use `publish_document.py` / `materialize_snapshot.py`
-- Optional local scratch: `data/agent-cache/daily/{{DATE}}/` (gitignored) — use `{{DATE}}` placeholder when documenting file names only
-
-## macOS Critical
-Use `sed -i ""` not `sed -i` — macOS BSD sed requires the extension argument.
+- **Never** treat `data/agent-cache/` scratch as source of truth — Supabase is canonical
+- macOS sed: use `sed -i ""` NOT `sed -i`
