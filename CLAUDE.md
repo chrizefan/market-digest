@@ -17,6 +17,8 @@ python3 scripts/validate_db_first.py --date YYYY-MM-DD --mode full   # Supabase 
 ./scripts/validate-portfolio.sh              # portfolio.json vs investment-profile.md
 python3 scripts/update_tearsheet.py          # Recovery: rescan scratch tree + refresh Supabase documents/metrics
 python3 scripts/preload-history.py           # OHLCV cache under data/price-history/
+python3 scripts/fetch_research_library.py    # List/fetch research notes from Supabase (category=research)
+python3 scripts/publish_research.py          # Publish deep dive or concept note to Supabase research library
 ```
 
 Legacy markdown-era helpers live under `archive/legacy-scripts/` (reference only).

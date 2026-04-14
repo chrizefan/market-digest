@@ -34,6 +34,9 @@ python3 scripts/run_db_first.py   # Metrics refresh + execute_at_open + validate
 ./scripts/git-commit.sh           # Commit config/docs (not data/agent-cache/)
 ./scripts/weekly-rollup.sh        # Prints weekly JSON → Supabase prompt
 ./scripts/monthly-rollup.sh      # Prints monthly JSON → Supabase prompt
+python3 scripts/fetch_research_library.py          # List research library index from Supabase
+python3 scripts/fetch_research_library.py --ticker NVDA  # Filter by ticker
+python3 scripts/publish_research.py --key research/deep-dives/NVDA-DATE --title "..." --type deep-dive --content -
 ```
 
 ---
