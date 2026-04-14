@@ -31,7 +31,7 @@ Operator close-out: python3 scripts/run_db_first.py
 ```bash
 ./scripts/new-day.sh              # Same as run_db_first.py (no folder scaffold)
 python3 scripts/run_db_first.py   # Metrics refresh + execute_at_open + validate_db_first
-./scripts/git-commit.sh           # Commit config/memory (not data/agent-cache/)
+./scripts/git-commit.sh           # Commit config/docs (not data/agent-cache/)
 ./scripts/weekly-rollup.sh        # Prints weekly JSON → Supabase prompt
 ./scripts/monthly-rollup.sh      # Prints monthly JSON → Supabase prompt
 ```

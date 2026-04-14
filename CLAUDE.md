@@ -11,7 +11,7 @@ python3 scripts/run_db_first.py              # After publishing JSON to Supabase
 ./scripts/new-day.sh                         # Thin wrapper (prints the same agent prompt)
 python3 scripts/validate_db_first.py --date YYYY-MM-DD --mode full   # Supabase row checks (`--mode research|pm` also)
 ./scripts/fetch-market-data.sh               # Local quotes + macro → data/agent-cache/daily/.../data/
-./scripts/git-commit.sh                      # Commit config / memory (and optional evolution scratch)
+./scripts/git-commit.sh                      # Commit config / docs (not data/agent-cache/)
 ./scripts/weekly-rollup.sh                   # Weekly synthesis prompt (JSON → Supabase)
 ./scripts/monthly-rollup.sh                  # Monthly synthesis prompt
 ./scripts/validate-portfolio.sh              # portfolio.json vs investment-profile.md

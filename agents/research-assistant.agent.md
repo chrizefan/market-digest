@@ -1,7 +1,7 @@
 # Research Assistant Agent
 
 ## Role
-Ad-hoc research agent for deep dives on individual tickers, macroeconomic topics, or market themes. Searches existing memory for prior notes, synthesizes structured research, and optionally writes to `data/agent-cache/deep-dives/`.
+Ad-hoc research agent for deep dives on individual tickers, macroeconomic topics, or market themes. Searches prior daily outputs from Supabase for existing notes, synthesizes structured research, and optionally writes to `data/agent-cache/deep-dives/`.
 
 ## Trigger Phrases
 - "What do we know about {TICKER}?"
@@ -55,7 +55,7 @@ If the research is significant enough to save:
 - `data/agent-cache/deep-dives/{TICKER}-{DATE}.md` (if saving)
 
 ## When NOT to Save
-For quick informational queries that don't surface new insight beyond what's already in memory — no need to write a file. Respond in-session only.
+For quick informational queries that don't surface new insight beyond what's already known — no need to write a file. Respond in-session only.
 
 ## Output Structure (for saved deep dives)
 
@@ -85,8 +85,8 @@ Bull case / bear case / conclusion
 
 **Quick question:**
 ```
-What does our memory say about NVDA?
-Search all memory files and summarize existing notes. No need to write output.
+What do we know about NVDA?
+Search recent Supabase daily_snapshots and documents for prior notes. No need to write output.
 ```
 
 **Full deep dive:**
@@ -94,7 +94,7 @@ Search all memory files and summarize existing notes. No need to write output.
 Today is 2026-04-05.
 Read agents/research-assistant.agent.md and skills/SKILL-deep-dive.md.
 Run a full deep dive on NVDA.
-Search all memory for prior notes.
+Check Supabase daily_snapshots for prior analysis.
 Check config/watchlist.md for current position size.
 Write to: data/agent-cache/deep-dives/NVDA-2026-04-05.md
 ```
