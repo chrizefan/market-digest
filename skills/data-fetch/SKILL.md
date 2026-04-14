@@ -29,7 +29,7 @@ layer, every agent reads the same source-of-truth JSON/Markdown files fetched ri
 
 | Script | What It Does |
 |--------|-------------|
-| `scripts/preload-history.py` | **One-time / weekly**: bulk-downloads 2yr OHLCV for all watchlist tickers and caches them as CSV files in `data/price-history/`. Run once to seed the cache; re-run with `--refresh` to update stale tickers. |
+| `scripts/preload-history.py` | **Daily (CI)**: `--supabase --supabase-sync` gap-fills from latest `price_history` per ticker and backfills new symbols (`--new-ticker-period max`). **Local**: `--period 2y` etc. or `--refresh` for cache-only stale refresh. |
 | `scripts/fetch-quotes.py [date]` | **Daily**: loads cached history, fetches only the latest missing days, appends to cache, then computes RSI(14), MACD, SMA20/50/200, ATR(14), Bollinger Bands via pandas-ta. Falls back to 3-month bulk download if no cache exists. |
 | `scripts/fetch-macro.py [date]` | Fetches full US yield curve (US Treasury public XML API, no auth) + VIX, SKEW, crude, gold, NatGas, BTC, ETH, FX pairs via yfinance |
 | `scripts/fetch-market-data.sh [date]` | Orchestrator — auto-seeds cache on first run, then runs both fetch scripts, validates scratch JSON under `data/agent-cache/daily/.../data/`, prints summary. Pass `--preload` to force a full cache rebuild. |
@@ -80,15 +80,15 @@ DB-first preference: read from Supabase `price_history`, `price_technicals`, and
 
 ## Supabase as Primary Data Source (post-April 2026)
 
-A GitHub Actions workflow runs every trading day at **6:00 PM ET** (right after the data settles
-post-close). It fetches OHLCV for all 56 watchlist tickers and computes 35 TA indicators, writing
+A GitHub Actions workflow runs every trading day at **00:00 UTC** (~**8:00 PM Eastern** during EDT,
+~**7:00 PM Eastern** during EST — after US cash close). It fetches OHLCV for all 56 watchlist tickers and computes 35 TA indicators, writing
 both into Supabase. The same job then ingests **macro / FX / sentiment / official Treasury curve** into `macro_series_observations`. **SEC issuer filings** are **not** batch-loaded (ETF-heavy watchlist); agents check EDGAR **ad hoc** during research / delta / deep dives when a stock or sector story warrants it (see `skills/research-daily`, `skills/daily-delta`, `skills/deep-dive`; optional **`sec-edgar`** MCP).
 
 ### Tables
 
 | Table | Contents | Refresh |
 |-------|----------|---------|
-| `price_history` | OHLCV rows per ticker per date | Daily, 6 PM ET |
+| `price_history` | OHLCV rows per ticker per date | Daily, 00:00 UTC (~8 PM ET EDT) |
 | `price_technicals` | 35 TA indicators per ticker per date | Daily, after price_history |
 | `macro_series_observations` | FRED, Frankfurter, crypto F&G, **`us_treasury`** / **`treasury_market`** (`YC/…`) | Daily, after price_technicals |
 

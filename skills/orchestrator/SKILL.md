@@ -76,7 +76,7 @@ Then load the following. Do NOT summarize to the user — just internalize:
 There are three data sources in priority order:
 
 **Option A — Supabase `price_technicals` (preferred — zero-cost, no scripts needed)**
-Check if the GitHub Actions workflow has run recently (fires at 6 PM ET every trading day):
+Check if the GitHub Actions workflow has run recently (fires weekdays at **00:00 UTC**, ~8 PM Eastern during EDT):
 ```sql
 SELECT MAX(date) AS latest_date, COUNT(DISTINCT ticker) AS tickers
 FROM price_technicals;

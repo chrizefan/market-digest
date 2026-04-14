@@ -1,26 +1,14 @@
 name: Daily Price Update
 
-# Runs each trading day at 6:00 PM ET (22:00 UTC) — ~2 hours after NYSE close.
-# This ensures all same-day OHLCV data is settled before upsert, and the full
-# indicator table is ready for the next morning's digest run.
-# Manual trigger also available for backfills or reruns.
+# Runs each trading day at 00:00 UTC (GitHub Actions cron is UTC-only).
+# That is ~8:00 PM Eastern during EDT and ~7:00 PM Eastern during EST — still
+# well after US cash close; also lines up with the common UTC-day boundary for
+# 24/7 markets (e.g. crypto daily bars at 00:00 UTC).
+# Manual "Run workflow" uses the same steps as the schedule (no extra inputs).
 on:
   schedule:
-    - cron: "0 22 * * 1-5"   # Mon–Fri 22:00 UTC = 6:00 PM ET (≈2h after NYSE close)
+    - cron: "0 0 * * 1-5"   # Mon–Fri 00:00 UTC
   workflow_dispatch:
-    inputs:
-      period:
-        description: "yfinance period (e.g. 1d, 5d, 1mo, 2y)"
-        required: false
-        default: "5d"
-      ticker:
-        description: "Single ticker to update (leave blank for full watchlist)"
-        required: false
-        default: ""
-      backfill_macro:
-        description: "One-time — full FRED + Treasury curve history (slow). Otherwise incremental."
-        type: boolean
-        default: false
 
 jobs:
   update-prices:
@@ -44,52 +32,22 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # Scheduled run: refresh any tickers with stale cache (>1 day)
-      - name: Refresh stale tickers (scheduled)
-        if: github.event_name == 'schedule'
+      # Gap-fill from latest Supabase date per watchlist ticker to UTC today;
+      # tickers with no rows get a full-history pull (default --new-ticker-period max).
+      - name: Sync price history (watchlist)
         run: |
-          python3 scripts/preload-history.py \
-            --refresh \
-            --max-stale-days 1 \
-            --supabase
+          python3 scripts/preload-history.py --supabase --supabase-sync
 
-      # Manual run: respect workflow_dispatch inputs
-      - name: Update prices (manual dispatch)
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          ARGS="--supabase --period ${{ github.event.inputs.period }}"
-          if [ -n "${{ github.event.inputs.ticker }}" ]; then
-            ARGS="$ARGS --ticker ${{ github.event.inputs.ticker }}"
-          else
-            ARGS="$ARGS --refresh --max-stale-days 1"
-          fi
-          python3 scripts/preload-history.py $ARGS
-
-      # After prices are up-to-date, recompute TA indicators for last 7 days.
       # 7 days covers: Mon catching up Fri's row, rolling indicators that depend
       # on prior values (MACD histogram, Stochastic), and any weekend data gaps.
-      - name: Compute TA indicators (scheduled)
-        if: github.event_name == 'schedule'
+      - name: Compute TA indicators
         run: |
           python3 scripts/compute-technicals.py \
             --days 7 \
             --supabase
 
-      - name: Compute TA indicators (manual dispatch)
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          TICKER_ARG=""
-          if [ -n "${{ github.event.inputs.ticker }}" ]; then
-            TICKER_ARG="--ticker ${{ github.event.inputs.ticker }}"
-          fi
-          python3 scripts/compute-technicals.py \
-            --days 30 \
-            --supabase \
-            $TICKER_ARG
-
       # Macro / FX / sentiment / Treasury (see RUNBOOK, config/macro_series.yaml).
-      - name: Ingest macro & Treasury (scheduled)
-        if: github.event_name == 'schedule'
+      - name: Ingest macro & Treasury
         run: |
           if [ -n "${FRED_API_KEY:-}" ]; then
             python3 scripts/ingest_fred.py --supabase
@@ -99,30 +57,6 @@ jobs:
           python3 scripts/ingest_fx_frankfurter.py --supabase
           python3 scripts/ingest_crypto_fng.py --supabase
           python3 scripts/ingest_treasury_curve.py --supabase
-
-      - name: Ingest macro & Treasury (manual)
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          BF="${{ github.event.inputs.backfill_macro }}"
-          if [ "$BF" = "true" ]; then
-            if [ -n "${FRED_API_KEY:-}" ]; then
-              python3 scripts/ingest_fred.py --supabase --backfill
-            else
-              echo "::warning::FRED_API_KEY not set — skipping FRED backfill"
-            fi
-            python3 scripts/ingest_fx_frankfurter.py --supabase --backfill
-            python3 scripts/ingest_crypto_fng.py --supabase --backfill
-            python3 scripts/ingest_treasury_curve.py --supabase --backfill
-          else
-            if [ -n "${FRED_API_KEY:-}" ]; then
-              python3 scripts/ingest_fred.py --supabase
-            else
-              echo "::warning::FRED_API_KEY not set — skipping FRED ingest"
-            fi
-            python3 scripts/ingest_fx_frankfurter.py --supabase
-            python3 scripts/ingest_crypto_fng.py --supabase
-            python3 scripts/ingest_treasury_curve.py --supabase
-          fi
 
       - name: Verify row counts
         run: |

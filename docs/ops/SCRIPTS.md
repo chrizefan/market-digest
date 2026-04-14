@@ -23,7 +23,7 @@ Operator truth for **when to run what** remains [`RUNBOOK.md`](../../RUNBOOK.md)
 
 | Script | Role |
 |--------|------|
-| [`scripts/preload-history.py`](../../scripts/preload-history.py) | OHLCV → local cache and/or Supabase; **`--incremental-supabase`** for daily Yahoo tail + merge; **`--period max`** (no incremental) for full backfill |
+| [`scripts/preload-history.py`](../../scripts/preload-history.py) | OHLCV → local cache and/or Supabase; **`--supabase --supabase-sync`** for daily gap-fill + new-ticker full history (`--new-ticker-period`, default `max`); legacy **`--period` / `--refresh`** for ad-hoc local runs |
 | [`scripts/compute-technicals.py`](../../scripts/compute-technicals.py) | TA rows in `price_technicals` |
 | [`scripts/refresh_performance_metrics.py`](../../scripts/refresh_performance_metrics.py) | Post-close: `positions` metrics, `nav_history`, `portfolio_metrics`; `--fill-calendar-through` carries snapshots forward per calendar day |
 | [`scripts/ingest_fred.py`](../../scripts/ingest_fred.py) | FRED → `macro_series_observations`; **`--supabase`** incremental by default, **`--backfill`** full history from YAML |

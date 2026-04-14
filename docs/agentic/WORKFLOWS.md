@@ -8,7 +8,7 @@ Step-by-step procedures for every recurring workflow.
 
 | Workflow | Schedule | Role |
 |----------|----------|------|
-| [`daily-price-update.yml`](../../.github/workflows/daily-price-update.yml) | **Mon–Fri 22:00 UTC** (~6:00 PM US Eastern after cash close, per workflow comments) | [`preload-history.py --incremental-supabase`](../../scripts/preload-history.py) → `price_technicals` → [`refresh_performance_metrics.py --fill-calendar-through`](../../scripts/refresh_performance_metrics.py). Manual **full history** = one-shot `--period max`. Does **not** run digest, `update_tearsheet.py`, or research. |
+| [`daily-price-update.yml`](../../.github/workflows/daily-price-update.yml) | **Mon–Fri 00:00 UTC** (~8:00 PM Eastern during EDT, ~7:00 PM Eastern during EST; after US cash close, per workflow comments) | [`preload-history.py --supabase --supabase-sync`](../../scripts/preload-history.py) → `price_technicals` → macro ingests. Manual dispatch = same as schedule (no inputs). Does **not** run digest, `update_tearsheet.py`, or research. |
 | [`ci.yml`](../../.github/workflows/ci.yml), [`deploy.yml`](../../.github/workflows/deploy.yml) | On push / manual | Build and deploy. |
 
 **Weekly digest:** no scheduled GitHub job — use [`scripts/weekly-rollup.sh`](../../scripts/weekly-rollup.sh) when you need the operator prompt. **Sunday baseline** vs weekdays is still defined in [`run_db_first.py`](../../scripts/run_db_first.py).

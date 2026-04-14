@@ -10,6 +10,7 @@ Usage:
     python3 scripts/preload-history.py --period 5y      # all watchlist, 5y
     python3 scripts/preload-history.py --ticker SPY     # single ticker only
     python3 scripts/preload-history.py --refresh        # re-fetch tickers whose cache is >7d stale
+    python3 scripts/preload-history.py --supabase --supabase-sync   # daily: gap-fill + new-ticker backfill
 """
 
 import argparse
@@ -17,7 +18,8 @@ import os
 import re
 import sys
 import time
-from datetime import datetime, timedelta
+from collections import defaultdict
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -180,6 +182,241 @@ def download_full_history(tickers: list[str], period: str = "2y",
     return result
 
 
+def download_date_range(
+    tickers: list[str],
+    start: date,
+    end_exclusive: date,
+    batch_size: int = 25,
+) -> dict[str, pd.DataFrame]:
+    """Download OHLCV for tickers for [start, end_exclusive). yfinance `end` is exclusive."""
+    if not tickers:
+        return {}
+    batches = [tickers[i : i + batch_size] for i in range(0, len(tickers), batch_size)]
+    result: dict[str, pd.DataFrame] = {}
+    start_s = start.strftime("%Y-%m-%d")
+    end_s = end_exclusive.strftime("%Y-%m-%d")
+
+    for i, batch in enumerate(batches, 1):
+        print(f"  Batch {i}/{len(batches)} ({len(batch)} tickers) {start_s} … {end_s} …")
+        try:
+            raw = yf.download(batch, start=start_s, end=end_s, progress=False, threads=True)
+            if raw.empty:
+                continue
+            if isinstance(raw.columns, pd.MultiIndex):
+                for t in batch:
+                    try:
+                        df = raw.xs(t, level=1, axis=1).copy()
+                        df = df.dropna(how="all")
+                        if not df.empty:
+                            result[t] = df
+                    except KeyError:
+                        pass
+            else:
+                df = raw.copy().dropna(how="all")
+                if not df.empty:
+                    result[batch[0]] = df
+        except Exception as e:
+            print(f"    ⚠️  Batch {i} failed: {e}")
+        if i < len(batches):
+            time.sleep(0.5)
+
+    return result
+
+
+def _yahoo_to_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
+    """Normalize yfinance frame to Open/High/Low/Close/Volume with naive date index."""
+    if df.empty:
+        return df
+    out = df.copy()
+    out.index = pd.to_datetime(out.index).tz_localize(None)
+    out.columns = [str(c).capitalize() for c in out.columns]
+    cols = [c for c in ["Open", "High", "Low", "Close", "Volume"] if c in out.columns]
+    return out[cols].dropna(how="all")
+
+
+def _supabase_rows_to_df(rows: list[dict]) -> pd.DataFrame:
+    if not rows:
+        return pd.DataFrame()
+    df = pd.DataFrame(rows)
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.set_index("date")
+    df = df.rename(
+        columns={
+            "open": "Open",
+            "high": "High",
+            "low": "Low",
+            "close": "Close",
+            "volume": "Volume",
+        }
+    )
+    for c in ["Open", "High", "Low", "Close", "Volume"]:
+        if c not in df.columns:
+            df[c] = float("nan")
+    return df[["Open", "High", "Low", "Close", "Volume"]]
+
+
+def _merge_ohlcv(old: pd.DataFrame, new: pd.DataFrame) -> pd.DataFrame:
+    if old is None or old.empty:
+        return new.sort_index() if new is not None and not new.empty else pd.DataFrame()
+    if new is None or new.empty:
+        return old.sort_index()
+    merged = pd.concat([old, new])
+    merged = merged[~merged.index.duplicated(keep="last")]
+    return merged.sort_index()
+
+
+def _get_supabase_client():
+    try:
+        from supabase import create_client
+    except ImportError:
+        print("  ⚠️  supabase-py not installed — pip install supabase")
+        return None
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(ROOT / "config" / "supabase.env")
+    except ImportError:
+        pass
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_SERVICE_KEY")
+    if not url or not key:
+        print("  ⚠️  SUPABASE_URL / SUPABASE_SERVICE_KEY not set")
+        return None
+    return create_client(url, key)
+
+
+def _latest_date_supabase(sb, ticker: str) -> date | None:
+    r = (
+        sb.table("price_history")
+        .select("date")
+        .eq("ticker", ticker)
+        .order("date", desc=True)
+        .limit(1)
+        .execute()
+    )
+    if not r.data:
+        return None
+    d = r.data[0]["date"]
+    if isinstance(d, str):
+        return date.fromisoformat(d[:10])
+    if hasattr(d, "date") and callable(getattr(d, "date", None)):
+        return d.date()
+    return None
+
+
+def _load_price_history_supabase(sb, ticker: str) -> pd.DataFrame:
+    """Full series for one ticker (paginated)."""
+    page = 1000
+    offset = 0
+    rows: list[dict] = []
+    while True:
+        r = (
+            sb.table("price_history")
+            .select("date,open,high,low,close,volume")
+            .eq("ticker", ticker)
+            .order("date")
+            .range(offset, offset + page - 1)
+            .execute()
+        )
+        chunk = r.data or []
+        if not chunk:
+            break
+        rows.extend(chunk)
+        if len(chunk) < page:
+            break
+        offset += page
+    return _supabase_rows_to_df(rows)
+
+
+def run_supabase_sync(new_ticker_period: str) -> None:
+    """Gap-fill each watchlist ticker to UTC today; full-history fetch if no rows in Supabase."""
+    sb = _get_supabase_client()
+    if sb is None:
+        sys.exit(1)
+
+    tickers = parse_tickers_from_watchlist()
+    print(f"  Parsed {len(tickers)} tickers from config/watchlist.md")
+
+    utc_today = datetime.now(timezone.utc).date()
+    end_exclusive = utc_today + timedelta(days=1)
+
+    new_tickers: list[str] = []
+    gaps: dict[tuple[date, date], list[str]] = defaultdict(list)
+
+    for t in tickers:
+        latest = _latest_date_supabase(sb, t)
+        if latest is None:
+            new_tickers.append(t)
+            continue
+        start = latest + timedelta(days=1)
+        if start >= end_exclusive:
+            print(f"    ⏭️  {t:6s}  up to date (latest {latest})")
+            continue
+        gaps[(start, end_exclusive)].append(t)
+
+    sb_total = 0
+    saved = 0
+
+    # New symbols: pull as much history as Yahoo allows (default max).
+    if new_tickers:
+        print(f"\n  New tickers (no price_history): {len(new_tickers)} — period={new_ticker_period}")
+        print()
+        data = download_full_history(new_tickers, period=new_ticker_period)
+        for t in new_tickers:
+            df = data.get(t)
+            if df is not None and not df.empty:
+                df = _yahoo_to_ohlcv(df)
+                if not df.empty:
+                    save_cache(t, df)
+                    sb_rows = upsert_to_supabase(t, df)
+                    sb_total += sb_rows
+                    saved += 1
+                    print(
+                        f"    ✅ {t:6s}  {len(df):>4d} rows  "
+                        f"{df.index.min().strftime('%Y-%m-%d')} → {df.index.max().strftime('%Y-%m-%d')}  "
+                        f"↑Supabase {sb_rows}r"
+                    )
+                else:
+                    print(f"    ❌ {t:6s}  empty after normalize")
+            else:
+                print(f"    ❌ {t:6s}  no data returned")
+
+    # Existing: fetch [latest+1, today] and merge with Supabase history.
+    for (start, end_ex), group in sorted(gaps.items()):
+        print(f"\n  Gap-fill {len(group)} tickers  {start} → {end_ex} (exclusive end)")
+        print()
+        raw = download_date_range(group, start, end_ex)
+        for t in group:
+            old_df = _load_price_history_supabase(sb, t)
+            new_raw = raw.get(t)
+            if new_raw is None or new_raw.empty:
+                print(f"    ⚠️  {t:6s}  no new Yahoo rows — leaving DB/cache as-is")
+                if not old_df.empty:
+                    save_cache(t, old_df)
+                continue
+            new_df = _yahoo_to_ohlcv(new_raw)
+            if new_df.empty:
+                print(f"    ⚠️  {t:6s}  empty after normalize")
+                continue
+            new_df = new_df[new_df.index >= pd.Timestamp(start)]
+            merged = _merge_ohlcv(old_df, new_df)
+            if merged.empty:
+                print(f"    ❌ {t:6s}  merge empty")
+                continue
+            save_cache(t, merged)
+            sb_rows = upsert_to_supabase(t, new_df) if not new_df.empty else 0
+            sb_total += sb_rows
+            saved += 1
+            print(
+                f"    ✅ {t:6s}  cache {len(merged):>4d} rows  "
+                f"{merged.index.min().strftime('%Y-%m-%d')} → {merged.index.max().strftime('%Y-%m-%d')}  "
+                f"  ↑Supabase +{sb_rows}r"
+            )
+
+    print()
+    print(f"  Synced {saved} tickers; upserted {sb_total} rows to Supabase price_history")
+    print("  Done.")
+
+
 # ── main ─────────────────────────────────────────────────────────────────────
 
 def main():
@@ -194,7 +431,25 @@ def main():
                         help="Staleness threshold for --refresh mode (default: 7)")
     parser.add_argument("--supabase", action="store_true",
                         help="Also upsert fetched data to Supabase price_history table")
+    parser.add_argument(
+        "--supabase-sync",
+        action="store_true",
+        help="Watchlist only: use latest Supabase date per ticker to gap-fill to UTC today, "
+        "or fetch full history (see --new-ticker-period) when no rows exist. Implies --supabase.",
+    )
+    parser.add_argument(
+        "--new-ticker-period",
+        default="max",
+        help="yfinance period for tickers with no price_history rows (default: max)",
+    )
     args = parser.parse_args()
+
+    if args.supabase_sync:
+        if args.refresh:
+            parser.error("--supabase-sync cannot be combined with --refresh")
+        if args.ticker:
+            parser.error("--supabase-sync cannot be combined with --ticker")
+        args.supabase = True
 
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -202,8 +457,16 @@ def main():
     print("║  preload-history.py — Price History Cache  ║")
     print("╚════════════════════════════════════════════╝")
     print(f"  Cache dir : {CACHE_DIR}")
-    print(f"  Period    : {args.period}")
+    if args.supabase_sync:
+        print("  Mode      : supabase-sync (gap-fill + new-ticker backfill)")
+        print(f"  New tickers use period: {args.new_ticker_period}")
+    else:
+        print(f"  Period    : {args.period}")
     print()
+
+    if args.supabase_sync:
+        run_supabase_sync(args.new_ticker_period)
+        return
 
     # Determine ticker list
     if args.ticker:
