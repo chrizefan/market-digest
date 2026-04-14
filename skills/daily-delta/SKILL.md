@@ -220,38 +220,73 @@ If a sector materially changed, update the relevant row(s) in `sector_scorecard`
 
 ---
 
-## Phase 6 — Research baseline manifest + per-document deltas (Track B)
+## Phase 6 — Research segment delta documents
 
-> **Optional but recommended** when you publish **segment JSON** alongside the digest (`sectors/…`, phase outputs, etc.). Keeps continuity without rewriting every file; the PM layer can read **`research_changelog`** for “what changed.”
+> **REQUIRED on all delta days.** Each segment document is a **full evolved document** — not a patch summary, not a change log. The delta document IS the complete research analysis for that day, derived from yesterday's document by applying targeted section updates. The library's diff view shows what changed between days automatically.
 
-### Step 6.1 — Load the week manifest
-- From Supabase `documents`, load `research-manifest/{{WEEK_ANCHOR_DATE}}.json` (or the latest row with `doc_type: research_baseline_manifest` for the current ISO week).
-- If **missing** (first run of the pattern): on **baseline days** publish the manifest after Phase 5 completes; on **delta days** skip Phase 6 or run a one-off manifest from the prior Sunday baseline.
+### Delta Document Architecture (CRITICAL — READ BEFORE AUTHORING)
 
-### Step 6.2 — Per manifest entry, triage and publish `document_delta`
-For each `documents[]` entry in the manifest:
-- Compare live data vs **yesterday’s** materialized doc for that `document_key` (Supabase `documents` with `date = prior calendar day` and the same key, or the key with the prior date embedded in the path — see [`scripts/fold_document_deltas.py`](../../scripts/fold_document_deltas.py)).
-- Emit **`document_delta`** JSON (schema: [`templates/schemas/document-delta.schema.json`](../../templates/schemas/document-delta.schema.json)):
-  - **`status: skipped`** + `skip_reason` when nothing material changed.
-  - **`status: updated`** + minimal `ops` (`set` / `append` / `remove`, JSON Pointer paths) against **yesterday’s** payload. Avoid huge root `set` unless `baseline_error_correction: true` (weekly escape hatch).
-- Validate: `python3 scripts/validate_artifact.py -` (stdin)  
-- Publish with **unique** `document_key`, e.g. `document-deltas/{{DATE}}/{{RUN_SUFFIX}}/{{slug}}.json`, `--doc-type-label "Document Delta"`, `--category output`.
+A delta document must be a **complete, readable research document** for the given day:
 
-### Step 6.3 — Fold into materialized research docs
-Operator (after all `document_delta` rows for `{{DATE}}` exist):
+```markdown
+# Macro Analysis — 2026-04-08
+> Delta #3 from baseline 2026-04-05 | Wednesday | [Day headline]
 
-```bash
-python3 scripts/fold_document_deltas.py --date {{DATE}}
+## MACRO REGIME CLASSIFICATION
+[Complete updated regime table — replace changed rows, carry forward unchanged]
+
+## Key Macro Data Points
+[Updated data tables with today's prices, yields, levels]
+
+## Geopolitical Risk Assessment
+[Updated narrative — replace stale sections, append new developments]
+
+## Risk Watch — Next 24-72 Hours
+[Fresh risk items for this specific day]
 ```
 
-This upserts **folded full JSON** per `target_document_key` and publishes **`research-changelog/{{DATE}}.json`** for PM/analyst consumption (unless `--skip-changelog`).
+**NEVER produce this format (wrong):**
+- A "Change Summary" listing what changed (brief diff log with bullets)
+- An empty payload with only schema metadata (`date`, `segment`, `baseline_date`)
+- A document shorter than the baseline — all sections must be present
+
+### Rules for Authoring Delta Documents
+
+1. **Load yesterday's document first** — `documents` where `date = prior_calendar(DATE)` and same `document_key`. Use the baseline if no prior delta exists this week.
+2. **Carry forward unchanged sections** — If a section has no new data, keep its content from yesterday verbatim. Only rewrite what actually changed.
+3. **Replace specific sections** — Update the relevant tables/paragraphs for today's data (prices, yields, events, regime classification).
+4. **Append new developments** — Add today's events to narrative sections rather than removing yesterday's context.
+5. **Never trim to a summary** — The output must be a complete research document, readable standalone.
+6. **Always publish, even for carried-forward segments** — Update the header date, risk watch, and any data points that shifted. Never leave an empty payload.
+
+### Step 6.1 — Load yesterday's documents
+For each segment, load the prior calendar day's full document from Supabase:
+```sql
+SELECT payload FROM documents
+WHERE document_key = 'deltas/macro.delta.md'
+  AND date = prior_calendar_date
+ORDER BY date DESC LIMIT 1;
+```
+If no prior delta exists for this week, use the baseline (`macro.md`, date = WEEK_ANCHOR_DATE).
+
+### Step 6.2 — Author full evolved delta documents
+For each research segment, produce the complete document and publish:
+- `document_key`: `deltas/macro.delta.md`, `deltas/sectors/energy.delta.md`, etc.
+- `date`: today's date
+- `run_type`: `delta`
+- `payload.baseline_date`: The Sunday week anchor date
+- `payload.content`: The **full markdown document** for this day
+
+### Step 6.3 — Fold into materialized research docs (optional)
+```bash
+python3 scripts/fold_document_deltas.py --date DATE
+```
+Upserts folded full JSON per target_document_key and publishes research-changelog for PM consumption.
 
 ### Step 6.4 — Digest delta-request (Phase 7)
-Author **`delta-request.json`** with **narrow** ops; seed `changed_paths` from which manifest targets were **updated** (not skipped) plus usual digest paths. Then **Phase 7B** `materialize_snapshot` using **`{{MATERIALIZE_BASELINE_DATE}}`** (prior calendar day), envelope `baseline_date` = **`{{WEEK_ANCHOR_DATE}}`**.
+Author delta-request.json with narrow ops; seed changed_paths from segments that were updated. Then Phase 7B materialize_snapshot using the prior calendar day as baseline-date, with baseline_date = WEEK_ANCHOR_DATE in the envelope.
 
 **Cowork-only task file:** [`cowork/tasks/research-document-deltas.md`](../../cowork/tasks/research-document-deltas.md) if you schedule research folds separately from PM.
-
----
 
 ## Phase 7 — Emit Delta Request JSON (authoritative weekday output)
 
