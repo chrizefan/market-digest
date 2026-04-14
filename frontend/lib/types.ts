@@ -132,6 +132,17 @@ export interface DashboardPositionEvent {
   reason: string | null;
 }
 
+/** On-demand price + events for an expanded position row chart. */
+export interface PositionPriceChartData {
+  priceHistory: Array<{ date: string; close: number }>;
+  events: Array<{
+    date: string;
+    event: 'OPEN' | 'EXIT' | 'REBALANCE' | 'HOLD';
+    price: number | null;
+    reason: string | null;
+  }>;
+}
+
 /** Latest row from portfolio_metrics (server-computed; optional). */
 export interface ServerPortfolioMetrics {
   date: string | null;

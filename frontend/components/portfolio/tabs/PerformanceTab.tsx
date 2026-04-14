@@ -1,9 +1,8 @@
 'use client';
 
-import { useMemo, useState, useCallback, useEffect, Suspense } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useDashboard } from '@/lib/dashboard-context';
-import PageHeader from '@/components/page-header';
 import { StatCard, formatPct, pnlColor } from '@/components/ui';
 import { TrendingUp, BarChart3, Activity, Target, ChevronDown, ChevronUp } from 'lucide-react';
 import type { BenchmarkHistoryMap, NavChartPoint, PerfChartPoint } from '@/lib/types';
@@ -46,7 +45,8 @@ function periodReturnPct(snaps: NavChartPoint[]): number | null {
   return (last / first - 1) * 100;
 }
 
-function PerformanceContent() {
+/** Portfolio tab: full performance workspace (embedded under shared Portfolio shell). */
+export default function PerformanceTab() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -56,6 +56,7 @@ function PerformanceContent() {
   const setRange = useCallback(
     (k: DateRangeKey) => {
       const p = new URLSearchParams(searchParams.toString());
+      p.set('tab', 'performance');
       p.set('range', k);
       router.replace(`${pathname}?${p.toString()}`, { scroll: false });
     },
@@ -65,6 +66,7 @@ function PerformanceContent() {
   const setView = useCallback(
     (v: PerformanceChartView) => {
       const p = new URLSearchParams(searchParams.toString());
+      p.set('tab', 'performance');
       p.set('view', v);
       router.replace(`${pathname}?${p.toString()}`, { scroll: false });
     },
@@ -222,11 +224,11 @@ function PerformanceContent() {
 
   if (loading)
     return (
-      <div className="flex items-center justify-center h-screen text-text-secondary">Loading…</div>
+      <div className="flex items-center justify-center min-h-[40vh] text-text-secondary">Loading…</div>
     );
   if (error || !data || !metrics)
     return (
-      <div className="flex items-center justify-center h-screen text-fin-red">
+      <div className="flex items-center justify-center min-h-[40vh] text-fin-red">
         {error || 'Failed to load'}
       </div>
     );
@@ -236,93 +238,76 @@ function PerformanceContent() {
     range === 'itd' ? formatPct(metrics.portfolio_pnl) : formatPct(rangeReturn);
 
   return (
-    <>
-      <PageHeader title="Performance" />
-      <div className="p-10 max-w-[1400px] mx-auto w-full space-y-6 max-md:p-4">
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <PerformanceDateRange value={range} onChange={setRange} />
-        </div>
-
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            label="Portfolio NAV"
-            value={fmtNav(latestNav)}
-            icon={TrendingUp}
-            iconColor="text-fin-blue"
-            subtitle="End of range (level)"
-          />
-          <StatCard
-            label="Total Return"
-            value={totalReturnValue}
-            valueClass={pnlColor(range === 'itd' ? metrics.portfolio_pnl : rangeReturn)}
-            icon={BarChart3}
-            iconColor="text-fin-green"
-            subtitle={totalReturnLabel}
-          />
-          <StatCard
-            label="Daily P&L"
-            value={dailyRet != null ? formatPct(dailyRet) : '—'}
-            valueClass={pnlColor(dailyRet)}
-            icon={Activity}
-            iconColor="text-fin-amber"
-            subtitle="Last day in range"
-          />
-          <StatCard
-            label="Active Positions"
-            value={positions.length}
-            icon={Target}
-            iconColor="text-fin-purple"
-          />
-        </div>
-
-        <PerformanceChartWorkspace
-          view={view}
-          onViewChange={setView}
-          chartData={chartData}
-          selectedComparables={selectedComparables}
-          onAddComparable={onAddComparable}
-          onRemoveComparable={onRemoveComparable}
-          tickerUniverse={tickerUniverse}
-          comparableLoading={comparableLoading}
-          comparableError={comparableError}
-          snaps={snaps}
-          drawdownData={drawdownData}
-          rollingData={rollingData}
-        />
-
-        <PositionPnlTable positions={positions} />
-
-        <div className="glass-card overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/[0.02] transition-colors"
-          >
-            <h3 className="text-lg font-semibold">Advanced statistics</h3>
-            {showAdvanced ? (
-              <ChevronUp size={18} className="text-text-muted" />
-            ) : (
-              <ChevronDown size={18} className="text-text-muted" />
-            )}
-          </button>
-          {showAdvanced && serverMetrics && <ServerMetricsStrip m={serverMetrics} />}
-          {showAdvanced && <AdvancedStatsPanel snaps={snaps} benchmarks={benchmarks} />}
-        </div>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        <PerformanceDateRange value={range} onChange={setRange} />
       </div>
-    </>
-  );
-}
 
-export default function PerformanceInner() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center min-h-[50vh] text-text-secondary">
-          Loading…
-        </div>
-      }
-    >
-      <PerformanceContent />
-    </Suspense>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          label="Portfolio NAV"
+          value={fmtNav(latestNav)}
+          icon={TrendingUp}
+          iconColor="text-fin-blue"
+          subtitle="End of range (level)"
+        />
+        <StatCard
+          label="Total Return"
+          value={totalReturnValue}
+          valueClass={pnlColor(range === 'itd' ? metrics.portfolio_pnl : rangeReturn)}
+          icon={BarChart3}
+          iconColor="text-fin-green"
+          subtitle={totalReturnLabel}
+        />
+        <StatCard
+          label="Daily P&L"
+          value={dailyRet != null ? formatPct(dailyRet) : '—'}
+          valueClass={pnlColor(dailyRet)}
+          icon={Activity}
+          iconColor="text-fin-amber"
+          subtitle="Last day in range"
+        />
+        <StatCard
+          label="Active Positions"
+          value={positions.length}
+          icon={Target}
+          iconColor="text-fin-purple"
+        />
+      </div>
+
+      <PerformanceChartWorkspace
+        view={view}
+        onViewChange={setView}
+        chartData={chartData}
+        selectedComparables={selectedComparables}
+        onAddComparable={onAddComparable}
+        onRemoveComparable={onRemoveComparable}
+        tickerUniverse={tickerUniverse}
+        comparableLoading={comparableLoading}
+        comparableError={comparableError}
+        snaps={snaps}
+        drawdownData={drawdownData}
+        rollingData={rollingData}
+      />
+
+      <PositionPnlTable positions={positions} />
+
+      <div className="glass-card overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/[0.02] transition-colors"
+        >
+          <h3 className="text-lg font-semibold">Advanced statistics</h3>
+          {showAdvanced ? (
+            <ChevronUp size={18} className="text-text-muted" />
+          ) : (
+            <ChevronDown size={18} className="text-text-muted" />
+          )}
+        </button>
+        {showAdvanced && serverMetrics && <ServerMetricsStrip m={serverMetrics} />}
+        {showAdvanced && <AdvancedStatsPanel snaps={snaps} benchmarks={benchmarks} />}
+      </div>
+    </div>
   );
 }

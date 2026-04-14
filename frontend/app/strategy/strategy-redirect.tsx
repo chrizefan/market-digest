@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-/** Legacy `/strategy` → Portfolio Analysis (`?tab=history`), preserving `thesis`. */
+/** Legacy `/strategy` → Portfolio: `thesis` opens Theses; otherwise PM analysis. */
 export default function StrategyRedirect() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -11,8 +11,12 @@ export default function StrategyRedirect() {
   useEffect(() => {
     const thesis = searchParams.get('thesis');
     const q = new URLSearchParams();
-    q.set('tab', 'history');
-    if (thesis) q.set('thesis', thesis);
+    if (thesis) {
+      q.set('tab', 'theses');
+      q.set('thesis', thesis);
+    } else {
+      q.set('tab', 'pm_analysis');
+    }
     router.replace(`/portfolio?${q.toString()}`);
   }, [router, searchParams]);
 

@@ -109,10 +109,9 @@ export default function GenericDiffDocumentView({
   const [pair, setPair] = useState<DocumentDiffPair | null>(null);
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- async diff load lifecycle */
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch lifecycle
     setLoading(true);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch lifecycle
     setError(null);
     loadDocumentDiff(docDate, documentKey, payload)
       .then((p) => {
@@ -127,6 +126,7 @@ export default function GenericDiffDocumentView({
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+    /* eslint-enable react-hooks/set-state-in-effect */
     return () => {
       cancelled = true;
     };

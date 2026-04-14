@@ -76,6 +76,55 @@ export default function ArchitecturePage() {
           </p>
         </div>
 
+        {/* Pipeline flow + data path (high level) */}
+        <div className="glass-card p-6 space-y-6">
+          <div>
+            <h2 className="text-base font-semibold mb-3">Pipeline flow</h2>
+            <div className="flex flex-wrap items-stretch justify-center gap-2 text-xs sm:text-sm">
+              {['Schedule', 'Ingest', 'Agents', 'Validate', 'Publish'].map((label, i, arr) => (
+                <div key={label} className="flex items-center gap-2">
+                  <div className="rounded-lg border border-border-subtle bg-bg-secondary/60 px-3 py-2 text-center min-w-[88px]">
+                    <span className="text-text-primary font-medium">{label}</span>
+                  </div>
+                  {i < arr.length - 1 ? (
+                    <span className="text-text-muted hidden sm:inline" aria-hidden>
+                      →
+                    </span>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-text-muted mt-3 max-w-3xl">
+              Scheduled runs trigger ingestion of market inputs; agent phases produce segment JSON and portfolio
+              artifacts; validation gates writes; publish commits rows to Supabase for the Atlas UI.
+            </p>
+          </div>
+          <div className="border-t border-border-subtle pt-5">
+            <h2 className="text-base font-semibold mb-3">Data flow</h2>
+            <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3 text-xs sm:text-sm text-text-secondary">
+              <span className="rounded-md border border-fin-blue/30 bg-fin-blue/10 px-3 py-1.5 font-mono text-fin-blue">
+                Sources &amp; files
+              </span>
+              <span className="text-text-muted hidden sm:inline">→</span>
+              <span className="rounded-md border border-fin-amber/30 bg-fin-amber/10 px-3 py-1.5 font-mono text-fin-amber">
+                Python runners / agents
+              </span>
+              <span className="text-text-muted hidden sm:inline">→</span>
+              <span className="rounded-md border border-fin-green/30 bg-fin-green/10 px-3 py-1.5 font-mono text-fin-green">
+                Supabase (Postgres)
+              </span>
+              <span className="text-text-muted hidden sm:inline">→</span>
+              <span className="rounded-md border border-border-subtle bg-bg-secondary px-3 py-1.5 font-mono text-text-primary">
+                Next.js (Atlas)
+              </span>
+            </div>
+            <p className="text-xs text-text-muted mt-3 max-w-3xl">
+              The dashboard reads published documents, snapshots, and price history through typed queries; no
+              filesystem reads occur in the browser.
+            </p>
+          </div>
+        </div>
+
         {/* Three-Tier Cadence */}
         <div>
           <div className="flex items-center gap-2 mb-4">

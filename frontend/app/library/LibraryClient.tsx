@@ -16,73 +16,13 @@ import {
 import { getLibraryDocumentById, type LibraryDocumentResult } from '@/lib/queries';
 import type { Doc } from '@/lib/types';
 import MiniCalendar, { type MiniCalendarRunKind } from '@/components/library/MiniCalendar';
+import {
+  RESEARCH_CATEGORY_ORDER,
+  canonicalResearchTitle,
+  categorizeResearchDoc,
+} from '@/lib/research-doc-categorize';
 
 type RunDayKind = MiniCalendarRunKind;
-
-/* ── Main Page ── */
-const CATEGORY_ORDER = [
-  'Digest',
-  'Research Papers',
-  'Deep Dives',
-  'Market Analysis',
-  'Equities',
-  'Sectors',
-  'Intelligence',
-  'Positions',
-  'Weekly / Monthly',
-  'Portfolio',
-  'Evolution',
-  'Other',
-] as const;
-
-/**
- * Returns a stable, date-independent display name for a document.
- * Strips the " Delta — YYYY-MM-DD" suffix that the pipeline appends to delta titles
- * so baseline and delta versions of the same file look identical in the list.
- */
-function canonicalTitle(d: Doc): string {
-  const raw = d.title || d.filename || d.path || '';
-  // "Macro Delta — 2026-04-08"  →  "Macro"
-  // "Sector Delta — Technology — 2026-04-08"  →  "Technology"
-  // "Bonds Delta — 2026-04-08"  →  "Bonds"
-  const clean = raw
-    .replace(/\s*—\s*\d{4}-\d{2}-\d{2}$/, '')   // strip trailing date
-    .replace(/^Sector Delta\s*—\s*/i, '')          // strip "Sector Delta — " prefix
-    .replace(/\s+Delta$/i, '')                      // strip trailing " Delta"
-    .trim();
-  return clean || raw;
-}
-
-function categorizeDoc(d: Doc): string {
-  const key = (d.path || d.filename || '').toLowerCase();
-  const seg = (d.segment || '').toLowerCase();
-  const type = (d.type || '').toLowerCase();
-
-  if (key === 'digest') return 'Digest';
-  if (key.startsWith('research/papers/')) return 'Research Papers';
-  if (key.startsWith('research/deep-dives/') || key.startsWith('research/themes/') || key.startsWith('deep-dives/')) return 'Deep Dives';
-  if (key.startsWith('research/')) return 'Deep Dives';
-  if (key.startsWith('weekly/') || key.startsWith('monthly/')) return 'Weekly / Monthly';
-  if (key.startsWith('evolution/')) return 'Evolution';
-  if (seg.includes('rebalance') || seg.includes('deliberation') || seg.includes('portfolio') || seg.includes('opportunity'))
-    return 'Portfolio';
-  if (key.startsWith('positions/') || seg.includes('position')) return 'Positions';
-  if (type.includes('weekly') || type.includes('monthly')) return 'Weekly / Monthly';
-  if (type.includes('deep dive')) return 'Deep Dives';
-  if (
-    seg.includes('macro') ||
-    seg.includes('bonds') ||
-    seg.includes('commodities') ||
-    seg.includes('forex') ||
-    seg.includes('crypto') ||
-    seg.includes('international')
-  )
-    return 'Market Analysis';
-  if (seg.includes('equities') || seg.includes('us-equities')) return 'Equities';
-  if (d.category?.toLowerCase() === 'sector' || seg.includes('sector')) return 'Sectors';
-  if (seg.includes('alt') || seg.includes('institutional')) return 'Intelligence';
-  return 'Other';
-}
 
 function aggregateRunKindForDate(docsOnDate: Doc[]): RunDayKind {
   let sawBaseline = false;
@@ -166,7 +106,7 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
 
   const dateDocs = useMemo<Doc[]>(() => {
     let list = docsForEffDate;
-    if (filterCat) list = list.filter((d) => categorizeDoc(d) === filterCat);
+    if (filterCat) list = list.filter((d) => categorizeResearchDoc(d) === filterCat);
     const q = searchQuery.trim().toLowerCase();
     if (q) {
       list = list.filter((d) => {
@@ -182,12 +122,12 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
   const grouped = useMemo<[string, Doc[]][]>(() => {
     const map: Record<string, Doc[]> = {};
     dateDocs.forEach((d) => {
-      const cat = categorizeDoc(d);
+      const cat = categorizeResearchDoc(d);
       (map[cat] = map[cat] || []).push(d);
     });
     return Object.entries(map).sort(([a], [b]) => {
-      const ia = CATEGORY_ORDER.indexOf(a as (typeof CATEGORY_ORDER)[number]);
-      const ib = CATEGORY_ORDER.indexOf(b as (typeof CATEGORY_ORDER)[number]);
+      const ia = RESEARCH_CATEGORY_ORDER.indexOf(a as (typeof RESEARCH_CATEGORY_ORDER)[number]);
+      const ib = RESEARCH_CATEGORY_ORDER.indexOf(b as (typeof RESEARCH_CATEGORY_ORDER)[number]);
       if (ia !== -1 || ib !== -1) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
       return a.localeCompare(b);
     });
@@ -199,11 +139,11 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
   );
 
   const categoryList = useMemo<string[]>(() => {
-    const set = new Set(docsForEffDate.map((d) => categorizeDoc(d)));
+    const set = new Set(docsForEffDate.map((d) => categorizeResearchDoc(d)));
     const list = [...set];
     return list.sort((a, b) => {
-      const ia = CATEGORY_ORDER.indexOf(a as (typeof CATEGORY_ORDER)[number]);
-      const ib = CATEGORY_ORDER.indexOf(b as (typeof CATEGORY_ORDER)[number]);
+      const ia = RESEARCH_CATEGORY_ORDER.indexOf(a as (typeof RESEARCH_CATEGORY_ORDER)[number]);
+      const ib = RESEARCH_CATEGORY_ORDER.indexOf(b as (typeof RESEARCH_CATEGORY_ORDER)[number]);
       if (ia !== -1 || ib !== -1) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
       return a.localeCompare(b);
     });
@@ -375,7 +315,7 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border-subtle bg-bg-secondary">
                   <div className="flex items-center gap-2 text-sm">
                     <FileText size={14} className="text-fin-blue" />
-                    <span className="font-mono">{canonicalTitle(activeFile)}</span>
+                    <span className="font-mono">{canonicalResearchTitle(activeFile)}</span>
                     {(activeFile.runType || '').toLowerCase() === 'delta' ? (
                       <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30">
                         Δ updated
@@ -465,7 +405,7 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
                             )}
                           </span>
                           <FileText size={14} className="text-fin-blue/60 shrink-0" />
-                          <span className="font-mono text-sm">{canonicalTitle(f)}</span>
+                          <span className="font-mono text-sm">{canonicalResearchTitle(f)}</span>
                           {/* Delta badge: Δ for run_type=delta docs; numeric count for legacy path-touch system */}
                           {isDocDelta ? (
                             <span

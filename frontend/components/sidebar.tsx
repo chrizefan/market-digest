@@ -1,12 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useState, ElementType } from 'react';
-import {
-  LayoutDashboard, PieChart, TrendingUp, Target, Clock,
-  Database, Menu, X,
-} from 'lucide-react';
+import { LayoutDashboard, PieChart, BookOpen, Database, Menu, X } from 'lucide-react';
 
 interface NavItem {
   href: string;
@@ -15,23 +12,18 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { href: '/',              label: 'Overview',           icon: LayoutDashboard },
-  { href: '/portfolio',     label: 'Portfolio',          icon: PieChart },
-  { href: '/performance',   label: 'Performance',        icon: TrendingUp },
-  { href: '/portfolio?tab=history', label: 'Analysis', icon: Target },
-  { href: '/library',       label: 'Research Library',   icon: Clock },
+  { href: '/', label: 'Overview', icon: LayoutDashboard },
+  { href: '/portfolio', label: 'Portfolio', icon: PieChart },
+  { href: '/research', label: 'Research', icon: BookOpen },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const base = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
   const [open, setOpen] = useState(false);
-  const portfolioTab = searchParams.get('tab');
 
   return (
     <>
-      {/* Mobile hamburger */}
       <button
         onClick={() => setOpen(!open)}
         className="fixed top-4 left-4 z-[1001] flex items-center justify-center p-2 rounded-lg border border-border-subtle bg-bg-glass backdrop-blur-[12px] text-text-primary md:hidden"
@@ -40,15 +32,10 @@ export default function Sidebar() {
         {open ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      {/* Overlay */}
       {open && (
-        <div
-          className="fixed inset-0 bg-black/60 z-[999] md:hidden"
-          onClick={() => setOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/60 z-[999] md:hidden" onClick={() => setOpen(false)} />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`
           w-[260px] bg-bg-glass backdrop-blur-[12px] border-r border-border-subtle
@@ -58,26 +45,40 @@ export default function Sidebar() {
           md:translate-x-0 md:relative md:z-auto
         `}
       >
-        {/* Brand */}
         <div className="flex items-center gap-2.5 px-6 py-5 border-b border-border-subtle">
           <svg width="28" height="28" viewBox="0 0 48 48" fill="none" aria-hidden="true" className="shrink-0">
-            <path stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" d="M4.2774,32.5293a11.6485,11.6485,0,0,1,23.2219,1.32h0c0,3.2166.0022,11.6479.0022,11.6479" />
-            <path stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" d="M3.3047,29.8574q-.0277-.4816-.0279-.97a16.61,16.61,0,1,1,33.2209,0v0c0,4.5869.0031,16.6095.0031,16.6095" />
+            <path
+              stroke="white"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4.2774,32.5293a11.6485,11.6485,0,0,1,23.2219,1.32h0c0,3.2166.0022,11.6479.0022,11.6479"
+            />
+            <path
+              stroke="white"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3.3047,29.8574q-.0277-.4816-.0279-.97a16.61,16.61,0,1,1,33.2209,0v0c0,4.5869.0031,16.6095.0031,16.6095"
+            />
             <circle stroke="white" strokeWidth="2" cx="16.5007" cy="33.4992" r="5.0328" />
             <path stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" d="M45.5,24A21.5,21.5,0,1,0,24,45.5H45.5Z" />
           </svg>
           <span className="text-base font-medium tracking-tight">Atlas</span>
         </div>
 
-        {/* Nav links */}
         <nav className="flex-1 py-4 flex flex-col">
           {NAV.map(({ href, label, icon: Icon }) => {
             const fullHref = `${base}${href}`;
             let isActive = pathname === fullHref || pathname === href;
-            if (href === '/portfolio?tab=history') {
-              isActive = pathname === '/portfolio' && portfolioTab === 'history';
+            if (href === '/research') {
+              isActive =
+                pathname.endsWith('/research') ||
+                pathname.endsWith(`${base}/research`) ||
+                pathname.endsWith('/library') ||
+                pathname.endsWith(`${base}/library`);
             } else if (href === '/portfolio') {
-              isActive = pathname === '/portfolio' && portfolioTab !== 'history';
+              isActive = pathname.endsWith('/portfolio') || pathname.endsWith(`${base}/portfolio`);
             }
             return (
               <Link
@@ -86,9 +87,10 @@ export default function Sidebar() {
                 onClick={() => setOpen(false)}
                 className={`
                   flex items-center gap-3 px-6 py-3 text-sm font-medium transition-all
-                  ${isActive
-                    ? 'text-text-primary bg-white/[0.04] border-r-2 border-text-primary'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.03]'
+                  ${
+                    isActive
+                      ? 'text-text-primary bg-white/[0.04] border-r-2 border-text-primary'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.03]'
                   }
                 `}
               >

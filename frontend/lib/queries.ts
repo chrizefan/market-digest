@@ -20,6 +20,7 @@ import type {
   ThesisHistoryPoint,
   PipelineObservabilityBundle,
   PipelineTickerDoc,
+  PositionPriceChartData,
 } from './types';
 import { renderDigestMarkdownFromSnapshot, type DigestSnapshot } from './render-digest-from-snapshot';
 import { renderDocumentMarkdownFromPayload } from './render-document-from-payload';
@@ -906,6 +907,71 @@ export async function fetchComparablePriceHistory(
     }
   }
   return out;
+}
+
+const POSITION_CHART_PAGE = 2000;
+
+/**
+ * Load daily closes for one ticker from `fromDate` through today plus all
+ * `position_events` rows for that ticker (for chart markers). On-demand only.
+ */
+export async function fetchPositionPriceChart(
+  ticker: string,
+  fromDate: string
+): Promise<PositionPriceChartData> {
+  if (!isSupabaseConfigured() || !supabase) {
+    throw new Error(
+      'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
+    );
+  }
+  const t = String(ticker).toUpperCase().trim();
+  if (!t || !fromDate) {
+    return { priceHistory: [], events: [] };
+  }
+  const today = new Date().toISOString().slice(0, 10);
+
+  type EvPick = Pick<TableRow<'position_events'>, 'date' | 'event' | 'price' | 'reason'>;
+  type PhPick = Pick<TableRow<'price_history'>, 'date' | 'close'>;
+
+  const [phRes, evRes] = await Promise.all([
+    supabase
+      .from('price_history')
+      .select('date, close')
+      .eq('ticker', t)
+      .gte('date', fromDate)
+      .lte('date', today)
+      .order('date', { ascending: true })
+      .limit(POSITION_CHART_PAGE),
+    supabase
+      .from('position_events')
+      .select('date, event, price, reason')
+      .eq('ticker', t)
+      .order('date', { ascending: true })
+      .limit(POSITION_CHART_PAGE),
+  ]);
+
+  if (phRes.error) {
+    console.error('fetchPositionPriceChart price_history:', phRes.error);
+  }
+  if (evRes.error) {
+    console.error('fetchPositionPriceChart position_events:', evRes.error);
+  }
+
+  const priceRows = (phRes.data ?? []) as PhPick[];
+  const priceHistory = priceRows.map((row) => ({
+    date: row.date,
+    close: Number(row.close),
+  }));
+
+  const evRows = (evRes.data ?? []) as EvPick[];
+  const events = evRows.map((row) => ({
+    date: row.date,
+    event: row.event,
+    price: row.price != null ? Number(row.price) : null,
+    reason: row.reason ?? null,
+  }));
+
+  return { priceHistory, events };
 }
 
 /** Resolve markdown + structured view for the Research Library. */

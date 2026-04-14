@@ -18,6 +18,13 @@ const REGIME_COLORS: Record<string, string> = {
   neutral: 'text-fin-blue border-fin-blue/40',
 };
 
+const REGIME_SURFACE: Record<string, string> = {
+  bullish: 'bg-gradient-to-br from-fin-green/[0.12] via-transparent to-transparent',
+  bearish: 'bg-gradient-to-br from-fin-red/[0.12] via-transparent to-transparent',
+  caution: 'bg-gradient-to-br from-fin-amber/[0.12] via-transparent to-transparent',
+  neutral: 'bg-gradient-to-br from-fin-blue/[0.10] via-transparent to-transparent',
+};
+
 export default function OverviewPage() {
   const { data, loading, error } = useDashboard();
 
@@ -37,6 +44,7 @@ export default function OverviewPage() {
   const { strategy } = portfolio;
   const regimeLabel = strategy.regime_label || 'neutral';
   const regimeStyle = REGIME_COLORS[regimeLabel] || REGIME_COLORS.neutral;
+  const regimeSurface = REGIME_SURFACE[regimeLabel] || REGIME_SURFACE.neutral;
 
   const latestDate = portfolio.meta.last_updated || null;
   const latestDeepDives = docs
@@ -96,7 +104,7 @@ export default function OverviewPage() {
         </div>
 
         {/* Regime Banner */}
-        <div className={`glass-card p-6 border-l-4 ${regimeStyle.split(' ')[1]}`}>
+        <div className={`glass-card p-6 border-l-4 ${regimeSurface} ${regimeStyle.split(' ')[1]}`}>
           <div className="flex flex-col sm:flex-row justify-between gap-4">
             <div>
               <p className={`text-xs font-semibold uppercase tracking-widest mb-1 ${regimeStyle.split(' ')[0]}`}>
@@ -194,7 +202,7 @@ export default function OverviewPage() {
               </div>
             </div>
             <Link
-              href="/performance"
+              href="/portfolio?tab=performance"
               className="text-sm text-fin-blue hover:underline font-medium shrink-0"
             >
               Full performance →
@@ -273,14 +281,14 @@ export default function OverviewPage() {
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <h3 className="text-sm font-semibold">Latest research &amp; PM</h3>
                   <div className="flex items-center gap-3 shrink-0">
-                    <Link href="/library" className="text-xs text-fin-blue hover:underline">
-                      Research library
+                    <Link href="/research?tab=daily" className="text-xs text-fin-blue hover:underline">
+                      Research
                     </Link>
                     <Link
                       href={
                         latestDate
-                          ? `/portfolio?tab=history&date=${encodeURIComponent(latestDate)}`
-                          : '/portfolio?tab=history'
+                          ? `/portfolio?tab=pm_analysis&date=${encodeURIComponent(latestDate)}`
+                          : '/portfolio?tab=pm_analysis'
                       }
                       className="text-xs text-fin-amber hover:underline"
                     >
@@ -295,7 +303,7 @@ export default function OverviewPage() {
                       {researchQuickLinks.map((l) => (
                         <Link
                           key={l.docKey}
-                          href={`/library?date=${encodeURIComponent(String(latestDate || ''))}&docKey=${encodeURIComponent(l.docKey)}`}
+                          href={`/research?tab=daily&date=${encodeURIComponent(String(latestDate || ''))}&docKey=${encodeURIComponent(l.docKey)}`}
                           className="text-xs px-3 py-1 rounded-md bg-fin-blue/10 text-fin-blue hover:bg-fin-blue/20 transition-colors"
                         >
                           {l.label}
@@ -311,7 +319,7 @@ export default function OverviewPage() {
                       {pmQuickLinks.map((l) => (
                         <Link
                           key={l.docKey}
-                          href={`/portfolio?tab=history&date=${encodeURIComponent(String(latestDate || ''))}&docKey=${encodeURIComponent(l.docKey)}`}
+                          href={`/portfolio?tab=pm_analysis&date=${encodeURIComponent(String(latestDate || ''))}&docKey=${encodeURIComponent(l.docKey)}`}
                           className="text-xs px-3 py-1 rounded-md bg-fin-amber/10 text-fin-amber hover:bg-fin-amber/20 transition-colors"
                         >
                           {l.label}
@@ -327,7 +335,7 @@ export default function OverviewPage() {
                       {latestDeepDives.map((d) => (
                         <Link
                           key={d.id}
-                          href={`/library?date=${encodeURIComponent(d.date)}&docKey=${encodeURIComponent(d.path)}`}
+                          href={`/research?tab=daily&date=${encodeURIComponent(d.date)}&docKey=${encodeURIComponent(d.path)}`}
                           className="block text-sm text-text-secondary hover:text-white truncate"
                         >
                           {d.title}
@@ -394,7 +402,7 @@ export default function OverviewPage() {
                       <tr key={i} className="hover:bg-white/[0.02]">
                         <td className="px-5 py-3 font-mono">
                           <Link
-                            href={`/portfolio?tab=history&thesis=${encodeURIComponent(t.id)}`}
+                            href={`/portfolio?tab=theses&thesis=${encodeURIComponent(t.id)}`}
                             className="text-fin-blue hover:underline"
                           >
                             {t.id}
@@ -411,6 +419,36 @@ export default function OverviewPage() {
             </div>
           </div>
         )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+          <Link
+            href="/portfolio"
+            className="glass-card p-5 border border-border-subtle hover:border-fin-blue/35 transition-colors group"
+          >
+            <h3 className="text-sm font-semibold text-text-primary group-hover:text-fin-blue mb-1">Portfolio</h3>
+            <p className="text-xs text-text-muted leading-relaxed">
+              Allocations, performance, positions, theses, and PM analysis in one place.
+            </p>
+          </Link>
+          <Link
+            href="/research?tab=daily"
+            className="glass-card p-5 border border-border-subtle hover:border-fin-blue/35 transition-colors group"
+          >
+            <h3 className="text-sm font-semibold text-text-primary group-hover:text-fin-blue mb-1">Research</h3>
+            <p className="text-xs text-text-muted leading-relaxed">
+              Daily run documents plus a searchable knowledge base of deep dives and cadence notes.
+            </p>
+          </Link>
+          <Link
+            href="/architecture"
+            className="glass-card p-5 border border-border-subtle hover:border-fin-blue/35 transition-colors group"
+          >
+            <h3 className="text-sm font-semibold text-text-primary group-hover:text-fin-blue mb-1">Architecture</h3>
+            <p className="text-xs text-text-muted leading-relaxed">
+              How the pipeline, agents, and Supabase-backed data model fit together.
+            </p>
+          </Link>
+        </div>
       </div>
     </>
   );
