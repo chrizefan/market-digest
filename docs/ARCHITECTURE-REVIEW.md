@@ -756,7 +756,7 @@ The system includes explicit guardrails to prevent uncontrolled drift:
 ### 10.2 Technical Debt Items
 
 1. **Dual data path**: Both `snapshot.json` (structured) and regex parsing of `DIGEST.md` (unstructured) exist. snapshot.json should be the sole data source for ETL.
-2. **Memory file growth**: ROLLING.md files grow unbounded. Need rotation/archival strategy.
+2. **Supabase row growth**: `documents` and `daily_snapshots` will grow over time. A pruning or archival strategy for rows older than N months may eventually be needed.
 3. **No automated testing**: No unit tests for Python scripts. No integration tests for pipeline.
 4. **Hardcoded file classifications**: `FILE_CLASSIFICATION` dict in `update-tearsheet.py` must be manually updated when new segments are added.
 5. **Dashboard-data.json as deployment artifact**: The JSON is committed to git and deployed via GitHub Pages. A proper build step would generate it during CI.

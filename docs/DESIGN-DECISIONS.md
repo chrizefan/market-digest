@@ -19,7 +19,7 @@
 10. [ADR-010: Portfolio.json as Source of Truth for Positions](#adr-010-portfoliojson-as-source-of-truth-for-positions)
 11. [ADR-011: MCP Fallback for Data Fetching](#adr-011-mcp-fallback-for-data-fetching)
 12. [ADR-012: Single-Agent Sequential Execution](#adr-012-single-agent-sequential-execution)
-13. [ADR-013: Memory System Design (ROLLING.md per Segment)](#adr-013-memory-system-design-rollingmd-per-segment)
+13. [ADR-013: Research Continuity Design (Supabase per Segment)](#adr-013-research-continuity-design-supabase-per-segment)
 14. [ADR-014: Sector Tiering (Full vs Compressed)](#adr-014-sector-tiering-full-vs-compressed)
 15. [ADR-015: ETF-Only Investment Universe](#adr-015-etf-only-investment-universe)
 
@@ -581,7 +581,7 @@ Use a **single AI agent session** that sequentially reads different skill files 
 
 ---
 
-## ADR-013: Memory System Design (ROLLING.md per Segment)
+## ADR-013: Research Continuity Design (Supabase per Segment)
 
 **Status**: Accepted
 **Date**: 2026-02
