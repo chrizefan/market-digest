@@ -24,6 +24,29 @@ Estimated token savings vs full run: **~70%** on a typical day.
 
 ---
 
+## Token Mode Protocol
+
+Caveman mode is **active by default** throughout this pipeline for all process work.
+
+**Keep caveman ON for:**
+- Triage announcements and segment classification decisions
+- Delta context load status and checkpoint verifications
+- Reasoning about which segments to update or carry forward
+- Any conversational message to the user about pipeline state
+
+**Switch to normal mode** (`normal mode`) immediately before authoring content that publishes to Supabase:
+- Delta ops narrative fields and segment narrative blocks
+- Materialized digest content and digest snapshot fields
+- Portfolio recommendation rationale and rebalance decision notes
+- Deliberation transcript content (Phase 7C, if triggered)
+- Evolution post-mortem observations (Phase 9)
+
+Switch back to caveman (`caveman mode`) immediately after each artifact is published.
+
+**Quick test**: text going into a Supabase field → full tokens. Text staying in the conversation → caveman.
+
+---
+
 ## Pre-Flight: Delta Context Load
 
 ### Step 0: Confirm delta mode (Supabase, not `_meta.json`)

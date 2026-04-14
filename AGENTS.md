@@ -48,6 +48,7 @@ python3 scripts/run_db_first.py   # Metrics refresh + execute_at_open + validate
 - Run **Phase 1 (alt-data) BEFORE Phase 3 (macro)** — positioning informs regime read
 - Daily δ: always write mandatory deltas: macro, us-equities, crypto
 - Analysis and bias are fine; specific buy/sell investment advice is not
+- **Token mode**: caveman ON for all process work (announcements, triage, checkpoints, reasoning). Say `normal mode` before authoring any content that publishes to Supabase (narratives, JSON rationale, recommendations). Say `caveman mode` after publishing. Quick test: text going into a DB field → full tokens; text staying in conversation → caveman.
 
 ---
 
