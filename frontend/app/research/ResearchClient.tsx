@@ -2,9 +2,18 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Calendar, ChevronDown, ChevronRight, Filter, FileText, Search, X } from 'lucide-react';
+import {
+  BookOpen,
+  Calendar,
+  ChevronDown,
+  ChevronRight,
+  Filter,
+  FileText,
+  Search,
+  X,
+} from 'lucide-react';
 
-import PageHeader from '@/components/page-header';
+import { SubpageStickyTabBar, SUBPAGE_MAX, subpageTabButtonClass } from '@/components/subpage-tab-bar';
 import DeltaDaySummary from '@/components/library/DeltaDaySummary';
 import LibraryDocumentBody from '@/components/library/LibraryDocumentBody';
 import { useDashboard } from '@/lib/dashboard-context';
@@ -222,34 +231,23 @@ function ResearchPageInner({
   if (error || !data) return <div className="flex items-center justify-center h-screen text-fin-red">{error}</div>;
 
   return (
-    <>
-      <PageHeader title="Research" />
-      <div className="p-10 max-w-[1600px] mx-auto w-full max-md:p-4 space-y-4">
-        <div className="flex flex-wrap gap-2 border-b border-border-subtle pb-3">
-          <button
-            type="button"
-            onClick={() => setTab('daily')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              tab === 'daily'
-                ? 'bg-fin-blue/15 text-fin-blue border border-fin-blue/40'
-                : 'text-text-secondary border border-transparent hover:bg-white/[0.04] hover:text-text-primary'
-            }`}
-          >
-            Daily
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('knowledge')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              tab === 'knowledge'
-                ? 'bg-fin-blue/15 text-fin-blue border border-fin-blue/40'
-                : 'text-text-secondary border border-transparent hover:bg-white/[0.04] hover:text-text-primary'
-            }`}
-          >
-            Knowledge base
-          </button>
-        </div>
+    <div className="flex min-h-full flex-col">
+      <SubpageStickyTabBar aria-label="Research sections">
+        <button type="button" onClick={() => setTab('daily')} className={subpageTabButtonClass(tab === 'daily')}>
+          <Calendar size={16} />
+          Daily
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('knowledge')}
+          className={subpageTabButtonClass(tab === 'knowledge')}
+        >
+          <BookOpen size={16} />
+          Knowledge base
+        </button>
+      </SubpageStickyTabBar>
 
+      <div className={`${SUBPAGE_MAX} flex-1 space-y-4 py-4 md:py-5`}>
         {tab === 'knowledge' ? (
           <>
             <p className="text-xs text-text-muted max-w-2xl">
@@ -501,7 +499,7 @@ function ResearchPageInner({
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }
 

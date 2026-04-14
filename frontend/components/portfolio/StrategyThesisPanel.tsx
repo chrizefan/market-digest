@@ -212,16 +212,16 @@ export default function StrategyThesisPanel({
             </div>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[820px]">
+            <table className="w-full min-w-0 text-sm md:min-w-[820px]">
               <thead>
-                <tr className="text-text-muted text-xs uppercase tracking-wider border-b border-border-subtle">
-                  <th className="text-left px-5 py-3">ID</th>
-                  <th className="text-left px-5 py-3">Thesis</th>
-                  <th className="text-right px-5 py-3">Exposure</th>
-                  <th className="text-left px-5 py-3">Vehicle</th>
-                  <th className="text-left px-5 py-3">Invalidation</th>
-                  <th className="text-left px-5 py-3">Status</th>
-                  <th className="text-left px-5 py-3">Notes</th>
+                <tr className="border-b border-border-subtle text-xs uppercase tracking-wider text-text-muted">
+                  <th className="px-4 py-3 text-left md:px-5">ID</th>
+                  <th className="px-4 py-3 text-left md:px-5">Thesis</th>
+                  <th className="px-4 py-3 text-right md:px-5">Exposure</th>
+                  <th className="hidden px-5 py-3 text-left md:table-cell">Vehicle</th>
+                  <th className="hidden px-5 py-3 text-left lg:table-cell">Invalidation</th>
+                  <th className="px-4 py-3 text-left md:px-5">Status</th>
+                  <th className="hidden px-5 py-3 text-left xl:table-cell">Notes</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-subtle">
@@ -233,29 +233,31 @@ export default function StrategyThesisPanel({
                       highlightThesisId === t.id ? 'bg-fin-blue/10 ring-1 ring-fin-blue/30' : ''
                     }`}
                   >
-                    <td className="px-5 py-3 font-mono">
+                    <td className="px-4 py-3 font-mono md:px-5">
                       <Link href={thesisHref(t.id)} className="text-fin-blue hover:underline">
                         {t.id}
                       </Link>
                     </td>
-                    <td className="px-5 py-3 font-medium">{t.name}</td>
-                    <td className="px-5 py-3 text-right font-mono tabular-nums font-semibold">
+                    <td className="px-4 py-3 font-medium md:px-5">{t.name}</td>
+                    <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums md:px-5">
                       {(exposureByThesis.get(t.id) ?? 0).toFixed(1)}%
                     </td>
-                    <td className="px-5 py-3 font-mono text-text-secondary text-[0.85rem]">{t.vehicle}</td>
-                    <td className="px-5 py-3 text-text-muted text-[0.85rem]">{t.invalidation}</td>
-                    <td className={`px-5 py-3 font-semibold ${statusColor(t.status)}`}>{t.status}</td>
-                    <td className="px-5 py-3 text-text-secondary text-[0.85rem]">{t.notes}</td>
+                    <td className="hidden px-5 py-3 font-mono text-[0.85rem] text-text-secondary md:table-cell">
+                      {t.vehicle}
+                    </td>
+                    <td className="hidden px-5 py-3 text-[0.85rem] text-text-muted lg:table-cell">{t.invalidation}</td>
+                    <td className={`px-4 py-3 font-semibold md:px-5 ${statusColor(t.status)}`}>{t.status}</td>
+                    <td className="hidden px-5 py-3 text-[0.85rem] text-text-secondary xl:table-cell">{t.notes}</td>
                   </tr>
                 ))}
                 {(exposureByThesis.get('_unlinked') ?? 0) > 0.005 && (
-                  <tr className="hover:bg-white/[0.02] bg-white/[0.02]">
-                    <td className="px-5 py-3 font-mono text-text-muted">—</td>
-                    <td className="px-5 py-3 font-medium text-text-secondary">Unlinked positions</td>
-                    <td className="px-5 py-3 text-right font-mono tabular-nums font-semibold">
+                  <tr className="bg-white/[0.02] hover:bg-white/[0.02]">
+                    <td className="px-4 py-3 font-mono text-text-muted md:px-5">—</td>
+                    <td className="px-4 py-3 font-medium text-text-secondary md:px-5">Unlinked positions</td>
+                    <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums md:px-5">
                       {(exposureByThesis.get('_unlinked') ?? 0).toFixed(1)}%
                     </td>
-                    <td colSpan={4} className="px-5 py-3 text-text-muted text-xs">
+                    <td colSpan={4} className="px-4 py-3 text-xs text-text-muted md:px-5">
                       No thesis_id on digest positions
                     </td>
                   </tr>
@@ -280,7 +282,7 @@ export default function StrategyThesisPanel({
                 <p className="text-xs text-text-muted">No historical rows in the theses table for this id.</p>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-xs min-w-[640px]">
+                  <table className="w-full min-w-0 text-xs md:min-w-[640px]">
                     <thead>
                       <tr className="text-text-muted uppercase tracking-wider border-b border-border-subtle">
                         <th className="text-left py-2 pr-4">Date</th>

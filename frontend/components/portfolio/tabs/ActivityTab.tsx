@@ -20,21 +20,22 @@ export default function ActivityTab(props: {
 
   return (
     <div className="glass-card p-0 overflow-hidden">
-      <div className="px-6 py-5 border-b border-border-subtle bg-bg-secondary">
+      <div className="border-b border-border-subtle bg-bg-secondary px-4 py-4 md:px-6 md:py-5">
         <h3 className="text-lg font-semibold">Activity</h3>
+        <p className="mt-1 text-xs text-text-muted md:hidden">Swipe horizontally for full columns, or use a larger screen.</p>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[920px]">
+        <table className="w-full min-w-0 text-sm md:min-w-[920px]">
           <thead>
             <tr className="text-text-muted text-xs uppercase tracking-wider">
-              <th className="text-left px-5 py-3">Date</th>
-              <th className="text-left px-5 py-3">Ticker</th>
-              <th className="text-left px-5 py-3">Event</th>
-              <th className="text-right px-5 py-3">Prior wt</th>
-              <th className="text-right px-5 py-3">Weight</th>
-              <th className="text-right px-5 py-3">Δ wt</th>
-              <th className="text-right px-5 py-3">Since event</th>
-              <th className="text-left px-5 py-3 max-w-[200px]">Reason</th>
+              <th className="px-3 py-3 text-left md:px-5">Date</th>
+              <th className="px-3 py-3 text-left md:px-5">Ticker</th>
+              <th className="px-3 py-3 text-left md:px-5">Event</th>
+              <th className="hidden px-5 py-3 text-right md:table-cell">Prior wt</th>
+              <th className="px-3 py-3 text-right md:px-5">Weight</th>
+              <th className="hidden px-5 py-3 text-right sm:table-cell">Δ wt</th>
+              <th className="hidden px-5 py-3 text-right lg:table-cell">Since event</th>
+              <th className="hidden max-w-[200px] px-5 py-3 text-left lg:table-cell">Reason</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-subtle">
@@ -48,27 +49,27 @@ export default function ActivityTab(props: {
               const rowTitle = detailParts.length ? detailParts.join('\n') : undefined;
               return (
                 <tr key={`${ev.date}-${ev.ticker}-${i}`} className="hover:bg-white/[0.02]" title={rowTitle}>
-                  <td className="px-5 py-3 font-mono text-xs text-text-secondary">{ev.date}</td>
-                  <td className="px-5 py-3 font-semibold">{ev.ticker}</td>
-                  <td className="px-5 py-3">
+                  <td className="px-3 py-3 font-mono text-xs text-text-secondary md:px-5">{ev.date}</td>
+                  <td className="px-3 py-3 font-semibold md:px-5">{ev.ticker}</td>
+                  <td className="px-3 py-3 md:px-5">
                     <Badge variant={eventBadgeVariant(ev.event)}>{ev.event}</Badge>
                   </td>
                   <td
-                    className="px-5 py-3 text-right font-mono tabular-nums text-xs text-text-secondary"
+                    className="hidden px-5 py-3 text-right font-mono tabular-nums text-xs text-text-secondary md:table-cell"
                     title={ev.prev_weight_pct != null ? `Previous weight: ${ev.prev_weight_pct.toFixed(2)}%` : undefined}
                   >
                     {ev.prev_weight_pct != null ? `${ev.prev_weight_pct.toFixed(2)}%` : '—'}
                   </td>
-                  <td className="px-5 py-3 text-right font-mono tabular-nums text-xs" title="Weight after this event">
+                  <td className="px-3 py-3 text-right font-mono tabular-nums text-xs md:px-5" title="Weight after this event">
                     {ev.weight_pct != null ? `${ev.weight_pct.toFixed(2)}%` : '—'}
                   </td>
-                  <td className="px-5 py-3 text-right font-mono tabular-nums text-xs text-text-secondary">
+                  <td className="hidden px-5 py-3 text-right font-mono tabular-nums text-xs text-text-secondary sm:table-cell">
                     {ev.weight_change_pct != null
                       ? `${ev.weight_change_pct > 0 ? '+' : ''}${ev.weight_change_pct.toFixed(2)}pp`
                       : '—'}
                   </td>
                   <td
-                    className={`px-5 py-3 text-right font-mono tabular-nums text-xs ${pnlColor(ev.cumulative_return_since_event_pct)}`}
+                    className={`hidden px-5 py-3 text-right font-mono tabular-nums text-xs lg:table-cell ${pnlColor(ev.cumulative_return_since_event_pct)}`}
                     title={
                       ev.cumulative_return_since_event_pct != null
                         ? `Return from event date to last refresh`
@@ -79,7 +80,10 @@ export default function ActivityTab(props: {
                       ? formatPct(ev.cumulative_return_since_event_pct)
                       : '—'}
                   </td>
-                  <td className="px-5 py-3 text-text-muted text-xs max-w-[220px] truncate" title={ev.reason ?? undefined}>
+                  <td
+                    className="hidden max-w-[220px] truncate px-5 py-3 text-xs text-text-muted lg:table-cell"
+                    title={ev.reason ?? undefined}
+                  >
                     {ev.reason ?? '—'}
                   </td>
                 </tr>

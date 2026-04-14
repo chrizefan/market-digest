@@ -2,17 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, ElementType } from 'react';
-import {
-  LayoutDashboard,
-  PieChart,
-  BookOpen,
-  Database,
-  Menu,
-  X,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+import { useEffect } from 'react';
+import { ElementType } from 'react';
+import { LayoutDashboard, PieChart, BookOpen, Database, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppShell } from '@/components/app-shell-context';
 
 interface NavItem {
@@ -27,33 +19,55 @@ const NAV: NavItem[] = [
   { href: '/research', label: 'Research', icon: BookOpen },
 ];
 
+function routeActive(pathname: string, base: string, href: string): boolean {
+  const norm = pathname.replace(/\/+$/, '') || '/';
+  if (href === '/') {
+    const segs = norm.split('/').filter(Boolean);
+    return segs.length === 0 || segs.length === 1;
+  }
+  if (href === '/portfolio') {
+    return /\/portfolio(\/|$)/.test(pathname) || /\/performance(\/|$)/.test(pathname);
+  }
+  if (href === '/research') {
+    return /\/research(\/|$)/.test(pathname) || /\/library(\/|$)/.test(pathname);
+  }
+  const candidates = [href, `${base}${href}`, `${href}/`, `${base}${href}/`].filter(
+    (p, i, a) => p && a.indexOf(p) === i
+  );
+  return candidates.some((p) => norm === p || norm.endsWith(p));
+}
+
+function architectureActive(pathname: string): boolean {
+  return /\/architecture(\/|$)/.test(pathname);
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
   const base = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
-  const [open, setOpen] = useState(false);
-  const { sidebarCollapsed, toggleSidebar } = useAppShell();
+  const { sidebarCollapsed, toggleSidebar, mobileNavOpen, setMobileNavOpen } = useAppShell();
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname, setMobileNavOpen]);
 
   return (
     <>
-      <button
-        onClick={() => setOpen(!open)}
-        className="fixed top-4 left-4 z-[1001] flex items-center justify-center p-2 rounded-lg border border-border-subtle bg-bg-glass backdrop-blur-[12px] text-text-primary md:hidden"
-        aria-label="Toggle menu"
-      >
-        {open ? <X size={24} /> : <Menu size={24} />}
-      </button>
-
-      {open && (
-        <div className="fixed inset-0 bg-black/60 z-[999] md:hidden" onClick={() => setOpen(false)} />
-      )}
+      {mobileNavOpen ? (
+        <div
+          className="fixed inset-0 z-[999] bg-black/60 md:hidden"
+          onClick={() => setMobileNavOpen(false)}
+          aria-hidden
+        />
+      ) : null}
 
       <aside
+        id="app-sidebar-nav"
         className={`
           bg-bg-glass backdrop-blur-[12px] border-r border-border-subtle
           flex flex-col shrink-0
           fixed top-0 left-0 h-screen z-[1000] transition-all duration-300 ease-out
           w-[260px]
-          ${open ? 'translate-x-0' : '-translate-x-full'}
+          ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full'}
           md:translate-x-0 md:relative md:z-auto
           ${sidebarCollapsed ? 'md:w-[72px]' : 'md:w-[260px]'}
         `}
@@ -138,22 +152,12 @@ export default function Sidebar() {
 
         <nav className="flex-1 py-4 flex flex-col">
           {NAV.map(({ href, label, icon: Icon }) => {
-            const fullHref = `${base}${href}`;
-            let isActive = pathname === fullHref || pathname === href;
-            if (href === '/research') {
-              isActive =
-                pathname.endsWith('/research') ||
-                pathname.endsWith(`${base}/research`) ||
-                pathname.endsWith('/library') ||
-                pathname.endsWith(`${base}/library`);
-            } else if (href === '/portfolio') {
-              isActive = pathname.endsWith('/portfolio') || pathname.endsWith(`${base}/portfolio`);
-            }
+            const isActive = routeActive(pathname, base, href);
             return (
               <Link
                 key={href}
                 href={href}
-                onClick={() => setOpen(false)}
+                onClick={() => setMobileNavOpen(false)}
                 title={sidebarCollapsed ? label : undefined}
                 className={`
                   flex items-center gap-3 py-3 text-sm font-medium transition-all
@@ -175,11 +179,17 @@ export default function Sidebar() {
         <div className={`px-6 py-4 border-t border-border-subtle mt-auto ${sidebarCollapsed ? 'md:px-2' : ''}`}>
           <Link
             href="/architecture"
-            onClick={() => setOpen(false)}
+            onClick={() => setMobileNavOpen(false)}
             title="Architecture"
-            className={`flex items-center gap-3 text-sm text-text-muted hover:text-text-primary transition-colors ${
-              sidebarCollapsed ? 'md:justify-center' : ''
-            }`}
+            className={`
+              flex items-center gap-3 py-3 text-sm font-medium transition-all
+              ${sidebarCollapsed ? 'md:justify-center md:px-3' : ''}
+              ${
+                architectureActive(pathname)
+                  ? 'text-text-primary bg-white/[0.04] border-r-2 border-text-primary'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-white/[0.03]'
+              }
+            `}
           >
             <Database size={20} className="shrink-0" />
             <span className={sidebarCollapsed ? 'md:sr-only' : ''}>Architecture</span>

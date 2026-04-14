@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDashboard } from '@/lib/dashboard-context';
-import PageHeader from '@/components/page-header';
+import { SubpageStickyTabBar, SUBPAGE_MAX, subpageTabButtonClass } from '@/components/subpage-tab-bar';
 import { getDocLibraryTier } from '@/lib/library-doc-tier';
 import { getLibraryDocumentById } from '@/lib/queries';
 import type { Doc } from '@/lib/types';
@@ -521,27 +521,22 @@ export default function PortfolioShellInner() {
     );
 
   return (
-    <>
-      <PageHeader title="Portfolio" />
-      <div className="p-10 max-w-[1400px] mx-auto w-full space-y-6 max-md:p-4">
-        <div className="flex flex-wrap gap-2 border-b border-border-subtle pb-3">
-          {tabs.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => navigateTab(id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                tab === id
-                  ? 'bg-fin-blue/15 text-fin-blue border border-fin-blue/40'
-                  : 'text-text-secondary border border-transparent hover:bg-white/[0.04] hover:text-text-primary'
-              }`}
-            >
-              <Icon size={16} />
-              {label}
-            </button>
-          ))}
-        </div>
+    <div className="flex min-h-full flex-col">
+      <SubpageStickyTabBar aria-label="Portfolio sections">
+        {tabs.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => navigateTab(id)}
+            className={subpageTabButtonClass(tab === id)}
+          >
+            <Icon size={16} />
+            {label}
+          </button>
+        ))}
+      </SubpageStickyTabBar>
 
+      <div className={`${SUBPAGE_MAX} flex-1 space-y-6 py-4 md:py-5`}>
         {tab === 'allocations' && (
           <AllocationsTab
             lastUpdated={lastUpdated}
@@ -592,6 +587,6 @@ export default function PortfolioShellInner() {
 
         {tab === 'activity' && <ActivityTab activityEvents={activityEvents} thesisById={thesisById} />}
       </div>
-    </>
+    </div>
   );
 }

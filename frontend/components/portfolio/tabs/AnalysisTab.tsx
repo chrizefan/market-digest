@@ -230,15 +230,15 @@ export default function AnalysisTab(props: {
                 <h3 className="text-sm font-semibold">Thesis tracker</h3>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm min-w-[720px]">
+                <table className="w-full min-w-0 text-sm md:min-w-[720px]">
                   <thead>
-                    <tr className="text-text-muted text-xs uppercase tracking-wider border-b border-border-subtle">
-                      <th className="text-left px-5 py-3">Thesis</th>
-                      <th className="text-right px-5 py-3">Weight</th>
-                      <th className="text-left px-5 py-3">Vehicle</th>
-                      <th className="text-left px-5 py-3">Status</th>
-                      <th className="text-left px-5 py-3">Invalidation</th>
-                      <th className="px-5 py-3 w-10" aria-label="Expand" />
+                    <tr className="border-b border-border-subtle text-xs uppercase tracking-wider text-text-muted">
+                      <th className="px-4 py-3 text-left md:px-5">Thesis</th>
+                      <th className="px-4 py-3 text-right md:px-5">Weight</th>
+                      <th className="hidden px-5 py-3 text-left md:table-cell">Vehicle</th>
+                      <th className="px-4 py-3 text-left md:px-5">Status</th>
+                      <th className="hidden px-5 py-3 text-left lg:table-cell">Invalidation</th>
+                      <th className="w-10 px-2 py-3 md:px-5" aria-label="Expand" />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-subtle">
@@ -252,27 +252,27 @@ export default function AnalysisTab(props: {
                             onClick={() => setExpandedThesisId(isOpen ? null : row.id)}
                             className="hover:bg-white/[0.02] cursor-pointer transition-colors"
                           >
-                            <td className="px-5 py-3 font-medium">{label}</td>
-                            <td className="px-5 py-3 text-right font-mono tabular-nums font-semibold">
+                            <td className="px-4 py-3 font-medium md:px-5">{label}</td>
+                            <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums md:px-5">
                               {row.weight.toFixed(1)}%
                             </td>
-                            <td className="px-5 py-3 font-mono text-text-secondary text-xs">
+                            <td className="hidden px-5 py-3 font-mono text-xs text-text-secondary md:table-cell">
                               {row.thesis?.vehicle ?? '—'}
                             </td>
-                            <td className="px-5 py-3 text-text-secondary text-xs">{row.thesis?.status ?? '—'}</td>
+                            <td className="px-4 py-3 text-xs text-text-secondary md:px-5">{row.thesis?.status ?? '—'}</td>
                             <td
-                              className="px-5 py-3 text-text-muted text-xs max-w-[200px] truncate"
+                              className="hidden max-w-[200px] truncate px-5 py-3 text-xs text-text-muted lg:table-cell"
                               title={row.thesis?.invalidation ?? undefined}
                             >
                               {row.thesis?.invalidation ?? '—'}
                             </td>
-                            <td className="px-5 py-3 text-text-muted">
+                            <td className="px-2 py-3 text-text-muted md:px-5">
                               {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                             </td>
                           </tr>
                           {isOpen && (
                             <tr className="bg-white/[0.02]">
-                              <td colSpan={6} className="px-6 py-5 border-t border-border-subtle">
+                              <td colSpan={6} className="border-t border-border-subtle px-4 py-5 md:px-6">
                                 {row.id === '_unlinked' ? (
                                   <p className="text-text-muted text-sm leading-relaxed">
                                     Positions on this date are not linked to a named thesis in position history.

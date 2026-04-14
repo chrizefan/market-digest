@@ -1,7 +1,7 @@
 'use client';
 
 import { ElementType } from 'react';
-import PageHeader from '@/components/page-header';
+import { SUBPAGE_MAX } from '@/components/subpage-tab-bar';
 import { Badge } from '@/components/ui';
 import {
   Layers, Clock, Zap, Bot, Database, Globe,
@@ -61,9 +61,7 @@ const AGENTS: AgentEntry[] = [
 
 export default function ArchitecturePage() {
   return (
-    <>
-      <PageHeader title="Architecture" />
-      <div className="p-10 max-w-[1400px] mx-auto w-full space-y-8 max-md:p-4">
+    <div className={`${SUBPAGE_MAX} space-y-8 py-4 md:py-6`}>
 
         {/* Intro */}
         <div className="glass-card p-6">
@@ -153,7 +151,7 @@ export default function ArchitecturePage() {
           </div>
           <div className="glass-card p-0 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[600px]">
+              <table className="w-full min-w-0 text-sm md:min-w-[600px]">
                 <thead>
                   <tr className="text-text-muted text-xs uppercase tracking-wider border-b border-border-subtle bg-bg-secondary">
                     <th className="text-left px-5 py-3 w-16">Phase</th>
@@ -211,7 +209,6 @@ export default function ArchitecturePage() {
             </div>
           ))}
         </div>
-      </div>
-    </>
+    </div>
   );
 }

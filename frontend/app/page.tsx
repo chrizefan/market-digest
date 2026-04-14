@@ -1,7 +1,7 @@
 'use client';
 
 import { useDashboard } from '@/lib/dashboard-context';
-import PageHeader from '@/components/page-header';
+import { SUBPAGE_MAX } from '@/components/subpage-tab-bar';
 import {
   TrendingUp,
   DollarSign,
@@ -58,9 +58,7 @@ export default function OverviewPage() {
   });
 
   return (
-    <>
-      <PageHeader title="Overview" sticky={false} />
-      <div className="p-10 max-w-[1400px] mx-auto w-full space-y-8 max-md:p-4">
+    <div className={`${SUBPAGE_MAX} space-y-8 py-4 md:py-6`}>
         <div className={`glass-card p-6 sm:p-8 border-l-4 ${regimeSurface} ${regimeStyle.split(' ')[1]}`}>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
             <div className="min-w-0 flex-1 w-full">
@@ -246,11 +244,11 @@ export default function OverviewPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-text-muted text-xs uppercase tracking-wider border-b border-border-subtle">
-                    <th className="text-left px-5 py-3">ID</th>
-                    <th className="text-left px-5 py-3">Thesis</th>
-                    <th className="text-left px-5 py-3">Vehicle</th>
-                    <th className="text-left px-5 py-3">Status</th>
+                  <tr className="border-b border-border-subtle text-xs uppercase tracking-wider text-text-muted">
+                    <th className="px-4 py-3 text-left md:px-5">ID</th>
+                    <th className="px-4 py-3 text-left md:px-5">Thesis</th>
+                    <th className="hidden px-5 py-3 text-left sm:table-cell">Vehicle</th>
+                    <th className="px-4 py-3 text-left md:px-5">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-subtle">
@@ -265,7 +263,7 @@ export default function OverviewPage() {
                           : 'text-text-muted';
                     return (
                       <tr key={i} className="hover:bg-white/[0.02]">
-                        <td className="px-5 py-3 font-mono">
+                        <td className="px-4 py-3 font-mono md:px-5">
                           <Link
                             href={`/portfolio?tab=analysis&thesis=${encodeURIComponent(t.id)}`}
                             className="text-fin-blue hover:underline"
@@ -273,9 +271,9 @@ export default function OverviewPage() {
                             {t.id}
                           </Link>
                         </td>
-                        <td className="px-5 py-3 font-medium">{t.name}</td>
-                        <td className="px-5 py-3 font-mono text-text-secondary">{t.vehicle}</td>
-                        <td className={`px-5 py-3 font-semibold ${statusColor}`}>{t.status}</td>
+                        <td className="px-4 py-3 font-medium md:px-5">{t.name}</td>
+                        <td className="hidden px-5 py-3 font-mono text-text-secondary sm:table-cell">{t.vehicle}</td>
+                        <td className={`px-4 py-3 font-semibold md:px-5 ${statusColor}`}>{t.status}</td>
                       </tr>
                     );
                   })}
@@ -311,7 +309,6 @@ export default function OverviewPage() {
             How Atlas works (architecture)
           </Link>
         </p>
-      </div>
-    </>
+    </div>
   );
 }

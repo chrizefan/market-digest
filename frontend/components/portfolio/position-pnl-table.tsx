@@ -20,7 +20,7 @@ export function PositionPnlTable({
 
   return (
     <div className="glass-card p-0 overflow-hidden">
-      <div className="px-6 py-5 border-b border-border-subtle bg-bg-secondary">
+      <div className="border-b border-border-subtle bg-bg-secondary px-4 py-4 md:px-6 md:py-5">
         <h3 className="text-lg font-semibold">Position P&amp;L</h3>
         <p className="text-text-muted text-sm mt-1">
           Unrealized return per position (entry price to latest close).
@@ -28,16 +28,16 @@ export function PositionPnlTable({
         </p>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[720px]">
+        <table className="w-full min-w-0 text-sm md:min-w-[720px]">
           <thead>
             <tr className="text-text-muted text-xs uppercase tracking-wider">
-              <th className="text-left px-6 py-4">Ticker</th>
-              <th className="text-right px-6 py-4">Weight</th>
-              <th className="text-right px-6 py-4">Entry</th>
-              <th className="text-right px-6 py-4">Current</th>
-              <th className="text-right px-6 py-4">P&amp;L %</th>
-              <th className="text-right px-6 py-4">Contribution</th>
-              {showCharts ? <th className="px-6 py-4 w-10" aria-label="Expand" /> : null}
+              <th className="px-4 py-4 text-left md:px-6">Ticker</th>
+              <th className="px-4 py-4 text-right md:px-6">Weight</th>
+              <th className="hidden px-6 py-4 text-right md:table-cell">Entry</th>
+              <th className="hidden px-6 py-4 text-right md:table-cell">Current</th>
+              <th className="px-4 py-4 text-right md:px-6">P&amp;L %</th>
+              <th className="hidden px-6 py-4 text-right sm:table-cell">Contribution</th>
+              {showCharts ? <th className="w-10 px-3 py-4 md:px-6" aria-label="Expand" /> : null}
             </tr>
           </thead>
           <tbody className="divide-y divide-border-subtle">
@@ -72,35 +72,35 @@ export function PositionPnlTable({
                         : 'hover:bg-white/[0.02] transition-colors'
                     }
                   >
-                    <td className="px-6 py-3 font-semibold">{p.ticker}</td>
-                    <td className="px-6 py-3 text-right font-mono tabular-nums">
+                    <td className="px-4 py-3 font-semibold md:px-6">{p.ticker}</td>
+                    <td className="px-4 py-3 text-right font-mono tabular-nums md:px-6">
                       {p.weight_actual?.toFixed(1)}%
                     </td>
-                    <td className="px-6 py-3 text-right font-mono tabular-nums text-text-secondary">
+                    <td className="hidden px-6 py-3 text-right font-mono tabular-nums text-text-secondary md:table-cell">
                       {entry ? `$${entry.toFixed(2)}` : '—'}
                     </td>
-                    <td className="px-6 py-3 text-right font-mono tabular-nums">
+                    <td className="hidden px-6 py-3 text-right font-mono tabular-nums md:table-cell">
                       {curr ? `$${curr.toFixed(2)}` : '—'}
                     </td>
                     <td
-                      className={`px-6 py-3 text-right font-mono tabular-nums font-semibold ${
+                      className={`px-4 py-3 text-right font-mono tabular-nums font-semibold md:px-6 ${
                         pnlPct != null ? (pnlPct >= 0 ? 'text-fin-green' : 'text-fin-red') : ''
                       }`}
                     >
                       {pnlPct != null ? `${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%` : '—'}
                     </td>
-                    <td className="px-6 py-3 text-right font-mono tabular-nums text-text-secondary">
+                    <td className="hidden px-6 py-3 text-right font-mono tabular-nums text-text-secondary sm:table-cell">
                       {contrib != null ? `${contrib >= 0 ? '+' : ''}${contrib.toFixed(2)}%` : '—'}
                     </td>
                     {showCharts ? (
-                      <td className="px-6 py-3 text-text-muted">
+                      <td className="px-3 py-3 text-text-muted md:px-6">
                         {skipChart ? null : isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                       </td>
                     ) : null}
                   </tr>
                   {isOpen && priceChartAnchorDate && !skipChart ? (
                     <tr className="bg-white/[0.02]">
-                      <td colSpan={7} className="px-6 py-5 border-t border-border-subtle">
+                      <td colSpan={7} className="border-t border-border-subtle px-4 py-5 md:px-6">
                         <PositionPriceChart ticker={p.ticker} anchorDate={priceChartAnchorDate} />
                       </td>
                     </tr>

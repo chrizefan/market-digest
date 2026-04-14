@@ -4,6 +4,7 @@ import { Inter, Space_Mono } from 'next/font/google';
 import { DashboardProvider } from '@/lib/dashboard-context';
 import { AppShellProvider } from '@/components/app-shell-context';
 import Sidebar from '@/components/sidebar';
+import MobileAppBar from '@/components/mobile-app-bar';
 import Starfield from '@/components/starfield';
 
 const inter = Inter({
@@ -39,8 +40,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <Suspense fallback={<aside className="w-[260px] shrink-0 border-r border-border-subtle bg-bg-glass" />}>
                 <Sidebar />
               </Suspense>
-              <main className="flex-1 flex flex-col overflow-y-auto max-h-screen min-w-0">
-                {children}
+              <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto max-h-screen">
+                <MobileAppBar />
+                <div className="flex min-h-0 flex-1 flex-col">{children}</div>
               </main>
             </div>
           </AppShellProvider>

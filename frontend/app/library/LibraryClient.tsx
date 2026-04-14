@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Calendar, ChevronDown, ChevronRight, Filter, FileText, Search, X } from 'lucide-react';
 
-import PageHeader from '@/components/page-header';
+import { SUBPAGE_MAX } from '@/components/subpage-tab-bar';
 import DeltaDaySummary from '@/components/library/DeltaDaySummary';
 import LibraryDocumentBody from '@/components/library/LibraryDocumentBody';
 import { useDashboard } from '@/lib/dashboard-context';
@@ -188,9 +188,7 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
     return <div className="flex items-center justify-center h-screen text-fin-red">{error}</div>;
 
   return (
-    <>
-      <PageHeader title="Research Library" />
-      <div className="p-10 max-w-[1600px] mx-auto w-full max-md:p-4">
+    <div className={`${SUBPAGE_MAX} py-4 md:py-5`}>
         <div className="flex gap-6 max-lg:flex-col">
           {/* ── Left: Calendar + filters ── */}
           <div className="w-56 shrink-0 space-y-4 max-lg:w-full max-lg:flex max-lg:gap-4 max-lg:flex-wrap">
@@ -436,8 +434,7 @@ function LibraryPageInner({ urlDate, urlDocKey }: { urlDate: string | null; urlD
             )}
           </div>
         </div>
-      </div>
-    </>
+    </div>
   );
 }
 
