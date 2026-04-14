@@ -448,7 +448,7 @@ Checks per phase:
          │     +                                      │
          │   Local data files (quotes, macro)          │
          │     +                                      │
-         │   Prior day's memory files                  │
+         │   Prior context from Supabase daily_snapshots│
          │     +                                      │
          │   Config files (watchlist, profile, etc.)   │
          └──────────────────────┬────────────────────┘
@@ -572,32 +572,17 @@ Checks per phase:
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 5.5 Memory System (Agent Continuity)
+### 5.5 Research Continuity (Supabase-first)
 
-```
-memory/
-├── macro/ROLLING.md                    Daily entries (## YYYY-MM-DD)
-├── equity/ROLLING.md                   ↑ Last 3 entries for trend continuity
-├── crypto/ROLLING.md
-├── bonds/ROLLING.md
-├── commodities/ROLLING.md
-├── forex/ROLLING.md
-├── international/ROLLING.md
-├── sectors/
-│   ├── technology/ROLLING.md
-│   ├── healthcare/ROLLING.md
-│   └── ... (11 total)
-├── alternative-data/
-│   ├── sentiment/ROLLING.md
-│   ├── cta/ROLLING.md
-│   ├── options/ROLLING.md
-│   └── politician/ROLLING.md
-└── institutional/
-    ├── flows/ROLLING.md
-    └── hedge-funds/ROLLING.md
-```
+Agent continuity is provided by Supabase — no local memory files required:
 
-Each segment writes a new `## YYYY-MM-DD` entry after every analysis. At the start of the next day, the agent reads the last 3 entries to maintain analytical continuity.
+| Table | Content |
+|-------|---------|
+| `daily_snapshots` | Per-date bias and regime rows; agents query last 3 entries per segment |
+| `documents` | Segment narratives, research notes, portfolio records — keyed by `document_key` |
+| `documents (research/*)` | Dynamic research library: deep dives, concepts, themes |
+
+Agents query Supabase at session start and publish at session end. Append-only semantics preserved via unique `(date, document_key)` upserts.
 
 ---
 

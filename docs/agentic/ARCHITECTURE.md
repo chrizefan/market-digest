@@ -252,7 +252,7 @@ Output: `data/agent-cache/daily/{{DATE}}/positions/{{TICKER}}.md` (one file per 
 - Produces rebalance table: Hold / Add / Trim / Exit / New
 - Output: `data/agent-cache/daily/{{DATE}}/rebalance-decision.md`
 - Updates `config/portfolio.json` → `proposed_positions[]`
-- Appends to `memory/portfolio/ROLLING.md`
+- Publishes portfolio rebalance record to Supabase `documents`
 
 ---
 
@@ -260,7 +260,7 @@ Output: `data/agent-cache/daily/{{DATE}}/positions/{{TICKER}}.md` (one file per 
 
 ```bash
 python3 scripts/update-tearsheet.py   # recalculates NAV, writes dashboard-data.json
-./scripts/git-commit.sh               # commit config + memory (digest data lives in Supabase)
+./scripts/git-commit.sh               # commit config (digest data lives in Supabase)
 ```
 
 The Python backend reads all `DIGEST.md` files chronologically, extracts Target Allocation statements via regex, fetches historical closes from Yahoo Finance (`yfinance`), simulates daily NAV tracking from the first entry date, computes performance metrics and drawdown, then writes `frontend/public/dashboard-data.json`.
@@ -351,52 +351,21 @@ data/agent-cache/daily/YYYY-MM-DD/
 
 ---
 
-## Memory System Architecture
+## Research Continuity Architecture
 
-25 memory files form the system's long-term intelligence layer:
+Supabase is the system's long-term intelligence layer. Research continuity across sessions is achieved by querying prior rows at session start rather than reading flat files.
 
-```
-memory/
-  BIAS-TRACKER.md                   14-column daily cross-asset bias table
-  THESES.md                         Active investment thesis register
-  portfolio/ROLLING.md              Portfolio evolution and rebalance history
-  macro/ROLLING.md
-  equity/ROLLING.md
-  crypto/ROLLING.md
-  bonds/ROLLING.md
-  commodities/ROLLING.md
-  forex/ROLLING.md
-  international/ROLLING.md
-  sectors/
-    technology/ROLLING.md
-    healthcare/ROLLING.md
-    energy/ROLLING.md
-    financials/ROLLING.md
-    consumer-staples/ROLLING.md
-    consumer-disc/ROLLING.md
-    industrials/ROLLING.md
-    utilities/ROLLING.md
-    materials/ROLLING.md
-    real-estate/ROLLING.md
-    comms/ROLLING.md
-  alternative-data/
-    sentiment/ROLLING.md
-    cta-positioning/ROLLING.md
-    options/ROLLING.md
-    politician/ROLLING.md
-  institutional/
-    flows/ROLLING.md
-    hedge-funds/ROLLING.md
-  evolution/
-    sources.md
-    quality-log.md
-    proposals.md
-```
+**Supabase tables used for continuity:**
 
-**Memory protocol:**
-- Append-only — never delete or rewrite history
-- Format: `## YYYY-MM-DD` header + 3–5 bullet observations per session
-- Read at session start, written at session end
+| Table | Content |
+|-------|---------|
+| `daily_snapshots` | Per-date bias rows (14 columns: macro regime, equity/crypto/bond/commodity/forex bias, VIX, inst. flow, options sentiment, CTA direction, HF consensus, Fed odds, notes) |
+| `documents` | Per-segment research documents keyed by `(date, file_path)` — covers all 25 segments: macro, equity, crypto, bonds, commodities, forex, international, 11 sectors, 4 alt-data sub-segments, 2 institutional, portfolio, thesis data |
+
+**Research continuity protocol:**
+- Query Supabase at session start — retrieve last 3 entries per relevant segment for trend identification
+- Publish new documents at session end via `publish_document.py` or `materialize_snapshot.py`
+- Append-only semantics preserved in Supabase via unique `(date, file_path)` keys on `documents`
 - Creates compounding intelligence — each session builds on all prior research in every domain
 
 ---
@@ -408,15 +377,15 @@ config/watchlist.md ────────────────────
 config/preferences.md ──────────────────────────────────────┐│
 config/hedge-funds.md ─────────────────────┐                ││
                                            │                ││
-memory/*/ROLLING.md ──────────────────┐    │(all skills read)│
-(25 files loaded at session start)    │    │                 │
+Supabase daily_snapshots/documents ───┐    │(all skills read)│
+(prior context queried at session start)│   │                 │
                                       ▼    ▼                 ▼
          Phase 1 ─► output files ──► Phase 2 ─► Phase 3 ─► Phase 4 ─► Phase 5
                                                     │
                                  (macro regime anchors all phases below)
                                                     │
-                                           Phase 6: memory COMMIT
-                                         (all 25 files appended)
+                                           Phase 6: Supabase PUBLISH
+                                         (all segment documents published)
                                                     │
                                            Phase 7: DIGEST.md
                                          (all segments → 1 master file)
@@ -505,7 +474,6 @@ digiquant-atlas/
     sectors/                         11 GICS sector skills (5B-5L)
     alternative-data/                4 alt-data skills (1A-1D)
     institutional/                   2 institutional skills (2A-2B)
-  memory/                            25 append-only research logs (see above)
   templates/                         Output templates (master-digest.md schema is immutable)
   scripts/
     new-day.sh                       Auto-detect Sunday(baseline) vs weekday(delta)
@@ -514,11 +482,11 @@ digiquant-atlas/
     run-segment.sh                   Print single-segment prompt (--delta flag)
     combine-digest.sh                Synthesis prompt printer
     materialize.sh                   Build DIGEST.md from baseline + deltas
-    git-commit.sh                    Commit config/memory (--evolution for phase 9 branch)
+    git-commit.sh                    Commit config (--evolution for phase 9 branch)
     update-tearsheet.py              Python dashboard backend
     publish-update.sh                Push + deploy to GitHub Pages
     monthly-rollup.sh                Monthly synthesis
-    memory-search.sh                 Grep all 25 ROLLING.md files
+    memory-search.sh                 Query Supabase daily_snapshots and documents
   agents/                            Named agent role definitions
   frontend/                          React + Vite dashboard (digiquant.io)
     src/pages/                       Dashboard, Portfolio, Signals, Sectors,
@@ -540,5 +508,4 @@ digiquant-atlas/
 ---
 
 *For platform setup (Claude, Cursor, Windsurf, Copilot), see `docs/agentic/PLATFORMS.md`.*
-*For memory file format spec, see `docs/agentic/MEMORY-SYSTEM.md`.*
 *For complete skill catalog, see `docs/agentic/SKILLS-CATALOG.md`.*
