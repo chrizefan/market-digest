@@ -41,8 +41,8 @@ Do NOT use defuddle for `.md` files, `.json` endpoints, or Supabase/API URLs —
 
 ## Research Library
 Two-tier knowledge base:
-- **Tier 1** — Static doctrine papers in `docs/research/papers/` (git-tracked, 7 files)
-- **Tier 2** — Dynamic research notes in Supabase `documents` (`document_key: research/*`)
+- **Tier 1** — Quick-reference summary in `docs/research/LIBRARY.md`; full papers in Supabase under `research/papers/*` (7 doctrine papers)
+- **Tier 2** — Dynamic deep dives, concepts, themes in Supabase `documents` (`document_key: research/deep-dives/*`, `research/concepts/*`)
 
 ```bash
 python3 scripts/fetch_research_library.py             # index

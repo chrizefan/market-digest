@@ -1,11 +1,11 @@
 ---
 name: research-library
 description: >
-  Load curated research from the two-tier research library. Tier 1: static doctrine papers
-  in docs/research/ (factor investing, momentum, risk — git-tracked). Tier 2: dynamic
-  research notes (deep dives, concepts, themes) stored in Supabase documents table under
-  the research/ document_key namespace. Use when the portfolio manager, asset analyst,
-  or orchestrator needs evidence-based allocation rules or prior deep-dive research.
+  Load curated research from the two-tier research library. Tier 1: doctrine papers and
+  dynamic deep dives in Supabase under research/papers/ and research/deep-dives/.
+  Tier 2: quick-reference summary in docs/research/LIBRARY.md (load first for fast context).
+  Use when the portfolio manager, asset analyst, or orchestrator needs evidence-based
+  allocation rules or prior deep-dive research.
   Triggers: "research library", "paper notes", "tactical allocation doctrine", "cite research",
   "what do we know about", "prior research on".
 ---
@@ -16,31 +16,21 @@ Two-tier knowledge base. Load only what the current task needs.
 
 ---
 
-## Tier 1 — Static Doctrine Papers (git-tracked)
+## Tier 1 — Quick-Reference Summary (git-tracked)
 
-Seven peer-reviewed summaries covering factor investing, momentum, macro regime, and risk.
-
-**Load sequence:**
-1. Read `docs/research/LIBRARY.md` — index and quick-reference tables.
-2. Open **1–3** matching files under `docs/research/papers/` only (not all seven).
-
-**Papers available:**
-- `tactical-asset-allocation.md` — Faber SMA, Antonacci dual momentum, TSMOM
-- `momentum-trend.md` — lookback periods, cross-sectional vs. time-series
-- `factor-investing.md` — value, quality, low-vol factors
-- `portfolio-construction.md` — Black-Litterman, Kelly, position sizing
-- `risk-management.md` — drawdown budgeting, stop discipline
-- `macro-regime.md` — Ilmanen 4-quadrant, regime classification
-- `behavioral-finance.md` — Kahneman, Shefrin, anti-anchoring guardrails
+`docs/research/LIBRARY.md` — 575-line condensed index of all doctrine papers with
+Quick Reference tables, per-asset decision rules, and agent loading instructions.
+**Always load this first.** It is the fastest path to citable allocation rules.
 
 ---
 
-## Tier 2 — Dynamic Research Notes (Supabase)
+## Tier 2 — Full Papers + Deep Dives (Supabase)
 
-Agent-generated deep dives, concept notes, and theme analyses published during pipeline runs.
+All papers and deep dives live in the `documents` table under `research/` keys.
 
 **document_key patterns:**
-- `research/deep-dives/{TICKER}-{DATE}` — single-asset deep dives
+- `research/papers/{SLUG}` — static doctrine papers (7 papers uploaded 2026-04-05)
+- `research/deep-dives/{TICKER}-{DATE}` — single-asset or theme deep dives
 - `research/concepts/{SLUG}` — timeless frameworks and concepts
 - `research/themes/{SLUG}-{DATE}` — market theme analyses
 

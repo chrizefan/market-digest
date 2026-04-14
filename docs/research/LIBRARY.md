@@ -5,7 +5,7 @@
 > Asset Analyst (SKILL-asset-analyst.md) and Portfolio Manager (SKILL-portfolio-manager.md)
 > agents. **Load this file at the start of any portfolio analysis session.**
 >
-> For detailed per-paper notes, see `docs/research/papers/`.
+> For detailed per-paper notes, fetch from Supabase: `python3 scripts/fetch_research_library.py --type paper`
 
 ---
 
@@ -561,15 +561,22 @@ effect is irrational: it ignores expected future returns completely.
 
 ## Further Reading
 
-Detailed per-paper notes are in `docs/research/papers/`:
-- [tactical-asset-allocation.md](papers/tactical-asset-allocation.md) — Faber & Antonacci deep dives
-- [momentum-trend.md](papers/momentum-trend.md) — Moskowitz, Hurst, Asness, Jegadeesh papers
-- [factor-investing.md](papers/factor-investing.md) — Fama-French, Carhart, Harvey
-- [portfolio-construction.md](papers/portfolio-construction.md) — Markowitz, Black-Litterman, Kelly
-- [macro-regime.md](papers/macro-regime.md) — Baur, Gorton, Erb, Ilmanen
-- [behavioral-finance.md](papers/behavioral-finance.md) — Kahneman, Tversky, Shefrin, Statman
+Full paper notes are in Supabase (`research/papers/*`). Fetch any paper during a session:
+
+```bash
+python3 scripts/fetch_research_library.py --type paper          # list all 7 papers
+python3 scripts/fetch_research_library.py --key research/papers/macro-regime
+python3 scripts/fetch_research_library.py --key research/papers/momentum-trend
+python3 scripts/fetch_research_library.py --key research/papers/portfolio-construction
+python3 scripts/fetch_research_library.py --key research/papers/risk-management
+python3 scripts/fetch_research_library.py --key research/papers/factor-investing
+python3 scripts/fetch_research_library.py --key research/papers/tactical-asset-allocation
+python3 scripts/fetch_research_library.py --key research/papers/behavioral-finance
+```
+
+Papers available: `macro-regime` · `momentum-trend` · `portfolio-construction` · `risk-management` · `factor-investing` · `tactical-asset-allocation` · `behavioral-finance`
 
 ---
 
-*Library version: 1.0 | Created: 2025 | Maintained in `docs/research/`*
+*Library version: 1.1 | Updated: 2026-04-14 | Full papers migrated to Supabase (`research/papers/*`)*
 *Papers are cited by author/year. Verify against published versions for quantitative thresholds.*
