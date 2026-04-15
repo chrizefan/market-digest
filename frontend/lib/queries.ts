@@ -1096,6 +1096,54 @@ export async function fetchComparablePriceHistory(
   return out;
 }
 
+export type PriceOHLCRow = { date: string; open: number | null; close: number };
+export type PriceHistoryOHLCMap = Record<string, { history: PriceOHLCRow[] }>;
+
+/**
+ * Load open+close prices from price_history for simulations (date window inclusive).
+ * Paginates past PostgREST default row limits.
+ */
+export async function fetchPriceHistoryOHLC(
+  tickers: string[],
+  minDate: string,
+  maxDate: string
+): Promise<PriceHistoryOHLCMap> {
+  if (!isSupabaseConfigured() || !supabase || tickers.length === 0) return {};
+  const norm = [...new Set(tickers.map((t) => String(t).toUpperCase().trim()).filter(Boolean))];
+  if (norm.length === 0) return {};
+
+  type Ph = Pick<TableRow<'price_history'>, 'date' | 'ticker' | 'open' | 'close'>;
+  const all: Ph[] = [];
+  let offset = 0;
+  while (offset < COMPARABLE_MAX_ROWS) {
+    const { data, error } = await supabase
+      .from('price_history')
+      .select('date, ticker, open, close')
+      .in('ticker', norm)
+      .gte('date', minDate)
+      .lte('date', maxDate)
+      .order('date', { ascending: true })
+      .range(offset, offset + COMPARABLE_PAGE - 1);
+
+    if (error) {
+      console.error('fetchPriceHistoryOHLC:', error);
+      break;
+    }
+    const chunk = (data ?? []) as Ph[];
+    all.push(...chunk);
+    if (chunk.length < COMPARABLE_PAGE) break;
+    offset += COMPARABLE_PAGE;
+  }
+
+  const out: PriceHistoryOHLCMap = {};
+  for (const row of all) {
+    const t = row.ticker;
+    if (!out[t]) out[t] = { history: [] };
+    out[t].history.push({ date: row.date, open: row.open, close: Number(row.close) });
+  }
+  return out;
+}
+
 const DIGEST_SNAPSHOT_PAGE = 500;
 const DIGEST_SNAPSHOT_MAX_ROWS = 50000;
 

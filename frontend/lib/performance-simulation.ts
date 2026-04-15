@@ -14,23 +14,32 @@ export type RebalanceStrategy =
   | 'hybrid';
 
 export type SimulationCostParams = {
-  /** Flat cost per traded ticker (subtracted from portfolio value; same units as V). */
-  fixedUsdPerTrade: number;
+  /** Flat commission per traded ticker, in basis points of portfolio value (per leg). */
+  fixedBpsPerLeg: number;
   /** Basis points on turnover notional (turnover/100 * V). */
   bpsOnNotional: number;
 };
+
+export type PriceField = 'open' | 'close';
 
 export type SimulationParams = {
   strategy: RebalanceStrategy;
   /** Drift band in percentage points vs target (e.g. 5). */
   driftBandPp: number;
+  /**
+   * Which price point to use for returns / drift.
+   * - 'close' = close-to-close (legacy)
+   * - 'open' = open-to-open (preferred baseline for “rebalance at open”)
+   */
+  priceField: PriceField;
   cost: SimulationCostParams;
 };
 
 export const DEFAULT_SIMULATION_PARAMS: SimulationParams = {
   strategy: 'daily_benchmark',
   driftBandPp: 5,
-  cost: { fixedUsdPerTrade: 0, bpsOnNotional: 0 },
+  priceField: 'close',
+  cost: { fixedBpsPerLeg: 0, bpsOnNotional: 0 },
 };
 
 export type PerformanceSimulationInput = {
@@ -38,8 +47,8 @@ export type PerformanceSimulationInput = {
   dates: string[];
   /** Target weights (pp) per date after forward-fill from digest snapshots. */
   targetsByDate: Map<string, TargetWeights>;
-  /** ticker UPPER -> date -> close */
-  closeByTickerDate: Map<string, Map<string, number>>;
+  /** ticker UPPER -> date -> price (open or close, depending on params.priceField) */
+  priceByTickerDate: Map<string, Map<string, number>>;
   params?: Partial<SimulationParams>;
 };
 
@@ -94,12 +103,12 @@ function getClose(m: Map<string, number> | undefined, d: string, fallback: numbe
 function forwardFillCloseMapsToDates(
   dates: string[],
   tickers: string[],
-  closeByTickerDate: Map<string, Map<string, number>>
+  priceByTickerDate: Map<string, Map<string, number>>
 ): Map<string, Map<string, number>> {
   const out = new Map<string, Map<string, number>>();
   for (const t of tickers) {
     if (t === 'CASH') continue;
-    const src = closeByTickerDate.get(t);
+    const src = priceByTickerDate.get(t);
     if (!src || src.size === 0) continue;
 
     // Seed with earliest known close (by date string sort, ISO YYYY-MM-DD).
@@ -125,7 +134,7 @@ function grossReturnFactor(
   tickers: string[],
   d0: string,
   d1: string,
-  closeByTickerDate: Map<string, Map<string, number>>
+  priceByTickerDate: Map<string, Map<string, number>>
 ): number {
   let num = 0;
   for (let i = 0; i < tickers.length; i++) {
@@ -134,8 +143,8 @@ function grossReturnFactor(
       num += w[i];
       continue;
     }
-    const p0 = getClose(closeByTickerDate.get(t), d0, 1);
-    const p1 = getClose(closeByTickerDate.get(t), d1, p0);
+    const p0 = getClose(priceByTickerDate.get(t), d0, 1);
+    const p1 = getClose(priceByTickerDate.get(t), d1, p0);
     const r = p0 > 0 ? p1 / p0 : 1;
     num += w[i] * r;
   }
@@ -147,12 +156,12 @@ function driftWeights(
   tickers: string[],
   d0: string,
   d1: string,
-  closeByTickerDate: Map<string, Map<string, number>>
+  priceByTickerDate: Map<string, Map<string, number>>
 ): number[] {
   const raw = tickers.map((t, i) => {
     if (t === 'CASH') return w[i];
-    const p0 = getClose(closeByTickerDate.get(t), d0, 1);
-    const p1 = getClose(closeByTickerDate.get(t), d1, p0);
+    const p0 = getClose(priceByTickerDate.get(t), d0, 1);
+    const p1 = getClose(priceByTickerDate.get(t), d1, p0);
     const r = p0 > 0 ? p1 / p0 : 1;
     return w[i] * r;
   });
@@ -183,6 +192,81 @@ function legCountFrac(wFrom: number[], wTo: number[]): number {
     if (Math.abs(wFrom[i] - wTo[i]) > 1e-6) n++;
   }
   return n;
+}
+
+function rankedRebalance(
+  wFrom: number[],
+  wTarget: number[],
+  driftBandPp: number
+): number[] {
+  const n = wFrom.length;
+  const next = [...wFrom];
+  const driftPp = wFrom.map((w, i) => (w - wTarget[i]) * 100);
+
+  const fix = new Set<number>();
+  for (let i = 0; i < n; i++) {
+    if (Math.abs(driftPp[i]) >= driftBandPp) fix.add(i);
+  }
+  if (fix.size === 0) return next;
+
+  // Set breached tickers to target first.
+  let cashNeeded = 0;
+  for (const i of fix) {
+    cashNeeded += wTarget[i] - next[i];
+    next[i] = wTarget[i];
+  }
+
+  // Candidates ranked by absolute drift, excluding fixed ones.
+  const ranked = [...Array(n).keys()]
+    .filter((i) => !fix.has(i))
+    .sort((a, b) => Math.abs(driftPp[b]) - Math.abs(driftPp[a]));
+
+  const eps = 1e-10;
+  if (cashNeeded > eps) {
+    // Need to buy into fixed assets → sell from overweight names first.
+    for (const i of ranked) {
+      const available = Math.max(0, next[i] - wTarget[i]);
+      if (available <= eps) continue;
+      const take = Math.min(available, cashNeeded);
+      next[i] -= take;
+      cashNeeded -= take;
+      if (cashNeeded <= eps) break;
+    }
+    // If still short, proportionally trim remaining non-fixed weights.
+    if (cashNeeded > eps) {
+      const pool = ranked.reduce((s, i) => s + next[i], 0);
+      if (pool > eps) {
+        for (const i of ranked) {
+          const take = (next[i] / pool) * cashNeeded;
+          next[i] = Math.max(0, next[i] - take);
+        }
+        cashNeeded = 0;
+      }
+    }
+  } else if (cashNeeded < -eps) {
+    // Need to sell fixed assets → buy underweight names first.
+    let toDeploy = -cashNeeded;
+    for (const i of ranked) {
+      const need = Math.max(0, wTarget[i] - next[i]);
+      if (need <= eps) continue;
+      const give = Math.min(need, toDeploy);
+      next[i] += give;
+      toDeploy -= give;
+      if (toDeploy <= eps) break;
+    }
+    // If still have capital, spread across ranked names proportionally.
+    if (toDeploy > eps) {
+      const pool = ranked.reduce((s, i) => s + (1 - next[i]), 0);
+      if (pool > eps) {
+        for (const i of ranked) {
+          const give = ((1 - next[i]) / pool) * toDeploy;
+          next[i] += give;
+        }
+      }
+    }
+  }
+
+  return normalizeFrac(next);
 }
 
 function isUtcFriday(iso: string): boolean {
@@ -241,7 +325,7 @@ function shouldRebalance(
  * Run single-path simulation. Missing target for a date skips that day (null value).
  */
 /** Build ticker→date→close maps from `fetchComparablePriceHistory` output. */
-export function buildCloseMapFromBenchmarkHistory(
+export function buildPriceMapFromBenchmarkHistory(
   bench: Record<string, { history?: Array<{ date: string; price: number }> }>,
   tickers: string[]
 ): Map<string, Map<string, number>> {
@@ -259,8 +343,12 @@ export function buildCloseMapFromBenchmarkHistory(
 }
 
 export function runPerformanceSimulation(input: PerformanceSimulationInput): PerformanceSimulationResult {
-  const { dates, targetsByDate, closeByTickerDate } = input;
-  const p: SimulationParams = { ...DEFAULT_SIMULATION_PARAMS, ...input.params, cost: { ...DEFAULT_SIMULATION_PARAMS.cost, ...input.params?.cost } };
+  const { dates, targetsByDate, priceByTickerDate } = input;
+  const p: SimulationParams = {
+    ...DEFAULT_SIMULATION_PARAMS,
+    ...input.params,
+    cost: { ...DEFAULT_SIMULATION_PARAMS.cost, ...input.params?.cost },
+  };
 
   if (dates.length < 2) {
     return { valueIndex: dates.map((d) => ({ date: d, value: 100 })), totalCostDragPoints: 0 };
@@ -270,7 +358,7 @@ export function runPerformanceSimulation(input: PerformanceSimulationInput): Per
   if (tickers.length === 0) {
     return { valueIndex: dates.map((d) => ({ date: d, value: null })), totalCostDragPoints: 0 };
   }
-  const filledCloses = forwardFillCloseMapsToDates(dates, tickers, closeByTickerDate);
+  const filledPrices = forwardFillCloseMapsToDates(dates, tickers, priceByTickerDate);
 
   const valueIndex: Array<{ date: string; value: number | null }> = [];
   let V = 100;
@@ -296,9 +384,9 @@ export function runPerformanceSimulation(input: PerformanceSimulationInput): Per
     const wTargetMap = ensureCashInTargets(tgtRaw);
     const wTargetVec = normalizeFrac(weightVector(tickers, wTargetMap));
 
-    const g = grossReturnFactor(w, tickers, d0, d1, filledCloses);
+    const g = grossReturnFactor(w, tickers, d0, d1, filledPrices);
     V *= g;
-    const wDrift = driftWeights(w, tickers, d0, d1, filledCloses);
+    const wDrift = driftWeights(w, tickers, d0, d1, filledPrices);
 
     const rebalance = shouldRebalance(
       p.strategy,
@@ -311,14 +399,18 @@ export function runPerformanceSimulation(input: PerformanceSimulationInput): Per
     );
 
     if (rebalance) {
-      const to = turnoverHalfFrac(wDrift, wTargetVec);
+      const wNext =
+        p.strategy === 'drift_band' || p.strategy === 'hybrid'
+          ? rankedRebalance(wDrift, wTargetVec, p.driftBandPp)
+          : [...wTargetVec];
+      const to = turnoverHalfFrac(wDrift, wNext);
       const costBps = V * to * (p.cost.bpsOnNotional / 10000);
-      const legs = legCountFrac(wDrift, wTargetVec);
-      const costFixed = legs * p.cost.fixedUsdPerTrade;
+      const legs = legCountFrac(wDrift, wNext);
+      const costFixed = V * legs * (p.cost.fixedBpsPerLeg / 10000);
       const cost = costBps + costFixed;
       V -= cost;
       totalCost += cost;
-      w = [...wTargetVec];
+      w = [...wNext];
     } else {
       w = [...wDrift];
     }
