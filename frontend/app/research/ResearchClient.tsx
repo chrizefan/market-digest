@@ -238,8 +238,7 @@ function ResearchPageInner({
       <SubpageStickyTabBar aria-label="Research workspace">
         <button type="button" onClick={() => setTab('daily')} className={subpageTabButtonClass(tab === 'daily')}>
           <Workflow size={16} aria-hidden />
-          <span className="hidden sm:inline">Run outputs</span>
-          <span className="sm:hidden">Runs</span>
+          Workflow
         </button>
         <button
           type="button"
@@ -256,7 +255,7 @@ function ResearchPageInner({
           <>
             <p className="text-xs text-text-muted max-w-2xl">
               Curated reference material—deep dives, papers, and standing notes that persist across dates. For
-              digest, deltas, and other outputs from each automated run, use Run outputs.
+              digest, deltas, and other artifacts from each automated run, use the Workflow tab.
             </p>
             <KnowledgeBasePanel docs={researchDocs} />
           </>
