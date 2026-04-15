@@ -930,7 +930,10 @@ export async function fetchPositionPriceChart(
   }
   const today = new Date().toISOString().slice(0, 10);
 
-  type EvPick = Pick<TableRow<'position_events'>, 'date' | 'event' | 'price' | 'reason'>;
+  type EvPick = Pick<
+    TableRow<'position_events'>,
+    'date' | 'event' | 'price' | 'reason' | 'weight_pct' | 'prev_weight_pct' | 'weight_change_pct'
+  >;
   type PhPick = Pick<TableRow<'price_history'>, 'date' | 'close'>;
 
   const [phRes, evRes] = await Promise.all([
@@ -944,7 +947,7 @@ export async function fetchPositionPriceChart(
       .limit(POSITION_CHART_PAGE),
     supabase
       .from('position_events')
-      .select('date, event, price, reason')
+      .select('date, event, price, reason, weight_pct, prev_weight_pct, weight_change_pct')
       .eq('ticker', t)
       .order('date', { ascending: true })
       .limit(POSITION_CHART_PAGE),
@@ -969,6 +972,9 @@ export async function fetchPositionPriceChart(
     event: row.event,
     price: row.price != null ? Number(row.price) : null,
     reason: row.reason ?? null,
+    weight_pct: row.weight_pct != null ? Number(row.weight_pct) : null,
+    prev_weight_pct: row.prev_weight_pct != null ? Number(row.prev_weight_pct) : null,
+    weight_change_pct: row.weight_change_pct != null ? Number(row.weight_change_pct) : null,
   }));
 
   return { priceHistory, events };

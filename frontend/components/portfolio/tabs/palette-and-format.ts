@@ -13,6 +13,13 @@ export const ALLOCATION_PALETTE = [
   '#14B8A6',
 ];
 
+/** Stable accent color for a category / grouping key (hex, for inline styles). */
+export function allocationAccentFromKey(key: string): string {
+  let h = 0;
+  for (let i = 0; i < key.length; i += 1) h = (Math.imul(31, h) + key.charCodeAt(i)) | 0;
+  return ALLOCATION_PALETTE[Math.abs(h) % ALLOCATION_PALETTE.length];
+}
+
 const CATEGORY_LABELS: Record<string, string> = {
   commodity_gold: 'Commodity — Gold',
   commodity_oil: 'Commodity — Oil',

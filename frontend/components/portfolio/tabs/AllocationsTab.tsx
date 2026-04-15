@@ -90,7 +90,11 @@ export default function AllocationsTab(props: {
   return (
     <div className="space-y-8">
       <div>
-        <SectionTitle className="mb-4">Allocation mix</SectionTitle>
+        <SectionTitle className="mb-1">Allocation mix</SectionTitle>
+        <p className="text-xs text-text-muted mb-4 max-w-3xl">
+          Snapshot of how capital is split across tickers, sectors/categories, and investment theses (same data as the
+          position list below).
+        </p>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <PieBlock title="By ticker" data={pieTicker} emptyMessage="No positions" />
           <PieBlock title="By category" data={pieCategory} emptyMessage="No category data" />

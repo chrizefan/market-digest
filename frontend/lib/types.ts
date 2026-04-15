@@ -133,14 +133,19 @@ export interface DashboardPositionEvent {
 }
 
 /** On-demand price + events for an expanded position row chart. */
+export interface PositionPriceChartEvent {
+  date: string;
+  event: 'OPEN' | 'EXIT' | 'REBALANCE' | 'HOLD';
+  price: number | null;
+  reason: string | null;
+  weight_pct: number | null;
+  prev_weight_pct: number | null;
+  weight_change_pct: number | null;
+}
+
 export interface PositionPriceChartData {
   priceHistory: Array<{ date: string; close: number }>;
-  events: Array<{
-    date: string;
-    event: 'OPEN' | 'EXIT' | 'REBALANCE' | 'HOLD';
-    price: number | null;
-    reason: string | null;
-  }>;
+  events: PositionPriceChartEvent[];
 }
 
 /** Latest row from portfolio_metrics (server-computed; optional). */
