@@ -20,6 +20,7 @@ import {
   Newspaper,
   PieChart,
   Search,
+  Settings,
   X,
 } from 'lucide-react';
 import { useDashboard } from '@/lib/dashboard-context';
@@ -107,6 +108,13 @@ export default function CommandPalette() {
         hint: 'How Atlas is wired',
         href: '/architecture',
         icon: Database,
+      },
+      {
+        id: 'go-settings',
+        title: 'Settings',
+        hint: 'Theme & shortcuts',
+        href: '/settings',
+        icon: Settings,
       },
     ];
 

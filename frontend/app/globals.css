@@ -293,3 +293,40 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* ── Light theme (class toggled on html via ThemeProvider) ─────────────── */
+html.light {
+  --color-bg-primary: #f4f4f5;
+  --color-bg-secondary: #fafafa;
+  --color-bg-glass: rgba(250, 250, 250, 0.92);
+  --color-border-subtle: #e4e4e7;
+  --color-border-glow: rgba(0, 0, 0, 0.1);
+  --color-text-primary: #18181b;
+  --color-text-secondary: #52525b;
+  --color-text-muted: #a1a1aa;
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+}
+
+html.light #network-canvas {
+  opacity: 0.06;
+}
+
+html.light .recharts-text {
+  fill: #71717a;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.22);
+}
+
+html.light .prose-invert {
+  --tw-prose-body: var(--color-text-secondary);
+  --tw-prose-headings: var(--color-text-primary);
+  --tw-prose-links: var(--color-fin-blue);
+  --tw-prose-bold: var(--color-text-primary);
+  --tw-prose-quotes: var(--color-text-secondary);
+}
