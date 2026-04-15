@@ -17,6 +17,7 @@ Operator truth for **when to run what** remains [`RUNBOOK.md`](../../RUNBOOK.md)
 | [`scripts/publish_document.py`](../../scripts/publish_document.py) | Upsert one `documents` row from JSON file path or **`--payload -`** (stdin) |
 | [`scripts/update_tearsheet.py`](../../scripts/update_tearsheet.py) | **Recovery / migration:** rescan `data/agent-cache/daily/` (markdown + JSON when present) → refresh Supabase documents / metrics / optional dashboard JSON |
 | [`scripts/execute_at_open.py`](../../scripts/execute_at_open.py) | `position_events` from rebalance + `price_history.open` |
+| [`scripts/backfill_position_events.py`](../../scripts/backfill_position_events.py) | **Gap-fill:** for each trading day from (day after latest `position_events.date`) through `--through`, runs `execute_at_open` then `prior-trading-day-rebalance` if same-day doc missing; optional `backfill_execution_prices` per day |
 | [`scripts/backfill_execution_prices.py`](../../scripts/backfill_execution_prices.py) | Fill null execution prices after opens exist |
 
 ## Market data and metrics

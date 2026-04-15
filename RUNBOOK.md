@@ -103,6 +103,13 @@ Optional **T−1 model:** execute **yesterday’s** rebalance at **today’s** o
 python3 scripts/execute_at_open.py --date YYYY-MM-DD --prior-trading-day-rebalance
 ```
 
+**Bulk gap-fill** after an outage (runs `execute_at_open` per trading day from the day after `max(position_events.date)` through `--through`):
+
+```bash
+python3 scripts/backfill_position_events.py --through YYYY-MM-DD
+```
+Use `--from YYYY-MM-DD` when there is no prior ledger row or you need an explicit range. `--dry-run` prints the planned commands.
+
 ## Compiled daily view (no extra permanent storage)
 
 Do **not** store a third “full compiled markdown” copy per weekday. The UI should **derive** the effective view by folding **Sunday baseline** + **delta ops** Mon→as-of (see [`docs/agentic/COMPILED-RESEARCH-VIEW.md`](docs/agentic/COMPILED-RESEARCH-VIEW.md)).
