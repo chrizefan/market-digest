@@ -45,7 +45,7 @@ describe('forwardFillTargetsForNavDates', () => {
 
   it('updates when a new snapshot appears on or before NAV date', () => {
     const nav = ['2024-01-01', '2024-01-05'];
-    const rows = [
+    const rows: Array<{ date: string; weights: Record<string, number> }> = [
       { date: '2024-01-01', weights: { A: 100 } },
       { date: '2024-01-05', weights: { A: 80, B: 20 } },
     ];

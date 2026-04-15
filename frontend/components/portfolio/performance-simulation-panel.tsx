@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { RebalanceStrategy, SimulationParams } from '@/lib/performance-simulation';
 import { DEFAULT_SIMULATION_PARAMS } from '@/lib/performance-simulation';
@@ -98,8 +98,29 @@ export function PerformanceSimulationPanel({
   totalCostDrag: number | null;
 }) {
   const [open, setOpen] = useState(true);
+  const [strategyOpen, setStrategyOpen] = useState(false);
+  const strategyRootRef = useRef<HTMLDivElement>(null);
 
   const showBand = stored.strategy === 'drift_band' || stored.strategy === 'hybrid';
+  const strategyLabel = useMemo(
+    () => STRATEGY_OPTIONS.find((o) => o.id === stored.strategy)?.label ?? stored.strategy,
+    [stored.strategy]
+  );
+  const strategyHint = useMemo(
+    () => STRATEGY_OPTIONS.find((o) => o.id === stored.strategy)?.hint ?? null,
+    [stored.strategy]
+  );
+
+  useEffect(() => {
+    if (!strategyOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (strategyRootRef.current && !strategyRootRef.current.contains(e.target as Node)) {
+        setStrategyOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [strategyOpen]);
 
   return (
     <div className="rounded-lg border border-border-subtle bg-bg-secondary/50 overflow-hidden">
@@ -119,20 +140,61 @@ export function PerformanceSimulationPanel({
       {open && (
         <div className="px-4 pb-4 space-y-4 border-t border-border-subtle/80">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-3">
-            <label className="space-y-1 block text-xs">
-              <span className="text-text-muted">Custom strategy</span>
-              <select
-                value={stored.strategy}
-                onChange={(e) => setStored({ strategy: e.target.value as RebalanceStrategy })}
-                className="w-full rounded-md border border-border-subtle bg-bg-primary px-2 py-1.5 text-sm text-text-primary"
-              >
-                {STRATEGY_OPTIONS.map((o) => (
-                  <option key={o.id} value={o.id} title={o.hint}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="space-y-1">
+              <p className="text-xs text-text-muted">Strategy</p>
+              <div ref={strategyRootRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setStrategyOpen((v) => !v)}
+                  aria-haspopup="listbox"
+                  aria-controls="perf-sim-strategy-listbox"
+                  className="w-full inline-flex items-center justify-between gap-2 rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-sm text-text-primary hover:border-fin-blue/40 hover:bg-white/[0.03] transition-colors focus:outline-none focus:ring-1 focus:ring-fin-blue/30"
+                >
+                  <span className="truncate">{strategyLabel}</span>
+                  <ChevronDown
+                    size={16}
+                    className={`text-text-muted shrink-0 transition-transform ${strategyOpen ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {strategyOpen && (
+                  <div className="absolute left-0 top-full z-[70] mt-1 w-full rounded-lg border border-border-subtle bg-[#141414] shadow-xl overflow-hidden">
+                    <div
+                      id="perf-sim-strategy-listbox"
+                      role="listbox"
+                      aria-label="Simulation strategy"
+                      className="py-1 max-h-64 overflow-y-auto"
+                    >
+                      {STRATEGY_OPTIONS.map((o) => {
+                        const selected = stored.strategy === o.id;
+                        return (
+                          <button
+                            key={o.id}
+                            type="button"
+                            role="option"
+                            onClick={() => {
+                              setStored({ strategy: o.id });
+                              setStrategyOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-xs transition-colors ${
+                              selected
+                                ? 'bg-fin-blue/15 text-fin-blue'
+                                : 'text-text-secondary hover:bg-white/[0.06] hover:text-text-primary'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-medium">{o.label}</span>
+                              {selected && <span className="text-[10px] uppercase tracking-wider">Selected</span>}
+                            </div>
+                            <p className="mt-0.5 text-[11px] text-text-muted leading-snug">{o.hint}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {strategyHint && <p className="text-[11px] text-text-muted leading-snug">{strategyHint}</p>}
+            </div>
             {showBand ? (
               <label className="space-y-1 block text-xs">
                 <span className="text-text-muted">Drift band (pp vs target)</span>
@@ -143,7 +205,7 @@ export function PerformanceSimulationPanel({
                   step={0.5}
                   value={stored.driftBandPp}
                   onChange={(e) => setStored({ driftBandPp: Number(e.target.value) || 5 })}
-                  className="w-full rounded-md border border-border-subtle bg-bg-primary px-2 py-1.5 text-sm font-mono"
+                  className="w-full rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-sm font-mono text-text-primary focus:outline-none focus:ring-1 focus:ring-fin-blue/30"
                 />
               </label>
             ) : (
@@ -157,7 +219,7 @@ export function PerformanceSimulationPanel({
                 step={0.01}
                 value={stored.fixedUsdPerTrade}
                 onChange={(e) => setStored({ fixedUsdPerTrade: Number(e.target.value) || 0 })}
-                className="w-full rounded-md border border-border-subtle bg-bg-primary px-2 py-1.5 text-sm font-mono"
+                className="w-full rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-sm font-mono text-text-primary focus:outline-none focus:ring-1 focus:ring-fin-blue/30"
               />
             </label>
             <label className="space-y-1 block text-xs">
@@ -169,7 +231,7 @@ export function PerformanceSimulationPanel({
                 step={1}
                 value={stored.bpsOnNotional}
                 onChange={(e) => setStored({ bpsOnNotional: Number(e.target.value) || 0 })}
-                className="w-full rounded-md border border-border-subtle bg-bg-primary px-2 py-1.5 text-sm font-mono"
+                className="w-full rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-sm font-mono text-text-primary focus:outline-none focus:ring-1 focus:ring-fin-blue/30"
               />
             </label>
           </div>
