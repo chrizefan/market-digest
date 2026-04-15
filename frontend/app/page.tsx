@@ -402,6 +402,9 @@ export default function OverviewPage() {
         />
       </div>
 
+      {/* ── Top assets (quick up/down) ─────────────────────────────────────── */}
+      {hasTopAssets && <TopAssetsPulse benchmarks={data.benchmarks ?? {}} />}
+
       {benchmarkBlurb && (
         <div className="glass-card px-5 py-3.5 border border-border-subtle/90">
           <p className="text-sm text-text-secondary leading-relaxed">
@@ -568,9 +571,6 @@ export default function OverviewPage() {
           </div>
         </div>
       </div>
-
-      {/* ── Macro Pulse (full width) ───────────────────────────────────────── */}
-      {hasTopAssets && <TopAssetsPulse benchmarks={data.benchmarks ?? {}} />}
 
       {/* ── Thesis Table ───────────────────────────────────────────────────── */}
       {strategy.theses?.length > 0 && (

@@ -1,42 +1,79 @@
  'use client';
  
- import { Line, LineChart, ResponsiveContainer, YAxis } from 'recharts';
- import type { BenchmarkHistoryMap } from '@/lib/types';
- import { DASHBOARD_BENCHMARK_TICKERS } from '@/lib/benchmark-tickers';
+import { Line, LineChart, ResponsiveContainer, YAxis } from 'recharts';
+import type { BenchmarkHistoryMap } from '@/lib/types';
  
- const LABELS: Partial<Record<(typeof DASHBOARD_BENCHMARK_TICKERS)[number], string>> = {
-   SPY: 'S&P 500',
-   QQQ: 'Nasdaq 100',
-   IWM: 'Russell 2000',
-   EEM: 'Emerging Mkts',
-   TLT: '20Y Treasuries',
-   GLD: 'Gold',
-   IBIT: 'Bitcoin',
- };
+const PREFERRED_ORDER: string[] = [
+  'SPY',
+  'QQQ',
+  'DIA',
+  'IWM',
+  'VTI',
+  'EEM',
+  'TLT',
+  'IEF',
+  'AGG',
+  'HYG',
+  'GLD',
+  'SLV',
+  'USO',
+  'UUP',
+  'IBIT',
+  'BITO',
+];
+
+const LABELS: Record<string, string> = {
+  SPY: 'S&P 500',
+  QQQ: 'Nasdaq 100',
+  DIA: 'Dow',
+  IWM: 'Russell 2000',
+  VTI: 'Total US',
+  EEM: 'EM',
+  TLT: '20Y UST',
+  IEF: '10Y UST',
+  AGG: 'Agg bonds',
+  HYG: 'High yield',
+  GLD: 'Gold',
+  SLV: 'Silver',
+  USO: 'Oil',
+  UUP: 'DXY proxy',
+  IBIT: 'Bitcoin',
+  BITO: 'BTC futures',
+};
  
  function fmt(v: number | null | undefined): string {
    if (v == null || Number.isNaN(v)) return '—';
    return v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2);
  }
  
- export default function TopAssetsPulse({ benchmarks }: { benchmarks: BenchmarkHistoryMap }) {
-   const items = DASHBOARD_BENCHMARK_TICKERS.flatMap((t) => {
-     const b = benchmarks[t];
-     if (!b?.history?.length || b.history.length < 2) return [];
-     return [{ ticker: t, history: b.history }];
-   });
+export default function TopAssetsPulse({ benchmarks }: { benchmarks: BenchmarkHistoryMap }) {
+  const availableTickers = Object.keys(benchmarks ?? {}).map((t) => String(t).toUpperCase());
+  const order = [
+    ...PREFERRED_ORDER.filter((t) => availableTickers.includes(t)),
+    ...availableTickers.filter((t) => !PREFERRED_ORDER.includes(t)).sort(),
+  ];
+
+  const items = order.flatMap((t) => {
+    const b = benchmarks[t];
+    if (!b?.history?.length || b.history.length < 2) return [];
+    return [{ ticker: t, history: b.history }];
+  });
  
    if (items.length === 0) return null;
  
    return (
-     <div className="glass-card px-5 py-5">
-       <p className="text-[10px] text-text-muted uppercase tracking-widest mb-4 flex items-center gap-2">
+    <div className="glass-card px-5 py-5">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <p className="text-[10px] text-text-muted uppercase tracking-widest flex items-center gap-2">
          <span className="inline-block w-1.5 h-1.5 rounded-full bg-fin-blue animate-pulse" />
          Top assets
-       </p>
+        </p>
+        <p className="text-[10px] text-text-muted">Scroll →</p>
+      </div>
  
-       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
-         {items.map(({ ticker, history }) => {
+      <div className="overflow-x-auto -mx-5 px-5">
+        <div className="flex gap-4 min-w-max pb-1">
+          {items.map(({ ticker, history }) => {
            const latest = history[history.length - 1]?.price ?? null;
            const prev = history[history.length - 2]?.price ?? null;
            const delta = latest != null && prev != null ? latest - prev : null;
@@ -48,7 +85,10 @@
            const data = history.map((p) => ({ x: p.date, y: p.price }));
  
            return (
-             <div key={ticker} className="min-w-0">
+             <div
+               key={ticker}
+               className="w-[220px] shrink-0 rounded-xl border border-border-subtle bg-bg-secondary/40 px-4 py-3"
+             >
                <div className="flex items-baseline justify-between gap-2 mb-1">
                  <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider truncate">
                    {LABELS[ticker] ?? ticker}
@@ -83,9 +123,10 @@
                </div>
              </div>
            );
-         })}
-       </div>
-     </div>
+          })}
+        </div>
+      </div>
+    </div>
    );
  }
 
