@@ -31,15 +31,11 @@ describe('runPerformanceSimulation', () => {
     const r = runPerformanceSimulation({
       dates,
       targetsByDate: mapTargets(dates, targets),
-      priceByTickerDate: closeMap({
+      closeByTickerDate: closeMap({
         A: { [d0]: 100, [d1]: 110, [d2]: 121 },
         B: { [d0]: 100, [d1]: 100, [d2]: 100 },
       }),
-      params: {
-        strategy: 'daily_benchmark',
-        priceField: 'close',
-        cost: { fixedBpsPerLeg: 0, bpsOnNotional: 0 },
-      },
+      params: { strategy: 'daily_benchmark', cost: { fixedUsdPerTrade: 0, bpsOnNotional: 0 } },
     });
     expect(r.valueIndex[0]).toEqual({ date: d0, value: 100 });
     expect(r.valueIndex[1].value).not.toBeNull();
@@ -54,28 +50,23 @@ describe('runPerformanceSimulation', () => {
     const daily = runPerformanceSimulation({
       dates: longDates,
       targetsByDate: mapTargets(longDates, targets),
-      priceByTickerDate: closeMap({
+      closeByTickerDate: closeMap({
         A: { [d0]: 100, [d1]: 110, [d2]: 121, [d3]: 133.1 },
         B: { [d0]: 100, [d1]: 100, [d2]: 100, [d3]: 100 },
       }),
-      params: {
-        strategy: 'daily_benchmark',
-        priceField: 'close',
-        cost: { fixedBpsPerLeg: 0, bpsOnNotional: 0 },
-      },
+      params: { strategy: 'daily_benchmark', cost: { fixedUsdPerTrade: 0, bpsOnNotional: 0 } },
     });
     const drift = runPerformanceSimulation({
       dates: longDates,
       targetsByDate: mapTargets(longDates, targets),
-      priceByTickerDate: closeMap({
+      closeByTickerDate: closeMap({
         A: { [d0]: 100, [d1]: 110, [d2]: 121, [d3]: 133.1 },
         B: { [d0]: 100, [d1]: 100, [d2]: 100, [d3]: 100 },
       }),
       params: {
         strategy: 'drift_band',
-        priceField: 'close',
         driftBandPp: 100,
-        cost: { fixedBpsPerLeg: 0, bpsOnNotional: 0 },
+        cost: { fixedUsdPerTrade: 0, bpsOnNotional: 0 },
       },
     });
     expect(drift.valueIndex[3].value).not.toEqual(daily.valueIndex[3].value);
@@ -85,7 +76,7 @@ describe('runPerformanceSimulation', () => {
     const inputs = {
       dates,
       targetsByDate: mapTargets(dates, targets),
-      priceByTickerDate: closeMap({
+      closeByTickerDate: closeMap({
         A: { [d0]: 100, [d1]: 110, [d2]: 110 },
         B: { [d0]: 100, [d1]: 100, [d2]: 100 },
       }),
@@ -94,16 +85,14 @@ describe('runPerformanceSimulation', () => {
       ...inputs,
       params: {
         strategy: 'daily_benchmark',
-        priceField: 'close',
-        cost: { fixedBpsPerLeg: 0, bpsOnNotional: 0 },
+        cost: { fixedUsdPerTrade: 0, bpsOnNotional: 0 },
       },
     });
     const withCost = runPerformanceSimulation({
       ...inputs,
       params: {
         strategy: 'daily_benchmark',
-        priceField: 'close',
-        cost: { fixedBpsPerLeg: 10, bpsOnNotional: 0 },
+        cost: { fixedUsdPerTrade: 1, bpsOnNotional: 0 },
       },
     });
     expect(withCost.totalCostDragPoints).toBeGreaterThan(0);
@@ -114,16 +103,12 @@ describe('runPerformanceSimulation', () => {
     const r = runPerformanceSimulation({
       dates,
       targetsByDate: mapTargets(dates, targets),
-      priceByTickerDate: closeMap({
+      closeByTickerDate: closeMap({
         // Missing d0 close, present d1/d2.
         A: { [d1]: 150, [d2]: 150 },
         B: { [d1]: 100, [d2]: 100 },
       }),
-      params: {
-        strategy: 'daily_benchmark',
-        priceField: 'close',
-        cost: { fixedBpsPerLeg: 0, bpsOnNotional: 0 },
-      },
+      params: { strategy: 'daily_benchmark', cost: { fixedUsdPerTrade: 0, bpsOnNotional: 0 } },
     });
     // With forward-filled closes onto NAV dates, day 1 return should be ~1, not 150x.
     expect(r.valueIndex[1].value).toBeCloseTo(100, 6);

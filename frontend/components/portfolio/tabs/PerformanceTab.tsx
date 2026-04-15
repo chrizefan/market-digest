@@ -14,10 +14,9 @@ import { ServerMetricsStrip } from '@/components/portfolio/server-metrics-strip'
 import { PerformanceChartWorkspace } from '@/components/portfolio/performance-chart-workspace';
 import AtlasLoader from '@/components/AtlasLoader';
 import { fetchComparablePriceHistory, fetchDigestTargetHistory } from '@/lib/queries';
-import { fetchPriceHistoryOHLC } from '@/lib/queries';
 import { forwardFillTargetsForNavDates, unionTickerKeys } from '@/lib/digest-targets';
 import {
-  buildPriceMapFromBenchmarkHistory,
+  buildCloseMapFromBenchmarkHistory,
   runPerformanceSimulation,
   DEFAULT_SIMULATION_PARAMS,
   type SimulationParams,
@@ -146,7 +145,7 @@ export default function PerformanceTab() {
   const [simInputs, setSimInputs] = useState<{
     navDates: string[];
     targetsByDate: Map<string, TargetWeights>;
-    priceByTickerDate: Map<string, Map<string, number>>;
+    closeByTickerDate: Map<string, Map<string, number>>;
   } | null>(null);
   const [simFetchLoading, setSimFetchLoading] = useState(false);
   const [simFetchError, setSimFetchError] = useState<string | null>(null);
@@ -175,22 +174,9 @@ export default function PerformanceTab() {
           }
           return;
         }
-        const ohlc = await fetchPriceHistoryOHLC(tickers, minD, maxD);
-        const field: 'open' | 'close' = simParams.priceField ?? 'close';
-        const benchLike: Record<string, { history?: Array<{ date: string; price: number }> }> = {};
-        for (const t of tickers) {
-          const rows = ohlc[t]?.history ?? [];
-          benchLike[t] = {
-            history: rows
-              .map((r) => ({
-                date: r.date,
-                price: field === 'open' ? Number(r.open ?? r.close) : Number(r.close),
-              }))
-              .filter((x) => x.price > 0),
-          };
-        }
-        const priceByTickerDate = buildPriceMapFromBenchmarkHistory(benchLike, tickers);
-        if (!cancelled) setSimInputs({ navDates, targetsByDate, priceByTickerDate });
+        const bench = await fetchComparablePriceHistory(tickers, minD, maxD);
+        const closeByTickerDate = buildCloseMapFromBenchmarkHistory(bench, tickers);
+        if (!cancelled) setSimInputs({ navDates, targetsByDate, closeByTickerDate });
       } catch (e) {
         if (!cancelled) {
           setSimInputs(null);
@@ -203,26 +189,25 @@ export default function PerformanceTab() {
     return () => {
       cancelled = true;
     };
-  }, [snaps, simParams.priceField]);
+  }, [snaps]);
 
   const simSeries = useMemo(() => {
     if (!simInputs) return null;
     const dailyParams: SimulationParams = {
       strategy: 'daily_benchmark',
       driftBandPp: DEFAULT_SIMULATION_PARAMS.driftBandPp,
-      priceField: 'open',
-      cost: { fixedBpsPerLeg: 0, bpsOnNotional: 0 },
+      cost: { fixedUsdPerTrade: 0, bpsOnNotional: 0 },
     };
     const rTheo = runPerformanceSimulation({
       dates: simInputs.navDates,
       targetsByDate: simInputs.targetsByDate,
-      priceByTickerDate: simInputs.priceByTickerDate,
+      closeByTickerDate: simInputs.closeByTickerDate,
       params: dailyParams,
     });
     const rCust = runPerformanceSimulation({
       dates: simInputs.navDates,
       targetsByDate: simInputs.targetsByDate,
-      priceByTickerDate: simInputs.priceByTickerDate,
+      closeByTickerDate: simInputs.closeByTickerDate,
       params: simParams,
     });
     const toMap = (vi: Array<{ date: string; value: number | null }>) => {
@@ -327,50 +312,23 @@ export default function PerformanceTab() {
       const row: PerfChartPoint = {
         date: d,
         portfolio:
-          rawNav != null && firstNav > 0 ? +(((rawNav / firstNav) * 100 - 100)).toFixed(2) : null,
+          rawNav != null && firstNav > 0 ? +((rawNav / firstNav) * 100).toFixed(2) : null,
       };
       selectedComparables.forEach((b) => {
         const p = benchMaps[b]?.[d];
-        row[b] = p != null && bases[b] ? +(((p / bases[b]) * 100 - 100)).toFixed(2) : null;
+        row[b] = p != null && bases[b] ? +((p / bases[b]) * 100).toFixed(2) : null;
       });
       if (simSeries) {
-        const theo = simSeries.theoretical.get(d);
-        const cust = simSeries.custom.get(d);
-        row._simTheoreticalDaily = theo != null ? +(theo - 100).toFixed(4) : null;
-        row._simCustom = cust != null ? +(cust - 100).toFixed(4) : null;
+        row._simTheoreticalDaily = simSeries.theoretical.get(d) ?? null;
+        row._simCustom = simSeries.custom.get(d) ?? null;
       }
       return row;
     });
   }, [snaps, comparableHistory, selectedComparables, simSeries]);
 
-  const analysisSnaps = useMemo<NavChartPoint[]>(() => {
-    if (!snaps.length) return [];
-    const firstNav = snaps[0].nav;
-    if (simStored.metricsSource === 'baseline' && simSeries) {
-      return snaps.map((s) => ({
-        date: s.date,
-        nav: (simSeries.theoretical.get(s.date) ?? 100),
-      }));
-    }
-    if (simStored.metricsSource === 'simulation' && simSeries) {
-      return snaps.map((s) => ({
-        date: s.date,
-        nav: (simSeries.custom.get(s.date) ?? 100),
-      }));
-    }
-    // recorded
-    return snaps.map((s) => ({
-      date: s.date,
-      nav: firstNav > 0 ? (s.nav / firstNav) * 100 : 100,
-    }));
-  }, [snaps, simSeries, simStored.metricsSource]);
-
-  const drawdownData = useMemo(() => buildDrawdownSeries(analysisSnaps), [analysisSnaps]);
-  const rollingWindow = useMemo(
-    () => computeEffectiveRollingWindow(analysisSnaps.length, 21),
-    [analysisSnaps.length]
-  );
-  const rollingData = useMemo(() => buildRollingSharpeVol(analysisSnaps, 21), [analysisSnaps]);
+  const drawdownData = useMemo(() => buildDrawdownSeries(snaps), [snaps]);
+  const rollingWindow = useMemo(() => computeEffectiveRollingWindow(snaps.length, 21), [snaps.length]);
+  const rollingData = useMemo(() => buildRollingSharpeVol(snaps, 21), [snaps]);
 
   const onAddComparable = useCallback(
     (t: string) => {
@@ -490,7 +448,7 @@ export default function PerformanceTab() {
           tickerUniverse={tickerUniverse}
           comparableLoading={comparableLoading}
           comparableError={comparableError}
-          snaps={analysisSnaps}
+          snaps={snaps}
           drawdownData={drawdownData}
           rollingData={rollingData}
           rollingWindow={rollingWindow}

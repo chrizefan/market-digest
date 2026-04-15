@@ -10,10 +10,8 @@ const LS_KEY = 'atlas.performanceSim.v1';
 export type PerformanceSimStored = {
   strategy: RebalanceStrategy;
   driftBandPp: number;
-  fixedBpsPerLeg: number;
+  fixedUsdPerTrade: number;
   bpsOnNotional: number;
-  priceField: 'open' | 'close';
-  metricsSource: 'recorded' | 'baseline' | 'simulation';
 };
 
 const STRATEGY_OPTIONS: { id: RebalanceStrategy; label: string; hint: string }[] = [
@@ -29,41 +27,28 @@ function loadStored(): PerformanceSimStored {
     return {
       strategy: DEFAULT_SIMULATION_PARAMS.strategy,
       driftBandPp: DEFAULT_SIMULATION_PARAMS.driftBandPp,
-      fixedBpsPerLeg: DEFAULT_SIMULATION_PARAMS.cost.fixedBpsPerLeg,
+      fixedUsdPerTrade: DEFAULT_SIMULATION_PARAMS.cost.fixedUsdPerTrade,
       bpsOnNotional: DEFAULT_SIMULATION_PARAMS.cost.bpsOnNotional,
-      priceField: DEFAULT_SIMULATION_PARAMS.priceField,
-      metricsSource: 'simulation',
     };
   }
   try {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) throw new Error('empty');
-    const o = JSON.parse(raw) as Partial<PerformanceSimStored> & { fixedUsdPerTrade?: number };
+    const o = JSON.parse(raw) as Partial<PerformanceSimStored>;
     return {
       strategy: (o.strategy as RebalanceStrategy) ?? DEFAULT_SIMULATION_PARAMS.strategy,
-      driftBandPp:
-        typeof o.driftBandPp === 'number' && Number.isFinite(o.driftBandPp)
-          ? o.driftBandPp
-          : DEFAULT_SIMULATION_PARAMS.driftBandPp,
-      fixedBpsPerLeg:
-        typeof o.fixedBpsPerLeg === 'number' && Number.isFinite(o.fixedBpsPerLeg)
-          ? o.fixedBpsPerLeg
-          : DEFAULT_SIMULATION_PARAMS.cost.fixedBpsPerLeg,
+      driftBandPp: typeof o.driftBandPp === 'number' ? o.driftBandPp : DEFAULT_SIMULATION_PARAMS.driftBandPp,
+      fixedUsdPerTrade:
+        typeof o.fixedUsdPerTrade === 'number' ? o.fixedUsdPerTrade : DEFAULT_SIMULATION_PARAMS.cost.fixedUsdPerTrade,
       bpsOnNotional:
-        typeof o.bpsOnNotional === 'number' && Number.isFinite(o.bpsOnNotional)
-          ? o.bpsOnNotional
-          : DEFAULT_SIMULATION_PARAMS.cost.bpsOnNotional,
-      priceField: (o.priceField as 'open' | 'close') ?? DEFAULT_SIMULATION_PARAMS.priceField,
-      metricsSource: (o.metricsSource as 'recorded' | 'baseline' | 'simulation') ?? 'simulation',
+        typeof o.bpsOnNotional === 'number' ? o.bpsOnNotional : DEFAULT_SIMULATION_PARAMS.cost.bpsOnNotional,
     };
   } catch {
     return {
       strategy: DEFAULT_SIMULATION_PARAMS.strategy,
       driftBandPp: DEFAULT_SIMULATION_PARAMS.driftBandPp,
-      fixedBpsPerLeg: DEFAULT_SIMULATION_PARAMS.cost.fixedBpsPerLeg,
+      fixedUsdPerTrade: DEFAULT_SIMULATION_PARAMS.cost.fixedUsdPerTrade,
       bpsOnNotional: DEFAULT_SIMULATION_PARAMS.cost.bpsOnNotional,
-      priceField: DEFAULT_SIMULATION_PARAMS.priceField,
-      metricsSource: 'simulation',
     };
   }
 }
@@ -90,9 +75,8 @@ export function usePerformanceSimParams(): {
   const params: SimulationParams = {
     strategy: stored.strategy,
     driftBandPp: stored.driftBandPp,
-    priceField: stored.priceField,
     cost: {
-      fixedBpsPerLeg: stored.fixedBpsPerLeg,
+      fixedUsdPerTrade: stored.fixedUsdPerTrade,
       bpsOnNotional: stored.bpsOnNotional,
     },
   };
@@ -216,14 +200,11 @@ export function PerformanceSimulationPanel({
                 <span className="text-text-muted">Drift band (pp vs target)</span>
                 <input
                   type="number"
-                  min={0}
+                  min={0.5}
                   max={50}
                   step={0.5}
                   value={stored.driftBandPp}
-                  onChange={(e) => {
-                    const n = Number(e.target.value);
-                    setStored({ driftBandPp: Number.isFinite(n) ? n : 0 });
-                  }}
+                  onChange={(e) => setStored({ driftBandPp: Number(e.target.value) || 5 })}
                   className="w-full rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-sm font-mono text-text-primary focus:outline-none focus:ring-1 focus:ring-fin-blue/30"
                 />
               </label>
@@ -231,16 +212,13 @@ export function PerformanceSimulationPanel({
               <div />
             )}
             <label className="space-y-1 block text-xs">
-              <span className="text-text-muted">Commission: bps per ticker traded</span>
+              <span className="text-text-muted">Cost: $ per ticker traded</span>
               <input
                 type="number"
                 min={0}
-                step={0.5}
-                value={stored.fixedBpsPerLeg}
-                onChange={(e) => {
-                  const n = Number(e.target.value);
-                  setStored({ fixedBpsPerLeg: Number.isFinite(n) ? n : 0 });
-                }}
+                step={0.01}
+                value={stored.fixedUsdPerTrade}
+                onChange={(e) => setStored({ fixedUsdPerTrade: Number(e.target.value) || 0 })}
                 className="w-full rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-sm font-mono text-text-primary focus:outline-none focus:ring-1 focus:ring-fin-blue/30"
               />
             </label>
@@ -252,37 +230,9 @@ export function PerformanceSimulationPanel({
                 max={500}
                 step={1}
                 value={stored.bpsOnNotional}
-                onChange={(e) => {
-                  const n = Number(e.target.value);
-                  setStored({ bpsOnNotional: Number.isFinite(n) ? n : 0 });
-                }}
+                onChange={(e) => setStored({ bpsOnNotional: Number(e.target.value) || 0 })}
                 className="w-full rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-sm font-mono text-text-primary focus:outline-none focus:ring-1 focus:ring-fin-blue/30"
               />
-            </label>
-            <label className="space-y-1 block text-xs">
-              <span className="text-text-muted">Return timing</span>
-              <select
-                value={stored.priceField}
-                onChange={(e) => setStored({ priceField: e.target.value as 'open' | 'close' })}
-                className="w-full rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-fin-blue/30"
-              >
-                <option value="open">Open→open (rebalance at open)</option>
-                <option value="close">Close→close (legacy)</option>
-              </select>
-            </label>
-            <label className="space-y-1 block text-xs">
-              <span className="text-text-muted">Metrics source</span>
-              <select
-                value={stored.metricsSource}
-                onChange={(e) =>
-                  setStored({ metricsSource: e.target.value as 'recorded' | 'baseline' | 'simulation' })
-                }
-                className="w-full rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-fin-blue/30"
-              >
-                <option value="recorded">Recorded NAV</option>
-                <option value="baseline">Baseline (perfect daily)</option>
-                <option value="simulation">Simulation (your settings)</option>
-              </select>
             </label>
           </div>
           {simLoading ? (

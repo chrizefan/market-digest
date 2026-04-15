@@ -182,7 +182,7 @@ function NavComparableChart({
           tick={{ fill: '#71717a', fontSize: 11 }}
           domain={['auto', 'auto']}
           label={{
-            value: 'Return (%)',
+            value: 'Indexed (100 = window start)',
             angle: -90,
             position: 'insideLeft',
             fill: '#71717a',
