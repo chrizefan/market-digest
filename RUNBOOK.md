@@ -77,6 +77,20 @@ python3 scripts/backfill_simulated_runs.py --validate-all
 
 ## Market-open execution and price backfill
 
+### Activity tab / `position_events` stops at an old date
+
+**New ledger rows are not created by the weekday GitHub “Daily Price Update” job.** That workflow runs [`refresh_performance_metrics.py`](scripts/refresh_performance_metrics.py), which can update **`cumulative_return_since_event_pct`** on existing `position_events` but does **not** insert OPEN/EXIT/REBALANCE rows. Those come from [`execute_at_open.py`](scripts/execute_at_open.py), normally after a `rebalance_decision` publish via [`run_db_first.py`](scripts/run_db_first.py).
+
+If the Activity table in the app ends on e.g. **April 6**, run execution for each **missing trading day** (after `rebalance_decision` + `price_history.open` exist for that story):
+
+```bash
+python3 scripts/execute_at_open.py --date YYYY-MM-DD
+# If the decision was published the prior session:
+python3 scripts/execute_at_open.py --date YYYY-MM-DD --prior-trading-day-rebalance
+```
+
+Or run the full post-publish chain: `python3 scripts/run_db_first.py` (omit `--skip-execute` so `execute_at_open` runs). Then, if opens were missing at insert time: `python3 scripts/backfill_execution_prices.py --date YYYY-MM-DD`.
+
 Pre-market runs publish a **same-day** `rebalance_decision` before **that day’s** `price_history.open` exists. [`execute_at_open.py`](scripts/execute_at_open.py) may record `position_events` with **`price: null`**. After the session opens (or after prices sync), run:
 
 ```bash

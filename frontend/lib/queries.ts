@@ -273,6 +273,13 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     return d.toISOString().slice(0, 10);
   })();
 
+  /** Activity ledger: avoid `.limit(200)` alone — many tickers/day can hide older rows; cap rows after date filter. */
+  const positionEventsCutoff = (() => {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - 420);
+    return d.toISOString().slice(0, 10);
+  })();
+
   const [
     snapshotRes, positionsRes, thesesRes, navRes,
     benchRes, metricsRes, docsRes, deltaDocsRes, changelogDocsRes, eventsRes, tickerViewRes, snapshotRunTypesRes,
@@ -309,9 +316,9 @@ export async function getFullDashboardData(): Promise<DashboardData> {
       .select(
         'date,ticker,event,weight_pct,prev_weight_pct,weight_change_pct,cumulative_return_since_event_pct,price,thesis_id,reason'
       )
+      .gte('date', positionEventsCutoff)
       .order('date', { ascending: false })
-      // Activity tab shows newest first; raise or paginate if the ledger outgrows this window.
-      .limit(200),
+      .limit(5000),
     supabase.from('price_history_tickers').select('ticker'),
     supabase.from('daily_snapshots').select('date, run_type').order('date', { ascending: false }).limit(500),
   ]);
