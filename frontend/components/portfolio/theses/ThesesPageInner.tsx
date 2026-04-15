@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDashboard } from '@/lib/dashboard-context';
 import { SUBPAGE_MAX } from '@/components/subpage-tab-bar';
@@ -10,15 +10,7 @@ import AtlasLoader from '@/components/AtlasLoader';
 import type { Doc, Position, Thesis } from '@/lib/types';
 import type { MiniCalendarRunKind } from '@/components/library/MiniCalendar';
 import { getDocLibraryTier } from '@/lib/library-doc-tier';
-import {
-  buildSleeveStackSeries,
-  thesisStackLabel,
-  categoryStackLabel,
-  tickerStackLabel,
-  aggregateWeightByThesis,
-  type SleeveStackMode,
-} from '@/lib/portfolio-aggregates';
-import { buildResearchStripLinks } from '@/lib/portfolio-research-links';
+import { aggregateWeightByThesis } from '@/lib/portfolio-aggregates';
 
 function aggregateRunKindForPortfolioDocs(docsOnDate: Doc[]): MiniCalendarRunKind {
   let sawBaseline = false;
@@ -39,9 +31,6 @@ export default function ThesesPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const [historyMode, setHistoryMode] = useState<SleeveStackMode>('category');
-
-  const positions = useMemo(() => data?.positions ?? [], [data]);
   const theses = useMemo(() => data?.portfolio?.strategy?.theses ?? [], [data]);
   const positionHistory = useMemo(() => data?.position_history ?? [], [data]);
   const lastUpdated = data?.portfolio?.meta?.last_updated ?? null;
@@ -108,11 +97,6 @@ export default function ThesesPageInner() {
     return rows.sort((a, b) => b.weight - a.weight);
   }, [theses, byThesisWeightForHistoryDate]);
 
-  const researchStripLinksForHistoryDate = useMemo(
-    () => buildResearchStripLinks(effHistoryDate, data?.docs),
-    [effHistoryDate, data?.docs]
-  );
-
   const portfolioHistoryRunKindByDate = useMemo(() => {
     const m = new Map<string, MiniCalendarRunKind>();
     const docs = data?.docs ?? [];
@@ -129,24 +113,7 @@ export default function ThesesPageInner() {
     return m;
   }, [data?.docs, data?.snapshot_run_type_by_date, historyTimelineDates]);
 
-  const { data: sleeveData, keys: sleeveKeys } = useMemo(
-    () => buildSleeveStackSeries(positionHistory, historyMode),
-    [positionHistory, historyMode]
-  );
-
-  const formatSleeveKey = useCallback(
-    (k: string) => {
-      if (historyMode === 'thesis') return thesisStackLabel(k, theses);
-      if (historyMode === 'ticker') return tickerStackLabel(k);
-      return categoryStackLabel(k);
-    },
-    [historyMode, theses]
-  );
-
   const historyLatestDate = historyTimelineDates[0] ?? null;
-  const showHistoryDateBanner = Boolean(
-    dateParam && historyDateSet.has(dateParam) && defaultHistoryDate && dateParam !== defaultHistoryDate
-  );
 
   const selectAnalysisDate = useCallback(
     (iso: string) => {
@@ -183,18 +150,11 @@ export default function ThesesPageInner() {
           onSelectHistoryDate={selectAnalysisDate}
           historyLatestDate={historyLatestDate}
           onClearHistoryDate={clearHistoryDateParam}
-          historyMode={historyMode}
-          setHistoryMode={setHistoryMode}
-          sleeveData={sleeveData}
-          sleeveKeys={sleeveKeys}
-          formatSleeveKey={formatSleeveKey}
-          showHistoryDateBanner={showHistoryDateBanner}
-          dateParam={dateParam}
           thesisBookRowsForHistoryDate={thesisBookRowsForHistoryDate}
-          researchStripLinksForHistoryDate={researchStripLinksForHistoryDate}
           lastUpdated={lastUpdated}
           portfolioDocDates={portfolioDocDates}
           positionHistoryDates={positionHistoryDates}
+          pipelineObservability={data.pipeline_observability ?? null}
         />
       </div>
     </div>

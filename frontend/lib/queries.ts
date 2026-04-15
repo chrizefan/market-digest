@@ -258,6 +258,38 @@ async function fetchPipelineObservabilityForDate(dashboardDate: string): Promise
   };
 }
 
+/**
+ * Load market thesis exploration + thesis vehicle map payloads for any run date (lazy / historical).
+ * Uses the same document_key convention as the dashboard pipeline bundle.
+ */
+export async function fetchThesisPipelinePayloadsForDate(runDate: string): Promise<{
+  market_thesis_exploration: Record<string, unknown> | null;
+  thesis_vehicle_map: Record<string, unknown> | null;
+}> {
+  if (!isSupabaseConfigured() || !supabase) {
+    return { market_thesis_exploration: null, thesis_vehicle_map: null };
+  }
+  const kExpl = `market-thesis-exploration/${runDate}.json`;
+  const kMap = `thesis-vehicle-map/${runDate}.json`;
+  const { data, error } = await supabase
+    .from('documents')
+    .select('document_key, payload')
+    .eq('date', runDate)
+    .in('document_key', [kExpl, kMap]);
+  if (error) {
+    console.warn('fetchThesisPipelinePayloadsForDate:', error);
+    return { market_thesis_exploration: null, thesis_vehicle_map: null };
+  }
+  let market_thesis_exploration: Record<string, unknown> | null = null;
+  let thesis_vehicle_map: Record<string, unknown> | null = null;
+  for (const row of (data ?? []) as Pick<TableRow<'documents'>, 'document_key' | 'payload'>[]) {
+    const pl = payloadAsRecord(row.payload);
+    if (row.document_key === kExpl) market_thesis_exploration = pl;
+    if (row.document_key === kMap) thesis_vehicle_map = pl;
+  }
+  return { market_thesis_exploration, thesis_vehicle_map };
+}
+
 /** PostgREST page size for Activity ledger (avoid 10k truncation on dense HOLD history). */
 const POSITION_EVENTS_PAGE = 2500;
 const POSITION_EVENTS_MAX = 80000;

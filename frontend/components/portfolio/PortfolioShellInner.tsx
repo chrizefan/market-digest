@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDashboard } from '@/lib/dashboard-context';
 import { SUBPAGE_MAX } from '@/components/subpage-tab-bar';
@@ -11,6 +11,13 @@ import { getLibraryDocumentById } from '@/lib/queries';
 import type { Doc } from '@/lib/types';
 import type { MiniCalendarRunKind } from '@/components/library/MiniCalendar';
 import { sortPmDocs } from './tabs/palette-and-format';
+import {
+  buildSleeveStackSeries,
+  thesisStackLabel,
+  categoryStackLabel,
+  tickerStackLabel,
+  type SleeveStackMode,
+} from '@/lib/portfolio-aggregates';
 import AllocationsTab from './tabs/AllocationsTab';
 import PerformanceTab from './tabs/PerformanceTab';
 import AnalysisTab from './tabs/AnalysisTab';
@@ -41,6 +48,7 @@ export default function PortfolioShellInner() {
   const router = useRouter();
   const pathname = usePathname();
   const [tab, setTab] = useState<TabId>('allocations');
+  const [sleeveStackMode, setSleeveStackMode] = useState<SleeveStackMode>('ticker');
   const [pmActiveFile, setPmActiveFile] = useState<Doc | null>(null);
   const [pmLibraryDoc, setPmLibraryDoc] = useState<Awaited<ReturnType<typeof getLibraryDocumentById>> | null>(null);
   const [pmLoading, setPmLoading] = useState(false);
@@ -53,6 +61,20 @@ export default function PortfolioShellInner() {
   const lastUpdated = data?.portfolio?.meta?.last_updated ?? null;
 
   const thesisById = useMemo(() => new Map(theses.map((t) => [t.id, t])), [theses]);
+
+  const { data: sleeveData, keys: sleeveKeys } = useMemo(
+    () => buildSleeveStackSeries(positionHistory, sleeveStackMode),
+    [positionHistory, sleeveStackMode]
+  );
+
+  const formatSleeveKey = useCallback(
+    (k: string) => {
+      if (sleeveStackMode === 'thesis') return thesisStackLabel(k, theses);
+      if (sleeveStackMode === 'ticker') return tickerStackLabel(k);
+      return categoryStackLabel(k);
+    },
+    [sleeveStackMode, theses]
+  );
 
   const activityEvents = useMemo(() => positionEvents, [positionEvents]);
 
@@ -278,6 +300,14 @@ export default function PortfolioShellInner() {
     router.replace(`${pathname}?${p.toString()}`, { scroll: false });
   }
 
+  /** Sets `date` without switching away from the current tab (e.g. sleeve chart on Allocations). */
+  function selectPortfolioHistoryDate(iso: string) {
+    if (!historyDateSet.has(iso)) return;
+    const p = new URLSearchParams(searchParams.toString());
+    p.set('date', iso);
+    router.replace(`${pathname}?${p.toString()}`, { scroll: false });
+  }
+
   function clearHistoryDateParam() {
     const p = new URLSearchParams(searchParams.toString());
     p.delete('date');
@@ -317,6 +347,16 @@ export default function PortfolioShellInner() {
             positionHistory={positionHistory}
             positionEvents={positionEvents}
             thesisById={thesisById}
+            effHistoryDate={effHistoryDate}
+            onSelectHistoryDate={selectPortfolioHistoryDate}
+            onClearHistoryDate={clearHistoryDateParam}
+            showHistoryDateBanner={showHistoryDateBanner}
+            dateParam={dateParam}
+            historyMode={sleeveStackMode}
+            setHistoryMode={setSleeveStackMode}
+            sleeveData={sleeveData}
+            sleeveKeys={sleeveKeys}
+            formatSleeveKey={formatSleeveKey}
           />
         )}
 
