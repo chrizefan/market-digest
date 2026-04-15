@@ -591,7 +591,7 @@ export default function OverviewPage() {
                     </td>
                     <td className="px-5 py-3 font-mono text-xs">
                       <Link
-                        href={`/portfolio?tab=analysis&thesis=${encodeURIComponent(t.id)}`}
+                        href={`/portfolio/theses/${encodeURIComponent(t.id)}`}
                         className="text-fin-blue hover:underline"
                       >
                         {t.id}

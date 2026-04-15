@@ -18,6 +18,7 @@ import type {
   HoldingTechnicalSnapshot,
   MacroSeriesPoint,
   ThesisHistoryPoint,
+  PositionHistoryRow,
   PipelineObservabilityBundle,
   PipelineTickerDoc,
   PositionPriceChartData,
@@ -27,6 +28,7 @@ import { renderDocumentMarkdownFromPayload } from './render-document-from-payloa
 import { DASHBOARD_BENCHMARK_TICKERS, sortTickerUniverse } from './benchmark-tickers';
 import { extractSnapshotContextBullets } from './snapshot-context';
 import { MACRO_PREVIEW_SERIES_IDS } from './macro-curated';
+import { getDocLibraryTier } from './library-doc-tier';
 
 type SB = SupabaseClient<Database>;
 
@@ -910,6 +912,98 @@ export async function getThesisHistoryById(thesisId: string): Promise<ThesisHist
       notes: r.notes ?? null,
     })
   );
+}
+
+/** Sum position weights per calendar date for a single thesis (from position_history rows). */
+export function aggregateThesisWeightsByDate(
+  positionHistory: PositionHistoryRow[],
+  thesisId: string
+): { date: string; weight_pct: number }[] {
+  const id = thesisId.trim();
+  if (!id || id === '_unlinked') return [];
+  const byDate = new Map<string, number>();
+  for (const r of positionHistory) {
+    if (r.thesis_id !== id) continue;
+    const d = r.date;
+    const w = Number(r.weight_pct ?? 0);
+    byDate.set(d, (byDate.get(d) ?? 0) + w);
+  }
+  return [...byDate.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, weight_pct]) => ({ date, weight_pct }));
+}
+
+/** Sum position weights per calendar date for rows with no thesis_id (unlinked sleeve). */
+export function aggregateUnlinkedWeightsByDate(
+  positionHistory: PositionHistoryRow[]
+): { date: string; weight_pct: number }[] {
+  const byDate = new Map<string, number>();
+  for (const r of positionHistory) {
+    if (r.thesis_id != null && r.thesis_id !== '') continue;
+    const d = r.date;
+    const w = Number(r.weight_pct ?? 0);
+    byDate.set(d, (byDate.get(d) ?? 0) + w);
+  }
+  return [...byDate.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, weight_pct]) => ({ date, weight_pct }));
+}
+
+export type ThesisRelatedDocLink = { document_key: string; date: string; label: string };
+
+/**
+ * Portfolio `documents` rows that relate to a thesis: global thesis artifacts on recent dates
+ * plus per-ticker PM docs whose path contains a ticker linked to this thesis.
+ */
+export function collectThesisRelatedDocLinks(
+  docs: Doc[] | undefined,
+  opts: { tickers: Set<string>; recentDates: string[] }
+): ThesisRelatedDocLink[] {
+  const { tickers, recentDates } = opts;
+  const dateSet = new Set(recentDates);
+  if (!docs?.length || dateSet.size === 0) return [];
+  const out: ThesisRelatedDocLink[] = [];
+  const seen = new Set<string>();
+  const tix = [...tickers].map((t) => t.toUpperCase());
+
+  for (const d of docs) {
+    if (getDocLibraryTier(d) !== 'portfolio') continue;
+    if (!d.date || !dateSet.has(d.date)) continue;
+    const p = d.path || '';
+    const low = p.toLowerCase();
+    const key = `${d.date}|${p}`;
+    if (seen.has(key)) continue;
+
+    if (
+      low.startsWith('market-thesis-exploration/') ||
+      low.startsWith('thesis-vehicle-map/') ||
+      low.includes('opportunity-screen') ||
+      low.includes('opportunity-screener')
+    ) {
+      seen.add(key);
+      const label = p.split('/').pop()?.replace(/\.json$/i, '') ?? p;
+      out.push({ document_key: p, date: d.date, label });
+      continue;
+    }
+
+    for (const t of tix) {
+      if (
+        low.includes(`asset-recommendations/${d.date}/${t.toLowerCase()}`) ||
+        low.includes(`deliberation-transcript/${d.date}/${t.toLowerCase()}`) ||
+        low.includes(`/${t.toLowerCase()}.json`)
+      ) {
+        seen.add(key);
+        out.push({
+          document_key: p,
+          date: d.date,
+          label: `${t} — ${low.includes('deliberation') ? 'Deliberation' : low.includes('recommendations') ? 'Rec' : p.split('/').pop() ?? p}`,
+        });
+        break;
+      }
+    }
+  }
+
+  return out.sort((a, b) => b.date.localeCompare(a.date) || a.document_key.localeCompare(b.document_key));
 }
 
 const COMPARABLE_PAGE = 1000;

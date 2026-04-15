@@ -34,17 +34,18 @@ export function LibraryToResearchRedirectPage() {
   );
 }
 
-/** Old `/strategy` URLs → Portfolio analysis (optional thesis deep link). */
+/** Old `/strategy` URLs → Theses hub or thesis detail (optional thesis deep link). */
 function StrategyToAnalysisInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
     const thesis = searchParams.get('thesis');
-    const q = new URLSearchParams();
-    q.set('tab', 'analysis');
-    if (thesis) q.set('thesis', thesis);
-    router.replace(`/portfolio?${q.toString()}`);
+    if (thesis) {
+      router.replace(`/portfolio/theses/${encodeURIComponent(thesis)}`);
+      return;
+    }
+    router.replace('/portfolio?tab=analysis');
   }, [router, searchParams]);
 
   return <RedirectFallback />;

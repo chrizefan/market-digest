@@ -1,23 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDashboard } from '@/lib/dashboard-context';
-import { SubpageStickyTabBar, SUBPAGE_MAX, subpageTabButtonClass } from '@/components/subpage-tab-bar';
+import { SUBPAGE_MAX } from '@/components/subpage-tab-bar';
+import PortfolioSectionNav from '@/components/portfolio/PortfolioSectionNav';
+import type { PortfolioSectionId } from '@/components/portfolio/PortfolioSectionNav';
 import { getDocLibraryTier, isPortfolioRecommendationPath } from '@/lib/library-doc-tier';
 import { getLibraryDocumentById } from '@/lib/queries';
 import type { Doc } from '@/lib/types';
-import { Layers, Activity, TrendingUp, Route, Brain } from 'lucide-react';
 import type { MiniCalendarRunKind } from '@/components/library/MiniCalendar';
-import type { Position, Thesis } from '@/lib/types';
-import {
-  buildSleeveStackSeries,
-  thesisStackLabel,
-  categoryStackLabel,
-  tickerStackLabel,
-  aggregateWeightByThesis,
-  type SleeveStackMode,
-} from '@/lib/portfolio-aggregates';
 import { sortPmDocs } from './tabs/palette-and-format';
 import AllocationsTab from './tabs/AllocationsTab';
 import PerformanceTab from './tabs/PerformanceTab';
@@ -49,13 +41,11 @@ export default function PortfolioShellInner() {
   const router = useRouter();
   const pathname = usePathname();
   const [tab, setTab] = useState<TabId>('allocations');
-  const [historyMode, setHistoryMode] = useState<SleeveStackMode>('category');
   const [pmActiveFile, setPmActiveFile] = useState<Doc | null>(null);
   const [pmLibraryDoc, setPmLibraryDoc] = useState<Awaited<ReturnType<typeof getLibraryDocumentById>> | null>(null);
   const [pmLoading, setPmLoading] = useState(false);
 
   const positions = useMemo(() => data?.positions ?? [], [data]);
-  const ratios = useMemo(() => data?.ratios ?? [], [data]);
   const metrics = data?.calculated;
   const theses = useMemo(() => data?.portfolio?.strategy?.theses ?? [], [data]);
   const positionHistory = useMemo(() => data?.position_history ?? [], [data]);
@@ -64,48 +54,7 @@ export default function PortfolioShellInner() {
 
   const thesisById = useMemo(() => new Map(theses.map((t) => [t.id, t])), [theses]);
 
-  const byThesisWeight = useMemo(() => aggregateWeightByThesis(positions), [positions]);
-
-  const thesisBookRows = useMemo(() => {
-    const rows: {
-      id: string;
-      thesis: Thesis | null;
-      weight: number;
-    }[] = [];
-    for (const t of theses) {
-      rows.push({ id: t.id, thesis: t, weight: byThesisWeight.get(t.id) ?? 0 });
-    }
-    const unlinked = byThesisWeight.get('_unlinked') ?? 0;
-    if (unlinked > 0.005) {
-      rows.push({ id: '_unlinked', thesis: null, weight: unlinked });
-    }
-    return rows.sort((a, b) => b.weight - a.weight);
-  }, [theses, byThesisWeight]);
-
-  const thesisBarRich = useMemo(
-    () =>
-      thesisBookRows
-        .filter((r) => r.weight > 0)
-        .map((r) => ({
-          name: r.id === '_unlinked' ? 'Unlinked' : r.thesis?.name ?? r.id,
-          value: r.weight,
-          status: r.thesis?.status ?? null,
-        })),
-    [thesisBookRows]
-  );
-
   const activityEvents = useMemo(() => positionEvents, [positionEvents]);
-
-  const { data: sleeveData, keys: sleeveKeys } = useMemo(
-    () => buildSleeveStackSeries(positionHistory, historyMode),
-    [positionHistory, historyMode]
-  );
-
-  const formatSleeveKey = (k: string) => {
-    if (historyMode === 'thesis') return thesisStackLabel(k, theses);
-    if (historyMode === 'ticker') return tickerStackLabel(k);
-    return categoryStackLabel(k);
-  };
 
   const portfolioDocDates = useMemo(() => {
     const s = new Set<string>();
@@ -141,52 +90,6 @@ export default function PortfolioShellInner() {
     if (dateParam && historyDateSet.has(dateParam)) return dateParam;
     return defaultHistoryDate;
   }, [dateParam, historyDateSet, defaultHistoryDate]);
-
-  const thesisPositionsForHistoryDate = useMemo((): Pick<Position, 'weight_actual' | 'thesis_ids'>[] => {
-    if (!effHistoryDate) return [];
-    return positionHistory
-      .filter((r) => r.date === effHistoryDate)
-      .map((r) => ({
-        weight_actual: r.weight_pct,
-        thesis_ids: r.thesis_id ? [r.thesis_id] : [],
-      }));
-  }, [effHistoryDate, positionHistory]);
-
-  const byThesisWeightForHistoryDate = useMemo(
-    () => aggregateWeightByThesis(thesisPositionsForHistoryDate),
-    [thesisPositionsForHistoryDate]
-  );
-
-  const thesisBookRowsForHistoryDate = useMemo(() => {
-    const rows: { id: string; thesis: Thesis | null; weight: number }[] = [];
-    for (const t of theses) {
-      rows.push({ id: t.id, thesis: t, weight: byThesisWeightForHistoryDate.get(t.id) ?? 0 });
-    }
-    const unlinked = byThesisWeightForHistoryDate.get('_unlinked') ?? 0;
-    if (unlinked > 0.005) {
-      rows.push({ id: '_unlinked', thesis: null, weight: unlinked });
-    }
-    return rows.sort((a, b) => b.weight - a.weight);
-  }, [theses, byThesisWeightForHistoryDate]);
-
-  const researchDocKeysOnHistoryDate = useMemo(() => {
-    const m = new Map<string, boolean>();
-    const docs = data?.docs;
-    if (!effHistoryDate || !docs) return m;
-    for (const d of docs) {
-      if (d.date === effHistoryDate) m.set(d.path, true);
-    }
-    return m;
-  }, [data, effHistoryDate]);
-
-  const researchStripLinksForHistoryDate = useMemo(() => {
-    if (!effHistoryDate) return [] as { label: string; docKey: string }[];
-    const out: { label: string; docKey: string }[] = [];
-    if (researchDocKeysOnHistoryDate.has('digest')) out.push({ label: 'Digest', docKey: 'digest' });
-    const mte = `market-thesis-exploration/${effHistoryDate}.json`;
-    if (researchDocKeysOnHistoryDate.has(mte)) out.push({ label: 'Market thesis', docKey: mte });
-    return out;
-  }, [effHistoryDate, researchDocKeysOnHistoryDate]);
 
   const portfolioHistoryRunKindByDate = useMemo(() => {
     const m = new Map<string, MiniCalendarRunKind>();
@@ -265,10 +168,25 @@ export default function PortfolioShellInner() {
         }
       }
     } else if (raw === 'thesis') {
-      p.set('tab', 'analysis');
-      if (!p.get('date') && defaultHistoryDate) p.set('date', defaultHistoryDate);
+      const thesis = p.get('thesis');
+      p.delete('tab');
+      p.delete('date');
+      p.delete('docKey');
+      p.delete('thesis');
+      if (thesis) {
+        router.replace(`/portfolio/theses/${encodeURIComponent(thesis)}`);
+        return;
+      }
+      router.replace('/portfolio/theses');
+      return;
     } else if (raw === 'theses' || raw === 'pm_analysis') {
-      p.set('tab', 'analysis');
+      p.delete('tab');
+      p.delete('docKey');
+      p.delete('date');
+      p.delete('thesis');
+      const q = p.toString();
+      router.replace(q ? `/portfolio/theses?${q}` : '/portfolio/theses');
+      return;
     }
     const target = p.toString();
     router.replace(target ? `${pathname}?${target}` : pathname, { scroll: false });
@@ -280,8 +198,8 @@ export default function PortfolioShellInner() {
     if (!raw || raw === 'summary') mapped = 'allocations';
     else if (raw === 'history') mapped = 'analysis';
     else if (raw === 'pm_process') mapped = 'analysis';
-    else if (raw === 'thesis') mapped = 'analysis';
-    else if (raw === 'theses' || raw === 'pm_analysis') mapped = 'analysis';
+    else if (raw === 'thesis') mapped = 'allocations';
+    else if (raw === 'theses' || raw === 'pm_analysis') mapped = 'allocations';
     else if (raw === 'positions') mapped = 'allocations';
     else if (VALID_TABS.includes(raw as TabId)) mapped = raw as TabId;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sync tab from URL
@@ -324,32 +242,6 @@ export default function PortfolioShellInner() {
       )
       .finally(() => setPmLoading(false));
   }, [docKeyParam, effHistoryDate, data?.docs, searchParams]);
-
-  function navigateTab(next: TabId) {
-    setTab(next);
-    if (next !== 'analysis') {
-      setPmActiveFile(null);
-      setPmLibraryDoc(null);
-    }
-    const p = new URLSearchParams(searchParams.toString());
-    if (next === 'allocations') {
-      p.delete('tab');
-      p.delete('docKey');
-      p.delete('date');
-      p.delete('thesis');
-    } else {
-      p.set('tab', next);
-      if (next !== 'analysis') {
-        p.delete('docKey');
-        p.delete('date');
-        p.delete('thesis');
-      } else {
-        if (!p.get('date') && defaultHistoryDate) p.set('date', defaultHistoryDate);
-      }
-    }
-    const s = p.toString();
-    router.replace(s ? `${pathname}?${s}` : pathname, { scroll: false });
-  }
 
   function openPmDocument(doc: Doc) {
     const p = new URLSearchParams(searchParams.toString());
@@ -396,12 +288,14 @@ export default function PortfolioShellInner() {
     router.replace(`${pathname}?${p.toString()}`, { scroll: false });
   }
 
-  const tabs: { id: TabId; label: string; icon: typeof Layers }[] = [
-    { id: 'allocations', label: 'Allocations', icon: Layers },
-    { id: 'activity', label: 'Activity', icon: Activity },
-    { id: 'performance', label: 'Performance', icon: TrendingUp },
-    { id: 'analysis', label: 'Intelligence', icon: Brain },
-  ];
+  const sectionActive: PortfolioSectionId =
+    tab === 'allocations'
+      ? 'allocations'
+      : tab === 'activity'
+        ? 'activity'
+        : tab === 'performance'
+          ? 'performance'
+          : 'analysis';
 
   if (loading) return <AtlasLoader />;
   if (error || !data || !metrics)
@@ -413,19 +307,7 @@ export default function PortfolioShellInner() {
 
   return (
     <div className="flex min-h-full flex-col">
-      <SubpageStickyTabBar aria-label="Portfolio sections">
-        {tabs.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => navigateTab(id)}
-            className={subpageTabButtonClass(tab === id)}
-          >
-            <Icon size={16} />
-            {label}
-          </button>
-        ))}
-      </SubpageStickyTabBar>
+      <PortfolioSectionNav active={sectionActive} />
 
       <div className={`${SUBPAGE_MAX} flex-1 space-y-6 py-4 md:py-5`}>
         {tab === 'allocations' && (
@@ -448,19 +330,9 @@ export default function PortfolioShellInner() {
             onSelectHistoryDate={selectAnalysisDate}
             historyLatestDate={historyLatestDate}
             onClearHistoryDate={clearHistoryDateParam}
-            historyMode={historyMode}
-            setHistoryMode={setHistoryMode}
-            sleeveData={sleeveData}
-            sleeveKeys={sleeveKeys}
-            formatSleeveKey={formatSleeveKey}
-            showHistoryDateBanner={showHistoryDateBanner}
-            dateParam={dateParam}
-            thesisBookRowsForHistoryDate={thesisBookRowsForHistoryDate}
-            researchStripLinksForHistoryDate={researchStripLinksForHistoryDate}
-            lastUpdated={lastUpdated}
-            pmDocsForHistory={pmDocsForHistory}
             portfolioDocDates={portfolioDocDates}
             positionHistoryDates={positionHistoryDates}
+            pmDocsForHistory={pmDocsForHistory}
             pmActiveFile={pmActiveFile}
             pmLibraryDoc={pmLibraryDoc}
             pmLoading={pmLoading}

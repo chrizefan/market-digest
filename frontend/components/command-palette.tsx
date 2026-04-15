@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'next/navigation';
 import {
   Activity,
+  BookMarked,
   BookOpen,
   Brain,
   Database,
@@ -75,9 +76,16 @@ export default function CommandPalette() {
         icon: LineChart,
       },
       {
+        id: 'go-theses',
+        title: 'Portfolio — Theses',
+        hint: 'Sleeves, thesis book & exploration',
+        href: '/portfolio/theses',
+        icon: BookMarked,
+      },
+      {
         id: 'go-intel',
         title: 'Portfolio — Intelligence',
-        hint: 'PM history & thesis tracker',
+        hint: 'PM artifacts & history calendar',
         href: '/portfolio?tab=analysis',
         icon: Brain,
       },
@@ -122,7 +130,7 @@ export default function CommandPalette() {
       id: `thesis-${t.id}`,
       title: `Thesis — ${t.name}`,
       hint: t.id,
-      href: `/portfolio?tab=analysis&thesis=${encodeURIComponent(t.id)}`,
+      href: `/portfolio/theses/${encodeURIComponent(t.id)}`,
       icon: Brain,
     }));
 
