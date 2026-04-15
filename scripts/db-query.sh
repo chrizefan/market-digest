@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Run SQL against the linked Supabase project or a Postgres URL (Supabase CLI).
+#
+#   # Option A — direct Postgres URI (Dashboard → Settings → Database → URI)
+#   export DATABASE_URL='postgresql://postgres.[ref]:[PASSWORD]@aws-0-[region].pooler.supabase.com:6543/postgres'
+#   ./scripts/db-query.sh scripts/sql/audit_activity_coverage.sql
+#
+#   # Option B — link once (stores project ref under .supabase/)
+#   npx supabase link --project-ref YOUR_REF -p YOUR_DB_PASSWORD --yes
+#   ./scripts/db-query.sh scripts/sql/audit_activity_coverage.sql
+#
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+SQL_FILE="${1:?Usage: $0 path/to/file.sql}"
+
+if [[ -n "${DATABASE_URL:-}" ]]; then
+  exec npx --yes supabase@latest db query --db-url "$DATABASE_URL" -f "$SQL_FILE" -o table --agent=no
+fi
+
+if [[ -d "$ROOT/.supabase" ]]; then
+  exec npx --yes supabase@latest db query --linked -f "$SQL_FILE" -o table --agent=no
+fi
+
+echo "No DATABASE_URL and no linked project (.supabase/). See comments in $0" >&2
+exit 1

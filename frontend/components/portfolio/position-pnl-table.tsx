@@ -46,13 +46,21 @@ export function PositionPnlTable({
               <th className="hidden px-6 py-4 text-right md:table-cell">Entry</th>
               <th className="hidden px-6 py-4 text-right md:table-cell">Current</th>
               <th className="px-4 py-4 text-right md:px-6">P&amp;L %</th>
-              <th className="hidden px-6 py-4 text-right sm:table-cell">Contribution</th>
+              <th className="hidden px-6 py-4 text-right sm:table-cell" title="Attributed share of total portfolio return (percentage points)">
+                Contrib. (ppt)
+              </th>
               {showCharts ? <th className="w-10 px-3 py-4 md:px-6" aria-label="Expand" /> : null}
             </tr>
           </thead>
           <tbody className="divide-y divide-border-subtle">
             {positions.map((p, i) => {
-              const firstEntryDate = resolveFirstEntryDate(p.ticker, p, positionEvents, positionHistory);
+              const firstEntryDate = resolveFirstEntryDate(
+                p.ticker,
+                p,
+                positionEvents,
+                positionHistory,
+                priceChartAnchorDate
+              );
               const entry = p.entry_price;
               const curr = p.current_price;
               const pnlPct =
@@ -101,7 +109,7 @@ export function PositionPnlTable({
                       {pnlPct != null ? `${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%` : '—'}
                     </td>
                     <td className="hidden px-6 py-3 text-right font-mono tabular-nums text-text-secondary sm:table-cell">
-                      {contrib != null ? `${contrib >= 0 ? '+' : ''}${contrib.toFixed(2)}%` : '—'}
+                      {contrib != null ? `${contrib >= 0 ? '+' : ''}${contrib.toFixed(3)} ppt` : '—'}
                     </td>
                     {showCharts ? (
                       <td className="px-3 py-3 text-text-muted md:px-6">

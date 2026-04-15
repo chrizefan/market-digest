@@ -57,6 +57,7 @@ DOC_TYPE_TO_SCHEMA = {
     "asset_recommendation": "asset-recommendation.schema.json",
     "rebalance_decision": "rebalance-decision.schema.json",
     "research_delta": "research-delta.schema.json",
+    "pipeline_review": "pipeline-review.schema.json",
 }
 
 STEP_DESCRIPTIONS = {

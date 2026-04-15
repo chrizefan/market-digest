@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from datetime import date as dt_date, datetime, timedelta
@@ -110,6 +111,49 @@ def _rebalance_payload_for_date(sb, rebalance_date: str) -> Optional[Dict[str, A
     return None
 
 
+def _rebalance_table_nonempty(payload: Dict[str, Any]) -> bool:
+    body = payload.get("body") if isinstance(payload.get("body"), dict) else {}
+    table = body.get("rebalance_table") if isinstance(body, dict) else None
+    return isinstance(table, list) and len(table) > 0
+
+
+def resolve_rebalance_payload_fallback(sb, execution_d: str) -> tuple[Optional[str], Optional[Dict[str, Any]]]:
+    """
+    When no rebalance_decision row exists for documents.date == execution day, find the PM
+    artifact used for that session: walk backward along prior trading days (Fri decision → Mon
+    open), then search calendar neighbors (+/- days) like backfill_position_event_reasons.
+    """
+    d = execution_d
+    for _ in range(25):
+        p = _rebalance_payload_for_date(sb, d)
+        if isinstance(p, dict) and p.get("doc_type") == "rebalance_decision" and _rebalance_table_nonempty(p):
+            return d, p
+        pd = _prior_trading_date(d)
+        if not pd or pd == d:
+            break
+        d = pd
+
+    try:
+        anchor = dt_date.fromisoformat(execution_d)
+    except ValueError:
+        return None, None
+    order: List[dt_date] = [anchor]
+    for i in range(1, 12):
+        order.append(anchor + timedelta(days=i))
+    for i in range(1, 16):
+        order.append(anchor - timedelta(days=i))
+    seen: Set[dt_date] = set()
+    for ad in order:
+        if ad in seen:
+            continue
+        seen.add(ad)
+        ds = ad.isoformat()
+        p = _rebalance_payload_for_date(sb, ds)
+        if isinstance(p, dict) and p.get("doc_type") == "rebalance_decision" and _rebalance_table_nonempty(p):
+            return ds, p
+    return None, None
+
+
 def _event_tickers_for_date(sb, execution_date: str) -> Set[str]:
     res = sb.table("position_events").select("ticker").eq("date", execution_date).execute()
     out: Set[str] = set()
@@ -160,6 +204,8 @@ def _hold_events_for_positions_not_in_rebalance(
         ticker = row.get("ticker")
         if not ticker or not isinstance(ticker, str):
             continue
+        if str(ticker).upper() == "CASH":
+            continue
         if ticker in skip_tickers:
             continue
         w = _parse_pct(row.get("weight_pct"))
@@ -192,6 +238,168 @@ def _hold_events_for_positions_not_in_rebalance(
     return out
 
 
+def build_events_from_digest_snapshot(sb, execution_d: str) -> Optional[List[Dict[str, Any]]]:
+    """
+    When `rebalance-decision.json` is not published for this date, derive OPEN/TRIM/ADD/HOLD/EXIT
+    from `daily_snapshots.snapshot.portfolio.proposed_positions` (post-trade targets) vs prior
+    session `positions` weights (prior trading day), using market-open prices for execution_d.
+    """
+    res = sb.table("daily_snapshots").select("snapshot").eq("date", execution_d).limit(1).execute()
+    rows = getattr(res, "data", None) or []
+    if not rows:
+        return None
+    raw = rows[0].get("snapshot")
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except json.JSONDecodeError:
+            return None
+    if not isinstance(raw, dict):
+        return None
+    port = raw.get("portfolio")
+    if not isinstance(port, dict):
+        return None
+    pp = port.get("proposed_positions")
+    if not isinstance(pp, list) or not pp:
+        return None
+    targets: Dict[str, float] = {}
+    for row in pp:
+        if not isinstance(row, dict):
+            continue
+        t = row.get("ticker")
+        if not t or t == "CASH":
+            continue
+        try:
+            targets[str(t).upper()] = float(row.get("weight_pct") or 0)
+        except (TypeError, ValueError):
+            continue
+    prior_d = _prior_trading_date(execution_d)
+    if not prior_d:
+        return None
+    pw_res = sb.table("positions").select("ticker,weight_pct").eq("date", prior_d).execute()
+    prior_w: Dict[str, float] = {}
+    for row in getattr(pw_res, "data", None) or []:
+        if not isinstance(row, dict):
+            continue
+        tk = row.get("ticker")
+        if not tk or tk == "CASH":
+            continue
+        try:
+            prior_w[str(tk).upper()] = float(row.get("weight_pct") or 0)
+        except (TypeError, ValueError):
+            continue
+    all_tickers = set(prior_w) | set(targets)
+    out: List[Dict[str, Any]] = []
+    eps = 0.0001
+    for t in sorted(all_tickers):
+        prev = prior_w.get(t, 0.0)
+        rec = targets.get(t, 0.0)
+        chg = rec - prev
+        if prev <= eps and rec > eps:
+            ev = "OPEN"
+        elif prev > eps and rec <= eps:
+            ev = "EXIT"
+        elif chg < -eps:
+            ev = "TRIM"
+        elif chg > eps:
+            ev = "ADD"
+        else:
+            ev = "HOLD"
+        price = _fetch_open(sb, t, execution_d)
+        out.append(
+            {
+                "date": execution_d,
+                "ticker": t,
+                "event": ev,
+                "weight_pct": rec,
+                "prev_weight_pct": prev if prev > eps else None,
+                "weight_change_pct": chg if abs(chg) > eps else None,
+                "price": price,
+                "reason": (
+                    "Derived from digest snapshot proposed_positions vs prior session positions "
+                    "(no rebalance_decision.json for this date)."
+                ),
+                "thesis_id": None,
+            }
+        )
+    return out if out else None
+
+
+def build_events_from_positions_book(sb, execution_d: str) -> Optional[List[Dict[str, Any]]]:
+    """
+    When digest `proposed_positions` is absent, infer OPEN/TRIM/ADD/HOLD/EXIT from the book
+    recorded in `positions` on execution_d vs the prior trading day's `positions`.
+    """
+    res = sb.table("positions").select("ticker,weight_pct,thesis_id").eq("date", execution_d).execute()
+    rows = getattr(res, "data", None) or []
+    targets: Dict[str, float] = {}
+    thesis: Dict[str, Optional[str]] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        t = row.get("ticker")
+        if not t or t == "CASH":
+            continue
+        try:
+            targets[str(t).upper()] = float(row.get("weight_pct") or 0)
+        except (TypeError, ValueError):
+            continue
+        tid = row.get("thesis_id")
+        thesis[str(t).upper()] = str(tid) if tid else None
+    if not targets:
+        return None
+    prior_d = _prior_trading_date(execution_d)
+    if not prior_d:
+        return None
+    pw_res = sb.table("positions").select("ticker,weight_pct").eq("date", prior_d).execute()
+    prior_w: Dict[str, float] = {}
+    for row in getattr(pw_res, "data", None) or []:
+        if not isinstance(row, dict):
+            continue
+        tk = row.get("ticker")
+        if not tk or tk == "CASH":
+            continue
+        try:
+            prior_w[str(tk).upper()] = float(row.get("weight_pct") or 0)
+        except (TypeError, ValueError):
+            continue
+    all_tickers = set(prior_w) | set(targets)
+    out: List[Dict[str, Any]] = []
+    eps = 0.0001
+    for t in sorted(all_tickers):
+        prev = prior_w.get(t, 0.0)
+        rec = targets.get(t, 0.0)
+        chg = rec - prev
+        if prev <= eps and rec > eps:
+            ev = "OPEN"
+        elif prev > eps and rec <= eps:
+            ev = "EXIT"
+        elif chg < -eps:
+            ev = "TRIM"
+        elif chg > eps:
+            ev = "ADD"
+        else:
+            ev = "HOLD"
+        price = _fetch_open(sb, t, execution_d)
+        out.append(
+            {
+                "date": execution_d,
+                "ticker": t,
+                "event": ev,
+                "weight_pct": rec,
+                "prev_weight_pct": prev if prev > eps else None,
+                "weight_change_pct": chg if abs(chg) > eps else None,
+                "price": price,
+                "reason": (
+                    "Derived from positions book vs prior session positions "
+                    "(digest proposed_positions unavailable; no rebalance_decision.json for this date)."
+                ),
+                "thesis_id": thesis.get(t),
+            }
+        )
+    return out if out else None
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="Record market-open execution events into position_events (OPEN/EXIT/TRIM/ADD/HOLD). "
@@ -208,6 +416,16 @@ def main() -> int:
         "--prior-trading-day-rebalance",
         action="store_true",
         help="Use rebalance_decision from the previous Mon–Fri, execute at opens on --date (e.g. Fri decision → Mon open).",
+    )
+    ap.add_argument(
+        "--no-rebalance-fallback",
+        action="store_true",
+        help="Do not search nearby documents.dates when same-day rebalance_decision is missing (strict).",
+    )
+    ap.add_argument(
+        "--no-digest-events",
+        action="store_true",
+        help="Do not derive events from daily_snapshots when rebalance_decision is missing.",
     )
     args = ap.parse_args()
     d = args.date
@@ -231,7 +449,41 @@ def main() -> int:
 
     sb = _sb()
     payload = _rebalance_payload_for_date(sb, rebalance_d)
+    if (
+        not payload
+        and not args.rebalance_date
+        and not args.prior_trading_day_rebalance
+        and not args.no_rebalance_fallback
+    ):
+        rd_fb, p_fb = resolve_rebalance_payload_fallback(sb, d)
+        if p_fb:
+            rebalance_d = rd_fb
+            payload = p_fb
+            print(
+                f"Resolved rebalance_decision from documents.date={rebalance_d} "
+                f"(no same-day row for {d}; using PM artifact search)."
+            )
     if not payload:
+        if not args.no_digest_events:
+            digest_events = build_events_from_digest_snapshot(sb, d)
+            if not digest_events:
+                digest_events = build_events_from_positions_book(sb, d)
+            if digest_events:
+                for e in digest_events:
+                    sb.table("position_events").upsert(e, on_conflict="date,ticker").execute()
+                null_px = sum(1 for e in digest_events if e.get("price") is None)
+                if null_px:
+                    print(
+                        f"⚠️  {null_px} event(s) have null price (no price_history.open for {d} yet). "
+                        f"After opens sync: python3 scripts/backfill_execution_prices.py --date {d}"
+                    )
+                trade_n = sum(1 for e in digest_events if e.get("event") != "HOLD")
+                hold_n = len(digest_events) - trade_n
+                print(
+                    f"✅ recorded {len(digest_events)} event(s) from digest snapshot vs prior positions for {d} "
+                    f"({trade_n} trade-related, {hold_n} HOLD) — no rebalance_decision.json for this date."
+                )
+                return 0
         print(f"No rebalance_decision payload for documents.date={rebalance_d}; filling from positions only.")
         extra = _hold_events_for_positions_not_in_rebalance(sb, d, _event_tickers_for_date(sb, d))
         if not extra:

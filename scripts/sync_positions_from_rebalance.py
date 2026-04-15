@@ -6,6 +6,10 @@ After Track B publishes rebalance_decision to Supabase documents, upsert the ``p
 table for that date from ``body.proposed_portfolio`` so the dashboard and
 ``refresh_performance_metrics.py`` use the PM target book (not only digest-era weights).
 
+For each non-CASH line, ``entry_price`` / ``entry_date`` are set from the earliest
+``position_events`` OPEN or ADD row with a mark price on or before the rebalance date
+(when present).
+
 No-op if there is no rebalance_decision for the date or no proposed_portfolio.positions.
 
 Intended to run from ``run_db_first.py`` before ``refresh_performance_metrics.py`` when
@@ -22,7 +26,9 @@ import argparse
 import os
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
+
+from position_entry_from_events import first_open_add_mark
 
 try:
     from supabase import create_client  # type: ignore
@@ -50,7 +56,7 @@ def _sb():
     return create_client(url, key)
 
 
-def _rebalance_payload_for_date(sb, d: str) -> Optional[Dict[str, Any]]:
+def _rebalance_payload_for_date(sb: Any, d: str) -> Optional[Dict[str, Any]]:
     res = (
         sb.table("documents")
         .select("payload")
@@ -162,6 +168,16 @@ def main() -> int:
                     "metrics_as_of": None,
                 }
             )
+
+    for row in pos_rows:
+        tk = row.get("ticker")
+        if not tk or tk == "CASH":
+            continue
+        ed, ep = first_open_add_mark(sb, str(tk), d)
+        if ep is not None and ep > 0:
+            row["entry_price"] = ep
+            if ed:
+                row["entry_date"] = ed
 
     if not pos_rows:
         print(f"sync_positions_from_rebalance: empty book after filtering for {d} — skip")

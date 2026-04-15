@@ -256,6 +256,45 @@ async function fetchPipelineObservabilityForDate(dashboardDate: string): Promise
   };
 }
 
+/** PostgREST page size for Activity ledger (avoid 10k truncation on dense HOLD history). */
+const POSITION_EVENTS_PAGE = 2500;
+const POSITION_EVENTS_MAX = 80000;
+
+type PositionEventRowPick = Pick<
+  TableRow<'position_events'>,
+  | 'date'
+  | 'ticker'
+  | 'event'
+  | 'weight_pct'
+  | 'prev_weight_pct'
+  | 'weight_change_pct'
+  | 'price'
+  | 'thesis_id'
+  | 'reason'
+>;
+
+async function fetchPositionEventsForDashboard(): Promise<PositionEventRowPick[]> {
+  if (!supabase) return [];
+  const out: PositionEventRowPick[] = [];
+  for (let offset = 0; offset < POSITION_EVENTS_MAX; offset += POSITION_EVENTS_PAGE) {
+    const { data, error } = await supabase
+      .from('position_events')
+      .select(
+        'date,ticker,event,weight_pct,prev_weight_pct,weight_change_pct,price,thesis_id,reason'
+      )
+      .order('date', { ascending: false })
+      .range(offset, offset + POSITION_EVENTS_PAGE - 1);
+    if (error) {
+      console.error('Supabase position_events query:', error);
+      break;
+    }
+    const chunk = (data ?? []) as PositionEventRowPick[];
+    out.push(...chunk);
+    if (chunk.length < POSITION_EVENTS_PAGE) break;
+  }
+  return out;
+}
+
 /**
  * Load the complete dashboard data assembled from Supabase tables.
  */
@@ -277,7 +316,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
 
   const [
     snapshotRes, positionsRes, thesesRes, navRes,
-    benchRes, metricsRes, docsRes, deltaDocsRes, changelogDocsRes, eventsRes, tickerViewRes, snapshotRunTypesRes,
+    benchRes, metricsRes, docsRes, deltaDocsRes, changelogDocsRes, tickerViewRes, snapshotRunTypesRes,
   ] = await Promise.all([
     supabase.from('daily_snapshots').select('*').order('date', { ascending: false }).limit(1).single(),
     supabase.from('positions').select('*').order('date', { ascending: false }).limit(1000),
@@ -306,16 +345,11 @@ export async function getFullDashboardData(): Promise<DashboardData> {
       .ilike('document_key', 'research-changelog/%')
       .order('date', { ascending: false })
       .limit(400),
-    supabase
-      .from('position_events')
-      .select(
-        'date,ticker,event,weight_pct,prev_weight_pct,weight_change_pct,price,thesis_id,reason'
-      )
-      .order('date', { ascending: false })
-      .limit(10000),
     supabase.from('price_history_tickers').select('ticker'),
     supabase.from('daily_snapshots').select('date, run_type').order('date', { ascending: false }).limit(500),
   ]);
+
+  const eventsRaw = await fetchPositionEventsForDashboard();
 
   if (docsRes.error) {
     console.error('Supabase documents query:', docsRes.error);
@@ -342,9 +376,6 @@ export async function getFullDashboardData(): Promise<DashboardData> {
   }
   if (benchRes.error) {
     console.error('Supabase price_history (benchmarks) query:', benchRes.error);
-  }
-  if (eventsRes.error) {
-    console.error('Supabase position_events query:', eventsRes.error);
   }
   if (tickerViewRes.error) {
     console.warn('Supabase price_history_tickers view (apply migration 018 if missing):', tickerViewRes.error);
@@ -380,7 +411,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     metricsRes.error || !metricsRow ? ({} as TableRow<'portfolio_metrics'>) : metricsRow;
 
   const position_events: DashboardPositionEvent[] = (
-    (eventsRes.data ?? []) as TableRow<'position_events'>[]
+    eventsRaw as TableRow<'position_events'>[]
   )
     .map((e) => ({
       date: e.date,
@@ -596,6 +627,36 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     0
   );
 
+  /** Earliest OPEN/ADD mark for each ticker — used when `positions.entry_price` is null (digest-only rows). */
+  const firstOpenAddPriceByTicker = (() => {
+    const m = new Map<string, number>();
+    const rows: Array<{ t: string; date: string; price: number }> = [];
+    for (const e of position_events) {
+      if (e.event !== 'OPEN' && e.event !== 'ADD') continue;
+      if (e.price == null || Number.isNaN(Number(e.price))) continue;
+      rows.push({
+        t: e.ticker.toUpperCase(),
+        date: e.date,
+        price: Number(e.price),
+      });
+    }
+    rows.sort((a, b) => a.date.localeCompare(b.date) || a.t.localeCompare(b.t));
+    for (const r of rows) {
+      if (!m.has(r.t)) m.set(r.t, r.price);
+    }
+    return m;
+  })();
+
+  function resolvedEntryPrice(px: TableRow<'positions'>): number | null {
+    if (px.entry_price != null && !Number.isNaN(Number(px.entry_price))) {
+      return Number(px.entry_price);
+    }
+    const fromEv = firstOpenAddPriceByTicker.get(String(px.ticker).toUpperCase());
+    if (fromEv != null && fromEv > 0) return fromEv;
+    if (px.entry_date) return closeOnOrAfter(px.ticker, px.entry_date);
+    return null;
+  }
+
   const positions: Position[] = effectiveCurrentPositions.map((p) => ({
     // Prices: prefer explicit position fields; else derive from price_history
     ticker: p.ticker,
@@ -608,12 +669,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
         ? Number(p.weight_pct ?? 0) - (prevWeightByTicker.get(p.ticker) ?? 0)
         : null,
     current_price: p.current_price != null ? Number(p.current_price) : latestClose(p.ticker).curr,
-    entry_price:
-      p.entry_price != null
-        ? Number(p.entry_price)
-        : p.entry_date
-          ? closeOnOrAfter(p.ticker, p.entry_date)
-          : null,
+    entry_price: resolvedEntryPrice(p),
     entry_date: p.entry_date ?? null,
     rationale: p.rationale ?? '',
     thesis_ids: p.thesis_id ? [p.thesis_id] : [],
@@ -622,12 +678,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     stats: {},
     unrealized_pnl_pct: (() => {
       if (p.unrealized_pnl_pct != null) return Number(p.unrealized_pnl_pct);
-      const entry =
-        p.entry_price != null
-          ? Number(p.entry_price)
-          : p.entry_date
-            ? closeOnOrAfter(p.ticker, p.entry_date)
-            : null;
+      const entry = resolvedEntryPrice(p);
       const curr =
         p.current_price != null ? Number(p.current_price) : latestClose(p.ticker).curr;
       if (!entry || !curr || entry <= 0) return null;
@@ -641,13 +692,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     })(),
     since_entry_return_pct: (() => {
       if (p.since_entry_return_pct != null) return Number(p.since_entry_return_pct);
-      // If we can compute unrealized_pnl_pct, reuse it as since-entry return.
-      const entry =
-        p.entry_price != null
-          ? Number(p.entry_price)
-          : p.entry_date
-            ? closeOnOrAfter(p.ticker, p.entry_date)
-            : null;
+      const entry = resolvedEntryPrice(p);
       const curr =
         p.current_price != null ? Number(p.current_price) : latestClose(p.ticker).curr;
       if (!entry || !curr || entry <= 0) return null;
@@ -655,12 +700,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     })(),
     contribution_pct: (() => {
       if (p.contribution_pct != null) return Number(p.contribution_pct);
-      const entry =
-        p.entry_price != null
-          ? Number(p.entry_price)
-          : p.entry_date
-            ? closeOnOrAfter(p.ticker, p.entry_date)
-            : null;
+      const entry = resolvedEntryPrice(p);
       const curr =
         p.current_price != null ? Number(p.current_price) : latestClose(p.ticker).curr;
       if (!entry || !curr || entry <= 0) return null;
@@ -795,7 +835,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
         weight_pct: Number(p.weight_pct ?? 0),
         thesis_ids: p.thesis_id ? [p.thesis_id] : [],
         entry_date: p.entry_date ?? null,
-        entry_price_usd: p.entry_price != null ? Number(p.entry_price) : null,
+        entry_price_usd: resolvedEntryPrice(p),
         notes: p.pm_notes ?? '',
       })),
       proposed_positions: proposedPositions.map((p) => ({
@@ -940,27 +980,38 @@ const positionPriceChartCache = new Map<string, PositionPriceChartData>();
  * oldest slice and cut off recent prices.
  * Results are memoized in-memory for the session (price + contribution charts).
  */
+function subtractIsoDaysForChart(iso: string, days: number): string {
+  const parts = iso.split('-').map(Number);
+  if (parts.length < 3) return iso;
+  const [y, m, d] = parts;
+  const t = Date.UTC(y, m - 1, d);
+  return new Date(t - days * 86400000).toISOString().slice(0, 10);
+}
+
 export async function fetchPositionPriceChart(
   ticker: string,
   fromDate: string,
   maxDate?: string
 ): Promise<PositionPriceChartData> {
   const t = String(ticker).toUpperCase().trim();
-  const end = (maxDate && maxDate.trim()) || new Date().toISOString().slice(0, 10);
-  const cacheKey = `${t}|${fromDate}|${end}`;
-  const hit = positionPriceChartCache.get(cacheKey);
-  if (hit) return hit;
-
   if (!isSupabaseConfigured() || !supabase) {
     throw new Error(
       'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
     );
   }
-  if (!t || !fromDate) {
-    const empty = { priceHistory: [], events: [] };
-    positionPriceChartCache.set(cacheKey, empty);
-    return empty;
+  if (!t || !fromDate?.trim()) {
+    return { priceHistory: [], events: [] };
   }
+
+  const end = (maxDate && maxDate.trim()) || new Date().toISOString().slice(0, 10);
+  /** If `fromDate` is after `end` (e.g. future-dated OPEN events), widen lookback so the query is valid. */
+  let safeFrom = fromDate.trim();
+  if (safeFrom > end) {
+    safeFrom = subtractIsoDaysForChart(end, 730);
+  }
+  const cacheKey = `${t}|${safeFrom}|${end}`;
+  const hit = positionPriceChartCache.get(cacheKey);
+  if (hit) return hit;
 
   type EvPick = Pick<
     TableRow<'position_events'>,
@@ -975,7 +1026,7 @@ export async function fetchPositionPriceChart(
       .from('price_history')
       .select('date, close')
       .eq('ticker', t)
-      .gte('date', fromDate)
+      .gte('date', safeFrom)
       .lte('date', end)
       .order('date', { ascending: true })
       .range(phOffset, phOffset + POSITION_CHART_PAGE - 1);
@@ -998,7 +1049,7 @@ export async function fetchPositionPriceChart(
       .from('position_events')
       .select('date, event, price, reason, weight_pct, prev_weight_pct, weight_change_pct')
       .eq('ticker', t)
-      .gte('date', fromDate)
+      .gte('date', safeFrom)
       .lte('date', end)
       .order('date', { ascending: true })
       .range(evOffset, evOffset + POSITION_CHART_PAGE - 1);

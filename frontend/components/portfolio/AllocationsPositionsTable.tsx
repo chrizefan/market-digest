@@ -105,7 +105,13 @@ export default function AllocationsPositionsTable(props: {
               /** As-of date for chart window (snapshot), not first entry — avoids truncating recent prices. */
               const anchorDate =
                 lastUpdated || p.entry_date || new Date().toISOString().slice(0, 10);
-              const firstEntryDate = resolveFirstEntryDate(p.ticker, p, positionEvents, positionHistory);
+              const firstEntryDate = resolveFirstEntryDate(
+                p.ticker,
+                p,
+                positionEvents,
+                positionHistory,
+                lastUpdated
+              );
               const w = p.weight_actual ?? 0;
               const pctOfMax = maxWeight > 0 ? (w / maxWeight) * 100 : 0;
               const bar = `linear-gradient(90deg, rgba(59,130,246,0.16) 0%, rgba(59,130,246,0.16) ${pctOfMax}%, rgba(255,255,255,0) ${pctOfMax}%)`;
@@ -157,6 +163,7 @@ export default function AllocationsPositionsTable(props: {
                               anchorDate={anchorDate}
                               firstEntryDate={firstEntryDate}
                               positionHistory={positionHistory}
+                              maxDate={lastUpdated}
                             />
                           </td>
                         </tr>

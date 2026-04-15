@@ -181,6 +181,7 @@ def _human_doc_type_label(payload: Dict[str, Any]) -> str:
         "evolution_sources": "Evolution Sources",
         "evolution_quality_log": "Evolution Quality Log",
         "evolution_proposals": "Evolution Proposals",
+        "pipeline_review": "Pipeline Review",
         "research_changelog": "Research Changelog",
         "research_baseline_manifest": "Research Baseline Manifest",
         "document_delta": "Document Delta",

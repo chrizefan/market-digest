@@ -3,8 +3,11 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   Area,
+  Bar,
+  BarChart,
   Brush,
   CartesianGrid,
+  Cell,
   ComposedChart,
   Line,
   ReferenceLine,
@@ -15,6 +18,7 @@ import {
   YAxis,
 } from 'recharts';
 import { fetchPositionPriceChart } from '@/lib/queries';
+import { buildEventContributionSteps } from '@/lib/position-contribution-event-steps';
 import { buildPositionContributionToNavSeries, type PositionContributionPoint } from '@/lib/position-contribution-series';
 import type { NavChartPoint, PositionHistoryRow, PositionPriceChartData, PositionPriceChartEvent } from '@/lib/types';
 
@@ -80,7 +84,9 @@ function ContribTooltip({
           {p.event}
         </p>
         <p className="text-text-secondary mt-1 font-mono">{p.date}</p>
-        <p className="text-text-primary tabular-nums mt-0.5">Cumulative: {p.cumPp.toFixed(2)} pp</p>
+        <p className="text-text-primary tabular-nums mt-0.5">
+          Cumulative: {p.cumPp.toFixed(3)} ppt
+        </p>
         {px != null ? (
           <p className="text-text-muted tabular-nums text-[11px] mt-1">Close (proxy day): ${px.toFixed(2)}</p>
         ) : null}
@@ -94,8 +100,8 @@ function ContribTooltip({
   return (
     <div className="rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-[0.82rem] shadow-lg">
       <p className="font-mono text-text-secondary">{p.date}</p>
-      <p className="text-text-primary tabular-nums mt-0.5">Cumulative: {p.cumPp.toFixed(2)} pp</p>
-      <p className="text-text-muted tabular-nums text-[11px] mt-1">Step: {p.dailyPp.toFixed(3)} pp</p>
+      <p className="text-text-primary tabular-nums mt-0.5">Cumulative: {p.cumPp.toFixed(3)} ppt</p>
+      <p className="text-text-muted tabular-nums text-[11px] mt-1">Step: {p.dailyPp.toFixed(4)} ppt</p>
       {px != null ? (
         <p className="text-text-muted tabular-nums text-[11px] mt-1">Close: ${px.toFixed(2)}</p>
       ) : null}
@@ -302,6 +308,49 @@ function ChartBody({
 
   const chartEnd = chartRows.length ? chartRows[chartRows.length - 1].date : null;
 
+  const contributionYDomain = useMemo((): [number, number] | ['auto', 'auto'] => {
+    const rows = visibleRows.length ? visibleRows : chartRows;
+    if (!rows.length) return ['auto', 'auto'];
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (const r of rows) {
+      lo = Math.min(lo, r.cumPp);
+      hi = Math.max(hi, r.cumPp);
+    }
+    if (!Number.isFinite(lo)) return ['auto', 'auto'];
+    const span = Math.max(hi - lo, 0);
+    const pad =
+      span > 0 ? Math.max(span * 0.12, 0.002) : Math.max(Math.abs(hi), 0.01) * 0.15 + 0.005;
+    return [lo - pad, hi + pad];
+  }, [visibleRows, chartRows]);
+
+  const contribTickDecimals = useMemo(() => {
+    if (!chartRows.length) return 2;
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (const r of chartRows) {
+      lo = Math.min(lo, r.cumPp);
+      hi = Math.max(hi, r.cumPp);
+    }
+    const span = hi - lo;
+    if (span < 0.05) return 3;
+    if (span < 0.4) return 2;
+    return 1;
+  }, [chartRows]);
+
+  const eventStepRows = useMemo(() => {
+    return buildEventContributionSteps(chartRows, data?.events ?? []);
+  }, [chartRows, data?.events]);
+
+  const eventBarData = useMemo(() => {
+    return eventStepRows.map((s) => ({
+      name:
+        s.kind === 'tail' && s.label.length > 42 ? `${s.label.slice(0, 40)}…` : s.label,
+      deltaPp: s.deltaPp,
+      fill: s.deltaPp >= 0 ? 'rgba(34,197,94,0.75)' : 'rgba(239,68,68,0.75)',
+    }));
+  }, [eventStepRows]);
+
   if (loading) {
     return (
       <div className="h-[240px] rounded-xl border border-border-subtle bg-bg-secondary/30 animate-pulse flex items-center justify-center text-xs text-text-muted">
@@ -368,12 +417,14 @@ function ChartBody({
               minTickGap={32}
             />
             <YAxis
-              domain={['auto', 'auto']}
+              domain={contributionYDomain}
               tick={{ fill: '#71717a', fontSize: 11 }}
-              width={56}
-              tickFormatter={(v) => (typeof v === 'number' ? v.toFixed(1) : String(v))}
+              width={58}
+              tickFormatter={(v) =>
+                typeof v === 'number' ? v.toFixed(contribTickDecimals) : String(v)
+              }
               label={{
-                value: 'pp vs portfolio',
+                value: 'ppt (portfolio)',
                 angle: -90,
                 position: 'insideLeft',
                 fill: '#71717a',
@@ -470,6 +521,63 @@ function ChartBody({
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+
+      {eventBarData.length > 0 ? (
+        <div className="border-t border-border-subtle px-4 py-4">
+          <p className="text-[11px] text-text-muted uppercase tracking-wider">Δ ppt between activity dates</p>
+          <p className="text-[11px] text-text-muted mt-1 mb-3 leading-snug">
+            Each bar is the change in cumulative portfolio attribution (ppt) from the prior step to this activity
+            (NAV-aligned). Green / red = contribution added or lost in that leg.
+          </p>
+          <div
+            className="w-full"
+            style={{ height: Math.min(280, Math.max(120, eventBarData.length * 36)) }}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                layout="vertical"
+                data={eventBarData}
+                margin={{ top: 4, right: 28, left: 4, bottom: 4 }}
+              >
+                <XAxis
+                  type="number"
+                  tick={{ fill: '#71717a', fontSize: 10 }}
+                  tickFormatter={(v) => (typeof v === 'number' ? v.toFixed(contribTickDecimals) : String(v))}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  width={200}
+                  tick={{ fill: '#a1a1aa', fontSize: 10 }}
+                  interval={0}
+                />
+                <Tooltip
+                  cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const row = payload[0].payload as { name: string; deltaPp: number };
+                    return (
+                      <div className="rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-[0.82rem] shadow-lg max-w-sm">
+                        <p className="text-text-secondary text-[11px] leading-snug">{row.name}</p>
+                        <p className="text-text-primary tabular-nums mt-1 font-mono">
+                          Δ {row.deltaPp >= 0 ? '+' : ''}
+                          {row.deltaPp.toFixed(4)} ppt
+                        </p>
+                      </div>
+                    );
+                  }}
+                />
+                <ReferenceLine x={0} stroke="rgba(255,255,255,0.12)" />
+                <Bar dataKey="deltaPp" radius={[0, 2, 2, 0]} isAnimationActive={false}>
+                  {eventBarData.map((entry, i) => (
+                    <Cell key={`cell-${i}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

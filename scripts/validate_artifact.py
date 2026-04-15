@@ -57,6 +57,7 @@ def _schema_path_for(doc_type: str) -> Path:
         "thesis_vehicle_map": "thesis-vehicle-map.schema.json",
         "pm_allocation_memo": "pm-allocation-memo.schema.json",
         "deliberation_session_index": "deliberation-session-index.schema.json",
+        "pipeline_review": "pipeline-review.schema.json",
     }
     fname = mapping.get(doc_type)
     if not fname:

@@ -61,6 +61,8 @@ try:
 except ImportError:
     pass
 
+from position_entry_from_events import patch_positions_entries_for_date
+
 
 def _sb():
     if not _HAS_SB:
@@ -218,6 +220,9 @@ def _prev_trading_date(sb, ref_ticker: str, as_of: str) -> Optional[str]:
 
 def refresh_positions_metrics(sb, metrics_date: str) -> int:
     """Update positions for date == metrics_date. Returns rows updated."""
+    patched = patch_positions_entries_for_date(sb, metrics_date)
+    if patched:
+        print(f"   entry_price filled from position_events: {patched} row(s)")
     res = (
         sb.table("positions")
         .select("*")

@@ -110,12 +110,15 @@ function ChartBody({
   rangeLabel,
   firstEntryDate,
   positionHistory,
+  maxDate,
 }: {
   ticker: string;
   rangeStart: string;
   rangeLabel: string;
   firstEntryDate: string | null;
   positionHistory?: PositionHistoryRow[] | null;
+  /** Cap price/events at portfolio snapshot (or performance range); avoids UTC "today" vs DB mismatch. */
+  maxDate?: string | null;
 }) {
   const [data, setData] = useState<PositionPriceChartData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -127,7 +130,7 @@ function ChartBody({
 
   useEffect(() => {
     let cancelled = false;
-    fetchPositionPriceChart(ticker, rangeStart)
+    fetchPositionPriceChart(ticker, rangeStart, maxDate ?? undefined)
       .then((d) => {
         if (!cancelled) setData(d);
       })
@@ -143,7 +146,7 @@ function ChartBody({
     return () => {
       cancelled = true;
     };
-  }, [ticker, rangeStart]);
+  }, [ticker, rangeStart, maxDate]);
 
   const chartRows = useMemo<Row[]>(() => {
     if (!data?.priceHistory?.length) return [];
@@ -160,13 +163,13 @@ function ChartBody({
       .sort((a, b) => a.date.localeCompare(b.date));
     if (!rows.length) return m;
     let i = 0;
-    let last = rows[0].weight_pct;
+    let last: number | null = null;
     for (const row of chartRows) {
       while (i < rows.length && rows[i].date <= row.date) {
         last = rows[i].weight_pct;
         i++;
       }
-      m.set(row.date, last);
+      if (last != null) m.set(row.date, last);
     }
     return m;
   }, [positionHistory, ticker, chartRows]);
@@ -455,6 +458,7 @@ export default function PositionPriceChart({
   anchorDate,
   firstEntryDate,
   positionHistory,
+  maxDate,
 }: {
   ticker: string;
   anchorDate: string;
@@ -462,6 +466,8 @@ export default function PositionPriceChart({
   firstEntryDate?: string | null;
   /** Optional: forward-filled weights on the daily price tooltip. */
   positionHistory?: PositionHistoryRow[] | null;
+  /** Inclusive end date for prices (e.g. snapshot `last_updated`). Defaults to UTC today if omitted. */
+  maxDate?: string | null;
 }) {
   const rangeStart = useMemo(() => {
     if (firstEntryDate) return subtractIsoDays(firstEntryDate, ENTRY_PADDING_DAYS);
@@ -475,12 +481,13 @@ export default function PositionPriceChart({
 
   return (
     <ChartBody
-      key={`${ticker}|${rangeStart}`}
+      key={`${ticker}|${rangeStart}|${maxDate ?? ''}`}
       ticker={ticker}
       rangeStart={rangeStart}
       rangeLabel={rangeLabel}
       firstEntryDate={firstEntryDate ?? null}
       positionHistory={positionHistory}
+      maxDate={maxDate}
     />
   );
 }

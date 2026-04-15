@@ -110,6 +110,14 @@ python3 scripts/backfill_position_events.py --through YYYY-MM-DD
 ```
 Use `--from YYYY-MM-DD` when there is no prior ledger row or you need an explicit range. `--dry-run` prints the planned commands.
 
+**Full repair through today** (carry `positions` forward for missing calendar days, then backfill ledger + reconcile HOLD):
+
+```bash
+python3 scripts/ensure_position_activity_through_today.py --through YYYY-MM-DD
+```
+
+Use `--no-refresh` if `positions` already has rows for every day in range. Audit max dates: `scripts/sql/audit_activity_coverage.sql`.
+
 **Reconcile Activity with `positions`:** if the book snapshot has tickers with no ledger row (for example they were missing from `rebalance_table`), insert missing **HOLD** rows without overwriting existing events:
 
 ```bash
@@ -208,6 +216,12 @@ Common flags:
 ### Evolution post-mortem (JSON → Supabase)
 - `evolution_sources`, `evolution_quality_log`, `evolution_proposals` — schemas under `templates/schemas/evolution-*.schema.json`.
 - Optional scaffold: `./scripts/scaffold_evolution_day.sh [YYYY-MM-DD]` then publish each JSON with `publish_document.py`.
+- **Pipeline review (per-track post-mortem):** `doc_type: pipeline_review` — [`templates/schemas/pipeline-review.schema.json`](templates/schemas/pipeline-review.schema.json). Canonical keys:
+  - `pipeline-review/research/{YYYY-MM-DD}.json` (Track A close-out)
+  - `pipeline-review/portfolio/{YYYY-MM-DD}.json` (Track B close-out)
+  - Validate with `scripts/validate_artifact.py`, publish with `publish_document.py` (`documents.doc_type` = **Pipeline Review**).
+- Sync findings to GitHub Issues: [`scripts/pipeline_review_to_github.py`](scripts/pipeline_review_to_github.py) (after publish).
+- **Full roadmap:** [`docs/agentic/EVOLUTION_GITHUB_IMPLEMENTATION_PLAN.md`](docs/agentic/EVOLUTION_GITHUB_IMPLEMENTATION_PLAN.md).
 
 ## What `run_db_first.py` does (post-publish)
 After artifacts are already in Supabase, `run_db_first.py`:

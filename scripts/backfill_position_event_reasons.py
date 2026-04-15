@@ -2,7 +2,7 @@
 """
 Fill or repair `position_events.reason` from published research artifacts:
 
-1. **Per-ticker (preferred):** `asset-rec/{TICKER}.json` → `body.verdict.rationale` (or bull_case),
+1. **Per-ticker (preferred):** `asset-recommendations/{DATE}/{TICKER}.json` or `asset-rec/{TICKER}.json` → `body.verdict.rationale` (or bull_case),
    then `deliberation-transcript/{DATE}/{TICKER}.json` → `body.final_decisions[].pm_decision`.
 2. **Session fallback:** `rebalance-decision.json` → `rebalance_table[].rationale` / pm_notes.
 
@@ -285,14 +285,20 @@ def _per_ticker_research_reason(sb, anchor_date: str, ticker: str) -> Optional[s
     """
     Prefer asset recommendation, then deliberation transcript, searching the same calendar
     neighborhood as rebalance resolution.
+
+    Tries `asset-recommendations/{DATE}/{TICKER}.json` first (DB-first layout), then legacy
+    `asset-rec/{TICKER}.json` for the same documents.date.
     """
     for d in _calendar_candidate_dates(anchor_date):
-        ak = f"asset-rec/{ticker}.json"
-        p = _document_payload_for_key(sb, d, ak)
-        if p:
-            t = _text_from_asset_rec(p)
-            if t:
-                return t
+        for ak in (
+            f"asset-recommendations/{d}/{ticker}.json",
+            f"asset-rec/{ticker}.json",
+        ):
+            p = _document_payload_for_key(sb, d, ak)
+            if p:
+                t = _text_from_asset_rec(p)
+                if t:
+                    return t
         dk = f"deliberation-transcript/{d}/{ticker}.json"
         p2 = _document_payload_for_key(sb, d, dk)
         if p2:
