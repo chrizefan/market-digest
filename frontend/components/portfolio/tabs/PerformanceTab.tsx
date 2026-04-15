@@ -5,7 +5,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useDashboard } from '@/lib/dashboard-context';
 import { StatCard, formatPct, pnlColor } from '@/components/ui';
 import { TrendingUp, BarChart3, Activity, Target, ChevronDown, ChevronUp } from 'lucide-react';
-import type { BenchmarkHistoryMap, NavChartPoint, PerfChartPoint } from '@/lib/types';
+import type { BenchmarkHistoryMap, NavChartPoint, PerfChartPoint, Thesis } from '@/lib/types';
 import { PositionPnlTable } from '@/components/portfolio/position-pnl-table';
 import { AdvancedStatsPanel } from '@/components/portfolio/advanced-stats-panel';
 import { PerformanceDateRange } from '@/components/portfolio/performance-date-range';
@@ -90,6 +90,8 @@ export default function PerformanceTab() {
   const serverMetrics = data?.server_portfolio_metrics ?? null;
   const allSnaps = useMemo(() => data?.portfolio?.snapshots ?? [], [data]);
   const tickerUniverse = useMemo(() => data?.price_history_tickers ?? [], [data]);
+  const theses = useMemo(() => data?.portfolio?.strategy?.theses ?? [], [data]);
+  const thesisById = useMemo(() => new Map<string, Thesis>(theses.map((t) => [t.id, t])), [theses]);
 
   const snaps = useMemo(() => filterByDateRange(allSnaps, range), [allSnaps, range]);
 
@@ -354,10 +356,10 @@ export default function PerformanceTab() {
           key={`${priceChartAnchorDate ?? 'no-anchor'}|${snaps[0]?.date ?? ''}`}
           positions={positions}
           priceChartAnchorDate={priceChartAnchorDate}
-          navSnaps={allSnaps}
           positionHistory={positionHistory}
           positionEvents={position_events}
           navWindowStart={snaps.length ? snaps[0].date : null}
+          thesisById={thesisById}
         />
       </section>
 

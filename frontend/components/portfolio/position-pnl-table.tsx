@@ -2,26 +2,25 @@
 
 import { Fragment, useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import type { DashboardPositionEvent, NavChartPoint, Position, PositionHistoryRow } from '@/lib/types';
-import { resolveFirstEntryDate } from '@/lib/position-first-entry';
-import PositionContributionChart from '@/components/portfolio/PositionContributionChart';
+import type { DashboardPositionEvent, Position, PositionHistoryRow, Thesis } from '@/lib/types';
+import PositionDrilldown from '@/components/portfolio/PositionDrilldown';
 
 export function PositionPnlTable({
   positions,
   priceChartAnchorDate,
-  navSnaps,
   positionHistory,
   positionEvents,
   navWindowStart,
+  thesisById,
 }: {
   positions: Position[];
   /** When set, rows expand to show contribution + events through this as-of date. */
   priceChartAnchorDate?: string | null;
-  navSnaps: NavChartPoint[];
   positionHistory: PositionHistoryRow[];
   positionEvents: DashboardPositionEvent[];
   /** First date of the Performance range (e.g. 1M / YTD); NAV contribution aligns to this window. */
   navWindowStart?: string | null;
+  thesisById: Map<string, Thesis>;
 }) {
   const showCharts = Boolean(priceChartAnchorDate);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
@@ -54,13 +53,6 @@ export function PositionPnlTable({
           </thead>
           <tbody className="divide-y divide-border-subtle">
             {positions.map((p, i) => {
-              const firstEntryDate = resolveFirstEntryDate(
-                p.ticker,
-                p,
-                positionEvents,
-                positionHistory,
-                priceChartAnchorDate
-              );
               const entry = p.entry_price;
               const curr = p.current_price;
               const pnlPct =
@@ -120,13 +112,19 @@ export function PositionPnlTable({
                   {isOpen && priceChartAnchorDate && !skipChart ? (
                     <tr className="bg-white/[0.02]">
                       <td colSpan={7} className="border-t border-border-subtle px-4 py-5 md:px-6">
-                        <PositionContributionChart
-                          ticker={p.ticker}
-                          anchorDate={priceChartAnchorDate}
-                          firstEntryDate={firstEntryDate}
-                          navSnaps={navSnaps}
+                        <PositionDrilldown
+                          key={`${p.ticker}-${priceChartAnchorDate}`}
+                          position={p}
                           positionHistory={positionHistory}
-                          navWindowStart={navWindowStart ?? undefined}
+                          positionEvents={positionEvents}
+                          thesisById={thesisById}
+                          asOfDate={priceChartAnchorDate}
+                          performanceRange={
+                            navWindowStart && priceChartAnchorDate
+                              ? { start: navWindowStart, end: priceChartAnchorDate }
+                              : null
+                          }
+                          mode="performance"
                         />
                       </td>
                     </tr>

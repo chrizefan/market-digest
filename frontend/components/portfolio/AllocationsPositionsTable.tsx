@@ -4,9 +4,8 @@ import { Fragment, useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Badge, pnlColor } from '@/components/ui';
 import type { DashboardPositionEvent, Position, PositionHistoryRow, Thesis } from '@/lib/types';
-import PositionPriceChart from '@/components/portfolio/PositionPriceChart';
+import PositionDrilldown from '@/components/portfolio/PositionDrilldown';
 import { formatAllocationCategory } from '@/components/portfolio/tabs/palette-and-format';
-import { resolveFirstEntryDate } from '@/lib/position-first-entry';
 
 function thesisNames(ids: string[], thesisById: Map<string, Thesis>): string {
   if (!ids.length) return '—';
@@ -102,16 +101,6 @@ export default function AllocationsPositionsTable(props: {
           <tbody className="divide-y divide-border-subtle">
             {allRows.map((p: Position) => {
               const isExpanded = expandedTicker === p.ticker;
-              /** As-of date for chart window (snapshot), not first entry — avoids truncating recent prices. */
-              const anchorDate =
-                lastUpdated || p.entry_date || new Date().toISOString().slice(0, 10);
-              const firstEntryDate = resolveFirstEntryDate(
-                p.ticker,
-                p,
-                positionEvents,
-                positionHistory,
-                lastUpdated
-              );
               const w = p.weight_actual ?? 0;
               const pctOfMax = maxWeight > 0 ? (w / maxWeight) * 100 : 0;
               const bar = `linear-gradient(90deg, rgba(59,130,246,0.16) 0%, rgba(59,130,246,0.16) ${pctOfMax}%, rgba(255,255,255,0) ${pctOfMax}%)`;
@@ -158,12 +147,14 @@ export default function AllocationsPositionsTable(props: {
                       {isExpanded && (
                         <tr className="bg-white/[0.02]">
                           <td colSpan={colCount} className="px-4 py-5 md:px-6 md:py-6">
-                            <PositionPriceChart
-                              ticker={p.ticker}
-                              anchorDate={anchorDate}
-                              firstEntryDate={firstEntryDate}
+                            <PositionDrilldown
+                              key={p.ticker}
+                              position={p}
                               positionHistory={positionHistory}
-                              maxDate={lastUpdated}
+                              positionEvents={positionEvents}
+                              thesisById={thesisById}
+                              asOfDate={lastUpdated}
+                              mode="allocations"
                             />
                           </td>
                         </tr>
