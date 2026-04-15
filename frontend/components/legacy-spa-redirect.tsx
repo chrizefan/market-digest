@@ -23,7 +23,7 @@ function LibraryToResearchInner() {
     router.replace(`/research?${p.toString()}`);
   }, [router, searchParams]);
 
-  return <RedirectFallback message="Opening research…" />;
+  return <RedirectFallback />;
 }
 
 export function LibraryToResearchRedirectPage() {
@@ -47,7 +47,7 @@ function StrategyToAnalysisInner() {
     router.replace(`/portfolio?${q.toString()}`);
   }, [router, searchParams]);
 
-  return <RedirectFallback message="Opening analysis…" />;
+  return <RedirectFallback />;
 }
 
 export function StrategyToAnalysisRedirectPage() {
