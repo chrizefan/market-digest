@@ -19,6 +19,7 @@ import {
   parseChartViewKey,
   buildDrawdownSeries,
   buildRollingSharpeVol,
+  computeEffectiveRollingWindow,
   type DateRangeKey,
   type PerformanceChartView,
 } from '@/lib/performance-series';
@@ -223,6 +224,7 @@ export default function PerformanceTab() {
   }, [snaps, comparableHistory, selectedComparables]);
 
   const drawdownData = useMemo(() => buildDrawdownSeries(snaps), [snaps]);
+  const rollingWindow = useMemo(() => computeEffectiveRollingWindow(snaps.length, 21), [snaps.length]);
   const rollingData = useMemo(() => buildRollingSharpeVol(snaps, 21), [snaps]);
 
   const onAddComparable = useCallback(
@@ -339,6 +341,7 @@ export default function PerformanceTab() {
           snaps={snaps}
           drawdownData={drawdownData}
           rollingData={rollingData}
+          rollingWindow={rollingWindow}
           activityMarkerDates={activityMarkerDates}
           activityEventsByDate={activityEventsByDate}
         />

@@ -2,6 +2,12 @@
 
 import { useMemo } from 'react';
 import type { BenchmarkHistoryMap, NavChartPoint } from '@/lib/types';
+import {
+  dailySimpleReturnsFromNavs,
+  sharpeRatioFromDailyReturns,
+  sortinoRatioFromDailyReturns,
+  annualizedVolatilityPctFromDailyReturns,
+} from '@/lib/portfolio-risk-metrics';
 
 interface MetricProps {
   label: string;
@@ -61,10 +67,7 @@ export function AdvancedStatsPanel({
     if (!snaps || snaps.length < 2) return null;
 
     const navs: number[] = snaps.map((s) => s.nav);
-    const returns: number[] = [];
-    for (let i = 1; i < navs.length; i++) {
-      if (navs[i - 1] > 0) returns.push((navs[i] - navs[i - 1]) / navs[i - 1]);
-    }
+    const returns = dailySimpleReturnsFromNavs(navs);
     if (!returns.length) return null;
 
     const tradingDays = returns.length;
@@ -74,20 +77,11 @@ export function AdvancedStatsPanel({
     const annFactor = tradingDays > 0 ? 252 / tradingDays : 1;
     const annReturn = ((1 + totalReturn / 100) ** annFactor - 1) * 100;
 
-    const meanDaily = returns.reduce((a, b) => a + b, 0) / returns.length;
-    const variance = returns.reduce((s, r) => s + (r - meanDaily) ** 2, 0) / returns.length;
-    const dailyVol = Math.sqrt(variance);
-    const annVol = dailyVol * Math.sqrt(252) * 100;
-
-    const sharpe = annVol > 0 ? annReturn / annVol : 0;
+    const annVol = annualizedVolatilityPctFromDailyReturns(returns);
+    const sharpe = sharpeRatioFromDailyReturns(returns);
+    const sortino = sortinoRatioFromDailyReturns(returns);
 
     const downReturns = returns.filter((r) => r < 0);
-    const downVar =
-      downReturns.length > 0
-        ? downReturns.reduce((s, r) => s + r ** 2, 0) / downReturns.length
-        : 0;
-    const downDev = Math.sqrt(downVar) * Math.sqrt(252) * 100;
-    const sortino = downDev > 0 ? annReturn / downDev : 0;
 
     let peak = firstNav;
     let maxDd = 0;

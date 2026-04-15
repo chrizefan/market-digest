@@ -28,6 +28,7 @@ import {
 } from 'recharts';
 import TopAssetsPulse from '@/components/overview/top-assets-pulse';
 import AtlasLoader from '@/components/AtlasLoader';
+import { computeRiskRatiosFromNavSnaps } from '@/lib/portfolio-risk-metrics';
 
 // ─── Regime config ────────────────────────────────────────────────────────────
 
@@ -228,6 +229,13 @@ export default function OverviewPage() {
     return inceptionVsBenchmark(data.portfolio.snapshots, data.benchmarks);
   }, [data]);
 
+  /** Align with Advanced stats / tearsheet: Sharpe from daily NAV returns (Rf = 0). */
+  const overviewSharpeFromNav = useMemo(() => {
+    const snaps = data?.portfolio?.snapshots;
+    if (!snaps?.length) return null;
+    return computeRiskRatiosFromNavSnaps(snaps)?.sharpe ?? null;
+  }, [data?.portfolio?.snapshots]);
+
   // 7-day position activity count (non-HOLD events in last 7 calendar days from last_updated)
   const recentActivityCount = useMemo(() => {
     const events = data?.position_events ?? [];
@@ -382,10 +390,16 @@ export default function OverviewPage() {
         />
         <StatCardEnhanced
           label="Sharpe"
-          value={metrics.sharpe != null ? metrics.sharpe.toFixed(2) : '—'}
+          value={
+            overviewSharpeFromNav != null
+              ? overviewSharpeFromNav.toFixed(2)
+              : metrics.sharpe != null
+                ? metrics.sharpe.toFixed(2)
+                : '—'
+          }
           icon={PieChart}
           iconColor="text-fin-amber"
-          subtitle="risk-adjusted"
+          subtitle={overviewSharpeFromNav != null ? 'from NAV (Rf = 0)' : 'risk-adjusted'}
           enterStaggerIndex={2}
         />
         <StatCardEnhanced

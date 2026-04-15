@@ -46,7 +46,11 @@ const VIEW_OPTIONS: { id: PerformanceChartView; label: string; hint: string }[] 
   { id: 'nav', label: 'NAV vs comparables', hint: 'Indexed series; legend removes an overlay' },
   { id: 'daily_returns', label: 'Daily returns', hint: 'Day-over-day % with cumulative NAV' },
   { id: 'drawdown', label: 'Drawdown', hint: 'Peak-to-trough underwater %' },
-  { id: 'rolling', label: 'Rolling risk', hint: 'Rolling Sharpe and annualized volatility' },
+  {
+    id: 'rolling',
+    label: 'Risk-adjusted',
+    hint: 'Period Sharpe & Sortino; optional rolling series when history allows',
+  },
 ];
 
 type LegendPayloadItem = {
@@ -468,6 +472,7 @@ export function PerformanceChartWorkspace({
   snaps,
   drawdownData,
   rollingData,
+  rollingWindow,
   activityMarkerDates,
   activityEventsByDate,
 }: {
@@ -483,6 +488,7 @@ export function PerformanceChartWorkspace({
   snaps: NavChartPoint[];
   drawdownData: Array<{ date: string; drawdown: number }>;
   rollingData: Array<{ date: string; sharpe: number | null; volAnn: number | null }>;
+  rollingWindow: number;
   activityMarkerDates?: string[];
   activityEventsByDate?: Record<string, { ticker: string; event: string }[]>;
 }) {
@@ -558,9 +564,7 @@ export function PerformanceChartWorkspace({
         )}
 
         {view === 'rolling' && (
-          <div className="h-[min(520px,58vh)] min-h-[360px] w-full">
-            <PerformanceRollingChart data={rollingData} />
-          </div>
+          <PerformanceRollingChart data={rollingData} snaps={snaps} rollingWindow={rollingWindow} />
         )}
       </div>
     </div>

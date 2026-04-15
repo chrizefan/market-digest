@@ -66,22 +66,33 @@ export function buildDrawdownSeries(snaps: NavChartPoint[]): Array<{ date: strin
   });
 }
 
+/**
+ * When history is shorter than `baseWindow + 2` trading days, shrink the rolling
+ * window so we still produce a sparse rolling series instead of all nulls.
+ */
+export function computeEffectiveRollingWindow(snapsLength: number, baseWindow = 21): number {
+  if (snapsLength < 2) return baseWindow;
+  if (snapsLength >= baseWindow + 2) return baseWindow;
+  return Math.max(3, Math.min(baseWindow, Math.max(2, snapsLength - 2)));
+}
+
 /** Rolling annualized vol and Sharpe (Rf = 0) over `window` trading days. */
 export function buildRollingSharpeVol(
   snaps: NavChartPoint[],
   window = 21
 ): Array<{ date: string; sharpe: number | null; volAnn: number | null }> {
   if (snaps.length < 2) return snaps.map((s) => ({ date: s.date, sharpe: null, volAnn: null }));
+  const effWindow = computeEffectiveRollingWindow(snaps.length, window);
   const navs = snaps.map((s) => s.nav);
   const dates = snaps.map((s) => s.date);
   const out: Array<{ date: string; sharpe: number | null; volAnn: number | null }> = [];
   for (let i = 0; i < snaps.length; i++) {
-    if (i < window) {
+    if (i < effWindow) {
       out.push({ date: dates[i], sharpe: null, volAnn: null });
       continue;
     }
     const rets: number[] = [];
-    for (let j = i - window + 1; j <= i; j++) {
+    for (let j = i - effWindow + 1; j <= i; j++) {
       const prev = navs[j - 1];
       const cur = navs[j];
       if (prev > 0) rets.push((cur - prev) / prev);
