@@ -119,8 +119,6 @@ function ChartBody({
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setErr(null);
     fetchPositionPriceChart(ticker, rangeStart)
       .then((d) => {
         if (!cancelled) setData(d);
@@ -150,7 +148,7 @@ function ChartBody({
       ticker,
       data.priceHistory.map((p) => ({ date: p.date, close: p.close }))
     );
-  }, [data?.priceHistory, navSnaps, positionHistory, ticker, rangeStart, anchorDate]);
+  }, [data, navSnaps, positionHistory, ticker, rangeStart, anchorDate]);
 
   useEffect(() => {
     if (!chartRows.length) return;

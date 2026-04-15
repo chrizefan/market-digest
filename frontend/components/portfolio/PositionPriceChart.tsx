@@ -117,8 +117,6 @@ function ChartBody({
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setErr(null);
     fetchPositionPriceChart(ticker, rangeStart)
       .then((d) => {
         if (!cancelled) setData(d);
