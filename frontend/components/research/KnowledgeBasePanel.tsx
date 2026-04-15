@@ -100,9 +100,9 @@ export default function KnowledgeBasePanel({ docs }: { docs: Doc[] }) {
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search knowledge base…"
+            placeholder="Search knowledge…"
             className="w-full rounded-md border border-border-subtle bg-bg-secondary/80 pl-8 pr-2 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-fin-blue/50"
-            aria-label="Search knowledge base"
+            aria-label="Search knowledge"
           />
         </div>
       </div>
@@ -152,7 +152,7 @@ export default function KnowledgeBasePanel({ docs }: { docs: Doc[] }) {
       {grouped.length === 0 ? (
         <div className="glass-card p-10 text-center text-text-muted text-sm">
           {kbDocs.length === 0
-            ? 'No knowledge base documents in this workspace yet.'
+            ? 'No knowledge documents in this workspace yet.'
             : filterCat
               ? `No documents in “${filterCat}” with the current search.`
               : 'No documents match your search.'}

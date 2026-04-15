@@ -86,9 +86,8 @@ function WordSwapBlock({ oldText, newText }: { oldText: string; newText: string 
   );
 }
 
-function comparePresetLabel(kind: DigestCompareKind, ctx: DigestDiffContext | null): string {
+function comparePresetLabel(kind: 'previous_digest' | 'delta_baseline', ctx: DigestDiffContext | null): string {
   if (kind === 'delta_baseline') return ctx?.deltaBaselineDate ? `Delta baseline (${ctx.deltaBaselineDate})` : 'Delta baseline';
-  if (kind === 'custom_date') return 'Custom snapshot date…';
   return ctx?.previousDigestDate ? `Previous digest (${ctx.previousDigestDate})` : 'Previous digest';
 }
 
@@ -110,16 +109,14 @@ function DigestCompareDropdown({
   customCompareDate,
   canComparePrevious,
   canCompareBaseline,
-  onSelectKind,
-  onCustomDateChange,
+  onSelectPreset,
 }: {
   context: DigestDiffContext;
   compareKind: DigestCompareKind;
   customCompareDate: string;
   canComparePrevious: boolean;
   canCompareBaseline: boolean;
-  onSelectKind: (k: DigestCompareKind) => void;
-  onCustomDateChange: (iso: string) => void;
+  onSelectPreset: (k: 'previous_digest' | 'delta_baseline') => void;
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -135,7 +132,12 @@ function DigestCompareDropdown({
     return () => document.removeEventListener('mousedown', onDoc);
   }, [open]);
 
-  const summaryLabel = comparePresetLabel(compareKind, context);
+  const summaryLabel =
+    compareKind === 'custom_date' && /^\d{4}-\d{2}-\d{2}$/.test(customCompareDate.trim())
+      ? `Custom (${customCompareDate.trim()})`
+      : compareKind === 'delta_baseline'
+        ? comparePresetLabel('delta_baseline', context)
+        : comparePresetLabel('previous_digest', context);
 
   return (
     <div ref={rootRef} className="relative">
@@ -159,7 +161,7 @@ function DigestCompareDropdown({
               disabled={!canComparePrevious}
               onClick={() => {
                 if (!canComparePrevious) return;
-                onSelectKind('previous_digest');
+                onSelectPreset('previous_digest');
                 setOpen(false);
               }}
               className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
@@ -179,7 +181,7 @@ function DigestCompareDropdown({
               disabled={!canCompareBaseline}
               onClick={() => {
                 if (!canCompareBaseline) return;
-                onSelectKind('delta_baseline');
+                onSelectPreset('delta_baseline');
                 setOpen(false);
               }}
               className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
@@ -192,35 +194,9 @@ function DigestCompareDropdown({
             >
               {comparePresetLabel('delta_baseline', context)}
             </button>
-            <button
-              type="button"
-              role="option"
-              aria-selected={compareKind === 'custom_date' ? 'true' : 'false'}
-              onClick={() => {
-                onSelectKind('custom_date');
-              }}
-              className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
-                compareKind === 'custom_date'
-                  ? 'bg-fin-blue/15 text-fin-blue'
-                  : 'text-text-secondary hover:bg-white/[0.06] hover:text-text-primary'
-              }`}
-            >
-              {comparePresetLabel('custom_date', context)}
-            </button>
           </div>
-          {compareKind === 'custom_date' ? (
-            <div className="border-t border-border-subtle px-2.5 py-2 bg-bg-secondary/80">
-              <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Snapshot date</label>
-              <input
-                type="date"
-                value={customCompareDate}
-                onChange={(e) => onCustomDateChange(e.target.value)}
-                className="w-full rounded-md border border-border-subtle bg-bg-secondary px-2 py-1.5 text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-inset focus:ring-fin-blue/30"
-              />
-            </div>
-          ) : null}
           <p className="text-[10px] text-text-muted px-2.5 py-1.5 border-t border-border-subtle bg-bg-secondary/80">
-            Choose which snapshot to diff against
+            Previous or baseline — or use the date field beside this menu for a custom snapshot.
           </p>
         </div>
       )}
@@ -244,6 +220,17 @@ export default function DigestDocumentView({
   const [error, setError] = useState<string | null>(null);
   const [context, setContext] = useState<DigestDiffContext | null>(null);
   const [pair, setPair] = useState<Awaited<ReturnType<typeof loadDigestLibraryDiff>>['pair']>(null);
+  const preferPreviousRef = useRef(false);
+
+  useEffect(() => {
+    if (!preferPreviousRef.current || viewScope !== 'difference' || !context) return;
+    preferPreviousRef.current = false;
+    /* eslint-disable react-hooks/set-state-in-effect -- sync compare preset when opening diff from digest banner */
+    setCustomCompareDate('');
+    if (context.previousDigestDate) setCompareKind('previous_digest');
+    else if (context.deltaBaselineDate) setCompareKind('delta_baseline');
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [context, viewScope]);
 
   useEffect(() => {
     let cancelled = false;
@@ -320,7 +307,14 @@ export default function DigestDocumentView({
         >
           Current
         </button>
-        <button type="button" className={segmentBtnClass(viewScope === 'difference')} onClick={() => setViewScope('difference')}>
+        <button
+          type="button"
+          className={segmentBtnClass(viewScope === 'difference')}
+          onClick={() => {
+            preferPreviousRef.current = true;
+            setViewScope('difference');
+          }}
+        >
           Difference
         </button>
       </div>
@@ -339,15 +333,35 @@ export default function DigestDocumentView({
               Side by side
             </button>
           </div>
-          <DigestCompareDropdown
-            context={context}
-            compareKind={compareKind}
-            customCompareDate={customCompareDate}
-            canComparePrevious={canComparePrevious}
-            canCompareBaseline={canCompareBaseline}
-            onSelectKind={(k) => setCompareKind(k)}
-            onCustomDateChange={setCustomCompareDate}
-          />
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
+            <DigestCompareDropdown
+              context={context}
+              compareKind={compareKind}
+              customCompareDate={customCompareDate}
+              canComparePrevious={canComparePrevious}
+              canCompareBaseline={canCompareBaseline}
+              onSelectPreset={(k) => {
+                setCompareKind(k);
+                setCustomCompareDate('');
+              }}
+            />
+            <label className="flex flex-col gap-0.5 min-w-[10.5rem]">
+              <span className="text-[10px] uppercase tracking-wider text-text-muted">Or compare to date</span>
+              <input
+                type="date"
+                value={customCompareDate}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setCustomCompareDate(v);
+                  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) setCompareKind('custom_date');
+                  else if (canComparePrevious) setCompareKind('previous_digest');
+                  else if (canCompareBaseline) setCompareKind('delta_baseline');
+                }}
+                className="rounded-md border border-border-subtle bg-bg-secondary px-2 py-1.5 text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-inset focus:ring-fin-blue/30"
+                aria-label="Compare digest to a custom snapshot date"
+              />
+            </label>
+          </div>
         </>
       ) : null}
 

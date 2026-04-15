@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Change } from 'diff';
 import { diffLines, diffWords } from 'diff';
+import { ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -12,7 +13,8 @@ import {
   type DocumentDiffPair,
 } from '@/lib/queries';
 
-type ViewMode = 'compiled' | 'inline' | 'split';
+type ViewScope = 'current' | 'difference';
+type DiffLayout = 'inline' | 'split';
 
 function isTableLine(s: string): boolean {
   return s.trimStart().startsWith('|');
@@ -83,12 +85,11 @@ function WordSwapBlock({ oldText, newText }: { oldText: string; newText: string 
   );
 }
 
-function compareTargetLabel(kind: DocumentDiffCompareKind, anchors: { prev: string | null; base: string | null }): string {
+function comparePresetLabel(kind: 'previous_day' | 'delta_baseline', anchors: { prev: string | null; base: string | null }): string {
   if (kind === 'delta_baseline') {
     return anchors.base ? `Delta baseline (${anchors.base})` : 'Delta baseline';
   }
-  if (kind === 'custom_date') return 'Custom date…';
-  return anchors.prev ? `Previous date (${anchors.prev})` : 'Previous date';
+  return anchors.prev ? `Previous run (${anchors.prev})` : 'Previous run';
 }
 
 function compareModeFootnote(pair: DocumentDiffPair): string {
@@ -105,6 +106,119 @@ function compareModeFootnote(pair: DocumentDiffPair): string {
   }
 }
 
+function segmentOuterClass() {
+  return 'inline-flex rounded-lg border border-border-subtle p-0.5 bg-bg-secondary/80 gap-0.5';
+}
+
+function segmentBtnClass(active: boolean) {
+  return `rounded-md px-3 py-1.5 text-xs font-medium border transition-colors ${
+    active
+      ? 'border-fin-blue/40 bg-fin-blue/15 text-fin-blue'
+      : 'border-transparent text-text-muted hover:text-text-primary hover:bg-white/[0.06]'
+  }`;
+}
+
+function DocumentArtifactCompareDropdown({
+  anchors,
+  compareKind,
+  customCompareDate,
+  canPrev,
+  canBase,
+  onSelectPreset,
+}: {
+  anchors: { prev: string | null; base: string | null };
+  compareKind: DocumentDiffCompareKind;
+  customCompareDate: string;
+  canPrev: boolean;
+  canBase: boolean;
+  onSelectPreset: (k: 'previous_day' | 'delta_baseline') => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  const summaryLabel =
+    compareKind === 'custom_date' && /^\d{4}-\d{2}-\d{2}$/.test(customCompareDate.trim())
+      ? `Custom (${customCompareDate.trim()})`
+      : compareKind === 'delta_baseline'
+        ? comparePresetLabel('delta_baseline', anchors)
+        : comparePresetLabel('previous_day', anchors);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border border-border-subtle bg-bg-secondary text-text-secondary hover:border-fin-blue/40 hover:text-text-primary transition-colors"
+        aria-expanded={open ? 'true' : 'false'}
+        aria-haspopup="listbox"
+      >
+        <span className="max-w-[min(100vw-8rem,14rem)] truncate">{summaryLabel}</span>
+        <ChevronDown size={14} className={`opacity-70 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-[60] mt-1 w-[min(100vw-2rem,20rem)] rounded-lg border border-border-subtle bg-[#141414] shadow-xl overflow-hidden">
+          <div role="listbox" aria-label="Compare document to" className="py-1">
+            <button
+              type="button"
+              role="option"
+              aria-selected={compareKind === 'previous_day' ? 'true' : 'false'}
+              disabled={!canPrev}
+              onClick={() => {
+                if (!canPrev) return;
+                onSelectPreset('previous_day');
+                setOpen(false);
+              }}
+              className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                !canPrev
+                  ? 'text-text-muted opacity-40 cursor-not-allowed'
+                  : compareKind === 'previous_day'
+                    ? 'bg-fin-blue/15 text-fin-blue'
+                    : 'text-text-secondary hover:bg-white/[0.06] hover:text-text-primary'
+              }`}
+            >
+              {comparePresetLabel('previous_day', anchors)}
+            </button>
+            <button
+              type="button"
+              role="option"
+              aria-selected={compareKind === 'delta_baseline' ? 'true' : 'false'}
+              disabled={!canBase}
+              onClick={() => {
+                if (!canBase) return;
+                onSelectPreset('delta_baseline');
+                setOpen(false);
+              }}
+              className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                !canBase
+                  ? 'text-text-muted opacity-40 cursor-not-allowed'
+                  : compareKind === 'delta_baseline'
+                    ? 'bg-fin-blue/15 text-fin-blue'
+                    : 'text-text-secondary hover:bg-white/[0.06] hover:text-text-primary'
+              }`}
+            >
+              {comparePresetLabel('delta_baseline', anchors)}
+            </button>
+          </div>
+          <p className="text-[10px] text-text-muted px-2.5 py-1.5 border-t border-border-subtle bg-bg-secondary/80">
+            Previous or baseline — or use the date field for a custom run day.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function GenericDiffDocumentView({
   docDate,
   documentKey,
@@ -116,7 +230,8 @@ export default function GenericDiffDocumentView({
   payload: Record<string, unknown> | null;
   fallbackMarkdown: string;
 }) {
-  const [viewMode, setViewMode] = useState<ViewMode>('compiled');
+  const [viewScope, setViewScope] = useState<ViewScope>('current');
+  const [diffLayout, setDiffLayout] = useState<DiffLayout>('inline');
   const [compareKind, setCompareKind] = useState<DocumentDiffCompareKind>('previous_day');
   const [customCompareDate, setCustomCompareDate] = useState('');
   const [anchorsLoading, setAnchorsLoading] = useState(true);
@@ -127,6 +242,17 @@ export default function GenericDiffDocumentView({
     base: null,
   });
   const [pair, setPair] = useState<DocumentDiffPair | null>(null);
+  const preferPreviousRef = useRef(false);
+
+  useEffect(() => {
+    if (!preferPreviousRef.current || viewScope !== 'difference' || anchorsLoading) return;
+    preferPreviousRef.current = false;
+    /* eslint-disable react-hooks/set-state-in-effect -- sync compare preset when opening Difference */
+    setCustomCompareDate('');
+    if (anchors.prev) setCompareKind('previous_day');
+    else if (anchors.base) setCompareKind('delta_baseline');
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [anchors.prev, anchors.base, anchorsLoading, viewScope]);
 
   useEffect(() => {
     let cancelled = false;
@@ -150,7 +276,7 @@ export default function GenericDiffDocumentView({
   }, [docDate, documentKey, payload]);
 
   useEffect(() => {
-    if (viewMode === 'compiled') return;
+    if (viewScope === 'current') return;
     let cancelled = false;
     /* eslint-disable react-hooks/set-state-in-effect -- fetch lifecycle for diff pair */
     setPairLoading(true);
@@ -175,7 +301,7 @@ export default function GenericDiffDocumentView({
     return () => {
       cancelled = true;
     };
-  }, [docDate, documentKey, payload, compareKind, customCompareDate, viewMode]);
+  }, [docDate, documentKey, payload, compareKind, customCompareDate, viewScope]);
 
   const lineItems = useMemo(() => {
     if (!pair) return [];
@@ -193,58 +319,76 @@ export default function GenericDiffDocumentView({
   }
 
   const toolbar = (
-    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end text-xs">
-      <label className="flex flex-col gap-1 min-w-[200px]">
-        <span className="text-text-muted">Compare to</span>
-        <select
-          value={compareKind}
-          onChange={(e) => setCompareKind(e.target.value as DocumentDiffCompareKind)}
-          className="rounded-md border border-border-subtle bg-bg-secondary px-2 py-1.5 text-xs text-text-primary"
-        >
-          <option value="previous_day" disabled={!canPrev}>
-            {compareTargetLabel('previous_day', anchors)}
-          </option>
-          <option value="delta_baseline" disabled={!canBase}>
-            {compareTargetLabel('delta_baseline', anchors)}
-          </option>
-          <option value="custom_date">Custom date…</option>
-        </select>
-      </label>
-      {compareKind === 'custom_date' ? (
-        <label className="flex flex-col gap-1 min-w-[160px]">
-          <span className="text-text-muted">Compare date</span>
-          <input
-            type="date"
-            value={customCompareDate}
-            onChange={(e) => setCustomCompareDate(e.target.value)}
-            className="rounded-md border border-border-subtle bg-bg-secondary px-2 py-1.5 text-xs text-text-primary font-mono"
-          />
-        </label>
-      ) : null}
-      <label className="flex flex-col gap-1 min-w-[180px]">
-        <span className="text-text-muted">View</span>
-        <select
-          value={viewMode}
-          onChange={(e) => {
-            const v = e.target.value as ViewMode;
-            setViewMode(v);
-            if (v === 'compiled') {
-              setPair(null);
-              setPairLoading(false);
-              setError(null);
-            }
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className={segmentOuterClass()}>
+        <button
+          type="button"
+          className={segmentBtnClass(viewScope === 'current')}
+          onClick={() => {
+            setViewScope('current');
+            setPair(null);
+            setError(null);
           }}
-          className="rounded-md border border-border-subtle bg-bg-secondary px-2 py-1.5 text-xs text-text-primary"
         >
-          <option value="compiled">Current (compiled)</option>
-          <option value="inline">Inline diff</option>
-          <option value="split">Side-by-side</option>
-        </select>
-      </label>
+          Current
+        </button>
+        <button
+          type="button"
+          className={segmentBtnClass(viewScope === 'difference')}
+          onClick={() => {
+            preferPreviousRef.current = true;
+            setViewScope('difference');
+          }}
+        >
+          Difference
+        </button>
+      </div>
+
+      {viewScope === 'difference' ? (
+        <>
+          <div className={segmentOuterClass()}>
+            <button type="button" className={segmentBtnClass(diffLayout === 'inline')} onClick={() => setDiffLayout('inline')}>
+              Inline
+            </button>
+            <button type="button" className={segmentBtnClass(diffLayout === 'split')} onClick={() => setDiffLayout('split')}>
+              Side by side
+            </button>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
+            <DocumentArtifactCompareDropdown
+              anchors={anchors}
+              compareKind={compareKind}
+              customCompareDate={customCompareDate}
+              canPrev={canPrev}
+              canBase={canBase}
+              onSelectPreset={(k) => {
+                setCompareKind(k);
+                setCustomCompareDate('');
+              }}
+            />
+            <label className="flex flex-col gap-0.5 min-w-[10.5rem]">
+              <span className="text-[10px] uppercase tracking-wider text-text-muted">Or compare to date</span>
+              <input
+                type="date"
+                value={customCompareDate}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setCustomCompareDate(v);
+                  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) setCompareKind('custom_date');
+                  else if (canPrev) setCompareKind('previous_day');
+                  else if (canBase) setCompareKind('delta_baseline');
+                }}
+                className="rounded-md border border-border-subtle bg-bg-secondary px-2 py-1.5 text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-inset focus:ring-fin-blue/30"
+                aria-label="Compare this document to a custom run date"
+              />
+            </label>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 
-  if (viewMode === 'compiled') {
+  if (viewScope === 'current') {
     return (
       <div className="space-y-4">
         {toolbar}
@@ -259,7 +403,7 @@ export default function GenericDiffDocumentView({
     return (
       <div className="space-y-4">
         {toolbar}
-        <p className="text-text-muted text-sm">Choose a date to compare against.</p>
+        <p className="text-text-muted text-sm">Pick a compare date, or clear the custom date field to use a preset.</p>
       </div>
     );
   }
@@ -307,7 +451,7 @@ export default function GenericDiffDocumentView({
         <span className="text-text-muted"> · {compareModeFootnote(pair)}</span>
       </p>
 
-      {viewMode === 'inline' ? (
+      {diffLayout === 'inline' ? (
         <div>
           {!hasDiff ? (
             <p className="text-text-muted text-sm mb-3">No text changes vs comparison version.</p>

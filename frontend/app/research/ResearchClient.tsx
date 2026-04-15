@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
-  BookOpen,
+  Brain,
   Calendar,
   ChevronDown,
   ChevronRight,
   Filter,
   FileText,
   Search,
+  Workflow,
 } from 'lucide-react';
 
 import { SubpageStickyTabBar, SUBPAGE_MAX, subpageTabButtonClass } from '@/components/subpage-tab-bar';
@@ -107,7 +108,7 @@ function ResearchPageInner({
     [docs]
   );
 
-  /** Dated run outputs for the Daily tab (excludes knowledge-base reference docs). */
+  /** Dated artifacts from automated research runs (excludes evergreen Knowledge docs). */
   const dailyResearchDocs = useMemo(() => researchDocs.filter(isDailyResearchDoc), [researchDocs]);
 
   const docsByDate = useMemo(() => {
@@ -234,18 +235,19 @@ function ResearchPageInner({
 
   return (
     <div className="flex min-h-full flex-col">
-      <SubpageStickyTabBar aria-label="Research sections">
+      <SubpageStickyTabBar aria-label="Research workspace">
         <button type="button" onClick={() => setTab('daily')} className={subpageTabButtonClass(tab === 'daily')}>
-          <Calendar size={16} />
-          Daily
+          <Workflow size={16} aria-hidden />
+          <span className="hidden sm:inline">Run outputs</span>
+          <span className="sm:hidden">Runs</span>
         </button>
         <button
           type="button"
           onClick={() => setTab('knowledge')}
           className={subpageTabButtonClass(tab === 'knowledge')}
         >
-          <BookOpen size={16} />
-          Knowledge base
+          <Brain size={16} aria-hidden />
+          Knowledge
         </button>
       </SubpageStickyTabBar>
 
@@ -253,8 +255,8 @@ function ResearchPageInner({
         {tab === 'knowledge' ? (
           <>
             <p className="text-xs text-text-muted max-w-2xl">
-              Reference library: deep dives, research papers, and recurring notes across all dates. Use the Daily tab
-              for snapshot-specific outputs.
+              Curated reference material—deep dives, papers, and standing notes that persist across dates. For
+              digest, deltas, and other outputs from each automated run, use Run outputs.
             </p>
             <KnowledgeBasePanel docs={researchDocs} />
           </>
@@ -350,7 +352,8 @@ function ResearchPageInner({
 
             <div className="flex-1 min-w-0 space-y-4">
               <p className="text-xs text-text-muted max-w-2xl">
-                Run-day artifacts only (digest, exploration, deltas). Long-form reference lives under Knowledge base.
+                Artifacts from each dated research run: digest, exploration, deltas, and related pipeline outputs.
+                Evergreen reference lives under Knowledge.
               </p>
               <div className="flex items-center gap-3">
                 <Calendar size={16} className="text-fin-blue" />
