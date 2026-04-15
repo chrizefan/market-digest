@@ -29,10 +29,6 @@ import { DASHBOARD_BENCHMARK_TICKERS, sortTickerUniverse } from './benchmark-tic
 import { extractSnapshotContextBullets } from './snapshot-context';
 import { MACRO_PREVIEW_SERIES_IDS } from './macro-curated';
 import { getDocLibraryTier } from './library-doc-tier';
-import {
-  parseProposedPositionsFromSnapshot,
-  type TargetWeights,
-} from './digest-targets';
 
 type SB = SupabaseClient<Database>;
 
@@ -1092,56 +1088,6 @@ export async function fetchComparablePriceHistory(
     if (bData.history.length) {
       bData.current = bData.history[bData.history.length - 1].price;
     }
-  }
-  return out;
-}
-
-const DIGEST_SNAPSHOT_PAGE = 500;
-const DIGEST_SNAPSHOT_MAX_ROWS = 50000;
-
-export type DigestTargetSnapshotRow = { date: string; weights: TargetWeights };
-
-/**
- * Load `daily_snapshots` in [minDate, maxDate] and extract `portfolio.proposed_positions` per row.
- * Rows without proposed_positions are omitted (forward-fill happens in `forwardFillTargetsForNavDates`).
- */
-export async function fetchDigestTargetHistory(
-  minDate: string,
-  maxDate: string
-): Promise<DigestTargetSnapshotRow[]> {
-  if (!isSupabaseConfigured() || !supabase) return [];
-  const a = minDate.trim();
-  const b = maxDate.trim();
-  if (!a || !b || a > b) return [];
-
-  type RowPick = Pick<TableRow<'daily_snapshots'>, 'date' | 'snapshot'>;
-  const rows: RowPick[] = [];
-  let offset = 0;
-  while (offset < DIGEST_SNAPSHOT_MAX_ROWS) {
-    const { data, error } = await supabase
-      .from('daily_snapshots')
-      .select('date, snapshot')
-      .gte('date', a)
-      .lte('date', b)
-      .order('date', { ascending: true })
-      .range(offset, offset + DIGEST_SNAPSHOT_PAGE - 1);
-
-    if (error) {
-      console.error('fetchDigestTargetHistory:', error);
-      break;
-    }
-    const chunk = (data ?? []) as RowPick[];
-    rows.push(...chunk);
-    if (chunk.length < DIGEST_SNAPSHOT_PAGE) break;
-    offset += DIGEST_SNAPSHOT_PAGE;
-  }
-
-  const out: DigestTargetSnapshotRow[] = [];
-  for (const r of rows) {
-    if (!r?.date) continue;
-    const w = parseProposedPositionsFromSnapshot(r.snapshot);
-    if (!w) continue;
-    out.push({ date: r.date, weights: w });
   }
   return out;
 }

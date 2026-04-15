@@ -6,25 +6,13 @@ import { useDashboard } from '@/lib/dashboard-context';
 import { StatCard, formatPct, pnlColor } from '@/components/ui';
 import { TrendingUp, BarChart3, Activity, Target, ChevronDown, ChevronUp } from 'lucide-react';
 import type { BenchmarkHistoryMap, NavChartPoint, PerfChartPoint, Thesis } from '@/lib/types';
-import type { TargetWeights } from '@/lib/digest-targets';
 import { PositionPnlTable } from '@/components/portfolio/position-pnl-table';
 import { AdvancedStatsPanel } from '@/components/portfolio/advanced-stats-panel';
 import { PerformanceDateRange } from '@/components/portfolio/performance-date-range';
 import { ServerMetricsStrip } from '@/components/portfolio/server-metrics-strip';
 import { PerformanceChartWorkspace } from '@/components/portfolio/performance-chart-workspace';
 import AtlasLoader from '@/components/AtlasLoader';
-import { fetchComparablePriceHistory, fetchDigestTargetHistory } from '@/lib/queries';
-import { forwardFillTargetsForNavDates, unionTickerKeys } from '@/lib/digest-targets';
-import {
-  buildCloseMapFromBenchmarkHistory,
-  runPerformanceSimulation,
-  DEFAULT_SIMULATION_PARAMS,
-  type SimulationParams,
-} from '@/lib/performance-simulation';
-import {
-  PerformanceSimulationPanel,
-  usePerformanceSimParams,
-} from '@/components/portfolio/performance-simulation-panel';
+import { fetchComparablePriceHistory } from '@/lib/queries';
 import {
   filterByDateRange,
   parseDateRangeKey,
@@ -140,90 +128,6 @@ export default function PerformanceTab() {
   const selectedComparables = comparableOverride ?? defaultComparableSelection;
   const comparableKey = selectedComparables.join('|');
 
-  const { params: simParams, stored: simStored, setStored: setSimStored } = usePerformanceSimParams();
-
-  const [simInputs, setSimInputs] = useState<{
-    navDates: string[];
-    targetsByDate: Map<string, TargetWeights>;
-    closeByTickerDate: Map<string, Map<string, number>>;
-  } | null>(null);
-  const [simFetchLoading, setSimFetchLoading] = useState(false);
-  const [simFetchError, setSimFetchError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (snaps.length < 2) {
-      setSimInputs(null);
-      setSimFetchError(null);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      setSimFetchLoading(true);
-      setSimFetchError(null);
-      try {
-        const navDates = snaps.map((s) => s.date);
-        const minD = navDates[0];
-        const maxD = navDates[navDates.length - 1];
-        const rows = await fetchDigestTargetHistory(minD, maxD);
-        const targetsByDate = forwardFillTargetsForNavDates(navDates, rows);
-        const tickers = unionTickerKeys(targetsByDate.values()).filter((t) => t !== 'CASH');
-        if (tickers.length === 0) {
-          if (!cancelled) {
-            setSimInputs(null);
-            setSimFetchError('No digest targets in this range.');
-          }
-          return;
-        }
-        const bench = await fetchComparablePriceHistory(tickers, minD, maxD);
-        const closeByTickerDate = buildCloseMapFromBenchmarkHistory(bench, tickers);
-        if (!cancelled) setSimInputs({ navDates, targetsByDate, closeByTickerDate });
-      } catch (e) {
-        if (!cancelled) {
-          setSimInputs(null);
-          setSimFetchError(e instanceof Error ? e.message : 'Failed to load simulation inputs');
-        }
-      } finally {
-        if (!cancelled) setSimFetchLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [snaps]);
-
-  const simSeries = useMemo(() => {
-    if (!simInputs) return null;
-    const dailyParams: SimulationParams = {
-      strategy: 'daily_benchmark',
-      driftBandPp: DEFAULT_SIMULATION_PARAMS.driftBandPp,
-      cost: { fixedUsdPerTrade: 0, bpsOnNotional: 0 },
-    };
-    const rTheo = runPerformanceSimulation({
-      dates: simInputs.navDates,
-      targetsByDate: simInputs.targetsByDate,
-      closeByTickerDate: simInputs.closeByTickerDate,
-      params: dailyParams,
-    });
-    const rCust = runPerformanceSimulation({
-      dates: simInputs.navDates,
-      targetsByDate: simInputs.targetsByDate,
-      closeByTickerDate: simInputs.closeByTickerDate,
-      params: simParams,
-    });
-    const toMap = (vi: Array<{ date: string; value: number | null }>) => {
-      const m = new Map<string, number>();
-      for (const x of vi) {
-        if (x.value != null) m.set(x.date, x.value);
-      }
-      return m;
-    };
-    return {
-      theoretical: toMap(rTheo.valueIndex),
-      custom: toMap(rCust.valueIndex),
-      totalCostDrag: rCust.totalCostDragPoints,
-    };
-  }, [simInputs, simParams]);
-
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -318,13 +222,9 @@ export default function PerformanceTab() {
         const p = benchMaps[b]?.[d];
         row[b] = p != null && bases[b] ? +((p / bases[b]) * 100).toFixed(2) : null;
       });
-      if (simSeries) {
-        row._simTheoreticalDaily = simSeries.theoretical.get(d) ?? null;
-        row._simCustom = simSeries.custom.get(d) ?? null;
-      }
       return row;
     });
-  }, [snaps, comparableHistory, selectedComparables, simSeries]);
+  }, [snaps, comparableHistory, selectedComparables]);
 
   const drawdownData = useMemo(() => buildDrawdownSeries(snaps), [snaps]);
   const rollingWindow = useMemo(() => computeEffectiveRollingWindow(snaps.length, 21), [snaps.length]);
@@ -431,13 +331,6 @@ export default function PerformanceTab() {
 
       <section className="space-y-3">
         <p className="text-[11px] font-semibold text-text-muted tracking-wide">Return &amp; risk</p>
-        <PerformanceSimulationPanel
-          stored={simStored}
-          setStored={setSimStored}
-          simLoading={simFetchLoading}
-          simError={simFetchError}
-          totalCostDrag={simSeries?.totalCostDrag ?? null}
-        />
         <PerformanceChartWorkspace
           view={view}
           onViewChange={setView}

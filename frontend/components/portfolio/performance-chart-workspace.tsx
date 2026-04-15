@@ -74,12 +74,6 @@ function NavComparableChart({
   /** Pre-aggregated events per date for tooltip enrichment. */
   activityEventsByDate?: Record<string, { ticker: string; event: string }[]>;
 }) {
-  const hasSimTheoretical = useMemo(
-    () => data.some((row) => row['_simTheoreticalDaily'] != null),
-    [data]
-  );
-  const hasSimCustom = useMemo(() => data.some((row) => row['_simCustom'] != null), [data]);
-
   const legendContent = (props: { payload?: LegendPayloadItem[] }) => {
     const { payload } = props;
     if (!payload?.length) return null;
@@ -87,48 +81,6 @@ function NavComparableChart({
       <div className="flex flex-wrap justify-end gap-x-4 gap-y-1 w-full pr-1">
         {payload.map((item) => {
           const key = String(item.dataKey ?? item.value ?? '');
-          if (key === '_simTheoreticalDaily') {
-            return (
-              <span
-                key="_simTheoreticalDaily"
-                className="inline-flex items-center gap-1.5 text-[11px] text-text-muted shrink-0"
-              >
-                <svg width={18} height={8} className="shrink-0 overflow-visible" aria-hidden>
-                  <line
-                    x1={0}
-                    y1={4}
-                    x2={18}
-                    y2={4}
-                    stroke="#34d399"
-                    strokeWidth={2}
-                    strokeDasharray="3 4"
-                  />
-                </svg>
-                Theoretical daily rebalance
-              </span>
-            );
-          }
-          if (key === '_simCustom') {
-            return (
-              <span
-                key="_simCustom"
-                className="inline-flex items-center gap-1.5 text-[11px] text-text-muted shrink-0"
-              >
-                <svg width={18} height={8} className="shrink-0 overflow-visible" aria-hidden>
-                  <line
-                    x1={0}
-                    y1={4}
-                    x2={18}
-                    y2={4}
-                    stroke="#fbbf24"
-                    strokeWidth={2}
-                    strokeDasharray="2 3"
-                  />
-                </svg>
-                Simulated (your settings)
-              </span>
-            );
-          }
           if (key === 'portfolio') {
             return (
               <span
@@ -283,30 +235,6 @@ function NavComparableChart({
             connectNulls
           />
         ))}
-        {hasSimTheoretical && (
-          <Line
-            type="monotone"
-            dataKey="_simTheoreticalDaily"
-            name="Theoretical daily rebalance"
-            stroke="#34d399"
-            strokeWidth={1.35}
-            strokeDasharray="4 5"
-            dot={false}
-            connectNulls
-          />
-        )}
-        {hasSimCustom && (
-          <Line
-            type="monotone"
-            dataKey="_simCustom"
-            name="Simulated (your settings)"
-            stroke="#fbbf24"
-            strokeWidth={1.35}
-            strokeDasharray="2 4"
-            dot={false}
-            connectNulls
-          />
-        )}
       </ComposedChart>
     </ResponsiveContainer>
   );

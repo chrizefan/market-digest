@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test": "vitest run"
+    "lint": "next lint"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.101.1",
@@ -31,7 +30,6 @@
     "eslint-config-next": "16.2.2",
     "postcss": "^8.5.4",
     "tailwindcss": "^4.1.7",
-    "typescript": "^6.0.2",
-    "vitest": "^2.1.9"
+    "typescript": "^6.0.2"
   }
 }
