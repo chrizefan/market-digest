@@ -18,19 +18,20 @@ function PeriodRiskSummary({
   sortino,
   annVolPct,
 }: {
-  sharpe: number;
-  sortino: number;
+  sharpe: number | null;
+  sortino: number | null;
   annVolPct: number;
 }) {
+  const fmt = (v: number | null) => (v != null && Number.isFinite(v) ? v.toFixed(2) : '—');
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-lg border border-border-subtle bg-bg-secondary/50 p-4">
       <div>
         <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Sharpe (Rf = 0)</p>
-        <p className="text-lg font-semibold tabular-nums text-text-primary">{sharpe.toFixed(2)}</p>
+        <p className="text-lg font-semibold tabular-nums text-text-primary">{fmt(sharpe)}</p>
       </div>
       <div>
         <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Sortino</p>
-        <p className="text-lg font-semibold tabular-nums text-text-primary">{sortino.toFixed(2)}</p>
+        <p className="text-lg font-semibold tabular-nums text-text-primary">{fmt(sortino)}</p>
       </div>
       <div>
         <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Ann. volatility</p>
@@ -59,7 +60,8 @@ export function PerformanceRollingChart({
         <>
           <PeriodRiskSummary sharpe={period.sharpe} sortino={period.sortino} annVolPct={period.annVolPct} />
           <p className="text-[11px] text-text-muted leading-snug">
-            Full selected range — same methodology as Advanced statistics (daily returns, Rf = 0).
+            Full selected range — daily simple returns, Rf = 0. Sharpe/Sortino need at least 30 trading days in
+            the range (short windows are noisy).
           </p>
         </>
       ) : (

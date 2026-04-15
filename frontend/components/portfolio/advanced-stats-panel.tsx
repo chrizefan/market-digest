@@ -7,22 +7,25 @@ import {
   sharpeRatioFromDailyReturns,
   sortinoRatioFromDailyReturns,
   annualizedVolatilityPctFromDailyReturns,
+  MIN_TRADING_DAYS_FOR_ANNUALIZED_RISK_RATIOS,
 } from '@/lib/portfolio-risk-metrics';
 
 interface MetricProps {
   label: string;
   value: number | string | null | undefined;
-  fmt?: (v: number) => string;
+  fmt?: (v: number | null) => string;
   color?: string;
   sub?: string;
 }
 
 function MetricCard({ label, value, fmt, color, sub }: MetricProps) {
+  const display =
+    fmt && (typeof value === 'number' || value === null) ? fmt(value as number | null) : value;
   return (
     <div className="bg-bg-secondary rounded-lg p-4 border border-border-subtle">
       <span className="text-xs text-text-muted block mb-1">{label}</span>
       <span className={`text-lg font-bold tabular-nums ${color || ''}`}>
-        {fmt && value != null ? fmt(value as number) : value}
+        {display}
       </span>
       {sub && <span className="text-xs text-text-muted block mt-1">{sub}</span>}
     </div>
@@ -34,8 +37,8 @@ interface ComputedStats {
   totalReturn: number;
   annReturn: number;
   annVol: number;
-  sharpe: number;
-  sortino: number;
+  sharpe: number | null;
+  sortino: number | null;
   maxDd: number;
   ddStart: string;
   ddEnd: string;
@@ -45,8 +48,8 @@ interface ComputedStats {
   downDays: number;
   avgWin: number;
   avgLoss: number;
-  profitFactor: number;
-  calmar: number;
+  profitFactor: number | null;
+  calmar: number | null;
   bestDay: number;
   worstDay: number;
   beta: number | null;
@@ -78,8 +81,10 @@ export function AdvancedStatsPanel({
     const annReturn = ((1 + totalReturn / 100) ** annFactor - 1) * 100;
 
     const annVol = annualizedVolatilityPctFromDailyReturns(returns);
-    const sharpe = sharpeRatioFromDailyReturns(returns);
-    const sortino = sortinoRatioFromDailyReturns(returns);
+    const riskOk = tradingDays >= MIN_TRADING_DAYS_FOR_ANNUALIZED_RISK_RATIOS;
+    const sharpe = riskOk ? sharpeRatioFromDailyReturns(returns) : null;
+    const sortinoRaw = sortinoRatioFromDailyReturns(returns);
+    const sortino = riskOk && Number.isFinite(sortinoRaw) ? sortinoRaw : null;
 
     const downReturns = returns.filter((r) => r < 0);
 
@@ -109,9 +114,15 @@ export function AdvancedStatsPanel({
       upDays > 0 ? (returns.filter((r) => r > 0).reduce((a, b) => a + b, 0) / upDays) * 100 : 0;
     const avgLoss =
       downDays > 0 ? (downReturns.reduce((a, b) => a + b, 0) / downDays) * 100 : 0;
-    const profitFactor = avgLoss !== 0 ? Math.abs((avgWin * upDays) / (avgLoss * downDays)) : 0;
+    const profitFactor =
+      downDays > 0 && avgLoss !== 0
+        ? Math.abs((avgWin * upDays) / (avgLoss * downDays))
+        : null;
 
-    const calmar = maxDd !== 0 ? annReturn / (Math.abs(maxDd) * 100) : 0;
+    const calmar =
+      riskOk && maxDd !== 0 && Math.abs(maxDd) >= 1e-6
+        ? annReturn / (Math.abs(maxDd) * 100)
+        : null;
     const bestDay = Math.max(...returns) * 100;
     const worstDay = Math.min(...returns) * 100;
     const currDd = peak > 0 ? ((lastNav - peak) / peak) * 100 : 0;
@@ -205,8 +216,10 @@ export function AdvancedStatsPanel({
     );
   }
 
-  const fPct = (v: number) => (v != null ? `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` : '—');
-  const fNum = (v: number) => (v != null ? v.toFixed(2) : '—');
+  const fPct = (v: number | null) =>
+    v != null && Number.isFinite(v) ? `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` : '—';
+  const fNum = (v: number | null) => (v != null && Number.isFinite(v) ? v.toFixed(2) : '—');
+  const fNumOrNull = (v: number | null) => (v != null && Number.isFinite(v) ? v.toFixed(2) : '—');
   const pcol = (v: number | null | undefined) =>
     v != null ? (v >= 0 ? 'text-fin-green' : 'text-fin-red') : '';
 
@@ -226,6 +239,7 @@ export function AdvancedStatsPanel({
             value={stats.annReturn}
             fmt={fPct}
             color={pcol(stats.annReturn)}
+            sub="CAGR from window: (end/start)^(252/T) - 1"
           />
           <MetricCard label="Best Day" value={stats.bestDay} fmt={fPct} color="text-fin-green" />
           <MetricCard label="Worst Day" value={stats.worstDay} fmt={fPct} color="text-fin-red" />
@@ -237,7 +251,12 @@ export function AdvancedStatsPanel({
           Risk
         </h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <MetricCard label="Ann. Volatility" value={stats.annVol} fmt={fPct} />
+          <MetricCard
+            label="Ann. Volatility"
+            value={stats.annVol}
+            fmt={fPct}
+            sub="Sample std of daily returns × √252"
+          />
           <MetricCard
             label="Max Drawdown"
             value={stats.maxDd}
@@ -260,10 +279,30 @@ export function AdvancedStatsPanel({
           Risk-Adjusted
         </h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <MetricCard label="Sharpe Ratio" value={stats.sharpe} fmt={fNum} sub="Rf = 0%" />
-          <MetricCard label="Sortino Ratio" value={stats.sortino} fmt={fNum} sub="Downside deviation" />
-          <MetricCard label="Calmar Ratio" value={stats.calmar} fmt={fNum} sub="Return / MaxDD" />
-          <MetricCard label="Profit Factor" value={stats.profitFactor} fmt={fNum} />
+          <MetricCard
+            label="Sharpe Ratio"
+            value={stats.sharpe}
+            fmt={fNumOrNull}
+            sub="(mean daily / sample σ daily) × √252; Rf = 0%. Shown only with ≥30 trading days."
+          />
+          <MetricCard
+            label="Sortino Ratio"
+            value={stats.sortino}
+            fmt={fNumOrNull}
+            sub="Mean daily / downside σ × √252; — if no downside days."
+          />
+          <MetricCard
+            label="Calmar Ratio"
+            value={stats.calmar}
+            fmt={fNumOrNull}
+            sub="CAGR (from window) / |max drawdown|; hidden if drawdown ~0 or under 30 trading days."
+          />
+          <MetricCard
+            label="Profit Factor"
+            value={stats.profitFactor}
+            fmt={fNumOrNull}
+            sub="Sum of grossing days / sum of losing days"
+          />
         </div>
       </div>
 

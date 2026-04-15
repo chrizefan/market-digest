@@ -101,9 +101,10 @@ export function buildRollingSharpeVol(
       out.push({ date: dates[i], sharpe: null, volAnn: null });
       continue;
     }
-    const mean = rets.reduce((a, b) => a + b, 0) / rets.length;
-    const variance = rets.reduce((s, r) => s + (r - mean) ** 2, 0) / rets.length;
-    const sd = Math.sqrt(variance);
+    const n = rets.length;
+    const mean = rets.reduce((a, b) => a + b, 0) / n;
+    const variance = n > 1 ? rets.reduce((s, r) => s + (r - mean) ** 2, 0) / (n - 1) : 0;
+    const sd = Math.sqrt(Math.max(0, variance));
     const volAnn = sd * Math.sqrt(252) * 100;
     const annRet = mean * 252 * 100;
     const sharpe = volAnn > 0 ? annRet / volAnn : null;
