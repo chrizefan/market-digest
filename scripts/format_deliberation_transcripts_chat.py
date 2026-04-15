@@ -63,6 +63,7 @@ _RE_ROUND_SPEAKER = re.compile(
 )
 _RE_ROUND_PREFIX = re.compile(r"^(Round\s*\d+)\s*[-—]\s*(?P<speaker>Analyst|PM)\s*:\s*(?P<msg>.+)$", re.I)
 _RE_PM_CONVERGED = re.compile(r"\bCONVERGED\b", re.I)
+_RE_PM_INLINE = re.compile(r"\bPM\s*:\s*", re.I)
 
 
 @dataclass(frozen=True)
@@ -156,16 +157,77 @@ def _format_chat_markdown(raw: str, fallback_ticker: str, fallback_date: str) ->
         lines = _strip_fence_noise(lines)
 
     # Drop trailing meta line; we'll rebuild a Decision block.
-    body_lines = [ln for ln in lines if not _RE_META_LINE.match(ln.strip())]
+    body_lines: list[str] = []
+    for ln in lines:
+        s0 = ln.strip()
+        if _RE_META_LINE.match(s0):
+            continue
+        # If a prior run already produced markdown, strip common markdown-only
+        # artifacts so we can re-parse idempotently.
+        # - remove blockquote markers
+        while s0.startswith(">"):
+            s0 = s0[1:].lstrip()
+        # - remove emphasis markers (we only need the text)
+        s0 = s0.replace("**", "")
+        # - skip structural headings / separators / decision bullets
+        low = s0.lower().strip()
+        if not low:
+            continue
+        if low == "---" or low.startswith("# "):
+            continue
+        if low.startswith("## "):
+            continue
+        if low in ("transcript", "decision"):
+            continue
+        if low.startswith("- "):
+            continue
+        body_lines.append(s0)
 
     # Parse conversation into speaker blocks.
     blocks: list[tuple[str, Optional[str], str]] = []  # (speaker, round_label, msg)
     current_round: Optional[str] = None
+    pending_speaker: Optional[str] = None
+
+    def _append_block(speaker: str, round_label: Optional[str], msg: str) -> None:
+        m = (msg or "").strip()
+        if not m:
+            return
+        blocks.append((speaker, round_label, m))
+
+    def _split_inline_pm(msg: str) -> tuple[str, Optional[str]]:
+        """
+        Some legacy transcripts embed both voices in one line, e.g.
+        "BIL ... Hold. PM: CONVERGED: HOLD 40%."
+        Return (analyst_msg, pm_msg|None).
+        """
+        parts = _RE_PM_INLINE.split(msg, maxsplit=1)
+        if len(parts) <= 1:
+            return msg, None
+        a = parts[0].strip()
+        p = parts[1].strip()
+        return a, p or None
     for ln in body_lines:
-        s = ln.strip()
+        s = (ln or "").strip()
         if not s:
             continue
-        if s.startswith("**Meta:**"):
+        if s.lower().startswith("meta:"):
+            continue
+
+        # Handle 2-line speaker blocks like:
+        # "ANALYST:" then next line message.
+        if re.fullmatch(r"(analyst|pm)\s*:\s*", s, flags=re.I):
+            pending_speaker = s.split(":", 1)[0].strip().upper()
+            continue
+        if pending_speaker:
+            speaker = pending_speaker
+            pending_speaker = None
+            if speaker == "ANALYST":
+                a_msg, pm_msg = _split_inline_pm(s)
+                _append_block("ANALYST", current_round, a_msg)
+                if pm_msg:
+                    _append_block("PM", current_round, pm_msg)
+            else:
+                _append_block(speaker, current_round, s)
             continue
         # normalize "Round N — Speaker:" forms
         m = _RE_ROUND_PREFIX.match(s)
@@ -173,7 +235,13 @@ def _format_chat_markdown(raw: str, fallback_ticker: str, fallback_date: str) ->
             current_round = m.group(1).replace(" ", "")
             speaker = m.group("speaker").upper()
             msg = m.group("msg").strip()
-            blocks.append((speaker, current_round, msg))
+            if speaker == "ANALYST":
+                a_msg, pm_msg = _split_inline_pm(msg)
+                _append_block("ANALYST", current_round, a_msg)
+                if pm_msg:
+                    _append_block("PM", current_round, pm_msg)
+            else:
+                _append_block(speaker, current_round, msg)
             continue
         m2 = _RE_ROUND_SPEAKER.match(s)
         if m2:
@@ -182,10 +250,22 @@ def _format_chat_markdown(raw: str, fallback_ticker: str, fallback_date: str) ->
                 current_round = round_part.replace(" ", "")
             speaker = m2.group("speaker").upper()
             msg = m2.group("msg").strip()
-            blocks.append((speaker, current_round, msg))
+            if speaker == "ANALYST":
+                a_msg, pm_msg = _split_inline_pm(msg)
+                _append_block("ANALYST", current_round, a_msg)
+                if pm_msg:
+                    _append_block("PM", current_round, pm_msg)
+            elif speaker == "PM":
+                _append_block("PM", current_round, msg)
+            else:
+                _append_block(speaker, current_round, msg)
             continue
         # Fallback: keep as narrator line.
-        blocks.append(("NOTE", None, s))
+        # Also catch bare "PM:" lines that aren't in the expected regex form.
+        if s.lower().startswith("pm:"):
+            _append_block("PM", current_round, s.split(":", 1)[1].strip())
+        else:
+            _append_block("NOTE", None, s)
 
     converged, meta_rounds, meta_action = _extract_meta_kv(lines)
     outcome = hdr.outcome if hdr and hdr.outcome else (meta_action or "—")
