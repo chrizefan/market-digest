@@ -4,7 +4,7 @@ import AtlasLoader from '@/components/AtlasLoader';
 
 export default function ResearchPage() {
   return (
-    <Suspense fallback={<AtlasLoader label="Loading research…" />}>
+    <Suspense fallback={<AtlasLoader />}>
       <ResearchClient />
     </Suspense>
   );

@@ -246,11 +246,6 @@ body {
   box-shadow: 0 0 12px rgba(16, 185, 129, 0.45);
 }
 
-.atlas-loader-label {
-  font-size: 12px;
-  letter-spacing: 0.02em;
-}
-
 /* ── Scrollbar styling ─────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;

@@ -6,7 +6,7 @@ export default function PortfolioPage() {
   return (
     <Suspense
       fallback={
-        <AtlasLoader label="Loading portfolio…" />
+        <AtlasLoader />
       }
     >
       <PortfolioShellInner />

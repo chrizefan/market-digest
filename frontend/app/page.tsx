@@ -241,8 +241,7 @@ export default function OverviewPage() {
     return events.filter((ev) => ev.event !== 'HOLD' && ev.date >= cutoff).length;
   }, [data]);
 
-  if (loading)
-    return <AtlasLoader label="Loading dashboard…" />;
+  if (loading) return <AtlasLoader />;
   if (error || !data)
     return (
       <div className="flex items-center justify-center h-screen text-fin-red">
