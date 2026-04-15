@@ -8,11 +8,21 @@
 export const DASHBOARD_BENCHMARK_TICKERS = [
   'SPY',
   'QQQ',
+  'DIA',
   'IWM',
+  'VTI',
   'EEM',
   'TLT',
+  'IEF',
+  'AGG',
+  'HYG',
   'GLD',
+  'SLV',
+  'USO',
+  'UUP',
   'IBIT',
+  'BITO',
+  'EFA',
 ] as const;
 
 /** Shown first in comparable picker (major ETFs / names users expect). */

@@ -18,17 +18,12 @@ import {
   aggregateWeightByThesis,
   type SleeveStackMode,
 } from '@/lib/portfolio-aggregates';
-import { bucketAllocationsForPie, sortPmDocs } from './tabs/palette-and-format';
+import { sortPmDocs } from './tabs/palette-and-format';
 import AllocationsTab from './tabs/AllocationsTab';
 import PerformanceTab from './tabs/PerformanceTab';
 import AnalysisTab from './tabs/AnalysisTab';
 import ActivityTab from './tabs/ActivityTab';
 import AtlasLoader from '@/components/AtlasLoader';
-
-interface AllocationDatum {
-  name: string;
-  value: number;
-}
 
 type TabId = 'allocations' | 'performance' | 'analysis' | 'activity';
 
@@ -69,40 +64,6 @@ export default function PortfolioShellInner() {
 
   const thesisById = useMemo(() => new Map(theses.map((t) => [t.id, t])), [theses]);
 
-  const pieData = useMemo<AllocationDatum[]>(() => {
-    const slices: AllocationDatum[] = positions.map((p) => ({
-      name: p.ticker,
-      value: p.weight_actual ?? 0,
-    }));
-    ratios.forEach((r) =>
-      slices.push({ name: `${r.long_ticker}/${r.short_ticker}`, value: r.net_weight ?? 0 })
-    );
-    if ((metrics?.cash_pct ?? 0) > 0) slices.push({ name: 'CASH', value: metrics?.cash_pct ?? 0 });
-    return slices;
-  }, [positions, ratios, metrics?.cash_pct]);
-
-  const pieDataBucketed = useMemo(() => bucketAllocationsForPie(pieData), [pieData]);
-
-  const categoryBarData = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const p of positions) {
-      const key = p.ticker === 'CASH' ? 'cash' : p.category || 'uncategorized';
-      m.set(key, (m.get(key) ?? 0) + (p.weight_actual ?? 0));
-    }
-    return [...m.entries()]
-      .map(([key, value]) => ({
-        key,
-        name:
-          key === 'cash'
-            ? 'Cash'
-            : key === 'uncategorized'
-              ? 'Uncategorized'
-              : key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-        value,
-      }))
-      .sort((a, b) => b.value - a.value);
-  }, [positions]);
-
   const byThesisWeight = useMemo(() => aggregateWeightByThesis(positions), [positions]);
 
   const thesisBookRows = useMemo(() => {
@@ -131,16 +92,6 @@ export default function PortfolioShellInner() {
           status: r.thesis?.status ?? null,
         })),
     [thesisBookRows]
-  );
-
-  const pieCategoryBucketed = useMemo(
-    () => bucketAllocationsForPie(categoryBarData.map(({ name, value }) => ({ name, value }))),
-    [categoryBarData]
-  );
-
-  const pieThesisBucketed = useMemo(
-    () => bucketAllocationsForPie(thesisBarRich.map(({ name, value }) => ({ name, value }))),
-    [thesisBarRich]
   );
 
   const activityEvents = useMemo(
@@ -509,10 +460,6 @@ export default function PortfolioShellInner() {
         {tab === 'allocations' && (
           <AllocationsTab
             lastUpdated={lastUpdated}
-            pieTicker={pieDataBucketed}
-            pieCategory={pieCategoryBucketed}
-            pieThesis={pieThesisBucketed}
-            categoryBarData={categoryBarData}
             positions={positions}
             thesisById={thesisById}
           />

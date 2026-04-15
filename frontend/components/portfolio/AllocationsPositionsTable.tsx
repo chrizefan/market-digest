@@ -1,32 +1,15 @@
 'use client';
 
-import { Fragment, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Badge, pnlColor } from '@/components/ui';
 import type { Position, Thesis } from '@/lib/types';
 import PositionPriceChart from '@/components/portfolio/PositionPriceChart';
-import { allocationAccentFromKey, formatAllocationCategory } from '@/components/portfolio/tabs/palette-and-format';
+import { formatAllocationCategory } from '@/components/portfolio/tabs/palette-and-format';
 
 function thesisNames(ids: string[], thesisById: Map<string, Thesis>): string {
   if (!ids.length) return '—';
   return ids.map((id) => thesisById.get(id)?.name ?? id).join(', ');
-}
-
-type GroupMode = 'flat' | 'category' | 'thesis';
-type ColorBy = 'category' | 'thesis';
-
-function segmentClass(active: boolean) {
-  return `px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
-    active
-      ? 'border-fin-blue/40 bg-fin-blue/15 text-fin-blue'
-      : 'border-border-subtle text-text-muted hover:text-text-primary hover:bg-white/[0.04]'
-  }`;
-}
-
-function rowAccentKey(p: Position, colorBy: ColorBy): string {
-  if (colorBy === 'category') return p.category || 'uncategorized';
-  const tid = p.thesis_ids?.[0];
-  return tid ?? `cat:${p.category || 'none'}`;
 }
 
 export default function AllocationsPositionsTable(props: {
@@ -36,13 +19,13 @@ export default function AllocationsPositionsTable(props: {
 }) {
   const { positions, thesisById, lastUpdated } = props;
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
-  const [groupMode, setGroupMode] = useState<GroupMode>('flat');
-  const [colorBy, setColorBy] = useState<ColorBy>('category');
 
   const sorted = useMemo(
     () => [...positions].sort((a, b) => (b.weight_actual ?? 0) - (a.weight_actual ?? 0)),
     [positions]
   );
+
+  const maxWeight = sorted.length ? (sorted[0].weight_actual ?? 0) : 0;
 
   const showTargetVsActual = useMemo(
     () => sorted.some((p) => p.weight_target != null),
@@ -50,26 +33,6 @@ export default function AllocationsPositionsTable(props: {
   );
 
   const colCount = showTargetVsActual ? 11 : 9;
-
-  const grouped = useMemo(() => {
-    if (groupMode === 'flat') {
-      return [{ label: null as string | null, items: sorted }];
-    }
-    const m = new Map<string, Position[]>();
-    for (const p of sorted) {
-      let key: string;
-      if (groupMode === 'category') {
-        key = formatAllocationCategory(p.category);
-      } else {
-        const ids = p.thesis_ids ?? [];
-        key = ids.length === 0 ? 'Unlinked' : ids.map((id) => thesisById.get(id)?.name ?? id).join(' · ');
-      }
-      if (!m.has(key)) m.set(key, []);
-      m.get(key)!.push(p);
-    }
-    const keys = [...m.keys()].sort((a, b) => a.localeCompare(b));
-    return keys.map((label) => ({ label, items: m.get(label)! }));
-  }, [sorted, groupMode, thesisById]);
 
   return (
     <div className="glass-card p-0 overflow-hidden">
@@ -89,32 +52,13 @@ export default function AllocationsPositionsTable(props: {
             ) : null}
           </p>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] uppercase tracking-wider text-text-muted">Group</span>
-            <button type="button" className={segmentClass(groupMode === 'flat')} onClick={() => setGroupMode('flat')}>
-              List
-            </button>
-            <button
-              type="button"
-              className={segmentClass(groupMode === 'category')}
-              onClick={() => setGroupMode('category')}
-            >
-              Category
-            </button>
-            <button type="button" className={segmentClass(groupMode === 'thesis')} onClick={() => setGroupMode('thesis')}>
-              Thesis
-            </button>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] uppercase tracking-wider text-text-muted">Color</span>
-            <button type="button" className={segmentClass(colorBy === 'category')} onClick={() => setColorBy('category')}>
-              Category
-            </button>
-            <button type="button" className={segmentClass(colorBy === 'thesis')} onClick={() => setColorBy('thesis')}>
-              Thesis
-            </button>
-          </div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+            Sorted by allocation · background bar shows relative weight
+          </span>
+          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+            Click a row for details
+          </span>
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -139,26 +83,20 @@ export default function AllocationsPositionsTable(props: {
             </tr>
           </thead>
           <tbody className="divide-y divide-border-subtle">
-            {grouped.map((grp) => (
-              <Fragment key={grp.label ?? 'all'}>
-                {grp.label ? (
-                  <tr className="bg-bg-secondary/80">
-                    <td colSpan={colCount} className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-                      {grp.label}
-                    </td>
-                  </tr>
-                ) : null}
-                {grp.items.map((p: Position) => {
-                  const isExpanded = expandedTicker === p.ticker;
-                  const anchorDate = p.entry_date || lastUpdated || new Date().toISOString().slice(0, 10);
-                  const accent = allocationAccentFromKey(rowAccentKey(p, colorBy));
-                  return (
-                    <Fragment key={`${p.ticker}-${grp.label ?? 'all'}`}>
-                      <tr
-                        onClick={() => setExpandedTicker(isExpanded ? null : p.ticker)}
-                        className={`cursor-pointer transition-colors hover:bg-white/[0.03] ${isExpanded ? 'bg-white/[0.02]' : ''}`}
-                        style={{ borderLeftWidth: 3, borderLeftStyle: 'solid', borderLeftColor: accent }}
-                      >
+            {sorted.map((p: Position) => {
+              const isExpanded = expandedTicker === p.ticker;
+              const anchorDate = p.entry_date || lastUpdated || new Date().toISOString().slice(0, 10);
+              const w = p.weight_actual ?? 0;
+              const pctOfMax = maxWeight > 0 ? (w / maxWeight) * 100 : 0;
+              const bar = `linear-gradient(90deg, rgba(59,130,246,0.16) 0%, rgba(59,130,246,0.16) ${pctOfMax}%, rgba(255,255,255,0) ${pctOfMax}%)`;
+
+              return (
+                <>
+                  <tr
+                    onClick={() => setExpandedTicker(isExpanded ? null : p.ticker)}
+                    className={`cursor-pointer transition-colors hover:bg-white/[0.03] ${isExpanded ? 'bg-white/[0.02]' : ''}`}
+                    style={{ backgroundImage: bar, backgroundRepeat: 'no-repeat' }}
+                  >
                         <td className="pl-2 pr-2 py-3 md:pl-4">
                           <Badge variant="blue">{p.ticker}</Badge>
                         </td>
@@ -296,11 +234,9 @@ export default function AllocationsPositionsTable(props: {
                           </td>
                         </tr>
                       )}
-                    </Fragment>
-                  );
-                })}
-              </Fragment>
-            ))}
+                </>
+              );
+            })}
             {positions.length === 0 && (
               <tr>
                 <td colSpan={colCount} className="text-center py-10 text-text-muted">

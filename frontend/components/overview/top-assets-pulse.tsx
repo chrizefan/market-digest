@@ -1,7 +1,9 @@
  'use client';
  
+import { useCallback, useMemo, useRef } from 'react';
 import { Line, LineChart, ResponsiveContainer, YAxis } from 'recharts';
 import type { BenchmarkHistoryMap } from '@/lib/types';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
  
 const PREFERRED_ORDER: string[] = [
   'SPY',
@@ -58,21 +60,47 @@ export default function TopAssetsPulse({ benchmarks }: { benchmarks: BenchmarkHi
     if (!b?.history?.length || b.history.length < 2) return [];
     return [{ ticker: t, history: b.history }];
   });
+
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const scrollByTiles = useCallback((dir: -1 | 1) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const amt = Math.min(720, Math.max(280, Math.round(el.clientWidth * 0.85)));
+    el.scrollBy({ left: dir * amt, behavior: 'smooth' });
+  }, []);
+
+  if (items.length === 0) return null;
+
+  const canScroll = items.length > 3;
  
-   if (items.length === 0) return null;
- 
-   return (
-    <div className="glass-card px-5 py-5">
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <p className="text-[10px] text-text-muted uppercase tracking-widest flex items-center gap-2">
-         <span className="inline-block w-1.5 h-1.5 rounded-full bg-fin-blue animate-pulse" />
-         Top assets
-        </p>
-        <p className="text-[10px] text-text-muted">Scroll →</p>
-      </div>
- 
-      <div className="overflow-x-auto -mx-5 px-5">
-        <div className="flex gap-4 min-w-max pb-1">
+  return (
+    <div className="relative">
+      {canScroll && (
+        <>
+          <button
+            type="button"
+            onClick={() => scrollByTiles(-1)}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 hidden sm:grid place-items-center h-10 w-10 rounded-full border border-border-subtle bg-bg-glass/90 backdrop-blur hover:bg-white/[0.06] transition-colors"
+            aria-label="Scroll left"
+          >
+            <ChevronLeft size={18} className="text-text-secondary" />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollByTiles(1)}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 hidden sm:grid place-items-center h-10 w-10 rounded-full border border-border-subtle bg-bg-glass/90 backdrop-blur hover:bg-white/[0.06] transition-colors"
+            aria-label="Scroll right"
+          >
+            <ChevronRight size={18} className="text-text-secondary" />
+          </button>
+        </>
+      )}
+
+      <div
+        ref={scrollerRef}
+        className="overflow-x-auto scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        <div className="flex gap-4 min-w-max pb-2 pr-1">
           {items.map(({ ticker, history }) => {
            const latest = history[history.length - 1]?.price ?? null;
            const prev = history[history.length - 2]?.price ?? null;
@@ -87,12 +115,12 @@ export default function TopAssetsPulse({ benchmarks }: { benchmarks: BenchmarkHi
            return (
              <div
                key={ticker}
-               className="w-[220px] shrink-0 rounded-xl border border-border-subtle bg-bg-secondary/40 px-4 py-3"
+                className="w-[220px] shrink-0 rounded-2xl bg-bg-secondary/40 px-4 py-3 shadow-[0_16px_44px_-30px_rgba(0,0,0,0.85)] ring-1 ring-white/[0.06] hover:ring-white/[0.10] hover:bg-white/[0.03] transition-colors"
              >
                <div className="flex items-baseline justify-between gap-2 mb-1">
-                 <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider truncate">
-                   {LABELS[ticker] ?? ticker}
-                 </p>
+                  <p className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider truncate">
+                    {ticker}
+                  </p>
                  <div className="flex items-baseline gap-1.5 shrink-0">
                    <span className="text-sm font-bold font-mono tabular-nums text-text-primary">
                      {fmt(latest)}
@@ -105,6 +133,7 @@ export default function TopAssetsPulse({ benchmarks }: { benchmarks: BenchmarkHi
                    )}
                  </div>
                </div>
+                <p className="text-[10px] text-text-muted -mt-0.5 mb-2 truncate">{LABELS[ticker] ?? ''}</p>
  
                <div className="h-16 w-full">
                  <ResponsiveContainer width="100%" height="100%">
@@ -127,6 +156,6 @@ export default function TopAssetsPulse({ benchmarks }: { benchmarks: BenchmarkHi
         </div>
       </div>
     </div>
-   );
+  );
  }
 

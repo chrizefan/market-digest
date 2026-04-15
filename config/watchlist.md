@@ -12,7 +12,9 @@
 |-----|-------------|----------|
 | SPY | SPDR S&P 500 ETF | equity_us_large |
 | QQQ | Invesco Nasdaq-100 ETF | equity_us_large |
+| DIA | SPDR Dow Jones Industrial Average ETF | equity_us_large |
 | IWB | iShares Russell 1000 (Broad Large Cap) | equity_us_large |
+| VTI | Vanguard Total Stock Market ETF | equity_us_large |
 | MDY | SPDR S&P 400 Mid Cap ETF | equity_us_mid |
 | IJH | iShares Core S&P Mid-Cap ETF | equity_us_mid |
 | IWM | iShares Russell 2000 Small Cap ETF | equity_us_small |
@@ -78,6 +80,12 @@
 | SOL-USD | Solana | crypto |
 | XRP-USD | XRP (Ripple) | crypto |
 | BNB-USD | BNB (Binance Coin) | crypto |
+
+### ETFs (equity-like tickers)
+
+| Ticker | Description | Category |
+|--------|-------------|----------|
+| BITO | ProShares Bitcoin Strategy ETF (BTC futures) | crypto |
 | TRX-USD | TRON | crypto |
 | DOGE-USD | Dogecoin | crypto |
 | ADA-USD | Cardano | crypto |
@@ -131,6 +139,7 @@
 | SHY | iShares 1-3 Year Treasury Bond ETF | fixed_income |
 | IEF | iShares 7-10 Year Treasury Bond ETF | fixed_income |
 | TLT | iShares 20+ Year Treasury Bond ETF | fixed_income |
+| AGG | iShares Core U.S. Aggregate Bond ETF | fixed_income |
 | HYG | iShares iBoxx High Yield Corporate Bond | fixed_income |
 | LQD | iShares iBoxx Investment Grade Corporate Bond | fixed_income |
 | TIP | iShares TIPS Bond ETF (inflation-linked) | fixed_income |
@@ -161,6 +170,7 @@ Relative value positions — express a view on one asset outperforming another.
 | Indicator | Why It Matters |
 |-----------|----------------|
 | DXY | US Dollar Index — key driver of EM, gold, and commodity direction |
+| UUP | USD bull ETF (tradeable DXY proxy) — confirm dollar trend in portfolio terms |
 | VIX | Equity volatility — risk-on vs. risk-off regime signal |
 | MOVE Index | Bond market volatility — rate uncertainty |
 | US 2Y / 10Y / 30Y | Yield levels and curve shape |

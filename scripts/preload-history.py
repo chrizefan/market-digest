@@ -28,6 +28,17 @@ import yfinance as yf
 ROOT = Path(__file__).parent.parent
 CACHE_DIR = ROOT / "data" / "price-history"
 
+# Keep non-watchlist “dashboard benchmarks” synced to Supabase even if the
+# research watchlist doesn’t include them yet (Overview top assets, comparables).
+# These must be valid Yahoo Finance symbols.
+EXTRA_DASHBOARD_TICKERS: list[str] = [
+    "DIA",
+    "VTI",
+    "AGG",
+    "UUP",
+    "BITO",
+]
+
 
 # ── ticker parsing (shared with fetch-quotes.py) ────────────────────────────
 
@@ -139,11 +150,22 @@ def upsert_to_supabase(ticker: str, df: pd.DataFrame) -> int:
     if not rows:
         return 0
 
-    # Upsert in chunks of 500
-    CHUNK = 500
+    # Upsert in chunks (and retry transient 5xx/502 gateway errors).
+    CHUNK = 200
+    total = 0
     for i in range(0, len(rows), CHUNK):
-        sb.table("price_history").upsert(rows[i:i + CHUNK]).execute()
-    return len(rows)
+        chunk = rows[i : i + CHUNK]
+        for attempt in range(1, 6):
+            try:
+                sb.table("price_history").upsert(chunk).execute()
+                total += len(chunk)
+                break
+            except Exception as e:
+                if attempt >= 5:
+                    print(f"    ⚠️  Supabase upsert failed for {ticker} chunk {i // CHUNK + 1}: {e}")
+                    break
+                time.sleep(0.75 * attempt)
+    return total
 
 
 # ── download ─────────────────────────────────────────────────────────────────
@@ -334,10 +356,21 @@ def run_supabase_sync(new_ticker_period: str) -> None:
         sys.exit(1)
 
     tickers = parse_tickers_from_watchlist()
-    print(f"  Parsed {len(tickers)} tickers from config/watchlist.md")
+    base = len(tickers)
+    # Ensure dashboard tickers are present (no duplicates).
+    for t in EXTRA_DASHBOARD_TICKERS:
+        if t not in tickers:
+            tickers.append(t)
+    if len(tickers) != base:
+        print(f"  Parsed {base} tickers from config/watchlist.md (+{len(tickers) - base} dashboard extras)")
+    else:
+        print(f"  Parsed {len(tickers)} tickers from config/watchlist.md")
 
+    # Use the most recent *complete* UTC day for daily bars. If we try to fetch
+    # today's bar before Yahoo has published it, yfinance emits noisy
+    # "possibly delisted" errors and can sometimes hang.
     utc_today = datetime.now(timezone.utc).date()
-    end_exclusive = utc_today + timedelta(days=1)
+    end_exclusive = utc_today
 
     new_tickers: list[str] = []
     gaps: dict[tuple[date, date], list[str]] = defaultdict(list)
