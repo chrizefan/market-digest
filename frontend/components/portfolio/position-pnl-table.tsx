@@ -101,7 +101,11 @@ export function PositionPnlTable({
                   {isOpen && priceChartAnchorDate && !skipChart ? (
                     <tr className="bg-white/[0.02]">
                       <td colSpan={7} className="border-t border-border-subtle px-4 py-5 md:px-6">
-                        <PositionPriceChart ticker={p.ticker} anchorDate={priceChartAnchorDate} />
+                        <PositionPriceChart
+                          ticker={p.ticker}
+                          anchorDate={priceChartAnchorDate}
+                          firstEntryDate={p.entry_date}
+                        />
                       </td>
                     </tr>
                   ) : null}

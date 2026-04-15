@@ -428,6 +428,7 @@ export default function PortfolioShellInner() {
             lastUpdated={lastUpdated}
             positions={positions}
             positionHistory={positionHistory}
+            positionEvents={positionEvents}
             thesisById={thesisById}
           />
         )}

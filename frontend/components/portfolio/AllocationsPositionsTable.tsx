@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Badge, pnlColor } from '@/components/ui';
-import type { Position, PositionHistoryRow, Thesis } from '@/lib/types';
+import type { DashboardPositionEvent, Position, PositionHistoryRow, Thesis } from '@/lib/types';
 import PositionPriceChart from '@/components/portfolio/PositionPriceChart';
 import { formatAllocationCategory } from '@/components/portfolio/tabs/palette-and-format';
+import { resolveFirstEntryDate } from '@/lib/position-first-entry';
 
 function thesisNames(ids: string[], thesisById: Map<string, Thesis>): string {
   if (!ids.length) return '—';
@@ -15,10 +16,11 @@ function thesisNames(ids: string[], thesisById: Map<string, Thesis>): string {
 export default function AllocationsPositionsTable(props: {
   positions: Position[];
   positionHistory: PositionHistoryRow[];
+  positionEvents: DashboardPositionEvent[];
   thesisById: Map<string, Thesis>;
   lastUpdated: string | null;
 }) {
-  const { positions, positionHistory, thesisById, lastUpdated } = props;
+  const { positions, positionHistory, positionEvents, thesisById, lastUpdated } = props;
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
   const [showInactive, setShowInactive] = useState(false);
 
@@ -121,12 +123,13 @@ export default function AllocationsPositionsTable(props: {
             {allRows.map((p: Position) => {
               const isExpanded = expandedTicker === p.ticker;
               const anchorDate = p.entry_date || lastUpdated || new Date().toISOString().slice(0, 10);
+              const firstEntryDate = resolveFirstEntryDate(p.ticker, p, positionEvents, positionHistory);
               const w = p.weight_actual ?? 0;
               const pctOfMax = maxWeight > 0 ? (w / maxWeight) * 100 : 0;
               const bar = `linear-gradient(90deg, rgba(59,130,246,0.16) 0%, rgba(59,130,246,0.16) ${pctOfMax}%, rgba(255,255,255,0) ${pctOfMax}%)`;
 
               return (
-                <>
+                <Fragment key={p.ticker}>
                   <tr
                     onClick={() => setExpandedTicker(isExpanded ? null : p.ticker)}
                     className={`cursor-pointer transition-colors hover:bg-white/[0.03] ${isExpanded ? 'bg-white/[0.02]' : ''}`}
@@ -174,11 +177,15 @@ export default function AllocationsPositionsTable(props: {
                       {isExpanded && (
                         <tr className="bg-white/[0.02]">
                           <td colSpan={colCount} className="px-4 py-5 md:px-6 md:py-6">
-                            <PositionPriceChart ticker={p.ticker} anchorDate={anchorDate} />
+                            <PositionPriceChart
+                              ticker={p.ticker}
+                              anchorDate={anchorDate}
+                              firstEntryDate={firstEntryDate}
+                            />
                           </td>
                         </tr>
                       )}
-                </>
+                </Fragment>
               );
             })}
             {positions.length === 0 && (
