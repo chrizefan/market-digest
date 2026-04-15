@@ -30,6 +30,12 @@
 }
 
 /* ── Base ──────────────────────────────────────────────────────────────── */
+html {
+  /* AtlasLoader mark: dark tile + light strokes; inverted in html.light */
+  --atlas-loader-surface: #181c24;
+  --atlas-loader-ink: #ffffff;
+}
+
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: var(--color-bg-primary);
@@ -230,6 +236,7 @@ body {
 }
 .atlas-loader-screen {
   height: 100vh;
+  background: var(--color-bg-primary);
 }
 
 .atlas-loader {
@@ -250,11 +257,13 @@ body {
 }
 
 .atlas-loader-bg {
+  fill: var(--atlas-loader-surface);
   transform-origin: 50% 50%;
   animation: atlas-logo-bg-pop 1.55s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
 .atlas-loader-stroke {
+  stroke: var(--atlas-loader-ink);
   --atlas-stroke-len: 220;
   stroke-dasharray: var(--atlas-stroke-len);
   stroke-dashoffset: var(--atlas-stroke-len);
@@ -305,6 +314,8 @@ html.light {
   --color-text-secondary: #52525b;
   --color-text-muted: #a1a1aa;
   --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+  --atlas-loader-surface: #e4e4e7;
+  --atlas-loader-ink: #18181b;
 }
 
 html.light .recharts-text {

@@ -1,4 +1,5 @@
 export function AtlasMark({ className }: { className?: string }) {
+  const merged = ['text-text-primary', className].filter(Boolean).join(' ');
   return (
     <svg
       width="28"
@@ -6,25 +7,25 @@ export function AtlasMark({ className }: { className?: string }) {
       viewBox="0 0 48 48"
       fill="none"
       aria-hidden
-      className={className}
+      className={merged}
     >
       <path
-        stroke="white"
+        stroke="currentColor"
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M4.2774,32.5293a11.6485,11.6485,0,0,1,23.2219,1.32h0c0,3.2166.0022,11.6479.0022,11.6479"
       />
       <path
-        stroke="white"
+        stroke="currentColor"
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M3.3047,29.8574q-.0277-.4816-.0279-.97a16.61,16.61,0,1,1,33.2209,0v0c0,4.5869.0031,16.6095.0031,16.6095"
       />
-      <circle stroke="white" strokeWidth="2" cx="16.5007" cy="33.4992" r="5.0328" />
+      <circle stroke="currentColor" strokeWidth="2" cx="16.5007" cy="33.4992" r="5.0328" />
       <path
-        stroke="white"
+        stroke="currentColor"
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"

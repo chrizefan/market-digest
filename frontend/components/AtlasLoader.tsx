@@ -15,10 +15,9 @@ export default function AtlasLoader(props: { fullScreen?: boolean }) {
             aria-hidden="true"
             focusable="false"
           >
-            <rect className="atlas-loader-bg" width="48" height="48" rx="10" fill="#181c24" />
+            <rect className="atlas-loader-bg" width="48" height="48" rx="10" />
             <path
               className="atlas-loader-stroke atlas-loader-stroke-1"
-              stroke="white"
               strokeWidth="2.2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -26,7 +25,6 @@ export default function AtlasLoader(props: { fullScreen?: boolean }) {
             />
             <path
               className="atlas-loader-stroke atlas-loader-stroke-2"
-              stroke="white"
               strokeWidth="2.2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -34,7 +32,6 @@ export default function AtlasLoader(props: { fullScreen?: boolean }) {
             />
             <circle
               className="atlas-loader-stroke atlas-loader-stroke-3"
-              stroke="white"
               strokeWidth="2"
               cx="16.5007"
               cy="33.4992"
@@ -42,7 +39,6 @@ export default function AtlasLoader(props: { fullScreen?: boolean }) {
             />
             <path
               className="atlas-loader-stroke atlas-loader-stroke-4"
-              stroke="white"
               strokeWidth="2.2"
               strokeLinecap="round"
               strokeLinejoin="round"

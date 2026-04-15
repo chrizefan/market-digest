@@ -27,14 +27,21 @@ type RangePreset = '7d' | '30d' | 'all';
 export default function ActivityTab(props: {
   activityEvents: DashboardPositionEvent[];
   thesisById: Map<string, Thesis>;
-  /** Latest portfolio snapshot date — used for “today” NEW badges and range anchor. */
+  /** Latest portfolio snapshot date — used for “New” badges on that digest date. */
   lastRunDate: string | null;
 }) {
   const { activityEvents, thesisById, lastRunDate } = props;
-  const [preset, setPreset] = useState<RangePreset>('7d');
+  /** Default to full ledger so recent rows are never hidden behind a narrow window. */
+  const [preset, setPreset] = useState<RangePreset>('all');
   const [includeHolds, setIncludeHolds] = useState(false);
 
-  const anchorDate = lastRunDate ?? activityEvents[0]?.date ?? null;
+  /** Latest date in the ledger — anchors 7d/30d so rows through e.g. Apr 13 stay visible even if portfolio.meta.last_updated is ahead. */
+  const latestLedgerDate = useMemo(() => {
+    if (!activityEvents.length) return null;
+    return activityEvents.reduce((best, ev) => (ev.date > best ? ev.date : best), activityEvents[0].date);
+  }, [activityEvents]);
+
+  const rangeAnchorDate = latestLedgerDate ?? lastRunDate ?? null;
 
   const visibleEvents = useMemo(
     () => (includeHolds ? activityEvents : activityEvents.filter((ev) => ev.event !== 'HOLD')),
@@ -42,19 +49,19 @@ export default function ActivityTab(props: {
   );
 
   const filteredEvents = useMemo(() => {
-    if (preset === 'all' || !anchorDate) return visibleEvents;
+    if (preset === 'all' || !rangeAnchorDate) return visibleEvents;
     const days = preset === '7d' ? 7 : 30;
-    const cutoff = addCalendarDays(anchorDate, -days);
+    const cutoff = addCalendarDays(rangeAnchorDate, -days);
     return visibleEvents.filter((ev) => ev.date >= cutoff);
-  }, [visibleEvents, preset, anchorDate]);
+  }, [visibleEvents, preset, rangeAnchorDate]);
 
   const rangeSummary = useMemo(() => {
     if (preset === 'all')
       return `${filteredEvents.length} event${filteredEvents.length !== 1 ? 's' : ''}`;
-    if (!anchorDate) return `${filteredEvents.length} shown`;
+    if (!rangeAnchorDate) return `${filteredEvents.length} shown`;
     const days = preset === '7d' ? 7 : 30;
-    return `${filteredEvents.length} in ${days}d`;
-  }, [preset, filteredEvents.length, anchorDate]);
+    return `${filteredEvents.length} in ${days}d (through ${rangeAnchorDate})`;
+  }, [preset, filteredEvents.length, rangeAnchorDate]);
 
   return (
     <div className="glass-card p-0 overflow-hidden">

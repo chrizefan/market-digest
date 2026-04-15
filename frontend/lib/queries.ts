@@ -273,13 +273,6 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     return d.toISOString().slice(0, 10);
   })();
 
-  /** Activity ledger: avoid `.limit(200)` alone — many tickers/day can hide older rows; cap rows after date filter. */
-  const positionEventsCutoff = (() => {
-    const d = new Date();
-    d.setUTCDate(d.getUTCDate() - 420);
-    return d.toISOString().slice(0, 10);
-  })();
-
   const [
     snapshotRes, positionsRes, thesesRes, navRes,
     benchRes, metricsRes, docsRes, deltaDocsRes, changelogDocsRes, eventsRes, tickerViewRes, snapshotRunTypesRes,
@@ -316,9 +309,8 @@ export async function getFullDashboardData(): Promise<DashboardData> {
       .select(
         'date,ticker,event,weight_pct,prev_weight_pct,weight_change_pct,cumulative_return_since_event_pct,price,thesis_id,reason'
       )
-      .gte('date', positionEventsCutoff)
       .order('date', { ascending: false })
-      .limit(5000),
+      .limit(10000),
     supabase.from('price_history_tickers').select('ticker'),
     supabase.from('daily_snapshots').select('date, run_type').order('date', { ascending: false }).limit(500),
   ]);
@@ -385,8 +377,10 @@ export async function getFullDashboardData(): Promise<DashboardData> {
   const metrics: TableRow<'portfolio_metrics'> =
     metricsRes.error || !metricsRow ? ({} as TableRow<'portfolio_metrics'>) : metricsRow;
 
-  const position_events: DashboardPositionEvent[] = ((eventsRes.data ?? []) as TableRow<'position_events'>[]).map(
-    (e) => ({
+  const position_events: DashboardPositionEvent[] = (
+    (eventsRes.data ?? []) as TableRow<'position_events'>[]
+  )
+    .map((e) => ({
       date: e.date,
       ticker: e.ticker,
       event: e.event,
@@ -398,8 +392,8 @@ export async function getFullDashboardData(): Promise<DashboardData> {
       price: e.price != null ? Number(e.price) : null,
       thesis_id: e.thesis_id ?? null,
       reason: e.reason ?? null,
-    })
-  );
+    }))
+    .sort((a, b) => b.date.localeCompare(a.date) || a.ticker.localeCompare(b.ticker));
 
   const server_portfolio_metrics: ServerPortfolioMetrics | null =
     metrics.date != null && String(metrics.date).length > 0
