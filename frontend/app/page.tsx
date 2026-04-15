@@ -26,7 +26,7 @@ import {
   ResponsiveContainer,
   YAxis,
 } from 'recharts';
-import MacroSparklineRow from '@/components/overview/macro-sparkline-row';
+import TopAssetsPulse from '@/components/overview/top-assets-pulse';
 import AtlasLoader from '@/components/AtlasLoader';
 
 // ─── Regime config ────────────────────────────────────────────────────────────
@@ -255,7 +255,6 @@ export default function OverviewPage() {
     calculated: metrics,
     docs,
     snapshot_context_bullets: contextBullets,
-    macro_series_preview: macroSeries,
   } = data;
   const { strategy } = portfolio;
   const regimeLabel = (strategy.regime_label || 'neutral') as string;
@@ -292,7 +291,7 @@ export default function OverviewPage() {
       : null;
 
 
-  const hasMacro = Object.values(macroSeries ?? {}).some((v) => v?.length >= 2);
+  const hasTopAssets = Object.values(data.benchmarks ?? {}).some((v) => (v?.history?.length ?? 0) >= 2);
 
   const pageAmbient = REGIME_PAGE_AMBIENT[regimeLabel] ?? REGIME_PAGE_AMBIENT.neutral;
 
@@ -425,8 +424,8 @@ export default function OverviewPage() {
         </div>
       )}
 
-      {/* ── Main Grid: Positions | Actions+Risk | Macro ────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      {/* ── Main Grid: Positions | Actions+Risk ───────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
         {/* Left: Positions table */}
         <div className="glass-card p-0 overflow-hidden lg:col-span-1">
@@ -568,14 +567,10 @@ export default function OverviewPage() {
             </ul>
           </div>
         </div>
-
-        {/* Right: Macro Pulse */}
-        {hasMacro && (
-          <div className="lg:col-span-1">
-            <MacroSparklineRow series={macroSeries ?? {}} />
-          </div>
-        )}
       </div>
+
+      {/* ── Macro Pulse (full width) ───────────────────────────────────────── */}
+      {hasTopAssets && <TopAssetsPulse benchmarks={data.benchmarks ?? {}} />}
 
       {/* ── Thesis Table ───────────────────────────────────────────────────── */}
       {strategy.theses?.length > 0 && (

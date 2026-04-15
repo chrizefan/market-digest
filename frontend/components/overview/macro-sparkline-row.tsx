@@ -37,13 +37,13 @@ export default function MacroSparklineRow({
   if (ids.length === 0) return null;
 
   return (
-    <div className="glass-card px-5 py-4">
-      <p className="text-[10px] text-text-muted uppercase tracking-widest mb-3 flex items-center gap-2">
+    <div className="glass-card px-5 py-5">
+      <p className="text-[10px] text-text-muted uppercase tracking-widest mb-4 flex items-center gap-2">
         <span className="inline-block w-1.5 h-1.5 rounded-full bg-fin-blue animate-pulse" />
         Macro pulse
       </p>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-3">
-        {ids.slice(0, 4).map((sid) => {
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
+        {ids.slice(0, 8).map((sid) => {
           const pts = series[sid];
           const data = pts.map((p) => ({ x: p.obs_date, y: p.value }));
           const latest = pts[pts.length - 1]?.value ?? null;
@@ -70,7 +70,7 @@ export default function MacroSparklineRow({
                   )}
                 </div>
               </div>
-              <div className="h-10 w-full">
+              <div className="h-16 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={data} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
                     <YAxis domain={['auto', 'auto']} hide width={0} />
