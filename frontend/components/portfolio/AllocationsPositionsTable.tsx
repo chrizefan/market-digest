@@ -44,6 +44,13 @@ export default function AllocationsPositionsTable(props: {
     [positions]
   );
 
+  const showTargetVsActual = useMemo(
+    () => sorted.some((p) => p.weight_target != null),
+    [sorted]
+  );
+
+  const colCount = showTargetVsActual ? 11 : 9;
+
   const grouped = useMemo(() => {
     if (groupMode === 'flat') {
       return [{ label: null as string | null, items: sorted }];
@@ -72,6 +79,14 @@ export default function AllocationsPositionsTable(props: {
           <p className="text-xs text-text-muted mt-1 max-w-3xl leading-relaxed">
             Holdings ranked by weight. Emphasis is on sleeve mix, thesis linkage, and how weights changed — not
             day-trading P&amp;L (see Performance for return attribution).
+            {showTargetVsActual ? (
+              <>
+                {' '}
+                <span className="text-text-secondary">
+                  Target and drift columns reflect the latest digest proposed weights vs what is modeled as held.
+                </span>
+              </>
+            ) : null}
           </p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
@@ -103,13 +118,19 @@ export default function AllocationsPositionsTable(props: {
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-0 text-sm md:min-w-[820px]">
+        <table className="w-full min-w-0 text-sm md:min-w-[920px]">
           <thead>
             <tr className="text-text-muted text-xs uppercase tracking-wider">
               <th className="pl-2 pr-2 py-3 text-left md:pl-4">Ticker</th>
               <th className="hidden max-w-[140px] px-2 py-3 text-left md:table-cell">Name</th>
               <th className="px-2 py-3 text-right md:px-3">Weight</th>
               <th className="hidden px-3 py-3 text-right md:table-cell">Δ weight</th>
+              {showTargetVsActual ? (
+                <>
+                  <th className="hidden px-3 py-3 text-right sm:table-cell">Target</th>
+                  <th className="hidden px-3 py-3 text-right md:table-cell">vs target</th>
+                </>
+              ) : null}
               <th className="hidden px-3 py-3 text-left lg:table-cell">Category</th>
               <th className="hidden max-w-[200px] px-3 py-3 text-left xl:table-cell">Thesis</th>
               <th className="hidden px-3 py-3 text-right lg:table-cell">Avg entry</th>
@@ -122,7 +143,7 @@ export default function AllocationsPositionsTable(props: {
               <Fragment key={grp.label ?? 'all'}>
                 {grp.label ? (
                   <tr className="bg-bg-secondary/80">
-                    <td colSpan={9} className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+                    <td colSpan={colCount} className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
                       {grp.label}
                     </td>
                   </tr>
@@ -154,6 +175,29 @@ export default function AllocationsPositionsTable(props: {
                             ? `${p.weight_delta > 0 ? '+' : ''}${p.weight_delta.toFixed(1)}pp`
                             : '—'}
                         </td>
+                        {showTargetVsActual ? (
+                          <>
+                            <td className="hidden px-3 py-3 text-right font-mono tabular-nums text-xs text-text-secondary sm:table-cell">
+                              {p.weight_target != null ? `${p.weight_target.toFixed(1)}%` : '—'}
+                            </td>
+                            <td
+                              className={`hidden px-3 py-3 text-right font-mono tabular-nums text-xs md:table-cell ${
+                                p.weight_target != null
+                                  ? pnlColor((p.weight_actual ?? 0) - p.weight_target)
+                                  : 'text-text-muted'
+                              }`}
+                              title={
+                                p.weight_target != null
+                                  ? `Actual ${(p.weight_actual ?? 0).toFixed(2)}% − target ${p.weight_target.toFixed(2)}%`
+                                  : undefined
+                              }
+                            >
+                              {p.weight_target != null
+                                ? `${(p.weight_actual ?? 0) - p.weight_target >= 0 ? '+' : ''}${((p.weight_actual ?? 0) - p.weight_target).toFixed(1)}pp`
+                                : '—'}
+                            </td>
+                          </>
+                        ) : null}
                         <td className="hidden px-3 py-3 text-xs text-text-secondary lg:table-cell">
                           {formatAllocationCategory(p.category)}
                         </td>
@@ -170,7 +214,7 @@ export default function AllocationsPositionsTable(props: {
                       </tr>
                       {isExpanded && (
                         <tr className="bg-white/[0.02]">
-                          <td colSpan={9} className="px-4 py-5 md:px-6 md:py-6">
+                          <td colSpan={colCount} className="px-4 py-5 md:px-6 md:py-6">
                             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
                               <div className="space-y-3 text-sm">
                                 <h4 className="text-xs font-semibold uppercase tracking-wider text-text-muted">Position context</h4>
@@ -199,6 +243,25 @@ export default function AllocationsPositionsTable(props: {
                                         : '—'}
                                     </dd>
                                   </div>
+                                  {p.weight_target != null ? (
+                                    <div>
+                                      <dt className="text-text-muted">Target (digest)</dt>
+                                      <dd className="font-mono tabular-nums mt-0.5">{p.weight_target.toFixed(2)}%</dd>
+                                    </div>
+                                  ) : null}
+                                  {p.weight_target != null ? (
+                                    <div>
+                                      <dt className="text-text-muted">Drift vs target</dt>
+                                      <dd
+                                        className={`font-mono tabular-nums mt-0.5 ${pnlColor(
+                                          (p.weight_actual ?? 0) - p.weight_target
+                                        )}`}
+                                      >
+                                        {(p.weight_actual ?? 0) - p.weight_target >= 0 ? '+' : ''}
+                                        {((p.weight_actual ?? 0) - p.weight_target).toFixed(2)}pp
+                                      </dd>
+                                    </div>
+                                  ) : null}
                                   <div>
                                     <dt className="text-text-muted">Avg entry</dt>
                                     <dd className="font-mono tabular-nums mt-0.5">
@@ -240,7 +303,7 @@ export default function AllocationsPositionsTable(props: {
             ))}
             {positions.length === 0 && (
               <tr>
-                <td colSpan={9} className="text-center py-10 text-text-muted">
+                <td colSpan={colCount} className="text-center py-10 text-text-muted">
                   No active positions
                 </td>
               </tr>

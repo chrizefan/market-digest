@@ -14,6 +14,7 @@ import {
   Line,
   Bar,
   Cell,
+  ReferenceLine,
 } from 'recharts';
 import type { NavChartPoint, PerfChartPoint } from '@/lib/types';
 import { PerformanceDrawdownChart } from '@/components/portfolio/performance-drawdown-chart';
@@ -58,10 +59,16 @@ function NavComparableChart({
   data,
   comparableKeys,
   onLegendRemoveComparable,
+  activityMarkerDates,
+  activityEventsByDate,
 }: {
   data: PerfChartPoint[];
   comparableKeys: string[];
   onLegendRemoveComparable: (ticker: string) => void;
+  /** Dates in range with OPEN/EXIT/REBALANCE — vertical guides on the NAV chart. */
+  activityMarkerDates?: string[];
+  /** Pre-aggregated events per date for tooltip enrichment. */
+  activityEventsByDate?: Record<string, { ticker: string; event: string }[]>;
 }) {
   const legendContent = (props: { payload?: LegendPayloadItem[] }) => {
     const { payload } = props;
@@ -131,17 +138,57 @@ function NavComparableChart({
           }}
         />
         <Tooltip
-          contentStyle={{
-            background: '#1a1a1a',
-            border: '1px solid #2a2a2a',
-            borderRadius: '8px',
-            fontSize: '0.85rem',
-          }}
-          formatter={(val: number, name: string) => {
-            if (val == null || Number.isNaN(Number(val))) return ['—', name];
-            return [`${Number(val).toFixed(2)}`, name];
+          content={({ active, payload, label }) => {
+            if (!active || !payload?.length) return null;
+            const events = activityEventsByDate?.[String(label)] ?? [];
+            return (
+              <div
+                style={{
+                  background: '#1a1a1a',
+                  border: '1px solid #2a2a2a',
+                  borderRadius: '8px',
+                  fontSize: '0.82rem',
+                  padding: '8px 12px',
+                  maxWidth: 220,
+                }}
+              >
+                <p style={{ color: '#a1a1aa', marginBottom: 4, fontSize: '0.75rem' }}>
+                  {String(label)}
+                </p>
+                {payload.map((item) => (
+                  <div key={String(item.dataKey)} style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                    <span style={{ color: item.color ?? '#a1a1aa' }}>{String(item.name ?? item.dataKey)}</span>
+                    <span style={{ fontFamily: 'monospace', color: '#f4f4f5' }}>
+                      {item.value != null && !Number.isNaN(Number(item.value))
+                        ? Number(item.value).toFixed(2)
+                        : '—'}
+                    </span>
+                  </div>
+                ))}
+                {events.length > 0 && (
+                  <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid #2a2a2a' }}>
+                    {events.map((ev, i) => (
+                      <div key={i} style={{ color: '#a1a1aa', fontSize: '0.72rem', display: 'flex', gap: 6 }}>
+                        <span style={{ color: ev.event === 'OPEN' ? '#22c55e' : ev.event === 'EXIT' ? '#ef4444' : '#f59e0b' }}>
+                          {ev.event}
+                        </span>
+                        <span style={{ fontFamily: 'monospace' }}>{ev.ticker}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
           }}
         />
+        {(activityMarkerDates ?? []).map((d) => (
+          <ReferenceLine
+            key={d}
+            x={d}
+            stroke="rgba(255,255,255,0.14)"
+            strokeDasharray="4 5"
+          />
+        ))}
         <Legend
           verticalAlign="top"
           align="right"
@@ -421,6 +468,8 @@ export function PerformanceChartWorkspace({
   snaps,
   drawdownData,
   rollingData,
+  activityMarkerDates,
+  activityEventsByDate,
 }: {
   view: PerformanceChartView;
   onViewChange: (v: PerformanceChartView) => void;
@@ -434,6 +483,8 @@ export function PerformanceChartWorkspace({
   snaps: NavChartPoint[];
   drawdownData: Array<{ date: string; drawdown: number }>;
   rollingData: Array<{ date: string; sharpe: number | null; volAnn: number | null }>;
+  activityMarkerDates?: string[];
+  activityEventsByDate?: Record<string, { ticker: string; event: string }[]>;
 }) {
   return (
     <div className="glass-card p-0 overflow-hidden">
@@ -476,29 +527,38 @@ export function PerformanceChartWorkspace({
 
       <div className="p-4">
         {view === 'nav' && (
-          <div className="h-[400px] w-full">
-            <NavComparableChart
-              data={chartData}
-              comparableKeys={selectedComparables}
-              onLegendRemoveComparable={onRemoveComparable}
-            />
+          <div className="space-y-2">
+            <div className="h-[min(520px,58vh)] min-h-[360px] w-full">
+              <NavComparableChart
+                data={chartData}
+                comparableKeys={selectedComparables}
+                onLegendRemoveComparable={onRemoveComparable}
+                activityMarkerDates={activityMarkerDates}
+                activityEventsByDate={activityEventsByDate}
+              />
+            </div>
+            {(activityMarkerDates?.length ?? 0) > 0 ? (
+              <p className="text-[10px] text-text-muted leading-snug">
+                Vertical guides: days with position activity (open, exit, rebalance) in this range.
+              </p>
+            ) : null}
           </div>
         )}
 
         {view === 'daily_returns' && (
-          <div className="h-[400px] w-full">
+          <div className="h-[min(520px,58vh)] min-h-[360px] w-full">
             <DailyReturnsComboChart snaps={snaps} />
           </div>
         )}
 
         {view === 'drawdown' && (
-          <div className="h-[400px] w-full">
+          <div className="h-[min(520px,58vh)] min-h-[360px] w-full">
             <PerformanceDrawdownChart data={drawdownData} />
           </div>
         )}
 
         {view === 'rolling' && (
-          <div className="h-[400px] w-full">
+          <div className="h-[min(520px,58vh)] min-h-[360px] w-full">
             <PerformanceRollingChart data={rollingData} />
           </div>
         )}

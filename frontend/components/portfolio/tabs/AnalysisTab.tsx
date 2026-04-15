@@ -10,6 +10,7 @@ import { SleeveStackedChart } from '@/components/portfolio/sleeve-stacked-chart'
 import StrategyThesisPanel from '@/components/portfolio/StrategyThesisPanel';
 import type { Doc, Thesis } from '@/lib/types';
 import type { LibraryDocumentResult } from '@/lib/queries';
+import { canonicalResearchTitle } from '@/lib/research-doc-categorize';
 import type { SleeveStackMode } from '@/lib/portfolio-aggregates';
 import {
   BarChart,
@@ -87,16 +88,21 @@ export default function AnalysisTab(props: {
   return (
     <div className="flex gap-6 max-lg:flex-col">
       <div className="w-56 shrink-0 space-y-4 max-lg:w-full max-lg:flex max-lg:gap-4 max-lg:flex-wrap">
-        {historyTimelineDates.length > 0 ? (
-          <MiniCalendar
-            dates={historyTimelineDates}
-            runKindByDate={portfolioHistoryRunKindByDate}
-            selected={effHistoryDate}
-            onSelect={onSelectHistoryDate}
-          />
-        ) : (
-          <div className="glass-card p-4 text-xs text-text-muted">No dated history yet.</div>
-        )}
+        <div className="space-y-2">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted px-0.5">
+            Browse history
+          </p>
+          {historyTimelineDates.length > 0 ? (
+            <MiniCalendar
+              dates={historyTimelineDates}
+              runKindByDate={portfolioHistoryRunKindByDate}
+              selected={effHistoryDate}
+              onSelect={onSelectHistoryDate}
+            />
+          ) : (
+            <div className="glass-card p-4 text-xs text-text-muted">No dated history yet.</div>
+          )}
+        </div>
         {historyLatestDate && effHistoryDate && effHistoryDate !== historyLatestDate ? (
           <button
             type="button"
@@ -120,66 +126,13 @@ export default function AnalysisTab(props: {
 
         <section className="space-y-4">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-            2 · Portfolio / sleeve evolution
+            2 · Thesis book
           </p>
-          <div className="glass-card p-6 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <SectionTitle className="mb-0">Sleeve evolution</SectionTitle>
-              <div className="flex rounded-lg border border-border-subtle overflow-hidden text-xs">
-                <button
-                  type="button"
-                  onClick={() => setHistoryMode('ticker')}
-                  className={`px-3 py-1.5 font-medium ${historyMode === 'ticker' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
-                >
-                  Ticker
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHistoryMode('category')}
-                  className={`px-3 py-1.5 font-medium border-l border-border-subtle ${historyMode === 'category' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
-                >
-                  Category
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHistoryMode('thesis')}
-                  className={`px-3 py-1.5 font-medium border-l border-border-subtle ${historyMode === 'thesis' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
-                >
-                  Thesis
-                </button>
-              </div>
-            </div>
-            {showHistoryDateBanner ? (
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-fin-blue/30 bg-fin-blue/10 px-3 py-2 text-xs">
-                <span className="text-text-secondary">
-                  Viewing snapshot <span className="font-mono text-text-primary">{dateParam}</span>
-                  <span className="text-text-muted"> — click the chart or calendar to change.</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={onClearHistoryDate}
-                  className="shrink-0 px-2 py-1 rounded border border-border-subtle hover:bg-white/[0.06] text-text-primary"
-                >
-                  Clear
-                </button>
-              </div>
-            ) : null}
-            <div className="h-[380px]" aria-label="Sleeve weights stacked over time">
-              <SleeveStackedChart
-                data={sleeveData}
-                keys={sleeveKeys}
-                formatKey={formatSleeveKey}
-                aggregateOtherNote={historyMode === 'ticker'}
-                selectedDate={effHistoryDate}
-                onChartDateSelect={onSelectHistoryDate}
-              />
-            </div>
-          </div>
 
           <div className="space-y-4">
             {effHistoryDate && lastUpdated && effHistoryDate !== lastUpdated ? (
               <p className="text-xs text-text-muted px-1">
-                Weights below are for <span className="font-mono text-text-secondary">{effHistoryDate}</span>. Thesis
+                Weights for <span className="font-mono text-text-secondary">{effHistoryDate}</span>. Thesis
                 names, notes, and metadata are from the latest digest snapshot (
                 <span className="font-mono text-text-secondary">{lastUpdated}</span>).
               </p>
@@ -246,11 +199,22 @@ export default function AnalysisTab(props: {
                       const isOpen = expandedThesisId === row.id;
                       const label =
                         row.id === '_unlinked' ? 'Unlinked positions' : row.thesis?.name ?? row.id;
+                      const status = row.thesis?.status?.toLowerCase() ?? '';
+                      const statusAccent =
+                        status.includes('active') || status.includes('open')
+                          ? 'border-l-2 border-l-fin-green/70'
+                          : status.includes('watch') || status.includes('monitor')
+                            ? 'border-l-2 border-l-fin-amber/70'
+                            : status.includes('invalid') || status.includes('exit') || status.includes('closed')
+                              ? 'border-l-2 border-l-fin-red/70'
+                              : row.id === '_unlinked'
+                                ? 'border-l-2 border-l-white/10'
+                                : 'border-l-2 border-l-transparent';
                       return (
                         <Fragment key={row.id}>
                           <tr
                             onClick={() => setExpandedThesisId(isOpen ? null : row.id)}
-                            className="hover:bg-white/[0.02] cursor-pointer transition-colors"
+                            className={`hover:bg-white/[0.02] cursor-pointer transition-colors ${statusAccent}`}
                           >
                             <td className="px-4 py-3 font-medium md:px-5">{label}</td>
                             <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums md:px-5">
@@ -347,9 +311,68 @@ export default function AnalysisTab(props: {
           </div>
         </section>
 
+        <section className="space-y-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+            3 · Sleeve evolution
+          </p>
+          <div className="glass-card p-6 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <SectionTitle className="mb-0">Sleeve evolution</SectionTitle>
+              <div className="flex rounded-lg border border-border-subtle overflow-hidden text-xs">
+                <button
+                  type="button"
+                  onClick={() => setHistoryMode('ticker')}
+                  className={`px-3 py-1.5 font-medium ${historyMode === 'ticker' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
+                >
+                  Ticker
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryMode('category')}
+                  className={`px-3 py-1.5 font-medium border-l border-border-subtle ${historyMode === 'category' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
+                >
+                  Category
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryMode('thesis')}
+                  className={`px-3 py-1.5 font-medium border-l border-border-subtle ${historyMode === 'thesis' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'}`}
+                >
+                  Thesis
+                </button>
+              </div>
+            </div>
+            {showHistoryDateBanner ? (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-fin-blue/30 bg-fin-blue/10 px-3 py-2 text-xs">
+                <span className="text-text-secondary">
+                  Viewing snapshot <span className="font-mono text-text-primary">{dateParam}</span>
+                  <span className="text-text-muted"> — click the chart or calendar to change.</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={onClearHistoryDate}
+                  className="shrink-0 px-2 py-1 rounded border border-border-subtle hover:bg-white/[0.06] text-text-primary"
+                >
+                  Clear
+                </button>
+              </div>
+            ) : null}
+            <div className="h-[380px]" aria-label="Sleeve weights stacked over time">
+              <SleeveStackedChart
+                data={sleeveData}
+                keys={sleeveKeys}
+                formatKey={formatSleeveKey}
+                aggregateOtherNote={historyMode === 'ticker'}
+                selectedDate={effHistoryDate}
+                onChartDateSelect={onSelectHistoryDate}
+              />
+            </div>
+          </div>
+        </section>
+
         <section className="space-y-3">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-            3 · PM deliberation &amp; decisions
+            4 · PM deliberation &amp; decisions
           </p>
           <div className="glass-card p-0 overflow-hidden">
             <div className="px-5 py-4 border-b border-border-subtle bg-bg-secondary">
@@ -388,7 +411,7 @@ export default function AnalysisTab(props: {
                         }`}
                       >
                         <FileText size={14} className="text-fin-amber/70 shrink-0" />
-                        <span className="font-mono text-sm">{d.title || d.filename || d.path}</span>
+                        <span className="font-mono text-sm">{canonicalResearchTitle(d)}</span>
                         <span className="ml-auto text-[11px] text-text-muted">{d.phase ?? ''}</span>
                       </button>
                       {active && pmActiveFile ? (

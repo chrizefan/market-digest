@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   Brain,
@@ -10,7 +10,7 @@ import {
   Filter,
   FileText,
   Search,
-  Workflow,
+  Newspaper,
 } from 'lucide-react';
 
 import { SubpageStickyTabBar, SUBPAGE_MAX, subpageTabButtonClass } from '@/components/subpage-tab-bar';
@@ -28,6 +28,20 @@ import {
   isDailyResearchDoc,
 } from '@/lib/research-doc-categorize';
 import KnowledgeBasePanel from '@/components/research/KnowledgeBasePanel';
+
+/** Extract a plain-text preview from digest markdown (first substantive paragraph, ≤160 chars). */
+function digestPreviewSnippet(markdown: string | null | undefined): string | null {
+  if (!markdown) return null;
+  const lines = markdown.split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('---') || trimmed.startsWith('```')) continue;
+    const plain = trimmed.replace(/[*_`~[\]()]/g, '').trim();
+    if (plain.length < 20) continue;
+    return plain.length > 160 ? `${plain.slice(0, 157)}…` : plain;
+  }
+  return null;
+}
 
 type RunDayKind = MiniCalendarRunKind;
 
@@ -67,6 +81,7 @@ function ResearchPageInner({
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const autoDigestOpenedRef = useRef(false);
 
   const tab: ResearchTab = urlTab === 'knowledge' ? 'knowledge' : 'daily';
 
@@ -229,6 +244,19 @@ function ResearchPageInner({
     }
   }, [urlDocKey, researchDocs, effDate, tab]);
 
+  /** Landing on Daily Digest: open the digest for the latest run automatically (Koyfin-style). */
+  useEffect(() => {
+    if (tab !== 'daily' || urlDocKey || !digestDocForDate || !effDate || !latestDate) return;
+    if (effDate !== latestDate) return;
+    if (autoDigestOpenedRef.current) return;
+    autoDigestOpenedRef.current = true;
+    replaceQuery((p) => {
+      p.set('tab', 'daily');
+      p.set('date', effDate);
+      p.set('docKey', digestDocForDate.path);
+    });
+  }, [tab, urlDocKey, digestDocForDate, effDate, latestDate, replaceQuery]);
+
   if (loading)
     return <div className="flex items-center justify-center h-screen text-text-secondary">Loading…</div>;
   if (error || !data) return <div className="flex items-center justify-center h-screen text-fin-red">{error}</div>;
@@ -237,8 +265,8 @@ function ResearchPageInner({
     <div className="flex min-h-full flex-col">
       <SubpageStickyTabBar aria-label="Research workspace">
         <button type="button" onClick={() => setTab('daily')} className={subpageTabButtonClass(tab === 'daily')}>
-          <Workflow size={16} aria-hidden />
-          Workflow
+          <Newspaper size={16} aria-hidden />
+          Daily Digest
         </button>
         <button
           type="button"
@@ -246,7 +274,7 @@ function ResearchPageInner({
           className={subpageTabButtonClass(tab === 'knowledge')}
         >
           <Brain size={16} aria-hidden />
-          Knowledge
+          Knowledge Base
         </button>
       </SubpageStickyTabBar>
 
@@ -255,7 +283,7 @@ function ResearchPageInner({
           <>
             <p className="text-xs text-text-muted max-w-2xl">
               Curated reference material—deep dives, papers, and standing notes that persist across dates. For
-              digest, deltas, and other artifacts from each automated run, use the Workflow tab.
+              digest, deltas, and other artifacts from each automated run, use the Daily Digest tab.
             </p>
             <KnowledgeBasePanel docs={researchDocs} />
           </>
@@ -354,13 +382,6 @@ function ResearchPageInner({
                 Artifacts from each dated research run: digest, exploration, deltas, and related pipeline outputs.
                 Evergreen reference lives under Knowledge.
               </p>
-              <div className="flex items-center gap-3">
-                <Calendar size={16} className="text-fin-blue" />
-                <h2 className="text-lg font-semibold">{effDate || 'No date selected'}</h2>
-                <span className="text-xs text-text-muted">
-                  {dateDocs.length} file{dateDocs.length !== 1 ? 's' : ''}
-                </span>
-              </div>
 
               {effDate && deltaMetaByDate[effDate] ? (
                 <DeltaDaySummary
@@ -400,6 +421,19 @@ function ResearchPageInner({
                   }}
                 />
               ) : null}
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Calendar size={16} className="text-fin-blue shrink-0" />
+                <h2 className="text-lg font-semibold">{effDate || 'No date selected'}</h2>
+                <span className="text-xs text-text-muted">
+                  {dateDocs.length} file{dateDocs.length !== 1 ? 's' : ''}
+                </span>
+                {latestDate ? (
+                  <span className="text-[10px] font-mono text-text-muted ml-auto sm:ml-0">
+                    Latest run: {latestDate}
+                  </span>
+                ) : null}
+              </div>
 
               {activeFileHidden && activeFile ? (
                 <div className="glass-card p-0 overflow-hidden">
@@ -475,8 +509,22 @@ function ResearchPageInner({
                                 expanded ? 'bg-fin-blue/[0.06]' : ''
                               }`}
                             >
-                              <FileText size={14} className="text-fin-blue/60 shrink-0" />
-                              <span className="font-mono text-sm">{canonicalResearchTitle(f)}</span>
+                              <FileText size={14} className="text-fin-blue/60 shrink-0 mt-0.5" />
+                              <span className="min-w-0 flex-1">
+                                <span className="block font-mono text-sm">{canonicalResearchTitle(f)}</span>
+                                {(() => {
+                                  const isDigest = (f.path || '').toLowerCase() === 'digest';
+                                  const snippet =
+                                    isDigest && !expanded && libraryDoc?.document_key === f.path
+                                      ? digestPreviewSnippet(libraryDoc.markdown)
+                                      : null;
+                                  return snippet ? (
+                                    <span className="block text-[11px] text-text-muted truncate mt-0.5 pr-2">
+                                      {snippet}
+                                    </span>
+                                  ) : null;
+                                })()}
+                              </span>
                               {showRowDeltaHint ? (
                                 <span
                                   className="text-[10px] font-mono text-text-muted shrink-0"
@@ -485,7 +533,7 @@ function ResearchPageInner({
                                   delta
                                 </span>
                               ) : null}
-                              <span className="ml-auto text-[11px] text-text-muted">{f.phase ?? ''}</span>
+                              <span className="shrink-0 text-[11px] text-text-muted">{f.phase ?? ''}</span>
                             </button>
                             {expanded ? (
                               <DocumentExpandInline

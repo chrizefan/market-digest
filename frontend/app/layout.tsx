@@ -6,6 +6,7 @@ import { AppShellProvider } from '@/components/app-shell-context';
 import Sidebar from '@/components/sidebar';
 import MobileAppBar from '@/components/mobile-app-bar';
 import Starfield from '@/components/starfield';
+import CommandPalette from '@/components/command-palette';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -42,6 +43,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               </Suspense>
               <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto max-h-screen">
                 <MobileAppBar />
+                <CommandPalette />
                 <div className="flex min-h-0 flex-1 flex-col">{children}</div>
               </main>
             </div>

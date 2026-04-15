@@ -494,6 +494,11 @@ export async function getFullDashboardData(): Promise<DashboardData> {
       .filter(Boolean) as { ticker: string; weight_pct: number; action?: string }[];
   })();
 
+  /** Digest target weight by ticker — drives target vs actual in the allocations table. */
+  const targetWeightByTicker = new Map<string, number>(
+    proposedPositions.map((p) => [p.ticker, Number(p.weight_pct ?? 0)])
+  );
+
   // Treat proposed_positions as executed immediately (post-trade = current).
   const effectiveCurrentPositions: TableRow<'positions'>[] = proposedPositions.length
     ? proposedPositions
@@ -586,6 +591,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     name: p.name ?? p.ticker,
     type: 'LONG' as const,
     weight_actual: Number(p.weight_pct ?? 0),
+    weight_target: targetWeightByTicker.has(p.ticker) ? targetWeightByTicker.get(p.ticker)! : null,
     weight_delta:
       latestPosDate && prevPosDate
         ? Number(p.weight_pct ?? 0) - (prevWeightByTicker.get(p.ticker) ?? 0)

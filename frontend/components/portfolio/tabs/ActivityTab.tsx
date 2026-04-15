@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import { Badge, formatPct, pnlColor } from '@/components/ui';
 import type { DashboardPositionEvent, Thesis } from '@/lib/types';
 
@@ -12,17 +13,71 @@ function eventBadgeVariant(
   return 'default';
 }
 
+/** ISO date YYYY-MM-DD + calendar days (UTC-safe for portfolio dates). */
+function addCalendarDays(iso: string, deltaDays: number): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) return iso;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + deltaDays);
+  return dt.toISOString().slice(0, 10);
+}
+
+type RangePreset = '7d' | '30d' | 'all';
+
 export default function ActivityTab(props: {
   activityEvents: DashboardPositionEvent[];
   thesisById: Map<string, Thesis>;
+  /** Latest portfolio snapshot date — used for “today” NEW badges and range anchor. */
+  lastRunDate: string | null;
 }) {
-  const { activityEvents, thesisById } = props;
+  const { activityEvents, thesisById, lastRunDate } = props;
+  const [preset, setPreset] = useState<RangePreset>('7d');
+
+  const anchorDate = activityEvents[0]?.date ?? lastRunDate ?? null;
+
+  const filteredEvents = useMemo(() => {
+    if (preset === 'all' || !anchorDate) return activityEvents;
+    const days = preset === '7d' ? 7 : 30;
+    const cutoff = addCalendarDays(anchorDate, -days);
+    return activityEvents.filter((ev) => ev.date >= cutoff);
+  }, [activityEvents, preset, anchorDate]);
+
+  const rangeSummary = useMemo(() => {
+    if (preset === 'all') return `${activityEvents.length} event${activityEvents.length !== 1 ? 's' : ''} (all)`;
+    if (!anchorDate) return `${filteredEvents.length} in window`;
+    const days = preset === '7d' ? 7 : 30;
+    return `${filteredEvents.length} in last ${days} days`;
+  }, [preset, activityEvents.length, filteredEvents.length, anchorDate]);
 
   return (
     <div className="glass-card p-0 overflow-hidden">
       <div className="border-b border-border-subtle bg-bg-secondary px-4 py-4 md:px-6 md:py-5">
-        <h3 className="text-lg font-semibold">Activity</h3>
-        <p className="mt-1 text-xs text-text-muted md:hidden">Swipe horizontally for full columns, or use a larger screen.</p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">Activity</h3>
+            <p className="mt-1 text-xs text-text-muted md:hidden">
+              Swipe horizontally for full columns, or use a larger screen.
+            </p>
+            <p className="mt-1 text-[11px] text-text-muted font-mono">{rangeSummary}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] uppercase tracking-wider text-text-muted">Show</span>
+            {(['7d', '30d', 'all'] as const).map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setPreset(k)}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium border transition-colors ${
+                  preset === k
+                    ? 'border-fin-blue/40 bg-fin-blue/15 text-fin-blue'
+                    : 'border-border-subtle text-text-muted hover:text-text-primary hover:bg-white/[0.04]'
+                }`}
+              >
+                {k === '7d' ? '7 days' : k === '30d' ? '30 days' : 'All'}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-0 text-sm md:min-w-[920px]">
@@ -39,7 +94,7 @@ export default function ActivityTab(props: {
             </tr>
           </thead>
           <tbody className="divide-y divide-border-subtle">
-            {activityEvents.map((ev, i) => {
+            {filteredEvents.map((ev, i) => {
               const thesisName = ev.thesis_id ? thesisById.get(ev.thesis_id)?.name ?? ev.thesis_id : null;
               const detailParts = [
                 ev.reason ? `Reason: ${ev.reason}` : null,
@@ -47,9 +102,19 @@ export default function ActivityTab(props: {
                 ev.price != null ? `Price: $${Number(ev.price).toFixed(2)}` : null,
               ].filter(Boolean);
               const rowTitle = detailParts.length ? detailParts.join('\n') : undefined;
+              const isNewDay = Boolean(lastRunDate && ev.date === lastRunDate);
               return (
                 <tr key={`${ev.date}-${ev.ticker}-${i}`} className="hover:bg-white/[0.02]" title={rowTitle}>
-                  <td className="px-3 py-3 font-mono text-xs text-text-secondary md:px-5">{ev.date}</td>
+                  <td className="px-3 py-3 font-mono text-xs text-text-secondary md:px-5">
+                    <span className="inline-flex items-center gap-2">
+                      {ev.date}
+                      {isNewDay ? (
+                        <span className="rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide bg-fin-amber/20 text-fin-amber border border-fin-amber/30">
+                          New
+                        </span>
+                      ) : null}
+                    </span>
+                  </td>
                   <td className="px-3 py-3 font-semibold md:px-5">{ev.ticker}</td>
                   <td className="px-3 py-3 md:px-5">
                     <Badge variant={eventBadgeVariant(ev.event)}>{ev.event}</Badge>
@@ -89,10 +154,12 @@ export default function ActivityTab(props: {
                 </tr>
               );
             })}
-            {activityEvents.length === 0 && (
+            {filteredEvents.length === 0 && (
               <tr>
                 <td colSpan={8} className="text-center py-10 text-text-muted">
-                  No trades or rebalances in view.
+                  {activityEvents.length === 0
+                    ? 'No trades or rebalances in view.'
+                    : `No activity in this window (${preset === '7d' ? '7' : preset === '30d' ? '30' : ''} days). Try a wider range.`}
                 </td>
               </tr>
             )}

@@ -19,37 +19,46 @@ export default function DeltaDaySummary({
   const baseline = meta.baseline_date?.trim();
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-fin-blue/25 bg-fin-blue/[0.07] px-4 py-3 text-sm">
-      <span className="font-semibold text-fin-blue">Updates applied</span>
-      <span className="text-xs text-text-secondary">
-        {pathCount} path{pathCount !== 1 ? 's' : ''} touched
-        {opCount > 0 ? (
-          <>
-            {' '}
-            · {opCount} op{opCount !== 1 ? 's' : ''}
-          </>
+    <div
+      className="rounded-xl border border-fin-blue/35 bg-gradient-to-br from-fin-blue/[0.12] via-fin-blue/[0.06] to-transparent px-5 py-5 text-sm shadow-[0_0_48px_-12px_rgba(59,130,246,0.35)] ring-1 ring-inset ring-white/[0.06]"
+      role="region"
+      aria-label="Delta run summary"
+    >
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-1.5 min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-fin-blue/90">Delta day</p>
+          <p className="text-lg font-semibold text-text-primary leading-snug">Updates applied to this run</p>
+          <p className="text-xs text-text-secondary">
+            {pathCount} path{pathCount !== 1 ? 's' : ''} touched
+            {opCount > 0 ? (
+              <>
+                {' '}
+                · {opCount} op{opCount !== 1 ? 's' : ''}
+              </>
+            ) : null}
+          </p>
+          <p className="text-xs text-text-muted max-w-2xl">
+            Open the <strong className="text-text-secondary">digest</strong> to compare against the prior snapshot or
+            the delta baseline
+            {baseline ? (
+              <>
+                {' '}
+                (<span className="font-mono text-text-secondary">{baseline}</span>)
+              </>
+            ) : null}
+            .
+          </p>
+        </div>
+        {digestAvailable ? (
+          <button
+            type="button"
+            onClick={onOpenDigest}
+            className="shrink-0 text-sm font-semibold px-4 py-2.5 rounded-lg bg-fin-blue/25 text-fin-blue border border-fin-blue/40 hover:bg-fin-blue/35 transition-colors"
+          >
+            Open digest
+          </button>
         ) : null}
-      </span>
-      <span className="text-xs text-text-muted w-full sm:w-auto sm:flex-1 sm:min-w-[200px]">
-        Open the <strong className="text-text-secondary">digest</strong> to compare against the prior snapshot or the
-        delta baseline
-        {baseline ? (
-          <>
-            {' '}
-            (<span className="font-mono text-text-secondary">{baseline}</span>)
-          </>
-        ) : null}
-        .
-      </span>
-      {digestAvailable ? (
-        <button
-          type="button"
-          onClick={onOpenDigest}
-          className="text-xs px-3 py-1.5 rounded-md bg-fin-blue/20 text-fin-blue hover:bg-fin-blue/30 transition-colors shrink-0"
-        >
-          Open digest
-        </button>
-      ) : null}
+      </div>
     </div>
   );
 }

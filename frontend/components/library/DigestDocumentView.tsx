@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Change } from 'diff';
 import { diffLines, diffWords } from 'diff';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, List } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -15,6 +15,38 @@ import {
 
 type ViewScope = 'current' | 'difference';
 type DiffLayout = 'inline' | 'split';
+
+type DigestTocEntry = { id: string; text: string; level: 2 | 3 };
+
+function slugifyDigestHeading(s: string): string {
+  const b = s
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .slice(0, 64);
+  return b || 'section';
+}
+
+/** ## / ### headings only — used for jump nav and stable anchor ids. */
+function buildDigestToc(markdown: string): DigestTocEntry[] {
+  const lines = markdown.split(/\r?\n/);
+  const slugCounts = new Map<string, number>();
+  const out: DigestTocEntry[] = [];
+  for (const line of lines) {
+    const t = line.trim();
+    const m = /^(#{2,3})\s+(.+)$/.exec(t);
+    if (!m) continue;
+    const level = (m[1].length === 2 ? 2 : 3) as 2 | 3;
+    const text = m[2].trim();
+    const base = slugifyDigestHeading(text);
+    const n = (slugCounts.get(base) ?? 0) + 1;
+    slugCounts.set(base, n);
+    const id = n === 1 ? base : `${base}-${n}`;
+    out.push({ id, text, level });
+  }
+  return out;
+}
 
 function isTableLine(s: string): boolean {
   const t = s.trimStart();
@@ -225,19 +257,15 @@ export default function DigestDocumentView({
   useEffect(() => {
     if (!preferPreviousRef.current || viewScope !== 'difference' || !context) return;
     preferPreviousRef.current = false;
-    /* eslint-disable react-hooks/set-state-in-effect -- sync compare preset when opening diff from digest banner */
     setCustomCompareDate('');
     if (context.previousDigestDate) setCompareKind('previous_digest');
     else if (context.deltaBaselineDate) setCompareKind('delta_baseline');
-    /* eslint-enable react-hooks/set-state-in-effect */
   }, [context, viewScope]);
 
   useEffect(() => {
     let cancelled = false;
-    /* eslint-disable react-hooks/set-state-in-effect -- fetch lifecycle: show loading until anchors resolve */
     setContextLoading(true);
     setError(null);
-    /* eslint-enable react-hooks/set-state-in-effect */
     fetchDigestDiffContext(docDate)
       .then((ctx) => {
         if (!cancelled) setContext(ctx);
@@ -259,10 +287,8 @@ export default function DigestDocumentView({
   useEffect(() => {
     if (viewScope === 'current') return;
     let cancelled = false;
-    /* eslint-disable react-hooks/set-state-in-effect -- fetch lifecycle for diff pair */
     setPairLoading(true);
     setError(null);
-    /* eslint-enable react-hooks/set-state-in-effect */
     const customArg = compareKind === 'custom_date' ? customCompareDate : undefined;
     loadDigestLibraryDiff(docDate, compareKind, customArg)
       .then(({ pair: p }) => {
@@ -292,6 +318,8 @@ export default function DigestDocumentView({
   const canComparePrevious = !!context?.previousDigestDate;
   const canCompareBaseline = !!context?.deltaBaselineDate;
   const customReady = compareKind !== 'custom_date' || /^\d{4}-\d{2}-\d{2}$/.test(customCompareDate.trim());
+
+  const digestToc = useMemo(() => buildDigestToc(fallbackMarkdown), [fallbackMarkdown]);
 
   const toolbar = context ? (
     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
@@ -389,11 +417,74 @@ export default function DigestDocumentView({
   }
 
   if (viewScope === 'current') {
+    let mdPtr = 0;
+    const mdComponents = {
+      h2: (props: { children?: ReactNode; node?: unknown; className?: string }) => {
+        const { node: _n, ...rest } = props;
+        while (mdPtr < digestToc.length && digestToc[mdPtr].level !== 2) mdPtr += 1;
+        const meta =
+          mdPtr < digestToc.length && digestToc[mdPtr].level === 2 ? digestToc[mdPtr++] : null;
+        return (
+          <h2
+            {...rest}
+            id={meta?.id}
+            className="scroll-mt-28 mt-8 first:mt-0 text-xl font-semibold text-text-primary border-b border-border-subtle/40 pb-1.5"
+          />
+        );
+      },
+      h3: (props: { children?: ReactNode; node?: unknown; className?: string }) => {
+        const { node: _n, ...rest } = props;
+        while (mdPtr < digestToc.length && digestToc[mdPtr].level !== 3) mdPtr += 1;
+        const meta =
+          mdPtr < digestToc.length && digestToc[mdPtr].level === 3 ? digestToc[mdPtr++] : null;
+        return (
+          <h3
+            {...rest}
+            id={meta?.id}
+            className="scroll-mt-24 mt-5 text-base font-semibold text-text-secondary"
+          />
+        );
+      },
+    };
+
     return (
       <div className="space-y-4">
         {toolbar}
+        {digestToc.length > 0 ? (
+          <nav
+            aria-label="Digest sections"
+            className="rounded-lg border border-border-subtle bg-bg-secondary/50 px-3 py-2.5"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <List size={14} className="text-fin-blue shrink-0" aria-hidden />
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">Jump to section</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {digestToc.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById(t.id);
+                    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                  className={`text-left text-xs px-2 py-1 rounded-md border transition-colors max-w-[min(100%,14rem)] truncate ${
+                    t.level === 3
+                      ? 'border-border-subtle/70 bg-bg-secondary/80 text-text-muted hover:border-fin-blue/35'
+                      : 'border-border-subtle bg-bg-secondary text-text-secondary hover:border-fin-blue/40 hover:text-text-primary'
+                  }`}
+                  title={t.text}
+                >
+                  {t.text}
+                </button>
+              ))}
+            </div>
+          </nav>
+        ) : null}
         <div className="prose prose-invert max-w-none text-sm leading-relaxed">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{fallbackMarkdown}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+            {fallbackMarkdown}
+          </ReactMarkdown>
         </div>
       </div>
     );

@@ -26,6 +26,8 @@ export interface Position {
   name: string;
   type: 'LONG' | 'SHORT';
   weight_actual: number;
+  /** Snapshot target weight from digest `proposed_positions` when present (for target vs actual). */
+  weight_target?: number | null;
   /** Change vs previous positions date (percentage points). */
   weight_delta?: number | null;
   current_price: number | null;

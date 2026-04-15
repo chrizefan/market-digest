@@ -7,7 +7,7 @@ import { SubpageStickyTabBar, SUBPAGE_MAX, subpageTabButtonClass } from '@/compo
 import { getDocLibraryTier } from '@/lib/library-doc-tier';
 import { getLibraryDocumentById } from '@/lib/queries';
 import type { Doc } from '@/lib/types';
-import { Layers, Activity, TrendingUp, Route } from 'lucide-react';
+import { Layers, Activity, TrendingUp, Route, Brain } from 'lucide-react';
 import type { MiniCalendarRunKind } from '@/components/library/MiniCalendar';
 import type { Position, Thesis } from '@/lib/types';
 import {
@@ -475,9 +475,9 @@ export default function PortfolioShellInner() {
 
   const tabs: { id: TabId; label: string; icon: typeof Layers }[] = [
     { id: 'allocations', label: 'Allocations', icon: Layers },
-    { id: 'performance', label: 'Performance', icon: TrendingUp },
-    { id: 'analysis', label: 'Analysis', icon: Route },
     { id: 'activity', label: 'Activity', icon: Activity },
+    { id: 'performance', label: 'Performance', icon: TrendingUp },
+    { id: 'analysis', label: 'Intelligence', icon: Brain },
   ];
 
   if (loading)
@@ -514,6 +514,7 @@ export default function PortfolioShellInner() {
             pieTicker={pieDataBucketed}
             pieCategory={pieCategoryBucketed}
             pieThesis={pieThesisBucketed}
+            categoryBarData={categoryBarData}
             positions={positions}
             thesisById={thesisById}
           />
@@ -554,7 +555,9 @@ export default function PortfolioShellInner() {
           />
         )}
 
-        {tab === 'activity' && <ActivityTab activityEvents={activityEvents} thesisById={thesisById} />}
+        {tab === 'activity' && (
+          <ActivityTab activityEvents={activityEvents} thesisById={thesisById} lastRunDate={lastUpdated} />
+        )}
       </div>
     </div>
   );

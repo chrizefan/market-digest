@@ -75,12 +75,13 @@ export default function PerformanceTab() {
 
   const { data, loading, error } = useDashboard();
   const [comparableOverride, setComparableOverride] = useState<string[] | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(true);
   const [comparableHistory, setComparableHistory] = useState<BenchmarkHistoryMap>({});
   const [comparableLoading, setComparableLoading] = useState(false);
   const [comparableError, setComparableError] = useState<string | null>(null);
 
   const positions = useMemo(() => data?.positions ?? [], [data]);
+  const position_events = useMemo(() => data?.position_events ?? [], [data]);
   const benchmarks = useMemo(() => data?.benchmarks ?? {}, [data]);
   const metrics = data?.calculated;
   const serverMetrics = data?.server_portfolio_metrics ?? null;
@@ -88,6 +89,30 @@ export default function PerformanceTab() {
   const tickerUniverse = useMemo(() => data?.price_history_tickers ?? [], [data]);
 
   const snaps = useMemo(() => filterByDateRange(allSnaps, range), [allSnaps, range]);
+
+  /** Dates in the selected range that have non-HOLD position events — NAV chart guides. */
+  const activityMarkerDates = useMemo(() => {
+    if (!snaps.length) return [];
+    const minD = snaps[0].date;
+    const maxD = snaps[snaps.length - 1].date;
+    const set = new Set<string>();
+    for (const ev of position_events) {
+      if (ev.event === 'HOLD') continue;
+      if (ev.date >= minD && ev.date <= maxD) set.add(ev.date);
+    }
+    return [...set].sort().slice(-18);
+  }, [position_events, snaps]);
+
+  /** Pre-aggregated events by date for NAV chart tooltip (date → [{ticker, event}]). */
+  const activityEventsByDate = useMemo<Record<string, { ticker: string; event: string }[]>>(() => {
+    const map: Record<string, { ticker: string; event: string }[]> = {};
+    for (const d of activityMarkerDates) {
+      map[d] = position_events
+        .filter((ev) => ev.date === d && ev.event !== 'HOLD')
+        .map((ev) => ({ ticker: ev.ticker, event: ev.event }));
+    }
+    return map;
+  }, [activityMarkerDates, position_events]);
 
   const defaultComparableSelection = useMemo(() => {
     if (!tickerUniverse.length) return [];
@@ -248,9 +273,18 @@ export default function PerformanceTab() {
             <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
               1 · Portfolio summary
             </p>
-            <p className="text-xs text-text-muted">
-              NAV-based figures for the window below; position charts anchor to the last day in range.
-            </p>
+            {/* Performance summary sentence */}
+            {snaps.length >= 2 && (
+              <p className="text-sm text-text-secondary">
+                Portfolio{' '}
+                <span className={rangeReturn != null ? (rangeReturn >= 0 ? 'text-fin-green font-semibold' : 'text-fin-red font-semibold') : ''}>
+                  {rangeReturn != null ? (rangeReturn >= 0 ? `+${rangeReturn.toFixed(2)}%` : `${rangeReturn.toFixed(2)}%`) : formatPct(metrics.portfolio_pnl)}
+                </span>
+                {' '}since inception{dailyRet != null && (
+                  <>, <span className={dailyRet >= 0 ? 'text-fin-green font-semibold' : 'text-fin-red font-semibold'}>{dailyRet >= 0 ? '+' : ''}{dailyRet.toFixed(2)}%</span> today</>)
+                }.
+              </p>
+            )}
           </div>
           <div className="shrink-0">
             <PerformanceDateRange value={range} onChange={setRange} />
@@ -279,7 +313,11 @@ export default function PerformanceTab() {
             valueClass={pnlColor(dailyRet)}
             icon={Activity}
             iconColor="text-fin-amber"
-            subtitle="Last day in range"
+            subtitle={
+              dailyRet == null
+                ? 'Not enough data in range'
+                : 'Last day in range'
+            }
           />
           <StatCard
             label="Active Positions"
@@ -307,6 +345,8 @@ export default function PerformanceTab() {
           snaps={snaps}
           drawdownData={drawdownData}
           rollingData={rollingData}
+          activityMarkerDates={activityMarkerDates}
+          activityEventsByDate={activityEventsByDate}
         />
       </section>
 
