@@ -153,7 +153,6 @@ export default function ActivityTab(props: {
 }) {
   const { activityEvents, thesisById, lastRunDate } = props;
   const [preset, setPreset] = useState<RangePreset>('all');
-  const [includeHolds, setIncludeHolds] = useState(true);
 
   const [selectedTickers, setSelectedTickers] = useState<string[]>([]);
   const [eventMask, setEventMask] = useState<Record<LedgerEventType, boolean>>(() => ({
@@ -176,22 +175,17 @@ export default function ActivityTab(props: {
 
   const rangeAnchorDate = latestLedgerDate ?? lastRunDate ?? null;
 
-  const visibleEvents = useMemo(
-    () => (includeHolds ? activityEvents : activityEvents.filter((ev) => ev.event !== 'HOLD')),
-    [activityEvents, includeHolds]
-  );
-
   const eventFilterActive = useMemo(
     () => EVENT_TYPES.some((t) => !eventMask[t]),
     [eventMask]
   );
 
   const rangeFiltered = useMemo(() => {
-    if (preset === 'all' || !rangeAnchorDate) return visibleEvents;
+    if (preset === 'all' || !rangeAnchorDate) return activityEvents;
     const days = preset === '7d' ? 7 : 30;
     const cutoff = addCalendarDays(rangeAnchorDate, -days);
-    return visibleEvents.filter((ev) => ev.date >= cutoff);
-  }, [visibleEvents, preset, rangeAnchorDate]);
+    return activityEvents.filter((ev) => ev.date >= cutoff);
+  }, [activityEvents, preset, rangeAnchorDate]);
 
   const tickerUniverse = useMemo(() => {
     const set = new Set<string>();
@@ -389,52 +383,39 @@ export default function ActivityTab(props: {
   return (
     <div className="glass-card p-0 overflow-hidden">
       <div className="border-b border-border-subtle bg-bg-secondary px-4 py-4 md:px-6 md:py-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold">Activity</h3>
-            <p className="mt-1 text-[11px] text-text-muted font-mono">{rangeSummary}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] uppercase tracking-wider text-text-muted">Show</span>
-            {(['7d', '30d', 'all'] as const).map((k) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => setPreset(k)}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium border transition-colors ${
-                  preset === k
-                    ? 'border-fin-blue/40 bg-fin-blue/15 text-fin-blue'
-                    : 'border-border-subtle text-text-muted hover:text-text-primary hover:bg-white/[0.04]'
-                }`}
-              >
-                {k === '7d' ? '7 days' : k === '30d' ? '30 days' : 'All'}
-              </button>
-            ))}
-            <label className="ml-2 flex items-center gap-2 text-[10px] uppercase tracking-wider text-text-muted select-none">
-              <input
-                type="checkbox"
-                className="accent-fin-blue"
-                checked={includeHolds}
-                onChange={(e) => setIncludeHolds(e.target.checked)}
-              />
-              Holds
-            </label>
-          </div>
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+          <h3 className="text-lg font-semibold">Activity</h3>
+          <p className="text-[11px] text-text-muted font-mono">{rangeSummary}</p>
         </div>
 
-        <div className="mt-4 grid gap-3 border-t border-border-subtle pt-4 sm:grid-cols-2 lg:grid-cols-12 lg:items-end">
-          <div className="flex flex-col gap-1 lg:col-span-4 min-w-0">
-            <span className="text-[10px] uppercase tracking-wider text-text-muted">Tickers</span>
-            <ActivityTickerMultiSelect
-              universe={tickerUniverse}
-              selected={selectedTickers}
-              onAdd={addTicker}
-              onRemove={removeTicker}
-            />
-          </div>
-          <div className="flex flex-col gap-1 lg:col-span-5">
-            <span className="text-[10px] uppercase tracking-wider text-text-muted">Event type</span>
+        <div className="mt-4 flex flex-col gap-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+            <span className="shrink-0 text-[10px] uppercase tracking-wider text-text-muted sm:w-24">
+              Time window
+            </span>
             <div className="flex flex-wrap gap-2">
+              {(['7d', '30d', 'all'] as const).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setPreset(k)}
+                  className={`rounded-md px-2.5 py-1 text-xs font-medium border transition-colors ${
+                    preset === k
+                      ? 'border-fin-blue/40 bg-fin-blue/15 text-fin-blue'
+                      : 'border-border-subtle text-text-muted hover:text-text-primary hover:bg-white/[0.04]'
+                  }`}
+                >
+                  {k === '7d' ? '7 days' : k === '30d' ? '30 days' : 'All'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-4">
+            <span className="shrink-0 pt-0.5 text-[10px] uppercase tracking-wider text-text-muted sm:w-24">
+              Events
+            </span>
+            <div className="flex min-w-0 flex-1 flex-wrap gap-2">
               {EVENT_TYPES.map((t) => (
                 <label
                   key={t}
@@ -451,7 +432,20 @@ export default function ActivityTab(props: {
               ))}
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 lg:col-span-3 lg:justify-end">
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-4">
+            <span className="shrink-0 text-[10px] uppercase tracking-wider text-text-muted sm:w-24">Symbols</span>
+            <div className="min-w-0 flex-1">
+              <ActivityTickerMultiSelect
+                universe={tickerUniverse}
+                selected={selectedTickers}
+                onAdd={addTicker}
+                onRemove={removeTicker}
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap justify-end gap-2 border-t border-border-subtle pt-3">
             <button
               type="button"
               onClick={resetFilters}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   Brain,
@@ -82,7 +82,6 @@ function ResearchPageInner({
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const autoDigestOpenedRef = useRef(false);
 
   const tab: ResearchTab = urlTab === 'knowledge' ? 'knowledge' : 'daily';
 
@@ -244,19 +243,6 @@ function ResearchPageInner({
         .finally(() => setActiveLoading(false));
     }
   }, [urlDocKey, researchDocs, effDate, tab]);
-
-  /** Landing on Daily Digest: open the digest for the latest run automatically (Koyfin-style). */
-  useEffect(() => {
-    if (tab !== 'daily' || urlDocKey || !digestDocForDate || !effDate || !latestDate) return;
-    if (effDate !== latestDate) return;
-    if (autoDigestOpenedRef.current) return;
-    autoDigestOpenedRef.current = true;
-    replaceQuery((p) => {
-      p.set('tab', 'daily');
-      p.set('date', effDate);
-      p.set('docKey', digestDocForDate.path);
-    });
-  }, [tab, urlDocKey, digestDocForDate, effDate, latestDate, replaceQuery]);
 
   if (loading) return <AtlasLoader />;
   if (error || !data) return <div className="flex items-center justify-center h-screen text-fin-red">{error}</div>;

@@ -110,14 +110,22 @@ python3 scripts/backfill_position_events.py --through YYYY-MM-DD
 ```
 Use `--from YYYY-MM-DD` when there is no prior ledger row or you need an explicit range. `--dry-run` prints the planned commands.
 
-**Reason text** on existing `position_events` rows (from `rebalance_decision` → `rebalance_table[].rationale`):
+**Reconcile Activity with `positions`:** if the book snapshot has tickers with no ledger row (for example they were missing from `rebalance_table`), insert missing **HOLD** rows without overwriting existing events:
+
+```bash
+python3 scripts/reconcile_position_events_from_positions.py --from YYYY-MM-DD --through YYYY-MM-DD
+```
+
+**Reason text** on existing `position_events` rows: the script prefers per-ticker **`asset-rec/{TICKER}.json`** (verdict rationale / bull case) and **`deliberation-transcript/{DATE}/{TICKER}.json`** (`final_decisions`), then falls back to **`rebalance-decision.json`** (`rebalance_table`).
 
 ```bash
 python3 scripts/backfill_position_event_reasons.py --dry-run
-python3 scripts/backfill_position_event_reasons.py
+python3 scripts/backfill_position_event_reasons.py                      # fill null/empty only
+python3 scripts/backfill_position_event_reasons.py --repair-placeholders
+python3 scripts/backfill_position_event_reasons.py --enrich-existing   # replace short generic rebalance-only lines
 ```
 
-Use `--force` only if you intend to overwrite non-empty `reason` values.
+Use `--force` only if you intend to overwrite non-empty `reason` values for every row. Use **`--no-enrich`** to skip asset-rec / deliberation and use the rebalance JSON only.
 
 ## Compiled daily view (no extra permanent storage)
 

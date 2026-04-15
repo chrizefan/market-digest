@@ -16,10 +16,11 @@ Operator truth for **when to run what** remains [`RUNBOOK.md`](../../RUNBOOK.md)
 | [`scripts/fold_document_deltas.py`](../../scripts/fold_document_deltas.py) | Fold `document_delta` rows for a date → materialized research JSON + optional `research-changelog/{{DATE}}.json` |
 | [`scripts/publish_document.py`](../../scripts/publish_document.py) | Upsert one `documents` row from JSON file path or **`--payload -`** (stdin) |
 | [`scripts/update_tearsheet.py`](../../scripts/update_tearsheet.py) | **Recovery / migration:** rescan `data/agent-cache/daily/` (markdown + JSON when present) → refresh Supabase documents / metrics / optional dashboard JSON |
-| [`scripts/execute_at_open.py`](../../scripts/execute_at_open.py) | `position_events` (OPEN/EXIT/TRIM/ADD/**HOLD**) from rebalance + `price_history.open` |
+| [`scripts/execute_at_open.py`](../../scripts/execute_at_open.py) | `position_events` (OPEN/EXIT/TRIM/ADD/**HOLD**) from `rebalance_table` + **`positions`** (extra tickers on book get HOLD so Activity matches the book) + `price_history.open` |
+| [`scripts/reconcile_position_events_from_positions.py`](../../scripts/reconcile_position_events_from_positions.py) | **Repair:** for each trading day in range, upserts **HOLD** only where `positions` has positive weight but no `position_events` row yet (does not overwrite existing events) |
 | [`scripts/backfill_position_events.py`](../../scripts/backfill_position_events.py) | **Gap-fill:** for each trading day from (day after latest `position_events.date`) through `--through`, runs `execute_at_open` then `prior-trading-day-rebalance` if same-day doc missing; optional `backfill_execution_prices` per day |
 | [`scripts/backfill_execution_prices.py`](../../scripts/backfill_execution_prices.py) | Fill null execution prices after opens exist |
-| [`scripts/backfill_position_event_reasons.py`](../../scripts/backfill_position_event_reasons.py) | Fill missing `position_events.reason` from `rebalance_decision.json` (nearby dates if MD-only day); **`--repair-placeholders`** replaces HOLD/ADD/… stubs; `--force` overwrites all |
+| [`scripts/backfill_position_event_reasons.py`](../../scripts/backfill_position_event_reasons.py) | Fill `position_events.reason`: prefers **`asset-rec/{TICKER}.json`** and **`deliberation-transcript/{DATE}/{TICKER}.json`**, then **`rebalance-decision.json`**. Flags: **`--repair-placeholders`**, **`--enrich-existing`**, **`--no-enrich`**, **`--force`** |
 
 ## Market data and metrics
 

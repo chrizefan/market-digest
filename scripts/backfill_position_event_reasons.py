@@ -443,7 +443,7 @@ def main() -> int:
             if args.dry_run:
                 would_apply += 1
             else:
-                sb.table("position_events").update({"reason": rationale}).eq("id", rid).execute()
+                sb.table("position_events").update({"reason": computed}).eq("id", rid).execute()
                 applied += 1
 
             if args.limit and (would_apply if args.dry_run else applied) >= args.limit:
