@@ -37,7 +37,7 @@ Caveman mode is **active by default** throughout this pipeline for all process w
 **Switch to normal mode** (`normal mode`) immediately before authoring content that publishes to Supabase:
 - Delta ops narrative fields and segment narrative blocks
 - Materialized digest content and digest snapshot fields
-- Portfolio recommendation rationale and rebalance decision notes
+- Rebalance decision notes
 - Deliberation transcript content (Phase 7C, if triggered)
 - Evolution post-mortem observations (Phase 9)
 
@@ -366,7 +366,6 @@ Follow `skills/portfolio-manager/SKILL.md` Phases B and C:
 - **Phase C (Comparison)**: diff vs `config/portfolio.json` current positions; apply ≥5% threshold.
 
 Output artifacts (JSON-first):
-- `portfolio_recommendation` (schema: `templates/schemas/portfolio-recommendation.schema.json`)
 - `rebalance_decision` (schema: `templates/schemas/rebalance-decision.schema.json`)
 
 ---

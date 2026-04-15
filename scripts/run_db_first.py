@@ -154,7 +154,6 @@ def _print_agent_prompt(
     print("Additional portfolio-layer artifacts (JSON):")
     print("- asset recommendations: templates/schemas/asset-recommendation.schema.json")
     print("- deliberation: templates/schemas/deliberation-transcript.schema.json")
-    print("- portfolio recommendation: templates/schemas/portfolio-recommendation.schema.json")
     print("- rebalance decision: templates/schemas/rebalance-decision.schema.json")
     print("Publish + validate via this CLI after artifacts are produced.")
     print("")

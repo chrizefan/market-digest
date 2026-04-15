@@ -83,8 +83,8 @@ Review the screener-selected candidates from the opportunity screen artifact. If
 recommends >0% weight AND the deliberation resolved them favorably → include in the portfolio.
 If adding them breaches a theme cap, trim the lowest-conviction existing position first.
 
-### Step B4: Build Clean-Slate Portfolio Table
-Produce the full clean-slate portfolio as **JSON** (schema: `templates/schemas/portfolio-recommendation.schema.json`).
+### Step B4: Clean-slate table (working notes only)
+Build the full clean-slate target weights as a **working table** (inline JSON or spreadsheet-style) for use in Phase C only. **Do not publish** a separate `portfolio_recommendation` document to Supabase. The only portfolio-layer JSON artifact from this skill is **`rebalance_decision`** (Phase C).
 
 ---
 

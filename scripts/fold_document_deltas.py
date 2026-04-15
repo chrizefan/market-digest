@@ -176,7 +176,6 @@ def _human_doc_type_label(payload: Dict[str, Any]) -> str:
         "sector_report": "Sector Report",
         "deep_dive": "Deep Dive",
         "asset_recommendation": "Asset Recommendation",
-        "portfolio_recommendation": "Portfolio Recommendation",
         "deliberation_transcript": "Deliberation Transcript",
         "rebalance_decision": "Rebalance Decision",
         "evolution_sources": "Evolution Sources",

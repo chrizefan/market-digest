@@ -21,7 +21,7 @@ Step 2: Execute the skill pipeline
   - Do not write data/agent-cache/daily/*.md or rely on retired per-phase filesystem checkpoint scripts.
 
 Step 3: Portfolio layer (JSON documents in Supabase)
-  - Opportunity screener, deliberation, portfolio recommendation, rebalance_decision:
+  - Opportunity screener, deliberation, rebalance_decision:
     each as validated JSON + publish_document with stable document_key.
   - `rebalance_decision` must include `body.proposed_portfolio` (target book) so close-out can upsert `positions` in Supabase.
   - Update `config/portfolio.json` when the human approves proposed weights (repo config, not DB).

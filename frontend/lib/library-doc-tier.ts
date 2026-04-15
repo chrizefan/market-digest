@@ -12,9 +12,13 @@ const PORTFOLIO_KEYS = new Set(
     'deliberation.json',
     'deliberation-transcript.json',
     'opportunity-screener.json',
-    'portfolio-recommendation.json',
   ].map((k) => k.toLowerCase())
 );
+
+/** Legacy artifact; excluded from PM artifact lists. */
+export function isPortfolioRecommendationPath(path: string): boolean {
+  return (path || '').toLowerCase().includes('portfolio-recommendation');
+}
 
 function pathKey(path: string): string {
   return (path || '').toLowerCase().split('/').pop() || '';

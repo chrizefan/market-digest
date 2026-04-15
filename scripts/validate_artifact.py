@@ -44,7 +44,6 @@ def _schema_path_for(doc_type: str) -> Path:
         "deep_dive": "deep-dive.schema.json",
         "sector_report": "sector-report.schema.json",
         "asset_recommendation": "asset-recommendation.schema.json",
-        "portfolio_recommendation": "portfolio-recommendation.schema.json",
         "deliberation_transcript": "deliberation-transcript.schema.json",
         "delta_digest": "delta-digest.schema.json",
         "evolution_quality_log": "evolution-quality-log.schema.json",

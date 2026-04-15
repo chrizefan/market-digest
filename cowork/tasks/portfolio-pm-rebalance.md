@@ -27,7 +27,7 @@ Uses **`config/preferences.md`**, **`config/investment-profile.md`**, and (only 
 | **`deliberation_transcript`** (per ticker) | **Always fresh** for each conference: `deliberation-transcript/{{DATE}}/{{TICKER}}.json` (new row each run). |
 | **`deliberation_session_index`** | **Fresh** each session: `deliberation-transcript-index/{{DATE}}.json` — lists per-ticker keys + `converged` flags. |
 | **`pm_allocation_memo`** | **Always fresh:** `pm-allocation-memo/{{DATE}}.json`. |
-| **`portfolio_recommendation`**, **`rebalance_decision`** | As today (typically fresh per publish). |
+| **`rebalance_decision`** | Fresh per publish (canonical `rebalance-decision.json`). |
 
 ## Ordered phases (run in one session)
 
@@ -74,7 +74,7 @@ Follow [`skills/pm-allocation-memo/SKILL.md`](../../skills/pm-allocation-memo/SK
 
 ### Phase 7 — Portfolio construction and rebalance
 
-Follow [`skills/portfolio-manager/SKILL.md`](../../skills/portfolio-manager/SKILL.md): aggregate deliberation outcomes + PM memo → Phase B clean-slate → Phase C vs **`config/portfolio.json`** (respect quantized weights, max change / thesis override rules). Publish **`portfolio_recommendation`** and **`rebalance_decision`**; update `proposed_positions` as today.
+Follow [`skills/portfolio-manager/SKILL.md`](../../skills/portfolio-manager/SKILL.md): aggregate deliberation outcomes + PM memo → Phase B clean-slate (working notes only) → Phase C vs **`config/portfolio.json`** (respect quantized weights, max change / thesis override rules). Publish **`rebalance_decision`** only; update `proposed_positions` as today.
 
 **`rebalance_decision.body.rebalance_table[].action`** must use the JSON schema enum only — **`HOLD`**, **`NEW`**, **`EXIT`**, **`ADD`**, **`TRIM`** — not a legacy “REBALANCE” label. [`execute_at_open.py`](../../scripts/execute_at_open.py) records **`position_events.event`** as **`OPEN`** (for `NEW`), **`EXIT`**, **`TRIM`**, **`ADD`**, or **`HOLD`**.
 

@@ -19,7 +19,7 @@ Operator truth for **when to run what** remains [`RUNBOOK.md`](../../RUNBOOK.md)
 | [`scripts/execute_at_open.py`](../../scripts/execute_at_open.py) | `position_events` (OPEN/EXIT/TRIM/ADD/**HOLD**) from rebalance + `price_history.open` |
 | [`scripts/backfill_position_events.py`](../../scripts/backfill_position_events.py) | **Gap-fill:** for each trading day from (day after latest `position_events.date`) through `--through`, runs `execute_at_open` then `prior-trading-day-rebalance` if same-day doc missing; optional `backfill_execution_prices` per day |
 | [`scripts/backfill_execution_prices.py`](../../scripts/backfill_execution_prices.py) | Fill null execution prices after opens exist |
-| [`scripts/backfill_position_event_reasons.py`](../../scripts/backfill_position_event_reasons.py) | Fill missing `position_events.reason` from `rebalance_decision` (`rebalance_table[].rationale`); optional `--force` to overwrite |
+| [`scripts/backfill_position_event_reasons.py`](../../scripts/backfill_position_event_reasons.py) | Fill missing `position_events.reason` from `rebalance_decision.json` (nearby dates if MD-only day); **`--repair-placeholders`** replaces HOLD/ADD/… stubs; `--force` overwrites all |
 
 ## Market data and metrics
 

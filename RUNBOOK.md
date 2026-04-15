@@ -47,7 +47,7 @@ The weekday GitHub job runs [`refresh_performance_metrics.py --fill-calendar-thr
 | `deliberation_transcript` | `deliberation-transcript/{{DATE}}/{{TICKER}}.json` | **Always fresh** per conference session |
 | `deliberation_session_index` | `deliberation-transcript-index/{{DATE}}.json` | **Always fresh** per session |
 | `pm_allocation_memo` | `pm-allocation-memo/{{DATE}}.json` | **Always fresh** after deliberation |
-| `portfolio_recommendation`, `rebalance_decision` | canonical keys per publish scripts | Fresh per publish (existing practice) |
+| `rebalance_decision` | canonical key per publish scripts | Fresh per publish |
 
 Apply migration [`020_track_b_thesis_doc_types.sql`](supabase/migrations/020_track_b_thesis_doc_types.sql) so `documents.doc_type` accepts the new labels. Use `--doc-type-label` on `publish_document.py` with the **Title Case** label from that migration when inserting.
 
@@ -187,7 +187,6 @@ Common flags:
 ### Portfolio layer (stored in Supabase documents.payload)
 - `asset_recommendation` (`templates/schemas/asset-recommendation.schema.json`)
 - `deliberation_transcript` (`templates/schemas/deliberation-transcript.schema.json`)
-- `portfolio_recommendation` (`templates/schemas/portfolio-recommendation.schema.json`)
 - `rebalance_decision` (`templates/schemas/rebalance-decision.schema.json`)
 
 ### Weekly/monthly rollups (published to `documents`)

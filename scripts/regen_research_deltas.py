@@ -1992,7 +1992,7 @@ def gen_opportunity_screen(date: str, p: dict, ctx: dict) -> str:
 
 ---
 
-## Portfolio Recommendation Summary
+## Positioning summary
 {'DEFENSIVE — hold BIL/SHY/IAU; minimal equity exposure; await binary resolution' if date <= '2026-04-07' else 'RISK-ON — add SPY; hold IAU (dual-bid); add EFA (tariff pause); reduce energy (XLE)'}
 """
 

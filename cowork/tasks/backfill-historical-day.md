@@ -80,7 +80,6 @@ Publish each artifact with its canonical `document_key`:
 | `deliberation_transcript` (per ticker) | `deliberation-transcript/RUN_DATE/{TICKER}.json` |
 | `deliberation_session_index` | `deliberation-transcript-index/RUN_DATE.json` |
 | `pm_allocation_memo` | `pm-allocation-memo/RUN_DATE.json` |
-| `portfolio_recommendation` | `portfolio-recommendation/RUN_DATE.json` |
 | `rebalance_decision` | `rebalance-decision.json` |
 
 ### 4. Close-out

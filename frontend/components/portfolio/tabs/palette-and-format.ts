@@ -46,7 +46,6 @@ export const PM_DOC_ORDER = [
   'deliberation.json',
   'deliberation-transcript.json',
   'rebalance-decision.json',
-  'portfolio-recommendation.json',
   'opportunity-screener.json',
 ] as const;
 

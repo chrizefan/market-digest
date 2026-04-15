@@ -7,7 +7,6 @@ description: Portfolio construction and rebalance decision skill package
 
 - **Entry file**: `skills/portfolio-manager/SKILL.md`
 - **Canonical output schemas**:
-  - `templates/schemas/portfolio-recommendation.schema.json`
   - `templates/schemas/rebalance-decision.schema.json`
   - `templates/schemas/deliberation-transcript.schema.json`
   - `templates/schemas/asset-recommendation.schema.json`

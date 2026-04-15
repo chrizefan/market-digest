@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDashboard } from '@/lib/dashboard-context';
 import { SubpageStickyTabBar, SUBPAGE_MAX, subpageTabButtonClass } from '@/components/subpage-tab-bar';
-import { getDocLibraryTier } from '@/lib/library-doc-tier';
+import { getDocLibraryTier, isPortfolioRecommendationPath } from '@/lib/library-doc-tier';
 import { getLibraryDocumentById } from '@/lib/queries';
 import type { Doc } from '@/lib/types';
 import { Layers, Activity, TrendingUp, Route, Brain } from 'lucide-react';
@@ -208,7 +208,12 @@ export default function PortfolioShellInner() {
   const pmDocsForHistory = useMemo(() => {
     if (!effHistoryDate || !docsForPm) return [];
     return sortPmDocs(
-      docsForPm.filter((d) => d.date === effHistoryDate && getDocLibraryTier(d) === 'portfolio')
+      docsForPm.filter(
+        (d) =>
+          d.date === effHistoryDate &&
+          getDocLibraryTier(d) === 'portfolio' &&
+          !isPortfolioRecommendationPath(d.path)
+      )
     );
   }, [docsForPm, effHistoryDate]);
 

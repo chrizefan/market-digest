@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, ArrowUpDown, GripVertical } from 'lucide-react';
 import { Badge } from '@/components/ui';
+import { ActivityTickerMultiSelect } from '@/components/portfolio/activity-ticker-multi-select';
 import type { DashboardPositionEvent, Thesis } from '@/lib/types';
 
 const EVENT_TYPES = ['OPEN', 'EXIT', 'TRIM', 'ADD', 'HOLD'] as const;
@@ -154,8 +155,7 @@ export default function ActivityTab(props: {
   const [preset, setPreset] = useState<RangePreset>('all');
   const [includeHolds, setIncludeHolds] = useState(true);
 
-  const [tickerFilter, setTickerFilter] = useState('');
-  const [reasonFilter, setReasonFilter] = useState('');
+  const [selectedTickers, setSelectedTickers] = useState<string[]>([]);
   const [eventMask, setEventMask] = useState<Record<LedgerEventType, boolean>>(() => ({
     OPEN: true,
     EXIT: true,
@@ -193,16 +193,28 @@ export default function ActivityTab(props: {
     return visibleEvents.filter((ev) => ev.date >= cutoff);
   }, [visibleEvents, preset, rangeAnchorDate]);
 
+  const tickerUniverse = useMemo(() => {
+    const set = new Set<string>();
+    for (const ev of activityEvents) set.add(ev.ticker.toUpperCase());
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [activityEvents]);
+
   const fieldFiltered = useMemo(() => {
-    const tq = tickerFilter.trim().toLowerCase();
-    const rq = reasonFilter.trim().toLowerCase();
     return rangeFiltered.filter((ev) => {
       if (eventFilterActive && !eventMask[ev.event as LedgerEventType]) return false;
-      if (tq && !ev.ticker.toLowerCase().includes(tq)) return false;
-      if (rq && !(ev.reason ?? '').toLowerCase().includes(rq)) return false;
+      if (selectedTickers.length > 0 && !selectedTickers.includes(ev.ticker.toUpperCase())) return false;
       return true;
     });
-  }, [rangeFiltered, tickerFilter, reasonFilter, eventMask, eventFilterActive]);
+  }, [rangeFiltered, selectedTickers, eventMask, eventFilterActive]);
+
+  const addTicker = useCallback((t: string) => {
+    const u = t.toUpperCase();
+    setSelectedTickers((prev) => (prev.includes(u) ? prev : [...prev, u].sort((a, b) => a.localeCompare(b))));
+  }, []);
+
+  const removeTicker = useCallback((t: string) => {
+    setSelectedTickers((prev) => prev.filter((x) => x !== t));
+  }, []);
 
   const sortedEvents = useMemo(
     () => sortEvents(fieldFiltered, sort.key, sort.dir),
@@ -255,8 +267,7 @@ export default function ActivityTab(props: {
   }, []);
 
   const resetFilters = useCallback(() => {
-    setTickerFilter('');
-    setReasonFilter('');
+    setSelectedTickers([]);
     setEventMask({ OPEN: true, EXIT: true, TRIM: true, ADD: true, HOLD: true });
   }, []);
 
@@ -412,26 +423,15 @@ export default function ActivityTab(props: {
         </div>
 
         <div className="mt-4 grid gap-3 border-t border-border-subtle pt-4 sm:grid-cols-2 lg:grid-cols-12 lg:items-end">
-          <label className="flex flex-col gap-1 lg:col-span-2">
-            <span className="text-[10px] uppercase tracking-wider text-text-muted">Ticker contains</span>
-            <input
-              type="search"
-              value={tickerFilter}
-              onChange={(e) => setTickerFilter(e.target.value)}
-              placeholder="e.g. SPY"
-              className="rounded-md border border-border-subtle bg-bg-primary px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:border-fin-blue/50 focus:outline-none focus:ring-1 focus:ring-fin-blue/30"
+          <div className="flex flex-col gap-1 lg:col-span-4 min-w-0">
+            <span className="text-[10px] uppercase tracking-wider text-text-muted">Tickers</span>
+            <ActivityTickerMultiSelect
+              universe={tickerUniverse}
+              selected={selectedTickers}
+              onAdd={addTicker}
+              onRemove={removeTicker}
             />
-          </label>
-          <label className="flex flex-col gap-1 lg:col-span-3">
-            <span className="text-[10px] uppercase tracking-wider text-text-muted">Reason contains</span>
-            <input
-              type="search"
-              value={reasonFilter}
-              onChange={(e) => setReasonFilter(e.target.value)}
-              placeholder="Filter rationale text"
-              className="rounded-md border border-border-subtle bg-bg-primary px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:border-fin-blue/50 focus:outline-none focus:ring-1 focus:ring-fin-blue/30"
-            />
-          </label>
+          </div>
           <div className="flex flex-col gap-1 lg:col-span-5">
             <span className="text-[10px] uppercase tracking-wider text-text-muted">Event type</span>
             <div className="flex flex-wrap gap-2">
@@ -451,7 +451,7 @@ export default function ActivityTab(props: {
               ))}
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 lg:col-span-2 lg:justify-end">
+          <div className="flex flex-wrap gap-2 lg:col-span-3 lg:justify-end">
             <button
               type="button"
               onClick={resetFilters}

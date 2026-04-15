@@ -55,7 +55,6 @@ DOC_TYPE_TO_SCHEMA = {
     "deliberation_transcript": "deliberation-transcript.schema.json",
     "deliberation_session_index": "deliberation-session-index.schema.json",
     "asset_recommendation": "asset-recommendation.schema.json",
-    "portfolio_recommendation": "portfolio-recommendation.schema.json",
     "rebalance_decision": "rebalance-decision.schema.json",
     "research_delta": "research-delta.schema.json",
 }

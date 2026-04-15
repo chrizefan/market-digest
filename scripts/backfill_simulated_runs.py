@@ -186,7 +186,6 @@ Track B (portfolio):
   deliberation-transcript/{DATE}/{TICKER}.json
   deliberation-transcript-index/{DATE}.json
   pm-allocation-memo/{DATE}.json
-  portfolio-recommendation/{DATE}.json  [via run_db_first / portfolio-manager]
   rebalance-decision.json               [canonical key, overwritten]
 
 === EXECUTION ORDER ===

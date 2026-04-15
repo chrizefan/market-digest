@@ -708,7 +708,6 @@ FILE_CLASSIFICATION = {
     "international.md":         {"phase": 4, "category": "asset-class",   "segment": "international"},
     "equities.md":              {"phase": 5, "category": "equity",        "segment": "us-equities"},
     "us-equities.md":           {"phase": 5, "category": "equity",        "segment": "us-equities"},
-    "portfolio-recommended.md": {"phase": 7, "category": "portfolio",     "segment": "recommendation"},
     "rebalance-decision.md":    {"phase": 7, "category": "portfolio",     "segment": "rebalance"},
 }
 

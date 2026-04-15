@@ -106,7 +106,6 @@ export type LibraryDocumentView =
   | 'delta_request'
   | 'deliberation'
   | 'evolution_sources'
-  | 'portfolio_recommendation'
   | 'opportunity_screener'
   | 'diffable';
 
@@ -129,7 +128,6 @@ function resolveLibraryDocumentView(document_key: string, payload: unknown): Lib
 
   if (key === 'rebalance-decision.json' || dt === 'rebalance_decision') return 'rebalance';
   if (key === 'delta-request.json' || dt === 'delta_request') return 'delta_request';
-  if (key === 'portfolio-recommendation.json' || dt === 'portfolio_recommendation') return 'portfolio_recommendation';
   if (key === 'opportunity-screener.json' || dt === 'opportunity_screen') return 'opportunity_screener';
   const isDeliberationTranscriptPath =
     dt === 'deliberation_transcript' ||

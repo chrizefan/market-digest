@@ -43,7 +43,7 @@ Caveman mode is **active by default** throughout this pipeline for all process w
 **Switch to normal mode** (`normal mode`) immediately before authoring content that publishes to Supabase:
 - Segment narrative blocks (macro, bonds, equity, sector analyses, etc.)
 - Digest snapshot JSON narrative/rationale fields
-- Portfolio recommendation and rebalance decision rationale
+- Rebalance decision rationale
 - Deliberation transcript content
 - Evolution post-mortem observations and proposals
 
@@ -427,12 +427,12 @@ Follow `skills/portfolio-manager/SKILL.md` **Phases A (ingest), B, and C** compl
 
 **Phase A:** merge `final_decisions` from per-ticker deliberation transcripts (+ optional `pm_allocation_memo`).
 
-**Phase B (Clean-Slate — blinded to current weights):** build ideal target portfolio → `portfolio_recommendation` JSON.
+**Phase B (Clean-Slate — blinded to current weights):** compute ideal target weights as **working notes** (do not publish a `portfolio_recommendation` document).
 
 **Phase C (Comparison — load current weights):** diff vs `config/portfolio.json`; publish `rebalance_decision`; update `proposed_positions[]`.
 
 ### Checkpoint: Phase 7D
-Verifies `portfolio_recommendation` + `rebalance_decision` in **`documents`** and `portfolio.json` proposed_positions. **Do not proceed to Phase 8 until validated.**
+Verifies `rebalance_decision` in **`documents`** and `portfolio.json` proposed_positions. **Do not proceed to Phase 8 until validated.**
 
 ---
 
@@ -542,7 +542,7 @@ Confirm all of the following before ending the session:
 - [ ] Phase 7: Digest snapshot published (`materialize_snapshot.py`)
 - [ ] Phase 7B: Opportunity screen JSON published (`documents`); analyst roster determined
 - [ ] Phase 7C: Deliberation + analyst outputs published as JSON documents
-- [ ] Phase 7D: Portfolio recommendation + `rebalance_decision` published; `portfolio.json` updated when approved
+- [ ] Phase 7D: `rebalance_decision` published; `portfolio.json` updated when approved
 - [ ] Phase 8: `run_db_first.py` completed; `validate_db_first.py` clean
 - [ ] Phase 9: Post-mortem completed; `data/agent-cache/evolution/{{DATE}}/*.json` updated; optional `./scripts/git-commit.sh --evolution`
 
