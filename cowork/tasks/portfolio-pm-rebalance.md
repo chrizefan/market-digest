@@ -96,9 +96,10 @@ After publishing to Supabase, confirm rows and JSON shapes with [`scripts/valida
 
 ### Closeout
 
-1. `python3 scripts/run_db_first.py --validate-mode pm` (use `full` if you also need full digest checks).
-2. `python3 scripts/validate_pipeline_step.py --date YYYY-MM-DD --chain track_b` (or `--step track_b_7_rebalance` if earlier steps were already validated).
-3. If execution prices stayed null after open: `python3 scripts/backfill_execution_prices.py --date YYYY-MM-DD`.
+1. Confirm **`rebalance_decision`** payload includes **`body.proposed_portfolio.positions`** (and `cash_residual_pct` when needed). [`run_db_first.py`](../../scripts/run_db_first.py) runs [`sync_positions_from_rebalance.py`](../../scripts/sync_positions_from_rebalance.py) before metrics refresh when `--validate-mode` is `pm` or `full`, so the target book is written to **`positions`** for that date, then **`refresh_performance_metrics.py`** aligns NAV and performance columns with **`price_history`**.
+2. `python3 scripts/run_db_first.py --validate-mode pm` (use `full` if you also need full digest checks). Use `--skip-sync-positions` only if you intentionally manage `positions` rows another way for that date.
+3. `python3 scripts/validate_pipeline_step.py --date YYYY-MM-DD --chain track_b` (or `--step track_b_7_rebalance` if earlier steps were already validated).
+4. If execution prices stayed null after open: `python3 scripts/backfill_execution_prices.py --date YYYY-MM-DD`.
 
 **Execution prefs:** [`config/schedule.json`](../../config/schedule.json)  
 **Long combined digest + portfolio checklist:** [`scripts/cowork-daily-prompt.txt`](../../scripts/cowork-daily-prompt.txt)

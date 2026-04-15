@@ -183,6 +183,11 @@ def main() -> int:
         default="full",
         help="Passed to validate_db_first.py (default: full).",
     )
+    ap.add_argument(
+        "--skip-sync-positions",
+        action="store_true",
+        help="Skip sync_positions_from_rebalance.py (default: run for --validate-mode full|pm).",
+    )
     args = ap.parse_args()
 
     d = args.date
@@ -232,6 +237,15 @@ def main() -> int:
 
     for a in artifacts:
         rc = _run([sys.executable, "scripts/validate_artifact.py", str(a)], dry_run=args.dry_run)
+        if rc != 0:
+            return rc
+
+    # 1.5) Track B: upsert positions from rebalance_decision.proposed_portfolio (before metrics refresh)
+    if args.validate_mode in ("full", "pm") and not args.skip_sync_positions:
+        rc = _run(
+            [sys.executable, "scripts/sync_positions_from_rebalance.py", "--date", d],
+            dry_run=args.dry_run,
+        )
         if rc != 0:
             return rc
 

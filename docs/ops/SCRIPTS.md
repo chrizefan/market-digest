@@ -7,7 +7,7 @@ Operator truth for **when to run what** remains [`RUNBOOK.md`](../../RUNBOOK.md)
 | Script | Role |
 |--------|------|
 | [`scripts/verify-supabase-migrations.sh`](../../scripts/verify-supabase-migrations.sh) | CI/local: `supabase/config.toml` exists, `supabase/migrations/*.sql` naming and numeric order |
-| [`scripts/run_db_first.py`](../../scripts/run_db_first.py) | After publish: validate optional `data/agent-cache/daily/<date>/**/*.json` → **`refresh_performance_metrics.py`** → `execute_at_open.py` (unless `--skip-execute`) → **`validate_db_first.py`** |
+| [`scripts/run_db_first.py`](../../scripts/run_db_first.py) | After publish: validate optional `data/agent-cache/daily/<date>/**/*.json` → **`sync_positions_from_rebalance.py`** (if `--validate-mode` full|pm) → **`refresh_performance_metrics.py`** → `execute_at_open.py` (unless `--skip-execute`) → **`validate_db_first.py`** |
 | [`scripts/validate_db_first.py`](../../scripts/validate_db_first.py) | Supabase row checks (`--mode full\|research\|pm`) |
 | [`scripts/validate_pipeline_step.py`](../../scripts/validate_pipeline_step.py) | After each pipeline step: `--step` or `--chain research\|track_b\|full` + `--date`; validates row presence + JSON Schema for thesis/deliberation/rebalance artifacts |
 | [`scripts/verify_supabase_canonical.py`](../../scripts/verify_supabase_canonical.py) | Read-only: no `documents.document_key` containing legacy `outputs/`; optional `--date` requires `daily_snapshots` row |
@@ -25,6 +25,7 @@ Operator truth for **when to run what** remains [`RUNBOOK.md`](../../RUNBOOK.md)
 |--------|------|
 | [`scripts/preload-history.py`](../../scripts/preload-history.py) | OHLCV → local cache and/or Supabase; **`--supabase --supabase-sync`** for daily gap-fill + new-ticker full history (`--new-ticker-period`, default `max`); legacy **`--period` / `--refresh`** for ad-hoc local runs |
 | [`scripts/compute-technicals.py`](../../scripts/compute-technicals.py) | TA rows in `price_technicals` |
+| [`scripts/sync_positions_from_rebalance.py`](../../scripts/sync_positions_from_rebalance.py) | After **`rebalance_decision`** publish: upsert **`positions`** from `body.proposed_portfolio` for a date (invoked by `run_db_first.py` unless `--skip-sync-positions`) |
 | [`scripts/refresh_performance_metrics.py`](../../scripts/refresh_performance_metrics.py) | Post-close: `positions` metrics, `nav_history`, `portfolio_metrics`; `--fill-calendar-through` carries snapshots forward per calendar day |
 | [`scripts/ingest_fred.py`](../../scripts/ingest_fred.py) | FRED → `macro_series_observations`; **`--supabase`** incremental by default, **`--backfill`** full history from YAML |
 | [`scripts/ingest_fx_frankfurter.py`](../../scripts/ingest_fx_frankfurter.py) | Frankfurter FX → same table; **`--supabase`**, **`--backfill`** year-chunk history |

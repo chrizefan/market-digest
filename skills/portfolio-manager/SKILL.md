@@ -177,6 +177,7 @@ Also update `"last_updated_date"` and `"last_updated_by": "agent"`.
 - [ ] `pm_allocation_memo` published when using thesis-first task ordering
 - [ ] Clean-slate portfolio constructed; constraint checks passed (`./scripts/validate-portfolio.sh --proposed`)
 - [ ] Rebalance comparison run; delta table produced (JSON output)
+- [ ] `rebalance_decision` includes **`body.proposed_portfolio.positions`** (and **`cash_residual_pct`** when cash is non-zero) so [`sync_positions_from_rebalance.py`](../../scripts/sync_positions_from_rebalance.py) can upsert **`positions`** on close-out
 - [ ] `config/portfolio.json` → `proposed_positions[]` updated
 
 ---

@@ -6,7 +6,7 @@ This is the **single authoritative** run instruction for digiquant-atlas.
 
 | Layer | When | What runs | Supabase impact |
 |--------|------|-----------|-----------------|
-| **GitHub — Daily Price Update** | Weekdays **00:00 UTC** (~**8:00 PM Eastern** during EDT, ~**7:00 PM Eastern** during EST; after NYSE close; GitHub cron is UTC-only) | [`preload-history.py`](scripts/preload-history.py) (stale refresh) → [`compute-technicals.py`](scripts/compute-technicals.py) → macro ingest ([`ingest_fred.py`](scripts/ingest_fred.py), [`ingest_fx_frankfurter.py`](scripts/ingest_fx_frankfurter.py), [`ingest_crypto_fng.py`](scripts/ingest_crypto_fng.py), [`ingest_treasury_curve.py`](scripts/ingest_treasury_curve.py)) | `price_history`, `price_technicals`, **`macro_series_observations`** (FRED, Frankfurter, Fear & Greed, Treasury: **`us_treasury`** XML when available + **`treasury_market`** Yahoo ^IRX/^FVX/^TNX/^TYX) — **no** digest, no agent research |
+| **GitHub — Daily Price Update** | Weekdays **00:00 UTC** (~**8:00 PM Eastern** during EDT, ~**7:00 PM Eastern** during EST; after NYSE close; GitHub cron is UTC-only) | [`preload-history.py`](scripts/preload-history.py) (stale refresh) → [`compute-technicals.py`](scripts/compute-technicals.py) → macro ingest ([`ingest_fred.py`](scripts/ingest_fred.py), [`ingest_fx_frankfurter.py`](scripts/ingest_fx_frankfurter.py), [`ingest_crypto_fng.py`](scripts/ingest_crypto_fng.py), [`ingest_treasury_curve.py`](scripts/ingest_treasury_curve.py)) → [`refresh_performance_metrics.py`](scripts/refresh_performance_metrics.py) `--fill-calendar-through` **UTC today** | `price_history`, `price_technicals`, **`macro_series_observations`**, plus **`positions`** performance columns, **`nav_history`**, **`portfolio_metrics`** (script rows), **`position_events`** cumulative-return fields — **no** digest, no agent research |
 | **Co-work / operator — research & portfolio** | Typically **pre-market** (e.g. 8:00 AM local) or per [`config/schedule.json`](config/schedule.json) | Agent validates + publishes JSON to Supabase (`materialize_snapshot.py`, `publish_document.py`, …) → operator runs [`run_db_first.py`](scripts/run_db_first.py) (optional disk checks → metrics → `execute_at_open.py` → [`validate_db_first.py`](scripts/validate_db_first.py)) | `daily_snapshots`, `documents`, `positions`, `theses`, `position_events`, etc. |
 
 ### Daily portfolio continuity (post-close)
@@ -142,9 +142,10 @@ Common flags:
 - `--delta` (force delta mode)
 - `--dry-run` (print what would happen; no writes)
 - `--skip-execute` (skip `execute_at_open.py` — use after **Track A** research-only runs)
+- `--skip-sync-positions` (skip [`sync_positions_from_rebalance.py`](scripts/sync_positions_from_rebalance.py); default is to run for `--validate-mode` `full` or `pm`)
 - `--validate-mode {full,research,pm}` (passed to [`validate_db_first.py`](scripts/validate_db_first.py); default `full`)
 
-**Default:** after optional JSON validation under `data/agent-cache/daily/<date>/`, the entrypoint runs [`refresh_performance_metrics.py --supabase --fill-calendar-through <date>`](scripts/refresh_performance_metrics.py). Run [`update_tearsheet.py`](scripts/update_tearsheet.py) separately when recovering from disk-backed markdown or partial publishes.
+**Default:** after optional JSON validation under `data/agent-cache/daily/<date>/`, the entrypoint runs [`sync_positions_from_rebalance.py`](scripts/sync_positions_from_rebalance.py) when mode is `full` or `pm`, then [`refresh_performance_metrics.py --supabase --fill-calendar-through <date>`](scripts/refresh_performance_metrics.py). Run [`update_tearsheet.py`](scripts/update_tearsheet.py) separately when recovering from disk-backed markdown or partial publishes.
 
 ## What gets produced (canonical artifacts)
 ### Daily baseline/delta (stored in Supabase)
@@ -175,9 +176,10 @@ Common flags:
 After artifacts are already in Supabase, `run_db_first.py`:
 1. Prints run-type guidance (baseline Sunday vs weekday delta).
 2. Optionally validates any JSON files present under `data/agent-cache/daily/<date>/` via `scripts/validate_artifact.py`.
-3. Runs `scripts/refresh_performance_metrics.py --supabase --fill-calendar-through <date>`.
-4. Runs `scripts/execute_at_open.py` unless `--skip-execute`.
-5. Runs `scripts/validate_db_first.py --date <date> --mode <full|research|pm>` and exits non-zero if checks fail (`run_db_first.py` exposes this as `--validate-mode`).
+3. If `--validate-mode` is `full` or `pm` (and not `--skip-sync-positions`): runs `scripts/sync_positions_from_rebalance.py --date <date>` so **`positions`** matches **`rebalance_decision.body.proposed_portfolio`** when that document exists (no-op otherwise).
+4. Runs `scripts/refresh_performance_metrics.py --supabase --fill-calendar-through <date>`.
+5. Runs `scripts/execute_at_open.py` unless `--skip-execute`.
+6. Runs `scripts/validate_db_first.py --date <date> --mode <full|research|pm>` and exits non-zero if checks fail (`run_db_first.py` exposes this as `--validate-mode`).
 
 **Publishing** (agent / operator, before this script): `materialize_snapshot.py`, `publish_document.py`, and related validators — see [`docs/ops/SCRIPTS.md`](docs/ops/SCRIPTS.md).
 

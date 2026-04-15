@@ -58,6 +58,12 @@ jobs:
           python3 scripts/ingest_crypto_fng.py --supabase
           python3 scripts/ingest_treasury_curve.py --supabase
 
+      # Aligns positions metrics, nav_history, portfolio_metrics with price_history closes
+      # (see scripts/refresh_performance_metrics.py).
+      - name: Refresh portfolio performance metrics
+        run: |
+          python3 scripts/refresh_performance_metrics.py --supabase --fill-calendar-through "$(date -u +%Y-%m-%d)"
+
       - name: Verify row counts
         run: |
           python3 - <<'EOF'

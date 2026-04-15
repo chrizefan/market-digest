@@ -11,6 +11,6 @@
    python3 scripts/run_db_first.py
    ```
 
-   Use `--dry-run`, `--skip-execute`, `--validate-mode`, `--date` as needed ([`RUNBOOK.md`](../../RUNBOOK.md)).
+   Use `--dry-run`, `--skip-execute`, `--skip-sync-positions`, `--validate-mode`, `--date` as needed ([`RUNBOOK.md`](../../RUNBOOK.md)). Track B: publish **`rebalance_decision`** with **`proposed_portfolio`** before close-out so `run_db_first` can sync **`positions`**, then refresh performance metrics.
 
 3. On failure: check credentials, re-run validation command printed by the CLI.
