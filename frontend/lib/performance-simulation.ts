@@ -91,34 +91,6 @@ function getClose(m: Map<string, number> | undefined, d: string, fallback: numbe
   return x != null && x > 0 ? x : fallback;
 }
 
-function forwardFillCloseMapsToDates(
-  dates: string[],
-  tickers: string[],
-  closeByTickerDate: Map<string, Map<string, number>>
-): Map<string, Map<string, number>> {
-  const out = new Map<string, Map<string, number>>();
-  for (const t of tickers) {
-    if (t === 'CASH') continue;
-    const src = closeByTickerDate.get(t);
-    if (!src || src.size === 0) continue;
-
-    // Seed with earliest known close (by date string sort, ISO YYYY-MM-DD).
-    const sortedDates = [...src.keys()].sort();
-    const seed = src.get(sortedDates[0]);
-    if (seed == null || !(seed > 0)) continue;
-
-    const filled = new Map<string, number>();
-    let last = seed;
-    for (const d of dates) {
-      const v = src.get(d);
-      if (v != null && v > 0) last = v;
-      filled.set(d, last);
-    }
-    out.set(t, filled);
-  }
-  return out;
-}
-
 /** w: fractions summing to 1. Returns portfolio value multiplier from d0→d1 close. */
 function grossReturnFactor(
   w: number[],
@@ -270,7 +242,6 @@ export function runPerformanceSimulation(input: PerformanceSimulationInput): Per
   if (tickers.length === 0) {
     return { valueIndex: dates.map((d) => ({ date: d, value: null })), totalCostDragPoints: 0 };
   }
-  const filledCloses = forwardFillCloseMapsToDates(dates, tickers, closeByTickerDate);
 
   const valueIndex: Array<{ date: string; value: number | null }> = [];
   let V = 100;
@@ -296,9 +267,9 @@ export function runPerformanceSimulation(input: PerformanceSimulationInput): Per
     const wTargetMap = ensureCashInTargets(tgtRaw);
     const wTargetVec = normalizeFrac(weightVector(tickers, wTargetMap));
 
-    const g = grossReturnFactor(w, tickers, d0, d1, filledCloses);
+    const g = grossReturnFactor(w, tickers, d0, d1, closeByTickerDate);
     V *= g;
-    const wDrift = driftWeights(w, tickers, d0, d1, filledCloses);
+    const wDrift = driftWeights(w, tickers, d0, d1, closeByTickerDate);
 
     const rebalance = shouldRebalance(
       p.strategy,

@@ -98,20 +98,4 @@ describe('runPerformanceSimulation', () => {
     expect(withCost.totalCostDragPoints).toBeGreaterThan(0);
     expect(withCost.valueIndex[2].value! < noCost.valueIndex[2].value!).toBe(true);
   });
-
-  it('does not explode when the first NAV date is missing a close', () => {
-    const r = runPerformanceSimulation({
-      dates,
-      targetsByDate: mapTargets(dates, targets),
-      closeByTickerDate: closeMap({
-        // Missing d0 close, present d1/d2.
-        A: { [d1]: 150, [d2]: 150 },
-        B: { [d1]: 100, [d2]: 100 },
-      }),
-      params: { strategy: 'daily_benchmark', cost: { fixedUsdPerTrade: 0, bpsOnNotional: 0 } },
-    });
-    // With forward-filled closes onto NAV dates, day 1 return should be ~1, not 150x.
-    expect(r.valueIndex[1].value).toBeCloseTo(100, 6);
-    expect(r.valueIndex[2].value).toBeCloseTo(100, 6);
-  });
 });
