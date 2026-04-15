@@ -16,6 +16,7 @@ import {
 import { SubpageStickyTabBar, SUBPAGE_MAX, subpageTabButtonClass } from '@/components/subpage-tab-bar';
 import DeltaDaySummary from '@/components/library/DeltaDaySummary';
 import DocumentExpandInline from '@/components/library/DocumentExpandInline';
+import AtlasLoader from '@/components/AtlasLoader';
 import { useDashboard } from '@/lib/dashboard-context';
 import { docMatchesLibraryScope } from '@/lib/library-doc-tier';
 import { getLibraryDocumentById, type LibraryDocumentResult } from '@/lib/queries';
@@ -257,8 +258,7 @@ function ResearchPageInner({
     });
   }, [tab, urlDocKey, digestDocForDate, effDate, latestDate, replaceQuery]);
 
-  if (loading)
-    return <div className="flex items-center justify-center h-screen text-text-secondary">Loading…</div>;
+  if (loading) return <AtlasLoader />;
   if (error || !data) return <div className="flex items-center justify-center h-screen text-fin-red">{error}</div>;
 
   return (

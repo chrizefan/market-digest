@@ -2,11 +2,10 @@
 
 import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import AtlasLoader from '@/components/AtlasLoader';
 
-function RedirectFallback({ message }: { message: string }) {
-  return (
-    <div className="flex min-h-[40vh] items-center justify-center text-text-muted text-sm">{message}</div>
-  );
+function RedirectFallback() {
+  return <AtlasLoader fullScreen={false} />;
 }
 
 /** Old `/library` URLs → Research daily tab (preserve date/docKey when present). */
@@ -29,7 +28,7 @@ function LibraryToResearchInner() {
 
 export function LibraryToResearchRedirectPage() {
   return (
-    <Suspense fallback={<RedirectFallback message="Loading…" />}>
+    <Suspense fallback={<RedirectFallback />}>
       <LibraryToResearchInner />
     </Suspense>
   );
@@ -53,7 +52,7 @@ function StrategyToAnalysisInner() {
 
 export function StrategyToAnalysisRedirectPage() {
   return (
-    <Suspense fallback={<RedirectFallback message="Loading…" />}>
+    <Suspense fallback={<RedirectFallback />}>
       <StrategyToAnalysisInner />
     </Suspense>
   );
@@ -67,5 +66,5 @@ export function PerformanceToPortfolioRedirectPage() {
     router.replace('/portfolio?tab=performance');
   }, [router]);
 
-  return <RedirectFallback message="Opening performance…" />;
+  return <RedirectFallback />;
 }

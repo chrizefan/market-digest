@@ -23,6 +23,7 @@ import AllocationsTab from './tabs/AllocationsTab';
 import PerformanceTab from './tabs/PerformanceTab';
 import AnalysisTab from './tabs/AnalysisTab';
 import ActivityTab from './tabs/ActivityTab';
+import AtlasLoader from '@/components/AtlasLoader';
 
 interface AllocationDatum {
   name: string;
@@ -480,10 +481,7 @@ export default function PortfolioShellInner() {
     { id: 'analysis', label: 'Intelligence', icon: Brain },
   ];
 
-  if (loading)
-    return (
-      <div className="flex items-center justify-center h-screen text-text-secondary">Loading…</div>
-    );
+  if (loading) return <AtlasLoader />;
   if (error || !data || !metrics)
     return (
       <div className="flex items-center justify-center h-screen text-fin-red">

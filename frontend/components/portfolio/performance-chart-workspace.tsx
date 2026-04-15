@@ -372,7 +372,7 @@ function ComparableDropdown({
         )}
       </div>
 
-      {loading && <span className="text-[11px] text-text-muted">Loading…</span>}
+      {loading && <span className="text-[11px] text-text-muted" aria-hidden="true">&nbsp;</span>}
       {error && !open && <span className="text-[11px] text-fin-red/90 max-w-[220px] truncate" title={error}>{error}</span>}
     </div>
   );

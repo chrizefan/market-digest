@@ -11,6 +11,7 @@ import { AdvancedStatsPanel } from '@/components/portfolio/advanced-stats-panel'
 import { PerformanceDateRange } from '@/components/portfolio/performance-date-range';
 import { ServerMetricsStrip } from '@/components/portfolio/server-metrics-strip';
 import { PerformanceChartWorkspace } from '@/components/portfolio/performance-chart-workspace';
+import AtlasLoader from '@/components/AtlasLoader';
 import { fetchComparablePriceHistory } from '@/lib/queries';
 import {
   filterByDateRange,
@@ -247,10 +248,7 @@ export default function PerformanceTab() {
     [defaultComparableSelection]
   );
 
-  if (loading)
-    return (
-      <div className="flex items-center justify-center min-h-[40vh] text-text-secondary">Loading…</div>
-    );
+  if (loading) return <AtlasLoader fullScreen={false} />;
   if (error || !data || !metrics)
     return (
       <div className="flex items-center justify-center min-h-[40vh] text-fin-red">

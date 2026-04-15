@@ -25,8 +25,8 @@ export const metadata = {
   title: 'Atlas',
   description: 'AI-orchestrated market intelligence dashboard',
   icons: {
-    icon: '/favicon.svg',
-    shortcut: '/favicon.svg',
+    icon: '/digiquant-atlas/favicon.svg',
+    shortcut: '/digiquant-atlas/favicon.svg',
   },
 };
 
