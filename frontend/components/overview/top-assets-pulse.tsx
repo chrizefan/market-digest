@@ -65,8 +65,25 @@ export default function TopAssetsPulse({ benchmarks }: { benchmarks: BenchmarkHi
   const scrollByTiles = useCallback((dir: -1 | 1) => {
     const el = scrollerRef.current;
     if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    if (maxScroll <= 0) return;
+
     const amt = Math.min(720, Math.max(280, Math.round(el.clientWidth * 0.85)));
-    el.scrollBy({ left: dir * amt, behavior: 'smooth' });
+    const eps = 3;
+
+    if (dir === 1) {
+      if (el.scrollLeft >= maxScroll - eps) {
+        el.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        el.scrollBy({ left: amt, behavior: 'smooth' });
+      }
+    } else {
+      if (el.scrollLeft <= eps) {
+        el.scrollTo({ left: maxScroll, behavior: 'smooth' });
+      } else {
+        el.scrollBy({ left: -amt, behavior: 'smooth' });
+      }
+    }
   }, []);
 
   if (items.length === 0) return null;
@@ -74,22 +91,22 @@ export default function TopAssetsPulse({ benchmarks }: { benchmarks: BenchmarkHi
   const canScroll = items.length > 3;
  
   return (
-    <div className="relative">
+    <div className="relative group">
       {canScroll && (
         <>
           <button
             type="button"
             onClick={() => scrollByTiles(-1)}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 hidden sm:grid place-items-center h-10 w-10 rounded-full border border-border-subtle bg-bg-glass/90 backdrop-blur hover:bg-white/[0.06] transition-colors"
-            aria-label="Scroll left"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 hidden sm:grid place-items-center h-10 w-10 rounded-full border border-border-subtle bg-bg-glass/90 backdrop-blur opacity-0 pointer-events-none transition-opacity duration-200 sm:group-hover:opacity-100 sm:group-hover:pointer-events-auto hover:bg-white/[0.06]"
+            aria-label="Scroll left (loops to end)"
           >
             <ChevronLeft size={18} className="text-text-secondary" />
           </button>
           <button
             type="button"
             onClick={() => scrollByTiles(1)}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 hidden sm:grid place-items-center h-10 w-10 rounded-full border border-border-subtle bg-bg-glass/90 backdrop-blur hover:bg-white/[0.06] transition-colors"
-            aria-label="Scroll right"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 hidden sm:grid place-items-center h-10 w-10 rounded-full border border-border-subtle bg-bg-glass/90 backdrop-blur opacity-0 pointer-events-none transition-opacity duration-200 sm:group-hover:opacity-100 sm:group-hover:pointer-events-auto hover:bg-white/[0.06]"
+            aria-label="Scroll right (loops to start)"
           >
             <ChevronRight size={18} className="text-text-secondary" />
           </button>
