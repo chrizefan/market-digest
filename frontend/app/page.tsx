@@ -27,6 +27,7 @@ import {
   YAxis,
 } from 'recharts';
 import MacroSparklineRow from '@/components/overview/macro-sparkline-row';
+import AtlasLoader from '@/components/AtlasLoader';
 
 // ─── Regime config ────────────────────────────────────────────────────────────
 
@@ -181,9 +182,7 @@ function StatCardEnhanced({
       className={`glass-card p-5 flex flex-col gap-3 hover:border-white/[0.12] transition-colors ${
         enterStaggerIndex != null ? 'animate-atlas-stat-enter' : ''
       }`}
-      style={
-        enterStaggerIndex != null ? { animationDelay: `${enterStaggerIndex * 85}ms` } : undefined
-      }
+      data-enter-delay-ms={enterStaggerIndex != null ? enterStaggerIndex * 85 : undefined}
     >
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
@@ -243,14 +242,7 @@ export default function OverviewPage() {
   }, [data]);
 
   if (loading)
-    return (
-      <div className="flex items-center justify-center h-screen text-text-secondary text-lg">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 rounded-full border-2 border-fin-blue/30 border-t-fin-blue animate-spin" />
-          <span className="text-sm">Loading dashboard…</span>
-        </div>
-      </div>
-    );
+    return <AtlasLoader label="Loading dashboard…" />;
   if (error || !data)
     return (
       <div className="flex items-center justify-center h-screen text-fin-red">
