@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Badge, pnlColor } from '@/components/ui';
-import type { Position, Thesis } from '@/lib/types';
+import type { Position, PositionHistoryRow, Thesis } from '@/lib/types';
 import PositionPriceChart from '@/components/portfolio/PositionPriceChart';
 import { formatAllocationCategory } from '@/components/portfolio/tabs/palette-and-format';
 
@@ -14,25 +14,61 @@ function thesisNames(ids: string[], thesisById: Map<string, Thesis>): string {
 
 export default function AllocationsPositionsTable(props: {
   positions: Position[];
+  positionHistory: PositionHistoryRow[];
   thesisById: Map<string, Thesis>;
   lastUpdated: string | null;
 }) {
-  const { positions, thesisById, lastUpdated } = props;
+  const { positions, positionHistory, thesisById, lastUpdated } = props;
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
 
   const sorted = useMemo(
     () => [...positions].sort((a, b) => (b.weight_actual ?? 0) - (a.weight_actual ?? 0)),
     [positions]
   );
 
+  const inactive = useMemo<Position[]>(() => {
+    if (!showInactive) return [];
+    const active = new Set(sorted.map((p) => p.ticker));
+    const lastByTicker = new Map<string, PositionHistoryRow>();
+    for (const r of positionHistory) {
+      const t = String(r.ticker || '').toUpperCase();
+      if (!t || active.has(t)) continue;
+      const prev = lastByTicker.get(t);
+      if (!prev || r.date > prev.date) lastByTicker.set(t, r);
+    }
+    return [...lastByTicker.values()]
+      .map((r) => {
+        const t = String(r.ticker).toUpperCase();
+        const tid = r.thesis_id ? String(r.thesis_id) : null;
+        const p: Position = {
+          ticker: t,
+          name: 'Former position',
+          type: 'LONG',
+          weight_actual: 0,
+          weight_target: null,
+          weight_delta: null,
+          current_price: null,
+          entry_price: null,
+          entry_date: null,
+          rationale: '',
+          thesis_ids: tid ? [tid] : [],
+          category: r.category ?? 'uncategorized',
+          pm_notes: '',
+          stats: {},
+        };
+        return p;
+      })
+      .sort((a, b) => a.ticker.localeCompare(b.ticker));
+  }, [positionHistory, showInactive, sorted]);
+
+  const allRows = useMemo(() => [...sorted, ...inactive], [sorted, inactive]);
+
   const maxWeight = sorted.length ? (sorted[0].weight_actual ?? 0) : 0;
 
-  const showTargetVsActual = useMemo(
-    () => sorted.some((p) => p.weight_target != null),
-    [sorted]
-  );
-
-  const colCount = showTargetVsActual ? 11 : 9;
+  const showTarget = useMemo(() => allRows.some((p) => p.weight_target != null), [allRows]);
+  // Removed "vs target" column per UX request.
+  const colCount = showTarget ? 10 : 9;
 
   return (
     <div className="glass-card p-0 overflow-hidden">
@@ -42,23 +78,34 @@ export default function AllocationsPositionsTable(props: {
           <p className="text-xs text-text-muted mt-1 max-w-3xl leading-relaxed">
             Holdings ranked by weight. Emphasis is on sleeve mix, thesis linkage, and how weights changed — not
             day-trading P&amp;L (see Performance for return attribution).
-            {showTargetVsActual ? (
+            {showTarget ? (
               <>
                 {' '}
                 <span className="text-text-secondary">
-                  Target and drift columns reflect the latest digest proposed weights vs what is modeled as held.
+                  Target column reflects the latest digest proposed weights (when present).
                 </span>
               </>
             ) : null}
           </p>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="text-[10px] uppercase tracking-wider text-text-muted">
             Sorted by allocation · background bar shows relative weight
           </span>
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">
-            Click a row for details
-          </span>
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-text-muted select-none">
+              <input
+                type="checkbox"
+                className="accent-fin-blue"
+                checked={showInactive}
+                onChange={(e) => setShowInactive(e.target.checked)}
+              />
+              Show inactive
+            </label>
+            <span className="text-[10px] uppercase tracking-wider text-text-muted">
+              Click a row for price + events
+            </span>
+          </div>
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -69,10 +116,9 @@ export default function AllocationsPositionsTable(props: {
               <th className="hidden max-w-[140px] px-2 py-3 text-left md:table-cell">Name</th>
               <th className="px-2 py-3 text-right md:px-3">Weight</th>
               <th className="hidden px-3 py-3 text-right md:table-cell">Δ weight</th>
-              {showTargetVsActual ? (
+              {showTarget ? (
                 <>
                   <th className="hidden px-3 py-3 text-right sm:table-cell">Target</th>
-                  <th className="hidden px-3 py-3 text-right md:table-cell">vs target</th>
                 </>
               ) : null}
               <th className="hidden px-3 py-3 text-left lg:table-cell">Category</th>
@@ -83,7 +129,7 @@ export default function AllocationsPositionsTable(props: {
             </tr>
           </thead>
           <tbody className="divide-y divide-border-subtle">
-            {sorted.map((p: Position) => {
+            {allRows.map((p: Position) => {
               const isExpanded = expandedTicker === p.ticker;
               const anchorDate = p.entry_date || lastUpdated || new Date().toISOString().slice(0, 10);
               const w = p.weight_actual ?? 0;
@@ -106,33 +152,19 @@ export default function AllocationsPositionsTable(props: {
                         </td>
                         <td
                           className={`hidden px-3 py-3 text-right font-mono tabular-nums text-xs md:table-cell ${
-                            typeof p.weight_delta === 'number' ? pnlColor(p.weight_delta) : 'text-text-muted'
+                            typeof p.weight_delta === 'number' && p.weight_delta !== 0
+                              ? pnlColor(p.weight_delta)
+                              : 'text-text-muted'
                           }`}
                         >
-                          {typeof p.weight_delta === 'number'
+                          {typeof p.weight_delta === 'number' && p.weight_delta !== 0
                             ? `${p.weight_delta > 0 ? '+' : ''}${p.weight_delta.toFixed(1)}pp`
                             : '—'}
                         </td>
-                        {showTargetVsActual ? (
+                        {showTarget ? (
                           <>
                             <td className="hidden px-3 py-3 text-right font-mono tabular-nums text-xs text-text-secondary sm:table-cell">
                               {p.weight_target != null ? `${p.weight_target.toFixed(1)}%` : '—'}
-                            </td>
-                            <td
-                              className={`hidden px-3 py-3 text-right font-mono tabular-nums text-xs md:table-cell ${
-                                p.weight_target != null
-                                  ? pnlColor((p.weight_actual ?? 0) - p.weight_target)
-                                  : 'text-text-muted'
-                              }`}
-                              title={
-                                p.weight_target != null
-                                  ? `Actual ${(p.weight_actual ?? 0).toFixed(2)}% − target ${p.weight_target.toFixed(2)}%`
-                                  : undefined
-                              }
-                            >
-                              {p.weight_target != null
-                                ? `${(p.weight_actual ?? 0) - p.weight_target >= 0 ? '+' : ''}${((p.weight_actual ?? 0) - p.weight_target).toFixed(1)}pp`
-                                : '—'}
                             </td>
                           </>
                         ) : null}
@@ -153,84 +185,7 @@ export default function AllocationsPositionsTable(props: {
                       {isExpanded && (
                         <tr className="bg-white/[0.02]">
                           <td colSpan={colCount} className="px-4 py-5 md:px-6 md:py-6">
-                            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-                              <div className="space-y-3 text-sm">
-                                <h4 className="text-xs font-semibold uppercase tracking-wider text-text-muted">Position context</h4>
-                                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
-                                  <div>
-                                    <dt className="text-text-muted">Category</dt>
-                                    <dd className="text-text-secondary mt-0.5">{formatAllocationCategory(p.category)}</dd>
-                                  </div>
-                                  <div>
-                                    <dt className="text-text-muted">Thesis</dt>
-                                    <dd className="text-text-secondary mt-0.5">{thesisNames(p.thesis_ids, thesisById)}</dd>
-                                  </div>
-                                  <div>
-                                    <dt className="text-text-muted">Weight</dt>
-                                    <dd className="font-mono tabular-nums mt-0.5">{p.weight_actual?.toFixed(2)}%</dd>
-                                  </div>
-                                  <div>
-                                    <dt className="text-text-muted">Δ vs prior snapshot</dt>
-                                    <dd
-                                      className={`font-mono tabular-nums mt-0.5 ${
-                                        typeof p.weight_delta === 'number' ? pnlColor(p.weight_delta) : ''
-                                      }`}
-                                    >
-                                      {typeof p.weight_delta === 'number'
-                                        ? `${p.weight_delta > 0 ? '+' : ''}${p.weight_delta.toFixed(2)}pp`
-                                        : '—'}
-                                    </dd>
-                                  </div>
-                                  {p.weight_target != null ? (
-                                    <div>
-                                      <dt className="text-text-muted">Target (digest)</dt>
-                                      <dd className="font-mono tabular-nums mt-0.5">{p.weight_target.toFixed(2)}%</dd>
-                                    </div>
-                                  ) : null}
-                                  {p.weight_target != null ? (
-                                    <div>
-                                      <dt className="text-text-muted">Drift vs target</dt>
-                                      <dd
-                                        className={`font-mono tabular-nums mt-0.5 ${pnlColor(
-                                          (p.weight_actual ?? 0) - p.weight_target
-                                        )}`}
-                                      >
-                                        {(p.weight_actual ?? 0) - p.weight_target >= 0 ? '+' : ''}
-                                        {((p.weight_actual ?? 0) - p.weight_target).toFixed(2)}pp
-                                      </dd>
-                                    </div>
-                                  ) : null}
-                                  <div>
-                                    <dt className="text-text-muted">Avg entry</dt>
-                                    <dd className="font-mono tabular-nums mt-0.5">
-                                      {p.entry_price != null ? `$${p.entry_price.toFixed(2)}` : '—'}
-                                    </dd>
-                                  </div>
-                                  <div>
-                                    <dt className="text-text-muted">Last close</dt>
-                                    <dd className="font-mono tabular-nums mt-0.5">
-                                      {p.current_price != null ? `$${p.current_price.toFixed(2)}` : '—'}
-                                    </dd>
-                                  </div>
-                                </dl>
-                                {p.rationale ? (
-                                  <p className="text-text-muted text-sm leading-relaxed pt-2 border-t border-border-subtle">
-                                    {p.rationale}
-                                  </p>
-                                ) : null}
-                              </div>
-                              <div className="border-t border-border-subtle pt-4 lg:border-t-0 lg:pt-0 lg:border-l lg:pl-6 border-border-subtle">
-                                <h4 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-3">
-                                  Price &amp; position events
-                                </h4>
-                                <p className="text-[11px] text-text-muted mb-3 leading-relaxed">
-                                  Markers show opens, exits, and rebalance points on the price path (hover for weight
-                                  changes). Use the range chips and brush to zoom; the strip below is the same events on
-                                  a compact timeline.
-                                </p>
-                                <PositionPriceChart ticker={p.ticker} anchorDate={anchorDate} />
-                              </div>
-                            </div>
+                            <PositionPriceChart ticker={p.ticker} anchorDate={anchorDate} />
                           </td>
                         </tr>
                       )}

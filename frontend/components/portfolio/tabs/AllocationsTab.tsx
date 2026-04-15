@@ -1,15 +1,16 @@
 'use client';
 
 import { SectionTitle } from '@/components/ui';
-import type { Position, Thesis } from '@/lib/types';
+import type { Position, PositionHistoryRow, Thesis } from '@/lib/types';
 import AllocationsPositionsTable from '@/components/portfolio/AllocationsPositionsTable';
 
 export default function AllocationsTab(props: {
   lastUpdated: string | null;
   positions: Position[];
+  positionHistory: PositionHistoryRow[];
   thesisById: Map<string, Thesis>;
 }) {
-  const { lastUpdated, positions, thesisById } = props;
+  const { lastUpdated, positions, positionHistory, thesisById } = props;
 
   return (
     <div className="space-y-6">
@@ -20,7 +21,12 @@ export default function AllocationsTab(props: {
         </p>
       </div>
 
-      <AllocationsPositionsTable positions={positions} thesisById={thesisById} lastUpdated={lastUpdated} />
+      <AllocationsPositionsTable
+        positions={positions}
+        positionHistory={positionHistory}
+        thesisById={thesisById}
+        lastUpdated={lastUpdated}
+      />
     </div>
   );
 }

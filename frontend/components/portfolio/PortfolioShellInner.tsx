@@ -461,6 +461,7 @@ export default function PortfolioShellInner() {
           <AllocationsTab
             lastUpdated={lastUpdated}
             positions={positions}
+            positionHistory={positionHistory}
             thesisById={thesisById}
           />
         )}

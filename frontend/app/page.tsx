@@ -494,37 +494,7 @@ export default function OverviewPage() {
         {/* Center: Actionable + Risk + Quick Links */}
         <div className="lg:col-span-1 flex flex-col gap-4">
 
-          {/* Quick links — Research & PM */}
-          {(researchQuickLinks.length > 0 || pmQuickLinks.length > 0) && (
-            <div className="glass-card p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">
-                  Latest run
-                </h3>
-                <span className="text-[10px] font-mono text-text-muted">{latestDate}</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {researchQuickLinks.map((l) => (
-                  <Link
-                    key={l.docKey}
-                    href={`/research?tab=daily&date=${encodeURIComponent(String(latestDate || ''))}&docKey=${encodeURIComponent(l.docKey)}`}
-                    className="text-xs px-3 py-1.5 rounded-lg bg-fin-blue/10 text-fin-blue hover:bg-fin-blue/20 border border-fin-blue/20 transition-colors font-medium"
-                  >
-                    {l.label}
-                  </Link>
-                ))}
-                {pmQuickLinks.map((l) => (
-                  <Link
-                    key={l.docKey}
-                    href={`/portfolio?tab=analysis&date=${encodeURIComponent(String(latestDate || ''))}&docKey=${encodeURIComponent(l.docKey)}`}
-                    className="text-xs px-3 py-1.5 rounded-lg bg-fin-amber/10 text-fin-amber hover:bg-fin-amber/20 border border-fin-amber/20 transition-colors font-medium"
-                  >
-                    {l.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* (Removed) Latest run quick links block */}
 
           {/* Actionable summary */}
           <div className="glass-card p-5 flex-1">
