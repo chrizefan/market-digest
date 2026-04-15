@@ -94,10 +94,7 @@ export default function PortfolioShellInner() {
     [thesisBookRows]
   );
 
-  const activityEvents = useMemo(
-    () => positionEvents.filter((ev) => ev.event !== 'HOLD'),
-    [positionEvents]
-  );
+  const activityEvents = useMemo(() => positionEvents, [positionEvents]);
 
   const { data: sleeveData, keys: sleeveKeys } = useMemo(
     () => buildSleeveStackSeries(positionHistory, historyMode),

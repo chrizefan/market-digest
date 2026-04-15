@@ -32,22 +32,29 @@ export default function ActivityTab(props: {
 }) {
   const { activityEvents, thesisById, lastRunDate } = props;
   const [preset, setPreset] = useState<RangePreset>('7d');
+  const [includeHolds, setIncludeHolds] = useState(false);
 
-  const anchorDate = activityEvents[0]?.date ?? lastRunDate ?? null;
+  const anchorDate = lastRunDate ?? activityEvents[0]?.date ?? null;
+
+  const visibleEvents = useMemo(
+    () => (includeHolds ? activityEvents : activityEvents.filter((ev) => ev.event !== 'HOLD')),
+    [activityEvents, includeHolds]
+  );
 
   const filteredEvents = useMemo(() => {
-    if (preset === 'all' || !anchorDate) return activityEvents;
+    if (preset === 'all' || !anchorDate) return visibleEvents;
     const days = preset === '7d' ? 7 : 30;
     const cutoff = addCalendarDays(anchorDate, -days);
-    return activityEvents.filter((ev) => ev.date >= cutoff);
-  }, [activityEvents, preset, anchorDate]);
+    return visibleEvents.filter((ev) => ev.date >= cutoff);
+  }, [visibleEvents, preset, anchorDate]);
 
   const rangeSummary = useMemo(() => {
-    if (preset === 'all') return `${activityEvents.length} event${activityEvents.length !== 1 ? 's' : ''} (all)`;
+    if (preset === 'all')
+      return `${filteredEvents.length} event${filteredEvents.length !== 1 ? 's' : ''} (all)`;
     if (!anchorDate) return `${filteredEvents.length} in window`;
     const days = preset === '7d' ? 7 : 30;
     return `${filteredEvents.length} in last ${days} days`;
-  }, [preset, activityEvents.length, filteredEvents.length, anchorDate]);
+  }, [preset, filteredEvents.length, anchorDate]);
 
   return (
     <div className="glass-card p-0 overflow-hidden">
@@ -76,6 +83,15 @@ export default function ActivityTab(props: {
                 {k === '7d' ? '7 days' : k === '30d' ? '30 days' : 'All'}
               </button>
             ))}
+            <label className="ml-2 flex items-center gap-2 text-[10px] uppercase tracking-wider text-text-muted select-none">
+              <input
+                type="checkbox"
+                className="accent-fin-blue"
+                checked={includeHolds}
+                onChange={(e) => setIncludeHolds(e.target.checked)}
+              />
+              Holds
+            </label>
           </div>
         </div>
       </div>
