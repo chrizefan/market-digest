@@ -264,6 +264,15 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     );
   }
 
+  // Benchmarks are used for sparklines/tiles; we only need a recent window.
+  // PostgREST defaults to paginating results, and ordering by oldest-first can
+  // return only the longest-lived ticker (e.g. SPY) in the first page.
+  const benchCutoff = (() => {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - 180);
+    return d.toISOString().slice(0, 10);
+  })();
+
   const [
     snapshotRes, positionsRes, thesesRes, navRes,
     benchRes, metricsRes, docsRes, deltaDocsRes, changelogDocsRes, eventsRes, tickerViewRes, snapshotRunTypesRes,
@@ -276,6 +285,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
       .from('price_history')
       .select('date, ticker, close')
       .in('ticker', [...DASHBOARD_BENCHMARK_TICKERS])
+      .gte('date', benchCutoff)
       .order('date', { ascending: true }),
     supabase.from('portfolio_metrics').select('*').order('date', { ascending: false }).limit(1).single(),
     supabase.from('documents')
