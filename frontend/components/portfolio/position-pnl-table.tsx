@@ -2,16 +2,23 @@
 
 import { Fragment, useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import type { Position } from '@/lib/types';
-import PositionPriceChart from '@/components/portfolio/PositionPriceChart';
+import type { DashboardPositionEvent, NavChartPoint, Position, PositionHistoryRow } from '@/lib/types';
+import { resolveFirstEntryDate } from '@/lib/position-first-entry';
+import PositionContributionChart from '@/components/portfolio/PositionContributionChart';
 
 export function PositionPnlTable({
   positions,
   priceChartAnchorDate,
+  navSnaps,
+  positionHistory,
+  positionEvents,
 }: {
   positions: Position[];
-  /** When set, rows expand to show price + events through this as-of date. */
+  /** When set, rows expand to show contribution + events through this as-of date. */
   priceChartAnchorDate?: string | null;
+  navSnaps: NavChartPoint[];
+  positionHistory: PositionHistoryRow[];
+  positionEvents: DashboardPositionEvent[];
 }) {
   const showCharts = Boolean(priceChartAnchorDate);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
@@ -24,7 +31,7 @@ export function PositionPnlTable({
         <h3 className="text-lg font-semibold">Position P&amp;L</h3>
         <p className="text-text-muted text-sm mt-1">
           Unrealized vs entry.
-          {showCharts ? ' Expand a row for price and events.' : null}
+          {showCharts ? ' Expand a row for NAV contribution and activity.' : null}
         </p>
       </div>
       <div className="overflow-x-auto">
@@ -42,6 +49,7 @@ export function PositionPnlTable({
           </thead>
           <tbody className="divide-y divide-border-subtle">
             {positions.map((p, i) => {
+              const firstEntryDate = resolveFirstEntryDate(p.ticker, p, positionEvents, positionHistory);
               const entry = p.entry_price;
               const curr = p.current_price;
               const pnlPct =
@@ -101,10 +109,12 @@ export function PositionPnlTable({
                   {isOpen && priceChartAnchorDate && !skipChart ? (
                     <tr className="bg-white/[0.02]">
                       <td colSpan={7} className="border-t border-border-subtle px-4 py-5 md:px-6">
-                        <PositionPriceChart
+                        <PositionContributionChart
                           ticker={p.ticker}
                           anchorDate={priceChartAnchorDate}
-                          firstEntryDate={p.entry_date}
+                          firstEntryDate={firstEntryDate}
+                          navSnaps={navSnaps}
+                          positionHistory={positionHistory}
                         />
                       </td>
                     </tr>

@@ -927,22 +927,31 @@ export async function fetchComparablePriceHistory(
 
 const POSITION_CHART_PAGE = 2000;
 
+const positionPriceChartCache = new Map<string, PositionPriceChartData>();
+
 /**
  * Load daily closes for one ticker from `fromDate` through today plus all
  * `position_events` rows for that ticker (for chart markers). On-demand only.
+ * Results are memoized in-memory for the session (price + contribution charts).
  */
 export async function fetchPositionPriceChart(
   ticker: string,
   fromDate: string
 ): Promise<PositionPriceChartData> {
+  const t = String(ticker).toUpperCase().trim();
+  const cacheKey = `${t}|${fromDate}`;
+  const hit = positionPriceChartCache.get(cacheKey);
+  if (hit) return hit;
+
   if (!isSupabaseConfigured() || !supabase) {
     throw new Error(
       'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
     );
   }
-  const t = String(ticker).toUpperCase().trim();
   if (!t || !fromDate) {
-    return { priceHistory: [], events: [] };
+    const empty = { priceHistory: [], events: [] };
+    positionPriceChartCache.set(cacheKey, empty);
+    return empty;
   }
   const today = new Date().toISOString().slice(0, 10);
 
@@ -993,7 +1002,9 @@ export async function fetchPositionPriceChart(
     weight_change_pct: row.weight_change_pct != null ? Number(row.weight_change_pct) : null,
   }));
 
-  return { priceHistory, events };
+  const result = { priceHistory, events };
+  positionPriceChartCache.set(cacheKey, result);
+  return result;
 }
 
 /** Resolve markdown + structured view for the Research Library. */

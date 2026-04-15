@@ -15,14 +15,8 @@ import {
   YAxis,
 } from 'recharts';
 import { fetchPositionPriceChart } from '@/lib/queries';
-import type { PositionPriceChartData, PositionPriceChartEvent } from '@/lib/types';
-
-function eventDotColor(ev: PositionPriceChartEvent['event']): string {
-  if (ev === 'OPEN') return '#22c55e';
-  if (ev === 'EXIT') return '#ef4444';
-  if (ev === 'REBALANCE') return '#60a5fa';
-  return '#71717a';
-}
+import { buildPositionContributionToNavSeries, type PositionContributionPoint } from '@/lib/position-contribution-series';
+import type { NavChartPoint, PositionHistoryRow, PositionPriceChartData, PositionPriceChartEvent } from '@/lib/types';
 
 function subtractIsoDays(iso: string, days: number): string {
   const parts = iso.split('-').map(Number);
@@ -33,20 +27,30 @@ function subtractIsoDays(iso: string, days: number): string {
   return next.toISOString().slice(0, 10);
 }
 
-type Row = { date: string; close: number };
+const ENTRY_PADDING_DAYS = 45;
+const FALLBACK_LOOKBACK_DAYS = 730;
 
-function rowOnOrAfter(rows: Row[], iso: string): Row | null {
+function eventDotColor(ev: PositionPriceChartEvent['event']): string {
+  if (ev === 'OPEN') return '#22c55e';
+  if (ev === 'EXIT') return '#ef4444';
+  if (ev === 'REBALANCE') return '#60a5fa';
+  return '#71717a';
+}
+
+function eventLabelClass(ev: PositionPriceChartEvent['event']): string {
+  if (ev === 'OPEN') return 'text-fin-green';
+  if (ev === 'EXIT') return 'text-fin-red';
+  if (ev === 'REBALANCE') return 'text-fin-blue';
+  return 'text-text-muted';
+}
+
+function rowOnOrAfter(rows: PositionContributionPoint[], iso: string): PositionContributionPoint | null {
   const exact = rows.find((r) => r.date === iso);
   if (exact) return exact;
   return rows.find((r) => r.date >= iso) ?? null;
 }
 
-/** Calendar days before first entry to include as context. */
-const ENTRY_PADDING_DAYS = 45;
-/** When we cannot infer an entry, load ~2y of history. */
-const FALLBACK_LOOKBACK_DAYS = 730;
-
-type ScatterRow = Row & {
+type ScatterRow = PositionContributionPoint & {
   event: PositionPriceChartEvent['event'];
   markPrice: number | null;
   weight_pct: number | null;
@@ -55,34 +59,25 @@ type ScatterRow = Row & {
   reason: string | null;
 };
 
-function ChartTooltip({
+function ContribTooltip({
   active,
   payload,
 }: {
   active?: boolean;
-  payload?: Array<{ payload: Row & Partial<ScatterRow> }>;
+  payload?: Array<{ payload: PositionContributionPoint & Partial<ScatterRow> }>;
 }) {
   if (!active || !payload?.length) return null;
-  const p = payload[0].payload as ScatterRow;
+  const p = payload[0].payload;
   if ('event' in p && p.event) {
     return (
       <div className="rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-[0.82rem] shadow-lg max-w-xs">
-        <p className="font-mono font-semibold" style={{ color: eventDotColor(p.event) }}>
+        <p className={`font-mono font-semibold ${eventLabelClass(p.event)}`}>
           {p.event}
         </p>
         <p className="text-text-secondary mt-1 font-mono">{p.date}</p>
-        <p className="text-text-secondary tabular-nums mt-0.5">
-          Price:{' '}
-          {p.markPrice != null ? `$${p.markPrice.toFixed(2)}` : p.close != null ? `$${p.close.toFixed(2)}` : '—'}
-        </p>
+        <p className="text-text-primary tabular-nums mt-0.5">Cumulative: {p.cumPp.toFixed(2)} pp</p>
         {p.weight_pct != null ? (
           <p className="text-text-muted mt-1 tabular-nums">Weight after: {p.weight_pct.toFixed(2)}%</p>
-        ) : null}
-        {p.weight_change_pct != null ? (
-          <p className="text-text-muted tabular-nums">
-            Δ weight: {p.weight_change_pct > 0 ? '+' : ''}
-            {p.weight_change_pct.toFixed(2)}pp
-          </p>
         ) : null}
         {p.reason ? <p className="text-text-muted mt-1.5 text-[11px] leading-snug">{p.reason}</p> : null}
       </div>
@@ -91,7 +86,8 @@ function ChartTooltip({
   return (
     <div className="rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-[0.82rem] shadow-lg">
       <p className="font-mono text-text-secondary">{p.date}</p>
-      <p className="text-text-primary tabular-nums mt-0.5">${Number(p.close).toFixed(2)}</p>
+      <p className="text-text-primary tabular-nums mt-0.5">Cumulative: {p.cumPp.toFixed(2)} pp</p>
+      <p className="text-text-muted tabular-nums text-[11px] mt-1">Step: {p.dailyPp.toFixed(3)} pp</p>
     </div>
   );
 }
@@ -101,11 +97,17 @@ function ChartBody({
   rangeStart,
   rangeLabel,
   firstEntryDate,
+  navSnaps,
+  positionHistory,
+  anchorDate,
 }: {
   ticker: string;
   rangeStart: string;
   rangeLabel: string;
   firstEntryDate: string | null;
+  navSnaps: NavChartPoint[];
+  positionHistory: PositionHistoryRow[];
+  anchorDate: string;
 }) {
   const [data, setData] = useState<PositionPriceChartData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -137,14 +139,22 @@ function ChartBody({
     };
   }, [ticker, rangeStart]);
 
-  const chartRows = useMemo<Row[]>(() => {
+  const chartRows = useMemo<PositionContributionPoint[]>(() => {
     if (!data?.priceHistory?.length) return [];
-    return data.priceHistory.map((p) => ({ date: p.date, close: p.close }));
-  }, [data]);
+    const navFiltered = navSnaps
+      .filter((s) => s.date >= rangeStart && s.date <= anchorDate)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    return buildPositionContributionToNavSeries(
+      navFiltered,
+      positionHistory,
+      ticker,
+      data.priceHistory.map((p) => ({ date: p.date, close: p.close }))
+    );
+  }, [data?.priceHistory, navSnaps, positionHistory, ticker, rangeStart, anchorDate]);
 
   useEffect(() => {
     if (!chartRows.length) return;
-    /* eslint-disable react-hooks/set-state-in-effect -- reset view when series reloads */
+    /* eslint-disable react-hooks/set-state-in-effect */
     setBrushStart(0);
     setBrushEnd(chartRows.length - 1);
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -168,8 +178,7 @@ function ChartBody({
         const tr = rowOnOrAfter(chartRows, ev.date);
         if (!tr) return null;
         const row: ScatterRow = {
-          date: tr.date,
-          close: tr.close,
+          ...tr,
           event: ev.event,
           markPrice: ev.price,
           weight_pct: ev.weight_pct,
@@ -269,7 +278,7 @@ function ChartBody({
   if (loading) {
     return (
       <div className="h-[240px] rounded-xl border border-border-subtle bg-bg-secondary/30 animate-pulse flex items-center justify-center text-xs text-text-muted">
-        Loading price history…
+        Loading series…
       </div>
     );
   }
@@ -282,8 +291,8 @@ function ChartBody({
   }
   if (!chartRows.length) {
     return (
-      <div className="h-[160px] rounded-xl border border-border-subtle bg-bg-secondary/30 flex items-center justify-center text-xs text-text-muted">
-        No price history for this range.
+      <div className="h-[160px] rounded-xl border border-border-subtle bg-bg-secondary/30 flex items-center justify-center text-xs text-text-muted px-4 text-center">
+        Not enough overlapping NAV steps and price history to plot contribution.
       </div>
     );
   }
@@ -292,7 +301,7 @@ function ChartBody({
     <div ref={containerRef} className="rounded-xl border border-border-subtle bg-bg-secondary/20 overflow-hidden">
       <div className="flex flex-wrap items-start justify-between gap-2 px-4 pt-3 pb-1">
         <div>
-          <p className="text-[11px] text-text-muted uppercase tracking-wider">Price</p>
+          <p className="text-[11px] text-text-muted uppercase tracking-wider">Contribution to portfolio</p>
           <p className="text-sm font-medium text-text-primary mt-0.5">
             <span className="font-mono text-fin-blue">{ticker}</span>
             <span className="text-text-muted font-normal"> · </span>
@@ -303,6 +312,10 @@ function ChartBody({
               {chartRows[0].date} → {chartEnd}
             </p>
           ) : null}
+          <p className="text-[10px] text-text-muted mt-1 max-w-xl leading-snug">
+            Cumulative attributed return (pp) from this holding (weight × asset return between NAV snapshots). Events
+            align to the contribution path.
+          </p>
         </div>
         <div className="flex flex-col items-end gap-1">
           <button
@@ -313,7 +326,7 @@ function ChartBody({
             Fit all
           </button>
           <p className="text-[10px] text-text-muted text-right max-w-[220px] leading-snug">
-            Drag range below to pan/zoom · Scroll wheel zoom · Horizontal scroll pans
+            Drag range below · Scroll zoom · Horizontal pan
           </p>
         </div>
       </div>
@@ -337,10 +350,18 @@ function ChartBody({
             <YAxis
               domain={['auto', 'auto']}
               tick={{ fill: '#71717a', fontSize: 11 }}
-              width={52}
-              tickFormatter={(v) => (typeof v === 'number' ? v.toFixed(0) : String(v))}
+              width={56}
+              tickFormatter={(v) => (typeof v === 'number' ? v.toFixed(1) : String(v))}
+              label={{
+                value: 'pp vs portfolio',
+                angle: -90,
+                position: 'insideLeft',
+                fill: '#71717a',
+                fontSize: 10,
+              }}
             />
-            <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.12)' }} />
+            <Tooltip content={<ContribTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.12)' }} />
+            <ReferenceLine y={0} stroke="rgba(255,255,255,0.12)" strokeDasharray="3 3" />
             {entryLineDate ? (
               <ReferenceLine
                 x={entryLineDate}
@@ -351,23 +372,23 @@ function ChartBody({
             ) : null}
             <Area
               type="monotone"
-              dataKey="close"
+              dataKey="cumPp"
               stroke="none"
               fill={`url(#${gradientId})`}
               isAnimationActive={false}
             />
             <Line
               type="monotone"
-              dataKey="close"
+              dataKey="cumPp"
               stroke="#3b82f6"
               dot={false}
               strokeWidth={2}
-              name="Close"
+              name="Cumulative pp"
               isAnimationActive={false}
             />
             <Scatter
               data={scatterInView}
-              dataKey="close"
+              dataKey="cumPp"
               fill="#3b82f6"
               isAnimationActive={false}
               shape={(raw: unknown) => {
@@ -396,7 +417,14 @@ function ChartBody({
           <ComposedChart data={chartRows} margin={{ top: 2, right: 14, left: 4, bottom: 2 }}>
             <XAxis dataKey="date" hide />
             <YAxis hide domain={['auto', 'auto']} />
-            <Line type="monotone" dataKey="close" stroke="#3b82f666" dot={false} strokeWidth={1} isAnimationActive={false} />
+            <Line
+              type="monotone"
+              dataKey="cumPp"
+              stroke="#3b82f666"
+              dot={false}
+              strokeWidth={1}
+              isAnimationActive={false}
+            />
             <Brush
               dataKey="date"
               height={28}
@@ -415,15 +443,18 @@ function ChartBody({
   );
 }
 
-export default function PositionPriceChart({
+export default function PositionContributionChart({
   ticker,
   anchorDate,
   firstEntryDate,
+  navSnaps,
+  positionHistory,
 }: {
   ticker: string;
   anchorDate: string;
-  /** When set, fetch starts before this date (padding) so the window centers on position life. */
   firstEntryDate?: string | null;
+  navSnaps: NavChartPoint[];
+  positionHistory: PositionHistoryRow[];
 }) {
   const rangeStart = useMemo(() => {
     if (firstEntryDate) return subtractIsoDays(firstEntryDate, ENTRY_PADDING_DAYS);
@@ -437,11 +468,14 @@ export default function PositionPriceChart({
 
   return (
     <ChartBody
-      key={`${ticker}|${rangeStart}`}
+      key={`${ticker}|${rangeStart}|contrib`}
       ticker={ticker}
       rangeStart={rangeStart}
       rangeLabel={rangeLabel}
       firstEntryDate={firstEntryDate ?? null}
+      navSnaps={navSnaps}
+      positionHistory={positionHistory}
+      anchorDate={anchorDate}
     />
   );
 }

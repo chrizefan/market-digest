@@ -84,6 +84,7 @@ export default function PerformanceTab() {
 
   const positions = useMemo(() => data?.positions ?? [], [data]);
   const position_events = useMemo(() => data?.position_events ?? [], [data]);
+  const positionHistory = useMemo(() => data?.position_history ?? [], [data]);
   const benchmarks = useMemo(() => data?.benchmarks ?? {}, [data]);
   const metrics = data?.calculated;
   const serverMetrics = data?.server_portfolio_metrics ?? null;
@@ -353,6 +354,9 @@ export default function PerformanceTab() {
           key={priceChartAnchorDate ?? 'no-anchor'}
           positions={positions}
           priceChartAnchorDate={priceChartAnchorDate}
+          navSnaps={allSnaps}
+          positionHistory={positionHistory}
+          positionEvents={position_events}
         />
       </section>
 

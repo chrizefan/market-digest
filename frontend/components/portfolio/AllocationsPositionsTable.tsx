@@ -68,36 +68,21 @@ export default function AllocationsPositionsTable(props: {
 
   const maxWeight = sorted.length ? (sorted[0].weight_actual ?? 0) : 0;
 
-  const showTarget = useMemo(() => allRows.some((p) => p.weight_target != null), [allRows]);
-  // Removed "vs target" column per UX request.
-  const colCount = showTarget ? 10 : 9;
+  const colCount = 9;
 
   return (
     <div className="glass-card p-0 overflow-hidden">
-      <div className="border-b border-border-subtle bg-bg-secondary px-4 py-4 md:px-6 md:py-5 space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold">Positions</h3>
-          <p className="text-xs text-text-muted mt-1 max-w-2xl leading-relaxed">
-            Current weights and thesis links. Return detail is on Performance.
-            {showTarget ? (
-              <span className="text-text-secondary"> Target = digest proposal when present.</span>
-            ) : null}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="text-[11px] text-text-muted">Sorted by weight; bar length is relative size.</span>
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-[11px] text-text-muted select-none">
-              <input
-                type="checkbox"
-                className="accent-fin-blue"
-                checked={showInactive}
-                onChange={(e) => setShowInactive(e.target.checked)}
-              />
-              Former positions
-            </label>
-          </div>
-        </div>
+      <div className="border-b border-border-subtle bg-bg-secondary px-4 py-4 md:px-6 md:py-5 flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-lg font-semibold">Positions</h3>
+        <label className="flex items-center gap-2 text-[11px] text-text-muted select-none">
+          <input
+            type="checkbox"
+            className="accent-fin-blue"
+            checked={showInactive}
+            onChange={(e) => setShowInactive(e.target.checked)}
+          />
+          Former positions
+        </label>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-0 text-sm md:min-w-[920px]">
@@ -107,11 +92,6 @@ export default function AllocationsPositionsTable(props: {
               <th className="hidden max-w-[140px] px-2 py-3 text-left md:table-cell">Name</th>
               <th className="px-2 py-3 text-right md:px-3">Weight</th>
               <th className="hidden px-3 py-3 text-right md:table-cell">Δ weight</th>
-              {showTarget ? (
-                <>
-                  <th className="hidden px-3 py-3 text-right sm:table-cell">Target</th>
-                </>
-              ) : null}
               <th className="hidden px-3 py-3 text-left lg:table-cell">Category</th>
               <th className="hidden max-w-[200px] px-3 py-3 text-left xl:table-cell">Thesis</th>
               <th className="hidden px-3 py-3 text-right lg:table-cell">Avg entry</th>
@@ -153,13 +133,6 @@ export default function AllocationsPositionsTable(props: {
                             ? `${p.weight_delta > 0 ? '+' : ''}${p.weight_delta.toFixed(1)}pp`
                             : '—'}
                         </td>
-                        {showTarget ? (
-                          <>
-                            <td className="hidden px-3 py-3 text-right font-mono tabular-nums text-xs text-text-secondary sm:table-cell">
-                              {p.weight_target != null ? `${p.weight_target.toFixed(1)}%` : '—'}
-                            </td>
-                          </>
-                        ) : null}
                         <td className="hidden px-3 py-3 text-xs text-text-secondary lg:table-cell">
                           {formatAllocationCategory(p.category)}
                         </td>
