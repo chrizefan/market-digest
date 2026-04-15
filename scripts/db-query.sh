@@ -15,7 +15,26 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-SQL_FILE="${1:?Usage: $0 path/to/file.sql}"
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  cat <<'EOF'
+Usage: db-query.sh path/to/file.sql
+
+Run SQL via Supabase CLI (db query). Resolves connection in order:
+  1. DATABASE_URL in the environment
+  2. config/local.env (copy from config/local.env.example)
+  3. Linked project: npx supabase link (creates .supabase/)
+
+Examples:
+  export DATABASE_URL='postgresql://...'
+  ./scripts/db-query.sh scripts/sql/audit_activity_coverage.sql
+
+  ./scripts/db-query.sh scripts/sql/audit_activity_coverage.sql
+EOF
+  exit 0
+fi
+
+SQL_FILE="${1:?Usage: $0 path/to/file.sql (use --help for details)}"
 
 if [[ -z "${DATABASE_URL:-}" && -f "$ROOT/config/local.env" ]]; then
   set -a
