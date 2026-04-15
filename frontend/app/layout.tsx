@@ -9,7 +9,8 @@ import MobileAppBar from '@/components/mobile-app-bar';
 import Starfield from '@/components/starfield';
 import CommandPalette from '@/components/command-palette';
 
-const THEME_INIT = `(function(){try{var t=localStorage.getItem('atlas-theme');var d=document.documentElement;d.classList.remove('light','dark');if(t==='light')d.classList.add('light');else d.classList.add('dark');}catch(e){document.documentElement.classList.add('dark');}})();`;
+/** Default + invalid keys → follow prefers-color-scheme; light/dark fixed; auto → OS */
+const THEME_INIT = `(function(){try{var t=localStorage.getItem('atlas-theme');var d=document.documentElement;d.classList.remove('light','dark');var dark;if(t==='light')dark=false;else if(t==='dark')dark=true;else{dark=window.matchMedia('(prefers-color-scheme: dark)').matches;}d.classList.add(dark?'dark':'light');}catch(e){document.documentElement.classList.add('dark');}})();`;
 
 const inter = Inter({
   subsets: ['latin'],

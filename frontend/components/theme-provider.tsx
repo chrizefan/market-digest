@@ -4,25 +4,37 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react';
 
-export type AtlasTheme = 'light' | 'dark';
+/** User preference: fixed light/dark, or follow OS */
+export type AtlasTheme = 'light' | 'dark' | 'auto';
 
 const STORAGE_KEY = 'atlas-theme';
 
-function applyThemeClass(t: AtlasTheme) {
+export function resolveEffectiveTheme(preference: AtlasTheme): 'light' | 'dark' {
+  if (preference === 'light') return 'light';
+  if (preference === 'dark') return 'dark';
+  if (typeof window === 'undefined') return 'dark';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyHtmlColorScheme(preference: AtlasTheme) {
   if (typeof document === 'undefined') return;
+  const resolved = resolveEffectiveTheme(preference);
   const root = document.documentElement;
   root.classList.remove('light', 'dark');
-  root.classList.add(t);
+  root.classList.add(resolved);
 }
 
 const ThemeContext = createContext<{
   theme: AtlasTheme;
+  /** Resolved light/dark for the current preference (OS when auto) */
+  effectiveTheme: 'light' | 'dark';
   setTheme: (t: AtlasTheme) => void;
 } | null>(null);
 
@@ -33,24 +45,38 @@ export function useAtlasTheme() {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<AtlasTheme>('dark');
+  const [theme, setThemeState] = useState<AtlasTheme>('auto');
+  const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>('dark');
 
   useLayoutEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      const t =
-        raw === 'light' || raw === 'dark'
+      const t: AtlasTheme =
+        raw === 'light' || raw === 'dark' || raw === 'auto'
           ? raw
-          : document.documentElement.classList.contains('light')
-            ? 'light'
-            : 'dark';
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate theme from localStorage / html class
+          : 'auto';
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate from localStorage
       setThemeState(t);
-      applyThemeClass(t);
+      const eff = resolveEffectiveTheme(t);
+      setEffectiveTheme(eff);
+      applyHtmlColorScheme(t);
     } catch {
-      applyThemeClass('dark');
+      applyHtmlColorScheme('auto');
+      setEffectiveTheme(resolveEffectiveTheme('auto'));
     }
   }, []);
+
+  useEffect(() => {
+    if (theme !== 'auto') return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => {
+      const eff = resolveEffectiveTheme('auto');
+      setEffectiveTheme(eff);
+      applyHtmlColorScheme('auto');
+    };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [theme]);
 
   const setTheme = useCallback((t: AtlasTheme) => {
     try {
@@ -59,10 +85,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       /* ignore */
     }
     setThemeState(t);
-    applyThemeClass(t);
+    const eff = resolveEffectiveTheme(t);
+    setEffectiveTheme(eff);
+    applyHtmlColorScheme(t);
   }, []);
 
-  const value = useMemo(() => ({ theme, setTheme }), [theme, setTheme]);
+  const value = useMemo(
+    () => ({ theme, effectiveTheme, setTheme }),
+    [theme, effectiveTheme, setTheme]
+  );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

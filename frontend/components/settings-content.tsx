@@ -11,7 +11,7 @@ function architectureActive(pathname: string): boolean {
 
 export function SettingsContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { theme, setTheme } = useAtlasTheme();
+  const { theme, setTheme, effectiveTheme } = useAtlasTheme();
   const arch = architectureActive(pathname);
 
   return (
@@ -43,25 +43,41 @@ export function SettingsContent({ onNavigate }: { onNavigate?: () => void }) {
 
       <div>
         <p className="text-[10px] font-medium text-text-muted mb-2">Appearance</p>
-        <div className="flex rounded-lg border border-border-subtle overflow-hidden text-xs">
-          <button
-            type="button"
-            onClick={() => setTheme('dark')}
-            className={`flex-1 px-3 py-2 font-medium transition-colors ${
-              theme === 'dark' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'
-            }`}
-          >
-            Dark
-          </button>
-          <button
-            type="button"
-            onClick={() => setTheme('light')}
-            className={`flex-1 px-3 py-2 font-medium border-l border-border-subtle transition-colors ${
-              theme === 'light' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'
-            }`}
-          >
-            Light
-          </button>
+        <div className="flex flex-col gap-1.5">
+          <div className="grid grid-cols-3 rounded-lg border border-border-subtle overflow-hidden text-xs">
+            <button
+              type="button"
+              onClick={() => setTheme('auto')}
+              className={`px-2 py-2 font-medium transition-colors ${
+                theme === 'auto' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'
+              }`}
+            >
+              Auto
+            </button>
+            <button
+              type="button"
+              onClick={() => setTheme('dark')}
+              className={`px-2 py-2 font-medium border-l border-border-subtle transition-colors ${
+                theme === 'dark' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'
+              }`}
+            >
+              Dark
+            </button>
+            <button
+              type="button"
+              onClick={() => setTheme('light')}
+              className={`px-2 py-2 font-medium border-l border-border-subtle transition-colors ${
+                theme === 'light' ? 'bg-fin-blue/20 text-fin-blue' : 'text-text-muted hover:bg-white/[0.04]'
+              }`}
+            >
+              Light
+            </button>
+          </div>
+          {theme === 'auto' ? (
+            <p className="text-[10px] text-text-muted">
+              Using {effectiveTheme === 'dark' ? 'dark' : 'light'} (system)
+            </p>
+          ) : null}
         </div>
       </div>
 
