@@ -7,7 +7,7 @@ Operator truth for **when to run what** remains [`RUNBOOK.md`](../../RUNBOOK.md)
 | Script | Role |
 |--------|------|
 | [`scripts/verify-supabase-migrations.sh`](../../scripts/verify-supabase-migrations.sh) | CI/local: `supabase/config.toml` exists, `supabase/migrations/*.sql` naming and numeric order |
-| [`scripts/run_db_first.py`](../../scripts/run_db_first.py) | After publish: validate optional `data/agent-cache/daily/<date>/**/*.json` → **`sync_positions_from_rebalance.py`** (if `--validate-mode` full|pm) → **`refresh_performance_metrics.py`** → `execute_at_open.py` (unless `--skip-execute`) → **`validate_db_first.py`** |
+| [`scripts/run_db_first.py`](../../scripts/run_db_first.py) | After publish: optionally validate local JSON mirrors if present → **`sync_positions_from_rebalance.py`** (if `--validate-mode` full|pm) → **`refresh_performance_metrics.py`** → `execute_at_open.py` (unless `--skip-execute`) → **`validate_db_first.py`** (DB-only runs skip local JSON; see [`data/README.md`](../../data/README.md)) |
 | [`scripts/validate_db_first.py`](../../scripts/validate_db_first.py) | Supabase row checks (`--mode full\|research\|pm`) |
 | [`scripts/validate_pipeline_step.py`](../../scripts/validate_pipeline_step.py) | After each pipeline step: `--step` or `--chain research\|track_b\|full` + `--date`; validates row presence + JSON Schema for thesis/deliberation/rebalance artifacts |
 | [`scripts/verify_supabase_canonical.py`](../../scripts/verify_supabase_canonical.py) | Read-only: no `documents.document_key` containing legacy `outputs/`; optional `--date` requires `daily_snapshots` row |
@@ -70,7 +70,13 @@ Operator truth for **when to run what** remains [`RUNBOOK.md`](../../RUNBOOK.md)
 
 ## Operator shell
 
-[`scripts/new-day.sh`](../../scripts/new-day.sh) (wrapper → `run_db_first.py`), [`scripts/status.sh`](../../scripts/status.sh), [`scripts/git-commit.sh`](../../scripts/git-commit.sh) (config/memory; scratch under `data/agent-cache/` stays gitignored), [`scripts/weekly-rollup.sh`](../../scripts/weekly-rollup.sh) / [`scripts/monthly-rollup.sh`](../../scripts/monthly-rollup.sh) (Supabase JSON prompts), [`scripts/smoke-test.sh`](../../scripts/smoke-test.sh) — see `--help` where supported. Invoke [`scripts/validate_db_first.py`](../../scripts/validate_db_first.py) directly or via `run_db_first.py`.
+[`scripts/new-day.sh`](../../scripts/new-day.sh) (wrapper → `run_db_first.py`), [`scripts/status.sh`](../../scripts/status.sh), [`scripts/git-commit.sh`](../../scripts/git-commit.sh) (config/memory only — not `data/`), [`scripts/weekly-rollup.sh`](../../scripts/weekly-rollup.sh) / [`scripts/monthly-rollup.sh`](../../scripts/monthly-rollup.sh) (Supabase JSON prompts), [`scripts/smoke-test.sh`](../../scripts/smoke-test.sh) — see `--help` where supported. Invoke [`scripts/validate_db_first.py`](../../scripts/validate_db_first.py) directly or via `run_db_first.py`.
+
+## Repo hygiene / audits
+
+| Script | Role |
+|--------|------|
+| [`scripts/audit_config_references.py`](../../scripts/audit_config_references.py) | Table of **tracked `config/*` files** vs `git grep` basename / `config/<file>` hit counts (heuristic; run before deleting config) |
 
 ## Co-work prompts
 

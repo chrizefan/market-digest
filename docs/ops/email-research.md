@@ -92,7 +92,7 @@ Subscribe to the following newsletters/alerts at your dedicated email:
 3. Claude reads and integrates automatically
 
 ### Best Practice:
-- Use Option A during Phase 1 (Alternative Data) — paste relevant sections into SKILL-sentiment-news.md step
+- Use Option A during Phase 1 (Alternative Data) — paste relevant sections into `skills/alt-sentiment-news/SKILL.md` where that skill asks for email context
 - Use Option B during Phase 2 (Institutional) — hedge fund letters, fund commentary
 - Use Option C for long-form research (quarterly letters, deep dive reports)
 

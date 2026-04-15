@@ -10,6 +10,9 @@ Daily market intelligence with an AI-orchestrated pipeline. **Canonical state is
 | [AGENTS.md](AGENTS.md) | Agent behavior + `python3 scripts/run_db_first.py` |
 | [docs/agentic/WORKFLOWS.md](docs/agentic/WORKFLOWS.md) | Procedures (baseline, delta, rollups) |
 | [docs/agentic/PLATFORMS.md](docs/agentic/PLATFORMS.md) | IDE / platform setup |
+| [docs/ops/PRE-MIGRATION-CLEANUP.md](docs/ops/PRE-MIGRATION-CLEANUP.md) | **Before monorepo move:** lean repo (scripts/skills audit, data hygiene) |
+| [docs/ops/REPOSITORY-INVENTORY.md](docs/ops/REPOSITORY-INVENTORY.md) | **Full folder/file accounting** for migration (tracked paths + gitignore policy) |
+| [docs/ops/MIGRATION-ROADMAP-DIGITHINGS.md](docs/ops/MIGRATION-ROADMAP-DIGITHINGS.md) | **After cleanup:** DigiThings + DigiGraph + multi-tenant roadmap (Wave 1: [docs/ops/DIGITHINGS-WAVE1-PLAN.md](docs/ops/DIGITHINGS-WAVE1-PLAN.md); Wave 2: [docs/ops/DIGITHINGS-WAVE2-GRAPH-SKETCH.md](docs/ops/DIGITHINGS-WAVE2-GRAPH-SKETCH.md)) |
 | [cowork/](cowork/) | **Claude Cowork:** start at [`cowork/README.md`](cowork/README.md); paste [`cowork/PROJECT-PROMPT.md`](cowork/PROJECT-PROMPT.md) into project settings; tasks in [`cowork/tasks/`](cowork/tasks/) |
 
 ## One command
@@ -25,8 +28,7 @@ config/           Runtime inputs: watchlist, portfolio, investment profile
 skills/<slug>/    Instruction packages (orchestrator, macro, sector-*, …)
 templates/schemas/JSON schemas for artifacts
 scripts/          Automation (run_db_first.py, materialize_snapshot.py, …)
-data/agent-cache/ Optional local scratch (gitignored except `.gitkeep`); **Supabase** is canonical — see [RUNBOOK.md](RUNBOOK.md)
-archive/          `legacy-scripts/` (retired markdown-era reference only)
+data/             Contents are **gitignored** (price cache, optional scratch). **`data/README.md`** is tracked and explains the tree. **Supabase** is canonical — see [RUNBOOK.md](RUNBOOK.md)
 docs/research/    Curated research doctrine (see skills/research-library)
 frontend/         Next.js dashboard
 supabase/         SQL migrations
@@ -54,14 +56,8 @@ python3 scripts/run_db_first.py   # DB-first entry
 |------|----------|
 | `CLAUDE.md` | Claude Code quick commands |
 | `CLAUDE_PROJECT_INSTRUCTIONS.md` | Claude.ai Projects: pointers only (paste `cowork/PROJECT-PROMPT.md`) |
-| `docs/agentic/ARCHITECTURE.md` | System design (primary) |
-| `docs/archive/ARCHITECTURE-REVIEW.md` | Extended reference (inventory, frontend, deploy) |
+| `docs/agentic/ARCHITECTURE.md` | System design (**canonical**; [`docs/ARCHITECTURE-REVIEW.md`](docs/ARCHITECTURE-REVIEW.md) is a short redirect for old links) |
 | `docs/agentic/MEMORY-SYSTEM.md` | Memory format |
 | `docs/agentic/SKILLS-CATALOG.md` | Skill index (keep short; filesystem is source of truth) |
 | `docs/ops/SCRIPTS.md` | Script index (publish, data, migration) |
 | `docs/ops/` | Sourcing / email ops (non-runtime reference) |
-
-## Legacy / archive
-
-- Stale paste docs: `docs/archive/`
-- Retired filesystem scripts: `archive/legacy-scripts/`

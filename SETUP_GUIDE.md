@@ -13,6 +13,8 @@ tar -xzf digiquant-atlas.tar.gz
 cd digiquant-atlas
 ```
 
+After clone you may have **no** `data/` folder, or only **`data/README.md`** (tracked). Scripts create other paths under **`data/`** locally (gitignored) for price CSV cache and optional scratch—**Supabase** holds canonical state ([RUNBOOK.md](RUNBOOK.md)).
+
 ### 1.2 Create a private GitHub repo
 
 Go to github.com → New repository → **Private** → name it `digiquant-atlas`
@@ -181,7 +183,7 @@ Review active theses in Supabase `documents` (thesis entries) weekly. Close thes
 
 ### Archiving / migration
 
-New runs are DB-first (Supabase). Retired markdown-era shell helpers are under `archive/legacy-scripts/` for reference; see [`RUNBOOK.md`](RUNBOOK.md) for migration and backfill.
+New runs are DB-first (Supabase). Disk backfill and migration flows live in [`RUNBOOK.md`](RUNBOOK.md) (no separate archive tree in this repo).
 
 ---
 
