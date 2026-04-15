@@ -43,7 +43,7 @@ For each `thesis_id` from the exploration artifact, build a **`body.mappings[]`*
 
 - **`doc_type`**: `thesis_vehicle_map`, `schema_version`: `1.0`
 - **Publish:** `thesis-vehicle-map/{{DATE}}.json`
-- **Validate + publish** with `--doc-type-label "Thesis Vehicle Map"`
+- **Validate + publish** with `--doc-type-label "Thesis Vehicle Map"` and `--title "Thesis Vehicle Map"`
 
 ---
 

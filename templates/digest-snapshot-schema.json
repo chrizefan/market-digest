@@ -14,7 +14,6 @@
     "segment_biases",
     "sector_scorecard",
     "theses",
-    "portfolio",
     "actionable",
     "risks",
     "narrative"
@@ -95,6 +94,7 @@
     },
     "portfolio": {
       "type": "object",
+      "description": "Optional in Track A (research-only) snapshots. Required only when the PM track has run and written portfolio state for this date.",
       "additionalProperties": false,
       "required": ["posture", "cash_pct", "positions", "proposed_positions"],
       "properties": {
@@ -121,9 +121,9 @@
     },
     "narrative": {
       "type": "object",
-      "description": "Sectioned narrative blocks. This is what will typically be rendered as Markdown in the UI.",
+      "description": "Sectioned narrative blocks. This is what will typically be rendered as Markdown in the UI. Track A (research-only) snapshots only require the research segments; portfolio_recs and thesis_tracker are optional and only present when the PM track has run.",
       "additionalProperties": false,
-      "required": ["alt_data", "institutional", "macro", "asset_classes", "us_equities", "thesis_tracker", "portfolio_recs"],
+      "required": ["macro", "us_equities"],
       "properties": {
         "alt_data": { "type": "string", "maxLength": 12000 },
         "institutional": { "type": "string", "maxLength": 12000 },
@@ -141,8 +141,16 @@
           }
         },
         "us_equities": { "type": "string", "maxLength": 20000 },
-        "thesis_tracker": { "type": "string", "maxLength": 12000 },
-        "portfolio_recs": { "type": "string", "maxLength": 12000 }
+        "thesis_tracker": {
+          "type": "string",
+          "maxLength": 12000,
+          "description": "Optional: present only when Track B PM theses have been evaluated for this date."
+        },
+        "portfolio_recs": {
+          "type": "string",
+          "maxLength": 12000,
+          "description": "Optional: present only when Track B PM track has produced a rebalance recommendation for this date."
+        }
       }
     },
     "source_refs": {

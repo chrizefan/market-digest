@@ -16,7 +16,7 @@ function pushBulletBlock(target: string[], heading: string, items: unknown[] | u
   target.push('');
 }
 
-export function renderDocumentMarkdownFromPayload(payload: unknown): string | null {
+export function renderDocumentMarkdownFromPayload(payload: unknown, documentKey?: string): string | null {
   const p = asObj(payload);
   if (!p) return null;
 
@@ -29,7 +29,17 @@ export function renderDocumentMarkdownFromPayload(payload: unknown): string | nu
     }
   }
 
-  const docType = s(p.doc_type);
+  // Infer doc_type from document_key when it is missing (legacy/transitional payloads).
+  let docType = s(p.doc_type);
+  if (!docType && documentKey) {
+    const dk = documentKey.toLowerCase();
+    if (dk.startsWith('deliberation-transcript-index/')) docType = 'deliberation_session_index';
+    else if (dk.startsWith('deliberation-transcript/')) docType = 'deliberation_transcript';
+    else if (dk.startsWith('market-thesis-exploration/')) docType = 'market_thesis_exploration';
+    else if (dk.startsWith('thesis-vehicle-map/')) docType = 'thesis_vehicle_map';
+    else if (dk.startsWith('asset-recommendations/')) docType = 'asset_recommendation';
+    else if (dk.startsWith('opportunity-screen/')) docType = 'opportunity_screen';
+  }
   if (!docType) return null;
 
   const dateStr = s(p.date);

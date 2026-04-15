@@ -97,6 +97,7 @@ def _load_json_file(path: Path) -> Any:
 
 def _validate_minimal(snapshot: Dict[str, Any]) -> None:
     # Avoid adding new Python deps (jsonschema). Enforce a minimal contract.
+    # Note: `portfolio` is optional — Track A (research-only) snapshots do not include it.
     required = [
         "schema_version",
         "date",
@@ -107,7 +108,6 @@ def _validate_minimal(snapshot: Dict[str, Any]) -> None:
         "segment_biases",
         "sector_scorecard",
         "theses",
-        "portfolio",
         "actionable",
         "risks",
         "narrative",

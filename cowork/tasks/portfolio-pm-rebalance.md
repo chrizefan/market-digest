@@ -17,15 +17,49 @@ Single-session **thesis-first** pipeline **after** research has published the di
 
 Uses **`config/preferences.md`**, **`config/investment-profile.md`**, and (only where a skill explicitly allows) **`config/portfolio.json`**.
 
+## UI layout (canonical — must match every day)
+
+The Portfolio > Intelligence tab groups artifacts into fixed sections. **Produce every section every run** so the page looks identical day-to-day.
+
+```
+┌──────────────────────────────────────────────────────┐
+│ Thesis                                               │
+│   Thesis Exploration   ← market-thesis-exploration/  │
+│   Thesis Vehicle Map   ← thesis-vehicle-map/         │
+│   Opportunity Screener ← opportunity-screener.json   │
+├──────────────────────────────────────────────────────┤
+│ NVDA  (one card per analyzed ticker)                 │
+│   Deliberation         ← deliberation-transcript/    │
+│   Recommendation       ← asset-recommendations/      │
+├──────────────────────────────────────────────────────┤
+│ AAPL  …                                              │
+├──────────────────────────────────────────────────────┤
+│ PM Memo                                              │
+│   PM Allocation Memo   ← pm-allocation-memo/         │
+└──────────────────────────────────────────────────────┘
+[deliberation-transcript-index/ → produced for machine use; NOT shown in UI]
+```
+
+**Title convention:** every artifact's DB `title` field must use the canonical name below — **not** a date-embedded path.
+
+| `document_key` pattern | DB `title` value |
+|---|---|
+| `market-thesis-exploration/{{DATE}}.json` | `Thesis Exploration` |
+| `thesis-vehicle-map/{{DATE}}.json` | `Thesis Vehicle Map` |
+| `opportunity-screener.json` | `Opportunity Screener` |
+| `deliberation-transcript/{{DATE}}/{{TICKER}}.json` | `{{TICKER}}` (ticker only, e.g. `NVDA`) |
+| `asset-recommendations/{{DATE}}/{{TICKER}}.json` | `{{TICKER}}` (ticker only, e.g. `NVDA`) |
+| `pm-allocation-memo/{{DATE}}.json` | `PM Allocation Memo` |
+
 ## Fresh vs delta (Track B artifacts)
 
 | Artifact | Rule |
 |----------|------|
-| **`market_thesis_exploration`** | **Delta-friendly:** publish a full JSON for the date; on refinements to the same exploration doc, prefer **`document_delta`** targeting that day’s `document_key` (same pattern as research per-doc deltas). |
+| **`market_thesis_exploration`** | **Delta-friendly:** publish a full JSON for the date; on refinements to the same exploration doc, prefer **`document_delta`** targeting that day's `document_key` (same pattern as research per-doc deltas). |
 | **`thesis_vehicle_map`** | **Delta-friendly** when only mapping rows change. |
-| **`asset_recommendation`** | **Delta-friendly** when revising the same ticker’s write-up; otherwise fresh key per material revision. |
+| **`asset_recommendation`** | **Delta-friendly** when revising the same ticker's write-up; otherwise fresh key per material revision. |
 | **`deliberation_transcript`** (per ticker) | **Always fresh** for each conference: `deliberation-transcript/{{DATE}}/{{TICKER}}.json` (new row each run). |
-| **`deliberation_session_index`** | **Fresh** each session: `deliberation-transcript-index/{{DATE}}.json` — lists per-ticker keys + `converged` flags. |
+| **`deliberation_session_index`** | **Optional** (machine use only — not rendered in UI): `deliberation-transcript-index/{{DATE}}.json`. Produce if useful for agent orchestration; omit if not needed. |
 | **`pm_allocation_memo`** | **Always fresh:** `pm-allocation-memo/{{DATE}}.json`. |
 | **`rebalance_decision`** | Fresh per publish (canonical `rebalance-decision.json`). |
 
@@ -65,8 +99,16 @@ For each ticker on the roster, run [`skills/asset-analyst/SKILL.md`](../../skill
 Follow [`skills/deliberation/SKILL.md`](../../skills/deliberation/SKILL.md):
 
 - One **`deliberation_transcript`** per ticker under `deliberation-transcript/{{DATE}}/{{TICKER}}.json`.
-- **Unbounded rounds** until PM sets `meta.converged: true` for that ticker; analysts may “recess” for light research and return.
-- Publish **`deliberation_session_index`** at `deliberation-transcript-index/{{DATE}}.json` listing all per-ticker keys.
+  Set `title = "{{TICKER}}"` (the ticker symbol only, e.g. `"NVDA"`) — the UI groups transcripts under the ticker section automatically.
+- **Unbounded rounds** until PM sets `meta.converged: true` for that ticker; analysts may "recess" for light research and return.
+- **Mandatory validation gate — run before every publish:**
+  ```bash
+  python3 scripts/validate_artifact.py - <<'EOF'
+  { ... JSON payload ... }
+  EOF
+  ```
+  Fix all validation errors before publishing. Do **not** publish a payload that fails validation.
+- `deliberation_session_index` (`deliberation-transcript-index/{{DATE}}.json`) is **optional** — produce it for machine orchestration if needed, but it is not rendered in the UI.
 
 ### Phase 6 — PM allocation memo
 
@@ -76,11 +118,11 @@ Follow [`skills/pm-allocation-memo/SKILL.md`](../../skills/pm-allocation-memo/SK
 
 Follow [`skills/portfolio-manager/SKILL.md`](../../skills/portfolio-manager/SKILL.md): aggregate deliberation outcomes + PM memo → Phase B clean-slate (working notes only) → Phase C vs **`config/portfolio.json`** (respect quantized weights, max change / thesis override rules). Publish **`rebalance_decision`** only; update `proposed_positions` as today.
 
-**`rebalance_decision.body.rebalance_table[].action`** must use the JSON schema enum only — **`HOLD`**, **`NEW`**, **`EXIT`**, **`ADD`**, **`TRIM`** — not a legacy “REBALANCE” label. [`execute_at_open.py`](../../scripts/execute_at_open.py) records **`position_events.event`** as **`OPEN`** (for `NEW`), **`EXIT`**, **`TRIM`**, **`ADD`**, or **`HOLD`**.
+**`rebalance_decision.body.rebalance_table[].action`** must use the JSON schema enum only — **`HOLD`**, **`NEW`**, **`EXIT`**, **`ADD`**, **`TRIM`** — not a legacy "REBALANCE" label. [`execute_at_open.py`](../../scripts/execute_at_open.py) records **`position_events.event`** as **`OPEN`** (for `NEW`), **`EXIT`**, **`TRIM`**, **`ADD`**, or **`HOLD`**.
 
-### Step validation (optional but recommended)
+### Step validation (mandatory)
 
-After publishing to Supabase, confirm rows and JSON shapes with [`scripts/validate_pipeline_step.py`](../../scripts/validate_pipeline_step.py) (`pip install jsonschema` if needed):
+After publishing each phase to Supabase, confirm rows and JSON shapes with [`scripts/validate_pipeline_step.py`](../../scripts/validate_pipeline_step.py) (`pip install jsonschema` if needed):
 
 | After phase | Command |
 |-------------|---------|

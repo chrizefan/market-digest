@@ -86,7 +86,8 @@ Save to: `data/agent-cache/daily/{{DATE}}/positions/{{TICKER}}.json` (optional l
 
 ```bash
 python3 scripts/validate_artifact.py - < positions/{{TICKER}}.json
-python3 scripts/publish_document.py --payload - --document-key asset-recommendations/{{DATE}}/{{TICKER}}.json --title "Asset recommendation {{TICKER}} {{DATE}}" --doc-type-label "Asset Recommendation"
+python3 scripts/publish_document.py --payload - --document-key asset-recommendations/{{DATE}}/{{TICKER}}.json --title "{{TICKER}}" --doc-type-label "Asset Recommendation"
+# title MUST be the ticker symbol only (e.g. "NVDA"). The UI groups recommendations under the per-ticker section automatically.
 ```
 
 Create the `positions/` subdirectory if it doesn't exist.

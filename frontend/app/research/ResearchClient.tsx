@@ -28,6 +28,7 @@ import {
   categorizeResearchDoc,
   isDailyResearchDoc,
 } from '@/lib/research-doc-categorize';
+import { resolveCarryForwardDocs, type CarryForwardDoc, isManifestDoc } from '@/lib/research-manifest';
 import KnowledgeBasePanel from '@/components/research/KnowledgeBasePanel';
 
 /** Extract a plain-text preview from digest markdown (first substantive paragraph, ≤160 chars). */
@@ -158,12 +159,55 @@ function ResearchPageInner({
 
   const effDate = selectedDate && dates.includes(selectedDate) ? selectedDate : dates[0] || null;
 
-  const docsForEffDate = useMemo<Doc[]>(
-    () => (effDate ? dailyResearchDocs.filter((d) => d.date === effDate) : []),
+  /**
+   * Carry-forward manifest docs: for each canonical manifest entry, the most
+   * recent doc with date ≤ effDate.  Docs not updated on effDate get
+   * `isUpdatedToday: false` and `carriedFromDate` set to their actual date.
+   */
+  const carryForwardDocs = useMemo<CarryForwardDoc[]>(
+    () => (effDate ? resolveCarryForwardDocs(dailyResearchDocs, effDate) : []),
     [dailyResearchDocs, effDate]
   );
 
-  const dateDocs = useMemo<Doc[]>(() => {
+  /**
+   * Document keys that are superseded by individual manifest docs and should
+   * never appear in the research library (old aggregate blobs).
+   */
+  const SUPERSEDED_RESEARCH_KEYS = new Set([
+    'deltas/sectors.delta.md',      // replaced by deltas/sectors/*.delta.md
+    'deltas/sentiment.delta.md',    // replaced by deltas/alt/sentiment.delta.md
+  ]);
+
+  /**
+   * Non-manifest docs that are strictly from effDate (digest, research-delta
+   * blobs, etc.) — kept alongside the manifest carry-forward set.
+   * Old aggregate docs that are superseded by individual manifest entries are
+   * filtered out so they don't appear alongside the granular files.
+   */
+  const nonManifestDocsForDate = useMemo<Doc[]>(
+    () =>
+      effDate
+        ? dailyResearchDocs.filter(
+            (d) =>
+              d.date === effDate &&
+              !isManifestDoc(d.path || '') &&
+              !SUPERSEDED_RESEARCH_KEYS.has((d.path || '').toLowerCase())
+          )
+        : [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dailyResearchDocs, effDate]
+  );
+
+  /**
+   * Full document set for the selected date = manifest carry-forward + non-manifest.
+   * These are what populate the category groups.
+   */
+  const docsForEffDate = useMemo<(Doc | CarryForwardDoc)[]>(
+    () => [...nonManifestDocsForDate, ...carryForwardDocs],
+    [nonManifestDocsForDate, carryForwardDocs]
+  );
+
+  const dateDocs = useMemo<(Doc | CarryForwardDoc)[]>(() => {
     let list = docsForEffDate;
     if (filterCat) list = list.filter((d) => categorizeResearchDoc(d) === filterCat);
     const q = searchQuery.trim().toLowerCase();
@@ -178,8 +222,8 @@ function ResearchPageInner({
     return list;
   }, [docsForEffDate, filterCat, searchQuery]);
 
-  const grouped = useMemo<[string, Doc[]][]>(() => {
-    const map: Record<string, Doc[]> = {};
+  const grouped = useMemo<[string, (Doc | CarryForwardDoc)[]][]>(() => {
+    const map: Record<string, (Doc | CarryForwardDoc)[]> = {};
     dateDocs.forEach((d) => {
       const cat = categorizeResearchDoc(d);
       (map[cat] = map[cat] || []).push(d);
@@ -210,6 +254,8 @@ function ResearchPageInner({
 
   const latestDate = dates[0] || null;
 
+  // A file is "hidden" if it's open but doesn't appear in the current filtered list.
+  // For carry-forward docs the id still matches since we use the actual DB row.
   const activeFileHidden =
     activeFile != null && !dateDocs.some((d) => d.id === activeFile.id);
 
@@ -223,7 +269,10 @@ function ResearchPageInner({
 
   useEffect(() => {
     if (!urlDocKey || tab !== 'daily') return;
-    const match = researchDocs.find((d) => d.date === effDate && d.path === urlDocKey);
+    // Check carry-forward set first (manifest docs appear here even when carried from a prior date)
+    const cfMatch = docsForEffDate.find((d) => d.path === urlDocKey);
+    // Fall back to exact-date match for non-manifest docs
+    const match = cfMatch ?? researchDocs.find((d) => d.date === effDate && d.path === urlDocKey);
     if (match) {
       setActiveFile(match);
       setLibraryDoc(null);
@@ -242,7 +291,7 @@ function ResearchPageInner({
         )
         .finally(() => setActiveLoading(false));
     }
-  }, [urlDocKey, researchDocs, effDate, tab]);
+  }, [urlDocKey, researchDocs, docsForEffDate, effDate, tab]);
 
   if (loading) return <AtlasLoader />;
   if (error || !data) return <div className="flex items-center justify-center h-screen text-fin-red">{error}</div>;
@@ -410,7 +459,12 @@ function ResearchPageInner({
                 <Calendar size={16} className="text-fin-blue shrink-0" />
                 <h2 className="text-lg font-semibold">{effDate || 'No date selected'}</h2>
                 <span className="text-xs text-text-muted">
-                  {dateDocs.length} file{dateDocs.length !== 1 ? 's' : ''}
+                  {(() => {
+                    const updated = dateDocs.filter((d) => !(d as CarryForwardDoc).carriedFromDate || (d as CarryForwardDoc).isUpdatedToday).length;
+                    const total = dateDocs.length;
+                    if (updated < total) return `${updated} updated · ${total} total`;
+                    return `${total} file${total !== 1 ? 's' : ''}`;
+                  })()}
                 </span>
                 {latestDate ? (
                   <span className="text-[10px] font-mono text-text-muted ml-auto sm:ml-0">{latestDate}</span>
@@ -450,6 +504,9 @@ function ResearchPageInner({
                         const isDocDelta = (f.runType || '').toLowerCase() === 'delta';
                         const showRowDeltaHint = !deltaDay && isDocDelta;
                         const expanded = activeFile?.id === f.id;
+                        // Carry-forward indicator
+                        const cfDoc = f as CarryForwardDoc;
+                        const isCarried = cfDoc.carriedFromDate != null && !cfDoc.isUpdatedToday;
                         return (
                           <div key={f.id}>
                             <button
@@ -483,15 +540,19 @@ function ResearchPageInner({
                                 }
                                 replaceQuery((p) => {
                                   p.set('tab', 'daily');
-                                  if (f.date) p.set('date', f.date);
+                                  // Always link to the view date, not the doc's actual date
+                                  if (effDate) p.set('date', effDate);
                                   p.set('docKey', f.path);
                                 });
                               }}
                               className={`w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02] transition-colors ${
                                 expanded ? 'bg-fin-blue/[0.06]' : ''
-                              }`}
+                              } ${isCarried ? 'opacity-70' : ''}`}
                             >
-                              <FileText size={14} className="text-fin-blue/60 shrink-0 mt-0.5" />
+                              <FileText
+                                size={14}
+                                className={`shrink-0 mt-0.5 ${isCarried ? 'text-text-muted/50' : 'text-fin-blue/60'}`}
+                              />
                               <span className="min-w-0 flex-1">
                                 <span className="block font-mono text-sm">{canonicalResearchTitle(f)}</span>
                                 {(() => {
@@ -500,14 +561,31 @@ function ResearchPageInner({
                                     isDigest && !expanded && libraryDoc?.document_key === f.path
                                       ? digestPreviewSnippet(libraryDoc.markdown)
                                       : null;
-                                  return snippet ? (
-                                    <span className="block text-[11px] text-text-muted truncate mt-0.5 pr-2">
-                                      {snippet}
-                                    </span>
-                                  ) : null;
+                                  if (snippet) {
+                                    return (
+                                      <span className="block text-[11px] text-text-muted truncate mt-0.5 pr-2">
+                                        {snippet}
+                                      </span>
+                                    );
+                                  }
+                                  if (isCarried && cfDoc.carriedFromDate) {
+                                    return (
+                                      <span className="block text-[10px] text-text-muted/60 mt-0.5">
+                                        last updated {cfDoc.carriedFromDate}
+                                      </span>
+                                    );
+                                  }
+                                  return null;
                                 })()}
                               </span>
-                              {showRowDeltaHint ? (
+                              {isCarried ? (
+                                <span
+                                  className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-border-subtle text-text-muted/60 shrink-0 uppercase tracking-wide"
+                                  title={`No update on ${effDate ?? 'this date'} — showing last version from ${cfDoc.carriedFromDate}`}
+                                >
+                                  carried
+                                </span>
+                              ) : showRowDeltaHint ? (
                                 <span
                                   className="text-[10px] font-mono text-text-muted shrink-0"
                                   title="Published as a delta refresh for this date"
@@ -521,7 +599,7 @@ function ResearchPageInner({
                               <DocumentExpandInline
                                 hideTitleBar
                                 title={canonicalResearchTitle(f)}
-                                subtitle={f.date ?? null}
+                                subtitle={isCarried && cfDoc.carriedFromDate ? cfDoc.carriedFromDate : (f.date ?? null)}
                                 loading={activeLoading}
                                 libraryDoc={libraryDoc}
                               />

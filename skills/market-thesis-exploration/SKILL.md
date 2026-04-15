@@ -59,7 +59,7 @@ Emit **`doc_type`: `market_thesis_exploration`**, `schema_version`: `1.0`, `date
 
 - **Publish:** `document_key` e.g. `market-thesis-exploration/{{DATE}}.json`
 - **Validate:** `python3 scripts/validate_artifact.py - < payload.json`
-- **Publish to Supabase:** `python3 scripts/publish_document.py --payload - --document-key market-thesis-exploration/{{DATE}}.json --title "Market thesis exploration {{DATE}}" --doc-type-label "Market Thesis Exploration"`
+- **Publish to Supabase:** `python3 scripts/publish_document.py --payload - --document-key market-thesis-exploration/{{DATE}}.json --title "Thesis Exploration" --doc-type-label "Market Thesis Exploration"`
 
 ---
 

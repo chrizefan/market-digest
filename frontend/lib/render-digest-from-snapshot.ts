@@ -20,7 +20,6 @@ function str(v: unknown): string {
 export function renderDigestMarkdownFromSnapshot(snapshot: DigestSnapshot): string {
   const date = str(snapshot.date);
   const regime = (snapshot.regime || {}) as Record<string, unknown>;
-  const portfolio = (snapshot.portfolio || {}) as Record<string, unknown>;
   const lines: string[] = [];
 
   lines.push(`# DIGEST — ${date}`);
@@ -60,25 +59,12 @@ export function renderDigestMarkdownFromSnapshot(snapshot: DigestSnapshot): stri
   }
   lines.push('');
 
-  lines.push('## Portfolio Positioning');
-  lines.push(`**Portfolio Posture**: ${str(portfolio.posture)}`);
-  if (portfolio.cash_pct != null) lines.push(`**Cash %**: ${str(portfolio.cash_pct)}`);
-  lines.push('');
-  lines.push('| Ticker | Weight% | Action | Rationale |');
-  lines.push('|---|---:|---|---|');
-  const positions = (portfolio.positions || []) as Array<Record<string, unknown>>;
-  for (const p of positions) {
-    lines.push(
-      `| ${str(p.ticker)} | ${str(p.weight_pct)} | ${str(p.action)} | ${str(p.rationale)} |`
-    );
-  }
-  lines.push('');
-
   const nar = snapshot.narrative;
   if (nar && typeof nar === 'object') {
     lines.push('## Narrative');
     lines.push('');
-    for (const key of ['alt_data', 'institutional', 'macro', 'us_equities', 'thesis_tracker', 'portfolio_recs']) {
+    // Research segments (always rendered when present)
+    for (const key of ['alt_data', 'institutional', 'macro', 'us_equities']) {
       const val = (nar as Record<string, unknown>)[key];
       if (val) {
         const title = key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -102,6 +88,34 @@ export function renderDigestMarkdownFromSnapshot(snapshot: DigestSnapshot): stri
         }
       }
     }
+    // PM sections (only rendered when present — Track B populates these)
+    for (const key of ['thesis_tracker', 'portfolio_recs']) {
+      const val = (nar as Record<string, unknown>)[key];
+      if (val) {
+        const title = key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        lines.push(`### ${title}`);
+        lines.push(String(val).trim());
+        lines.push('');
+      }
+    }
+  }
+
+  // Portfolio positioning — only shown when Track B has populated it
+  const portfolio = snapshot.portfolio as Record<string, unknown> | undefined;
+  if (portfolio && (portfolio.posture || (portfolio.positions as unknown[])?.length)) {
+    lines.push('## Portfolio Positioning');
+    lines.push(`**Portfolio Posture**: ${str(portfolio.posture)}`);
+    if (portfolio.cash_pct != null) lines.push(`**Cash %**: ${str(portfolio.cash_pct)}`);
+    lines.push('');
+    lines.push('| Ticker | Weight% | Action | Rationale |');
+    lines.push('|---|---:|---|---|');
+    const positions = (portfolio.positions || []) as Array<Record<string, unknown>>;
+    for (const p of positions) {
+      lines.push(
+        `| ${str(p.ticker)} | ${str(p.weight_pct)} | ${str(p.action)} | ${str(p.rationale)} |`
+      );
+    }
+    lines.push('');
   }
 
   return `${lines.join('\n').trim()}\n`;

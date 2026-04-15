@@ -9,7 +9,7 @@ import DocumentExpandInline from '@/components/library/DocumentExpandInline';
 import { SleeveStackedChart } from '@/components/portfolio/sleeve-stacked-chart';
 import type { Doc, Thesis } from '@/lib/types';
 import type { LibraryDocumentResult } from '@/lib/queries';
-import { canonicalResearchTitle } from '@/lib/research-doc-categorize';
+import { groupPmDocs, canonicalPmTitle } from '@/components/portfolio/tabs/palette-and-format';
 import type { SleeveStackMode } from '@/lib/portfolio-aggregates';
 
 export default function AnalysisTab(props: {
@@ -108,58 +108,82 @@ export default function AnalysisTab(props: {
       </div>
 
       <div className="flex-1 min-w-0 space-y-10">
+        {/* ── PM artifacts — grouped by Thesis / Asset / Memo ── */}
         <section className="space-y-3">
-          <div className="glass-card p-0 overflow-hidden">
-            <div className="px-5 py-4 border-b border-border-subtle bg-bg-secondary">
-              <div className="flex flex-wrap items-center gap-2">
-                <Calendar size={16} className="text-fin-amber shrink-0" aria-hidden />
-                <h3 className="text-sm font-semibold">PM artifacts</h3>
-              </div>
-              <p className="text-xs text-text-muted mt-1">
-                <span className="font-mono text-text-secondary">{effHistoryDate ?? '—'}</span>
-                {effHistoryDate &&
-                pmDocsForHistory.length === 0 &&
-                !portfolioDocDates.has(effHistoryDate) &&
-                positionHistoryDates.has(effHistoryDate) ? (
-                  <span className="block mt-1">No PM files for this date; theses and sleeves still use this snapshot.</span>
-                ) : null}
-              </p>
-            </div>
-            {pmDocsForHistory.length === 0 ? (
-              <div className="px-5 py-10 text-center text-text-muted text-sm">No PM files for this date.</div>
-            ) : (
-              <div className="divide-y divide-border-subtle">
-                {pmDocsForHistory.map((d) => {
-                  const active = pmActiveFile?.id === d.id;
-                  return (
-                    <div key={d.id}>
-                      <button
-                        type="button"
-                        onClick={() => onOpenPmDocument(d)}
-                        className={`w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02] transition-colors ${
-                          active ? 'bg-fin-amber/5' : ''
-                        }`}
-                      >
-                        <FileText size={14} className="text-fin-amber/70 shrink-0" />
-                        <span className="font-mono text-sm">{canonicalResearchTitle(d)}</span>
-                        <span className="ml-auto text-[11px] text-text-muted">{d.phase ?? ''}</span>
-                      </button>
-                      {active && pmActiveFile ? (
-                        <DocumentExpandInline
-                          accent="amber"
-                          hideTitleBar
-                          title={pmActiveFile.title || pmActiveFile.filename || pmActiveFile.path}
-                          subtitle={pmActiveFile.date ?? null}
-                          loading={pmLoading}
-                          libraryDoc={pmLibraryDoc}
-                        />
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+          {/* Date header */}
+          <div className="flex items-center gap-2 px-0.5">
+            <Calendar size={15} className="text-fin-amber shrink-0" aria-hidden />
+            <span className="text-xs font-medium text-text-muted font-mono">{effHistoryDate ?? '—'}</span>
+            {effHistoryDate &&
+            pmDocsForHistory.length === 0 &&
+            !portfolioDocDates.has(effHistoryDate) &&
+            positionHistoryDates.has(effHistoryDate) ? (
+              <span className="text-xs text-text-muted ml-2">
+                No PM files for this date; theses and sleeves still use this snapshot.
+              </span>
+            ) : null}
           </div>
+
+          {pmDocsForHistory.length === 0 ? (
+            <div className="glass-card px-5 py-10 text-center text-text-muted text-sm">
+              No PM files for this date.
+            </div>
+          ) : (
+            (() => {
+              const groups = groupPmDocs(pmDocsForHistory);
+              return groups.map((group) => {
+                const groupKey =
+                  group.kind === 'thesis'         ? '__thesis__'
+                  : group.kind === 'recommendations' ? '__recs__'
+                  : group.kind === 'deliberations'   ? '__dels__'
+                  : '__memo__';
+                const groupLabel =
+                  group.kind === 'thesis'            ? 'Thesis'
+                  : group.kind === 'recommendations' ? 'Recommendations'
+                  : group.kind === 'deliberations'   ? 'Deliberations'
+                  : 'PM Memo';
+                return (
+                  <div key={groupKey} className="glass-card p-0 overflow-hidden">
+                    <div className="px-5 py-3 border-b border-border-subtle bg-bg-secondary">
+                      <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+                        {groupLabel}
+                      </h3>
+                    </div>
+                    <div className="divide-y divide-border-subtle">
+                      {group.docs.map((d) => {
+                        const active = pmActiveFile?.id === d.id;
+                        return (
+                          <div key={d.id}>
+                            <button
+                              type="button"
+                              onClick={() => onOpenPmDocument(d)}
+                              className={`w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-white/[0.02] transition-colors ${
+                                active ? 'bg-fin-amber/5' : ''
+                              }`}
+                            >
+                              <FileText size={14} className="text-fin-amber/70 shrink-0" />
+                              <span className="font-mono text-sm">{canonicalPmTitle(d.path)}</span>
+                              <span className="ml-auto text-[11px] text-text-muted">{d.phase ?? ''}</span>
+                            </button>
+                            {active && pmActiveFile ? (
+                              <DocumentExpandInline
+                                accent="amber"
+                                hideTitleBar
+                                title={canonicalPmTitle(pmActiveFile.path)}
+                                subtitle={pmActiveFile.date ?? null}
+                                loading={pmLoading}
+                                libraryDoc={pmLibraryDoc}
+                              />
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              });
+            })()
+          )}
         </section>
 
         <section className="space-y-4">

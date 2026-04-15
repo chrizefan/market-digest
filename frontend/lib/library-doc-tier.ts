@@ -28,9 +28,11 @@ function pathKey(path: string): string {
 export function getDocLibraryTier(d: Pick<Doc, 'path' | 'segment' | 'type'>): DocLibraryTier {
   const p = (d.path || '').toLowerCase();
   if (p.startsWith('evolution/')) return 'evolution';
-  if (p.startsWith('market-thesis-exploration/')) return 'research';
+  // Track B (PM) artifacts — thesis exploration, vehicle mapping, screener, deliberation, recs all belong here
   if (
+    p.startsWith('market-thesis-exploration/') ||
     p.startsWith('thesis-vehicle-map/') ||
+    p.startsWith('opportunity-screen/') ||
     p.startsWith('pm-allocation-memo/') ||
     p.startsWith('deliberation-transcript-index/') ||
     p.startsWith('deliberation-transcript/') ||
@@ -68,6 +70,8 @@ export function docMatchesLibraryScope(
     if (file === 'delta-request.json') return false;
     const full = (d.path || '').toLowerCase();
     if (full.startsWith('document-deltas/')) return false;
+    // Per-segment deltas (deltas/* incl. deltas/sectors/* and deltas/alt/*) are research docs
+    // and should NOT be hidden — they ARE the primary research content.
     return true;
   }
   if (scope === 'portfolio') {

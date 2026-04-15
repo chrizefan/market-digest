@@ -13,7 +13,30 @@ type FinalRow = {
 };
 
 type Section = { heading?: string; markdown?: string };
+// Canonical schema shape: {label, sections[]}
 type Round = { label?: string; sections?: Section[] };
+// Legacy chat shape (pre-schema): {round, pm, analyst}
+type LegacyChatRound = { round?: number; pm?: string; analyst?: string };
+
+/** Convert old {pm, analyst, round} format into canonical {label, sections[]} */
+function normalizeLegacyRound(r: LegacyChatRound): Round {
+  const label = `Round ${r.round ?? '?'}`;
+  const sections: Section[] = [];
+  if (r.analyst) sections.push({ heading: 'Analyst', markdown: r.analyst });
+  if (r.pm) sections.push({ heading: 'PM', markdown: r.pm });
+  return { label, sections };
+}
+
+function normalizeRounds(raw: unknown[]): Round[] {
+  return raw.map((r) => {
+    if (!r || typeof r !== 'object' || Array.isArray(r)) return { label: '—', sections: [] };
+    const o = r as Record<string, unknown>;
+    // Already canonical
+    if (o.label !== undefined || o.sections !== undefined) return o as Round;
+    // Legacy chat format
+    return normalizeLegacyRound(o as LegacyChatRound);
+  });
+}
 
 export default function DeliberationDocumentView({
   payload,
@@ -28,10 +51,13 @@ export default function DeliberationDocumentView({
       : null;
 
   const finalDecisions = Array.isArray(body?.final_decisions) ? (body.final_decisions as FinalRow[]) : [];
-  const rounds = Array.isArray(body?.rounds) ? (body.rounds as Round[]) : [];
+  const rounds = Array.isArray(body?.rounds) ? normalizeRounds(body.rounds as unknown[]) : [];
+  // trigger_summary may be a string (legacy) or array of strings (canonical)
   const triggerSummary = Array.isArray(body?.trigger_summary)
     ? (body.trigger_summary as string[]).filter(Boolean)
-    : [];
+    : typeof body?.trigger_summary === 'string' && (body.trigger_summary as string).trim()
+      ? [(body.trigger_summary as string).trim()]
+      : [];
 
   if (!body || (!finalDecisions.length && !rounds.length)) {
     return (

@@ -1,5 +1,112 @@
 import type { Doc } from '@/lib/types';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PM document grouping
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type PmDocGroup =
+  | { kind: 'thesis'; docs: Doc[] }
+  | { kind: 'recommendations'; docs: Doc[] }
+  | { kind: 'deliberations'; docs: Doc[] }
+  | { kind: 'memo'; docs: Doc[] };
+
+/** Extract the ticker from a nested PM document_key (case-insensitive). */
+export function extractTickerFromPmKey(path: string): string | null {
+  const m = (path || '').match(
+    /(?:deliberation-transcript|asset-recommendations)\/[^/]+\/([^/]+)\.json$/i
+  );
+  return m ? m[1].toUpperCase() : null;
+}
+
+/** Stable display title for a PM artifact row (date-independent). */
+export function canonicalPmTitle(path: string): string {
+  const p = (path || '').toLowerCase();
+  if (p.startsWith('market-thesis-exploration/')) return 'Thesis Exploration';
+  if (p.startsWith('thesis-vehicle-map/'))         return 'Thesis Vehicle Map';
+  if (p.includes('opportunity-screen'))             return 'Opportunity Screener';
+  if (p.startsWith('pm-allocation-memo/'))          return 'PM Allocation Memo';
+  // Per-ticker docs: show just the ticker (section header provides context)
+  if (p.startsWith('deliberation-transcript/') || p.startsWith('asset-recommendations/')) {
+    const ticker = extractTickerFromPmKey(path);
+    return ticker ?? path.split('/').pop()?.replace(/\.json$/i, '') ?? path;
+  }
+  return path.split('/').pop()?.replace(/\.json$/i, '') ?? path;
+}
+
+/**
+ * Group PM artifact docs into the canonical Intelligence tab sections:
+ *
+ *   1. Thesis        — Thesis Exploration, Thesis Vehicle Map, Opportunity Screener
+ *   2. Recommendations — one row per analyzed ticker (asset-recommendations/*)
+ *   3. Deliberations — one row per analyzed ticker (deliberation-transcript/*)
+ *   4. PM Memo       — PM Allocation Memo + fallback unknown docs
+ *
+ * Hidden: `deliberation-transcript-index/` (machine use only).
+ */
+export function groupPmDocs(docs: Doc[]): PmDocGroup[] {
+  const thesisDocs: Doc[] = [];
+  const recDocs: Doc[] = [];
+  const delDocs: Doc[] = [];
+  const memoDocs: Doc[] = [];
+
+  for (const d of docs) {
+    const p = (d.path || '').toLowerCase();
+
+    if (p.startsWith('deliberation-transcript-index/')) continue;
+
+    if (
+      p.startsWith('market-thesis-exploration/') ||
+      p.startsWith('thesis-vehicle-map/') ||
+      p.includes('opportunity-screen')
+    ) {
+      thesisDocs.push(d);
+      continue;
+    }
+
+    if (p.startsWith('asset-recommendations/')) {
+      recDocs.push(d);
+      continue;
+    }
+
+    if (p.startsWith('deliberation-transcript/')) {
+      delDocs.push(d);
+      continue;
+    }
+
+    memoDocs.push(d);
+  }
+
+  // Thesis: exploration → vehicle map → screener
+  thesisDocs.sort((a, b) => {
+    const order = (p: string) => {
+      const low = p.toLowerCase();
+      if (low.startsWith('market-thesis-exploration/')) return 0;
+      if (low.startsWith('thesis-vehicle-map/')) return 1;
+      return 2;
+    };
+    return order(a.path) - order(b.path);
+  });
+
+  // Recommendations + Deliberations: alphabetical by ticker
+  const byTicker = (d: Doc) => extractTickerFromPmKey(d.path) ?? d.path;
+  recDocs.sort((a, b) => byTicker(a).localeCompare(byTicker(b)));
+  delDocs.sort((a, b) => byTicker(a).localeCompare(byTicker(b)));
+
+  // Memo: pm-allocation-memo first
+  memoDocs.sort((a, b) => {
+    const rank = (p: string) => (p.toLowerCase().startsWith('pm-allocation-memo/') ? 0 : 1);
+    return rank(a.path) - rank(b.path);
+  });
+
+  const groups: PmDocGroup[] = [];
+  if (thesisDocs.length > 0) groups.push({ kind: 'thesis', docs: thesisDocs });
+  if (recDocs.length > 0)    groups.push({ kind: 'recommendations', docs: recDocs });
+  if (delDocs.length > 0)    groups.push({ kind: 'deliberations', docs: delDocs });
+  if (memoDocs.length > 0)   groups.push({ kind: 'memo', docs: memoDocs });
+
+  return groups;
+}
+
 export const ALLOCATION_PALETTE = [
   '#3B82F6',
   '#10B981',

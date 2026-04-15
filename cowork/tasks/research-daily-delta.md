@@ -6,18 +6,34 @@
 
 **Positioning-blind** **delta** research for the run date (Mon–Sat or any intra-week / high-frequency slot). Use `"run_type": "delta"` unless you are intentionally doing a baseline-class run.
 
-**Do not** read `config/preferences.md`, `config/investment-profile.md`, or `config/portfolio.json`.
+**Do not** read `config/preferences.md`, `config/investment-profile.md`, or `config/portfolio.json`. Track A is strictly research — no portfolio weights, no opportunity screening, no thesis-to-vehicle mapping.
 
-Each `research_delta` publish needs a **new** `document_key` under `research-delta/…` (see skill) so multiple runs per calendar day keep history.
+**Output contract:**
 
-**Final step (mandatory):** after segment/delta research, **compile the digest** for `RUN_DATE` — the **single research overview** that rolls up all sub-segments. That is **research close-out**, not PM work: follow [`skills/daily-delta/SKILL.md`](../../skills/daily-delta/SKILL.md) **through Phase 7B** (materialize & publish `digest` + `daily_snapshots`). **Do not** run **Phase 7C–7D** here — those are the **portfolio monitor / PM** layer; run them from [`portfolio-pm-rebalance.md`](portfolio-pm-rebalance.md) if needed.
+| Artifact | document_key pattern | Schema |
+|----------|---------------------|--------|
+| Per-segment delta docs | `deltas/{SEGMENT}.delta.md` (one per changed segment) | Phase 6 of `skills/daily-delta/SKILL.md` |
+| Materialized digest snapshot | `digest` | `templates/digest-snapshot-schema.json` (research-only: no `portfolio` block required) |
+| Supabase snapshot row | `daily_snapshots` for `RUN_DATE` | same schema |
+
+**Final step (mandatory):** after per-segment delta documents are published, **compile the research-only digest** for `RUN_DATE` via Phase 7B. **Do not** run Phase 7C–7D (portfolio monitor / PM) — those belong in [`portfolio-pm-rebalance.md`](portfolio-pm-rebalance.md).
 
 ## Steps
 
 1. `pip install -r requirements.txt` if needed; set `SUPABASE_URL` + `SUPABASE_SERVICE_KEY`.
-2. Follow [`skills/research-daily/SKILL.md`](../../skills/research-daily/SKILL.md): produce local JSON, unique `research-delta/<RUN_SUFFIX>.json` key, `publish_document.py`, then validation (when you use additive `research_delta` alongside the digest pipeline).
-3. Follow [`skills/daily-delta/SKILL.md`](../../skills/daily-delta/SKILL.md) **through Phase 7B** so **`documents.digest`** and **`daily_snapshots`** exist for `RUN_DATE`. Stop before Phase 7C unless you are intentionally collapsing research + portfolio into one session.
-4. `python3 scripts/run_db_first.py --skip-execute --validate-mode research` (add `--date YYYY-MM-DD` if not today).
-5. `python3 scripts/validate_pipeline_step.py --date RUN_DATE --step research_closeout` — confirms research close-out (**`digest`** + materialized snapshot JSON).
+2. Follow [`skills/daily-delta/SKILL.md`](../../skills/daily-delta/SKILL.md) **Phases 1–6** (triage, segment analysis, per-segment delta documents). Publish one `document_delta` per segment (status `updated` or `skipped` with reason) under `deltas/{SEGMENT}.delta.md`. Do **not** publish a single aggregated `research_delta` blob in place of per-segment docs.
+3. Optionally run the fold/changelog step:
+   ```bash
+   python3 scripts/fold_document_deltas.py --date RUN_DATE
+   ```
+4. Follow [`skills/daily-delta/SKILL.md`](../../skills/daily-delta/SKILL.md) **Phase 7B** (delta-request JSON + `materialize_snapshot.py`) to publish `documents.digest` and `daily_snapshots` for `RUN_DATE`. The digest snapshot must **not** include `portfolio`, `portfolio_recs`, or any Track B PM artifacts — it is a research-only document.
+5. Validate:
+   ```bash
+   python3 scripts/validate_artifact.py - <<'EOF'
+   <paste digest snapshot JSON>
+   EOF
+   python3 scripts/run_db_first.py --skip-execute --validate-mode research --date RUN_DATE
+   python3 scripts/validate_pipeline_step.py --date RUN_DATE --step research_closeout
+   ```
 
 **Prompt helper:** [`scripts/cowork-research-prompt.txt`](../../scripts/cowork-research-prompt.txt)

@@ -149,13 +149,17 @@ function resolveLibraryDocumentView(document_key: string, payload: unknown): Lib
     return 'markdown';
   }
 
+  // Deliberation session index: markdown view (structured table of per-ticker sessions)
+  if (key.startsWith('deliberation-transcript-index/') || dt === 'deliberation_session_index') {
+    return 'markdown';
+  }
+
   // Delta research docs and portfolio date-keyed docs get the diff view
   if (key.startsWith('deltas/')) return 'diffable';
   const PORTFOLIO_DATE_PREFIXES = [
     'market-thesis-exploration/',
     'thesis-vehicle-map/',
     'pm-allocation-memo/',
-    'deliberation-transcript-index/',
     'asset-rec/',
   ];
   if (PORTFOLIO_DATE_PREFIXES.some((pfx) => key.startsWith(pfx))) return 'diffable';
@@ -1035,7 +1039,7 @@ export async function getLibraryDocumentById(id: string): Promise<LibraryDocumen
   let md = doc.content?.trim() ? doc.content : '';
 
   if (!md && doc.payload != null) {
-    md = renderDocumentMarkdownFromPayload(doc.payload) || md;
+    md = renderDocumentMarkdownFromPayload(doc.payload, doc.document_key ?? undefined) || md;
   }
 
   if (!md && doc.document_key === 'digest') {

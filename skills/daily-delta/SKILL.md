@@ -270,8 +270,52 @@ ORDER BY date DESC LIMIT 1;
 If no prior delta exists for this week, use the baseline (`macro.md`, date = WEEK_ANCHOR_DATE).
 
 ### Step 6.2 — Author full evolved delta documents
-For each research segment, produce the complete document and publish:
-- `document_key`: `deltas/macro.delta.md`, `deltas/sectors/energy.delta.md`, etc.
+
+**Canonical document key + title list** — produce ALL of the following every delta day.
+The `title` column is the **exact string to pass as `--title`** to `publish_document.py`. It must
+never contain a date, "Delta", or "Analysis" suffix — the title is the document's permanent name.
+
+#### Core market analysis (mandatory / high priority — always publish)
+| `document_key`                  | `--title`         | Priority  |
+|---------------------------------|-------------------|-----------|
+| `deltas/macro.delta.md`         | `Macro`           | mandatory |
+| `deltas/us-equities.delta.md`   | `US Equities`     | mandatory |
+| `deltas/bonds.delta.md`         | `Bonds`           | high      |
+| `deltas/commodities.delta.md`   | `Commodities`     | high      |
+| `deltas/forex.delta.md`         | `Forex`           | high      |
+| `deltas/crypto.delta.md`        | `Crypto`          | mandatory |
+| `deltas/international.delta.md` | `International`   | standard  |
+
+#### Sectors (11 GICS — publish if material move or new narrative, otherwise carry-forward in UI)
+| `document_key`                                       | `--title`                  | ETF  |
+|------------------------------------------------------|----------------------------|------|
+| `deltas/sectors/technology.delta.md`                 | `Technology`               | XLK  |
+| `deltas/sectors/financials.delta.md`                 | `Financials`               | XLF  |
+| `deltas/sectors/healthcare.delta.md`                 | `Health Care`              | XLV  |
+| `deltas/sectors/energy.delta.md`                     | `Energy`                   | XLE  |
+| `deltas/sectors/industrials.delta.md`                | `Industrials`              | XLI  |
+| `deltas/sectors/consumer-discretionary.delta.md`     | `Consumer Discretionary`   | XLY  |
+| `deltas/sectors/consumer-staples.delta.md`           | `Consumer Staples`         | XLP  |
+| `deltas/sectors/communication-services.delta.md`     | `Communication Services`   | XLC  |
+| `deltas/sectors/real-estate.delta.md`                | `Real Estate`              | XLRE |
+| `deltas/sectors/utilities.delta.md`                  | `Utilities`                | XLU  |
+| `deltas/sectors/materials.delta.md`                  | `Materials`                | XLB  |
+
+#### Alternative data / Intelligence (publish when source data available)
+| `document_key`                               | `--title`             | Priority |
+|----------------------------------------------|-----------------------|----------|
+| `deltas/alt/institutional-flows.delta.md`    | `Institutional Flows` | standard |
+| `deltas/alt/cta-positioning.delta.md`        | `CTA Positioning`     | standard |
+| `deltas/alt/options-derivatives.delta.md`    | `Options & Derivatives` | standard |
+| `deltas/alt/political-signals.delta.md`      | `Political Signals`   | low      |
+| `deltas/alt/hedge-fund-intel.delta.md`       | `Hedge Fund Intel`    | low      |
+| `deltas/alt/sentiment.delta.md`              | `Sentiment`           | standard |
+
+> **Carry-forward rule:** For sector and intelligence segments where no material change occurred, you do NOT need to publish a new row to Supabase — the UI automatically carries the most recent version forward. However, if the prior document is from a baseline (>6 days ago), republish even an unchanged version so the date header is current.
+
+For each segment you do publish:
+- `document_key`: per table above
+- `title`: per `--title` column above (permanent name — no date suffix)
 - `date`: today's date
 - `run_type`: `delta`
 - `payload.baseline_date`: The Sunday week anchor date
