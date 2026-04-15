@@ -268,9 +268,7 @@ export default function PerformanceTab() {
       <section className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0 space-y-1">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-              1 · Portfolio summary
-            </p>
+            <p className="text-[11px] font-semibold text-text-muted tracking-wide">Summary</p>
             {/* Performance summary sentence */}
             {snaps.length >= 2 && (
               <p className="text-sm text-text-secondary">
@@ -327,9 +325,7 @@ export default function PerformanceTab() {
       </section>
 
       <section className="space-y-3">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-          2 · Return, drawdown &amp; risk
-        </p>
+        <p className="text-[11px] font-semibold text-text-muted tracking-wide">Return &amp; risk</p>
         <PerformanceChartWorkspace
           view={view}
           onViewChange={setView}
@@ -349,7 +345,7 @@ export default function PerformanceTab() {
       </section>
 
       <section className="space-y-3">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">3 · Positions</p>
+        <p className="text-[11px] font-semibold text-text-muted tracking-wide">Positions</p>
         <PositionPnlTable
           key={priceChartAnchorDate ?? 'no-anchor'}
           positions={positions}
@@ -358,9 +354,7 @@ export default function PerformanceTab() {
       </section>
 
       <section className="space-y-3">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-          4 · Model diagnostics
-        </p>
+        <p className="text-[11px] font-semibold text-text-muted tracking-wide">Diagnostics</p>
         <div className="glass-card overflow-hidden">
           <button
             type="button"

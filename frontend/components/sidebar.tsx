@@ -182,13 +182,11 @@ export default function Sidebar() {
                 </div>
               )}
               {lastUpdated && (
-                <p className="text-[10px] text-text-muted font-mono leading-none">
-                  Last run: {lastUpdated}
-                </p>
+                <p className="text-[10px] text-text-muted font-mono leading-none">{lastUpdated}</p>
               )}
               <p className="text-[10px] text-text-muted pt-1">
                 <kbd className="font-mono px-1 py-0.5 rounded border border-border-subtle/80 bg-bg-secondary/80">⌘K</kbd>
-                <span className="ml-1.5">Quick jump</span>
+                <span className="ml-1.5">Search</span>
               </p>
             </div>
           )}

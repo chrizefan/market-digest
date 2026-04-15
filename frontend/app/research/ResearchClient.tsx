@@ -281,9 +281,8 @@ function ResearchPageInner({
       <div className={`${SUBPAGE_MAX} flex-1 space-y-4 py-4 md:py-5`}>
         {tab === 'knowledge' ? (
           <>
-            <p className="text-xs text-text-muted max-w-2xl">
-              Curated reference material—deep dives, papers, and standing notes that persist across dates. For
-              digest, deltas, and other artifacts from each automated run, use the Daily Digest tab.
+            <p className="text-xs text-text-muted max-w-xl">
+              Long-lived reference notes. Per-run digest and deltas are under Daily Digest.
             </p>
             <KnowledgeBasePanel docs={researchDocs} />
           </>
@@ -378,9 +377,8 @@ function ResearchPageInner({
             </div>
 
             <div className="flex-1 min-w-0 space-y-4">
-              <p className="text-xs text-text-muted max-w-2xl">
-                Artifacts from each dated research run: digest, exploration, deltas, and related pipeline outputs.
-                Evergreen reference lives under Knowledge.
+              <p className="text-xs text-text-muted max-w-xl">
+                Library output for the selected date. Use Knowledge for evergreen notes.
               </p>
 
               {effDate && deltaMetaByDate[effDate] ? (
@@ -429,9 +427,7 @@ function ResearchPageInner({
                   {dateDocs.length} file{dateDocs.length !== 1 ? 's' : ''}
                 </span>
                 {latestDate ? (
-                  <span className="text-[10px] font-mono text-text-muted ml-auto sm:ml-0">
-                    Latest run: {latestDate}
-                  </span>
+                  <span className="text-[10px] font-mono text-text-muted ml-auto sm:ml-0">{latestDate}</span>
                 ) : null}
               </div>
 

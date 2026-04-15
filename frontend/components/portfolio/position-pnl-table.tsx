@@ -23,8 +23,8 @@ export function PositionPnlTable({
       <div className="border-b border-border-subtle bg-bg-secondary px-4 py-4 md:px-6 md:py-5">
         <h3 className="text-lg font-semibold">Position P&amp;L</h3>
         <p className="text-text-muted text-sm mt-1">
-          Unrealized return per position (entry price to latest close).
-          {showCharts ? ' Expand a row for price history and position events in the selected range.' : null}
+          Unrealized vs entry.
+          {showCharts ? ' Expand a row for price and events.' : null}
         </p>
       </div>
       <div className="overflow-x-auto">

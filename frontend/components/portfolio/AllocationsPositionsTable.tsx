@@ -75,36 +75,25 @@ export default function AllocationsPositionsTable(props: {
       <div className="border-b border-border-subtle bg-bg-secondary px-4 py-4 md:px-6 md:py-5 space-y-4">
         <div>
           <h3 className="text-lg font-semibold">Positions</h3>
-          <p className="text-xs text-text-muted mt-1 max-w-3xl leading-relaxed">
-            Holdings ranked by weight. Emphasis is on sleeve mix, thesis linkage, and how weights changed — not
-            day-trading P&amp;L (see Performance for return attribution).
+          <p className="text-xs text-text-muted mt-1 max-w-2xl leading-relaxed">
+            Current weights and thesis links. Return detail is on Performance.
             {showTarget ? (
-              <>
-                {' '}
-                <span className="text-text-secondary">
-                  Target column reflects the latest digest proposed weights (when present).
-                </span>
-              </>
+              <span className="text-text-secondary"> Target = digest proposal when present.</span>
             ) : null}
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">
-            Sorted by allocation · background bar shows relative weight
-          </span>
+          <span className="text-[11px] text-text-muted">Sorted by weight; bar length is relative size.</span>
           <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-text-muted select-none">
+            <label className="flex items-center gap-2 text-[11px] text-text-muted select-none">
               <input
                 type="checkbox"
                 className="accent-fin-blue"
                 checked={showInactive}
                 onChange={(e) => setShowInactive(e.target.checked)}
               />
-              Show inactive
+              Former positions
             </label>
-            <span className="text-[10px] uppercase tracking-wider text-text-muted">
-              Click a row for price + events
-            </span>
           </div>
         </div>
       </div>

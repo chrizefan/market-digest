@@ -50,10 +50,10 @@ export default function ActivityTab(props: {
 
   const rangeSummary = useMemo(() => {
     if (preset === 'all')
-      return `${filteredEvents.length} event${filteredEvents.length !== 1 ? 's' : ''} (all)`;
-    if (!anchorDate) return `${filteredEvents.length} in window`;
+      return `${filteredEvents.length} event${filteredEvents.length !== 1 ? 's' : ''}`;
+    if (!anchorDate) return `${filteredEvents.length} shown`;
     const days = preset === '7d' ? 7 : 30;
-    return `${filteredEvents.length} in last ${days} days`;
+    return `${filteredEvents.length} in ${days}d`;
   }, [preset, filteredEvents.length, anchorDate]);
 
   return (

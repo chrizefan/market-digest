@@ -84,9 +84,7 @@ export default function AnalysisTab(props: {
     <div className="flex gap-6 max-lg:flex-col">
       <div className="w-56 shrink-0 space-y-4 max-lg:w-full max-lg:flex max-lg:gap-4 max-lg:flex-wrap">
         <div className="space-y-2">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted px-0.5">
-            Browse history
-          </p>
+          <p className="text-[10px] font-medium text-text-muted px-0.5">History</p>
           {historyTimelineDates.length > 0 ? (
             <MiniCalendar
               dates={historyTimelineDates}
@@ -111,33 +109,24 @@ export default function AnalysisTab(props: {
 
       <div className="flex-1 min-w-0 space-y-10">
         <section className="space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-            1 · PM deliberation &amp; decisions
-          </p>
-
           <div className="glass-card p-0 overflow-hidden">
             <div className="px-5 py-4 border-b border-border-subtle bg-bg-secondary">
               <div className="flex flex-wrap items-center gap-2">
                 <Calendar size={16} className="text-fin-amber shrink-0" aria-hidden />
-                <h3 className="text-sm font-semibold">Portfolio management artifacts</h3>
+                <h3 className="text-sm font-semibold">PM artifacts</h3>
               </div>
               <p className="text-xs text-text-muted mt-1">
-                Deliberation, rebalance decisions, recommendations, and screener output for{' '}
-                <span className="font-mono text-text-secondary">{effHistoryDate ?? '—'}</span>.
+                <span className="font-mono text-text-secondary">{effHistoryDate ?? '—'}</span>
                 {effHistoryDate &&
                 pmDocsForHistory.length === 0 &&
                 !portfolioDocDates.has(effHistoryDate) &&
                 positionHistoryDates.has(effHistoryDate) ? (
-                  <span className="block mt-1">
-                    No PM documents on this date; thesis and sleeve sections above still reflect this snapshot.
-                  </span>
+                  <span className="block mt-1">No PM files for this date; theses and sleeves still use this snapshot.</span>
                 ) : null}
               </p>
             </div>
             {pmDocsForHistory.length === 0 ? (
-              <div className="px-5 py-10 text-center text-text-muted text-sm">
-                No portfolio process documents for this date.
-              </div>
+              <div className="px-5 py-10 text-center text-text-muted text-sm">No PM files for this date.</div>
             ) : (
               <div className="divide-y divide-border-subtle">
                 {pmDocsForHistory.map((d) => {
@@ -174,28 +163,18 @@ export default function AnalysisTab(props: {
         </section>
 
         <section className="space-y-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-            2 · Active theses
-          </p>
-
           <div className="space-y-4">
-            <div className="px-1">
-              <p className="text-xs text-text-muted">
-                Snapshot:{' '}
-                <span className="font-mono text-text-secondary">{effHistoryDate ?? '—'}</span>
-              </p>
-            </div>
             {effHistoryDate && lastUpdated && effHistoryDate !== lastUpdated ? (
               <p className="text-xs text-text-muted px-1">
-                Weights for <span className="font-mono text-text-secondary">{effHistoryDate}</span>. Thesis
-                names, notes, and metadata are from the latest digest snapshot (
-                <span className="font-mono text-text-secondary">{lastUpdated}</span>).
+                Weights as of <span className="font-mono text-text-secondary">{effHistoryDate}</span>. Thesis
+                text from digest <span className="font-mono text-text-secondary">{lastUpdated}</span>.
               </p>
             ) : null}
 
             <div className="glass-card p-0 overflow-hidden">
               <div className="px-5 py-4 border-b border-border-subtle bg-bg-secondary">
-                <h3 className="text-sm font-semibold">Active theses</h3>
+                <h3 className="text-sm font-semibold">Theses</h3>
+                <p className="text-xs text-text-muted mt-0.5 font-mono">{effHistoryDate ?? '—'}</p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-0 text-sm md:min-w-[720px]">
@@ -331,12 +310,9 @@ export default function AnalysisTab(props: {
         </section>
 
         <section className="space-y-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-            3 · Sleeve evolution
-          </p>
           <div className="glass-card p-6 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <SectionTitle className="mb-0">Sleeve evolution</SectionTitle>
+              <SectionTitle className="mb-0">Sleeves</SectionTitle>
               <div className="flex rounded-lg border border-border-subtle overflow-hidden text-xs">
                 <button
                   type="button"
@@ -364,8 +340,8 @@ export default function AnalysisTab(props: {
             {showHistoryDateBanner ? (
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-fin-blue/30 bg-fin-blue/10 px-3 py-2 text-xs">
                 <span className="text-text-secondary">
-                  Viewing snapshot <span className="font-mono text-text-primary">{dateParam}</span>
-                  <span className="text-text-muted"> — click the chart or calendar to change.</span>
+                  <span className="font-mono text-text-primary">{dateParam}</span>
+                  <span className="text-text-muted"> — chart or calendar</span>
                 </span>
                 <button
                   type="button"

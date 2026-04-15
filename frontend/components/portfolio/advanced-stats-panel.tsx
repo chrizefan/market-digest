@@ -14,7 +14,7 @@ interface MetricProps {
 function MetricCard({ label, value, fmt, color, sub }: MetricProps) {
   return (
     <div className="bg-bg-secondary rounded-lg p-4 border border-border-subtle">
-      <span className="text-xs text-text-muted uppercase tracking-wider block mb-1">{label}</span>
+      <span className="text-xs text-text-muted block mb-1">{label}</span>
       <span className={`text-lg font-bold tabular-nums ${color || ''}`}>
         {fmt && value != null ? fmt(value as number) : value}
       </span>
@@ -219,9 +219,7 @@ export function AdvancedStatsPanel({
   return (
     <div className="px-6 pb-6 space-y-6">
       <div>
-        <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">
-          Returns
-        </h4>
+        <h4 className="text-sm font-semibold text-text-secondary mb-3">Returns</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <MetricCard
             label="Total Return"
@@ -241,7 +239,7 @@ export function AdvancedStatsPanel({
       </div>
 
       <div>
-        <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">
+        <h4 className="text-sm font-semibold text-text-secondary mb-3">
           Risk
         </h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -264,7 +262,7 @@ export function AdvancedStatsPanel({
       </div>
 
       <div>
-        <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">
+        <h4 className="text-sm font-semibold text-text-secondary mb-3">
           Risk-Adjusted
         </h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -276,7 +274,7 @@ export function AdvancedStatsPanel({
       </div>
 
       <div>
-        <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">
+        <h4 className="text-sm font-semibold text-text-secondary mb-3">
           Win / Loss
         </h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -289,7 +287,7 @@ export function AdvancedStatsPanel({
 
       {stats.beta != null && (
         <div>
-          <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">
+          <h4 className="text-sm font-semibold text-text-secondary mb-3">
             vs SPY
           </h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

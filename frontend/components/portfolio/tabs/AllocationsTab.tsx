@@ -16,9 +16,6 @@ export default function AllocationsTab(props: {
     <div className="space-y-6">
       <div className="px-1">
         <SectionTitle className="mb-1">Allocations</SectionTitle>
-        <p className="text-xs text-text-muted">
-          Positions are ordered by allocation weight. Each row uses a proportional background bar for quick scanning.
-        </p>
       </div>
 
       <AllocationsPositionsTable
