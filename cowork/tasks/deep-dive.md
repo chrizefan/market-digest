@@ -87,7 +87,7 @@ python3 scripts/publish_research.py \
   --key research/deep-dives/NVDA-2026-04-14 \
   --title "NVDA Deep Dive — AI Infrastructure Capex Cycle" \
   --type deep-dive \
-  --file data/agent-cache/deep-dives/NVDA-2026-04-14.md \
+  --file /tmp/NVDA-2026-04-14.md \
   --date 2026-04-14 \
   --ticker NVDA \
   --tags ai semiconductor capex

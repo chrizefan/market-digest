@@ -2,8 +2,6 @@
 
 **Authoritative list:** directories under [`skills/`](../../skills/) — each `skills/<slug>/SKILL.md` is one package. This page groups them for navigation; if it drifts, trust the filesystem.
 
-**Migration map (legacy flat paths → packages):** [`docs/archive/SKILLS-CUTOVER-MAP.md`](../archive/SKILLS-CUTOVER-MAP.md) (historical).
-
 ---
 
 ## How skill files work

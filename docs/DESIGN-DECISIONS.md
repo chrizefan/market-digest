@@ -107,7 +107,7 @@ description: >
 ...template snippets...
 ```
 
-Skills are stored in `skills/` with a naming convention: `SKILL-{name}.md`. Sub-agent skills are nested: `skills/sectors/`, `skills/alternative-data/`, `skills/institutional/`.
+*(Historical)* Skills were originally flat `SKILL-{name}.md` and nested under `skills/sectors/`, etc. **Current repo:** canonical packages are **`skills/<slug>/SKILL.md`** (see `docs/agentic/SKILLS-CATALOG.md`). The Markdown-in-repo pattern below still applies.
 
 ### Alternatives Considered
 

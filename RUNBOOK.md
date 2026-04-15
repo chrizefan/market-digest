@@ -148,9 +148,9 @@ Per-document research deltas (`document_delta`, manifest) use the same **week an
 
 ## Canonical principles
 - **Supabase is the source of truth** for daily snapshots, documents, positions, theses, NAV, and metrics.
-- **JSON payloads are canonical**. Markdown is always **derived** for display. Agents should **`validate_artifact.py -`** and **`publish_document.py --payload -`** (stdin) so hosted runs need no repo-local files. Optional JSON under **`data/agent-cache/`** is **gitignored** scratch for local validation only.
+- **JSON payloads are canonical**. Markdown is always **derived** for display. Agents should **`validate_artifact.py -`** and **`publish_document.py --payload -`** (stdin) so hosted and Cowork runs need **no** repo-local cache. Normal operation does **not** require `data/agent-cache/` — see [`data/README.md`](data/README.md). That tree exists only for **migration/backfill**, optional **fetch-script** temp files, or **recovery** (`update_tearsheet.py` scanning legacy markdown).
 - **Daily operator run** publishes structured artifacts → validates DB state → optionally records position events as executed at **market open (Mon–Fri)** (see backfill above).
-- **Disk migration:** if you have an external export of old daily folders, copy them into `data/agent-cache/daily/` (gitignored) before running backfill scripts — see below.
+- **Disk migration:** if you have an external export of old daily folders, copy them into `data/agent-cache/daily/` (gitignored) before running backfill scripts — see below — this is **not** part of day-to-day tasks.
 - **Retired `outputs/` path:** the repo must not depend on an `outputs/` directory (it is **gitignored** if recreated). Before deleting any local copy, confirm Supabase is canonical: `python3 scripts/verify_supabase_canonical.py` and optional `--date YYYY-MM-DD` for days you care about.
 
 ## Environment requirements
@@ -191,7 +191,7 @@ Common flags:
 - `--skip-sync-positions` (skip [`sync_positions_from_rebalance.py`](scripts/sync_positions_from_rebalance.py); default is to run for `--validate-mode` `full` or `pm`)
 - `--validate-mode {full,research,pm}` (passed to [`validate_db_first.py`](scripts/validate_db_first.py); default `full`)
 
-**Default:** after optional JSON validation under `data/agent-cache/daily/<date>/`, the entrypoint runs [`sync_positions_from_rebalance.py`](scripts/sync_positions_from_rebalance.py) when mode is `full` or `pm`, then [`refresh_performance_metrics.py --supabase --fill-calendar-through <date>`](scripts/refresh_performance_metrics.py). Run [`update_tearsheet.py`](scripts/update_tearsheet.py) separately when recovering from disk-backed markdown or partial publishes.
+**Default:** after optional JSON validation under `data/agent-cache/daily/<date>/` (only if you keep local mirrors during migration), the entrypoint runs [`sync_positions_from_rebalance.py`](scripts/sync_positions_from_rebalance.py) when mode is `full` or `pm`, then [`refresh_performance_metrics.py --supabase --fill-calendar-through <date>`](scripts/refresh_performance_metrics.py). Run [`update_tearsheet.py`](scripts/update_tearsheet.py) separately when recovering from disk-backed markdown or partial publishes.
 
 ## What gets produced (canonical artifacts)
 ### Daily baseline/delta (stored in Supabase)
@@ -226,7 +226,7 @@ Common flags:
 ## What `run_db_first.py` does (post-publish)
 After artifacts are already in Supabase, `run_db_first.py`:
 1. Prints run-type guidance (baseline Sunday vs weekday delta).
-2. Optionally validates any JSON files present under `data/agent-cache/daily/<date>/` via `scripts/validate_artifact.py`.
+2. Optionally validates any JSON files present under `data/agent-cache/daily/<date>/` via `scripts/validate_artifact.py` (skip if you have no local mirror — DB-only runs rely on Supabase only).
 3. If `--validate-mode` is `full` or `pm` (and not `--skip-sync-positions`): runs `scripts/sync_positions_from_rebalance.py --date <date>` so **`positions`** matches **`rebalance_decision.body.proposed_portfolio`** when that document exists (no-op otherwise).
 4. Runs `scripts/refresh_performance_metrics.py --supabase --fill-calendar-through <date>`.
 5. Runs `scripts/execute_at_open.py` unless `--skip-execute`.

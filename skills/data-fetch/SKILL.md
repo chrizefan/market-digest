@@ -32,7 +32,7 @@ layer, every agent reads the same source-of-truth JSON/Markdown files fetched ri
 | `scripts/preload-history.py` | **Daily (CI)**: `--supabase --supabase-sync` gap-fills from latest `price_history` per ticker and backfills new symbols (`--new-ticker-period max`). **Local**: `--period 2y` etc. or `--refresh` for cache-only stale refresh. |
 | `scripts/fetch-quotes.py [date]` | **Daily**: loads cached history, fetches only the latest missing days, appends to cache, then computes RSI(14), MACD, SMA20/50/200, ATR(14), Bollinger Bands via pandas-ta. Falls back to 3-month bulk download if no cache exists. |
 | `scripts/fetch-macro.py [date]` | Fetches full US yield curve (US Treasury public XML API, no auth) + VIX, SKEW, crude, gold, NatGas, BTC, ETH, FX pairs via yfinance |
-| `scripts/fetch-market-data.sh [date]` | Orchestrator — auto-seeds cache on first run, then runs both fetch scripts, validates scratch JSON under `data/agent-cache/daily/.../data/`, prints summary. Pass `--preload` to force a full cache rebuild. |
+| `scripts/fetch-market-data.sh [date]` | Orchestrator — auto-seeds cache on first run, then runs both fetch scripts; may write transient JSON under `data/agent-cache/daily/.../data/` (gitignored; optional — DB-first runs use Supabase). Pass `--preload` to force a full cache rebuild. |
 
 ---
 

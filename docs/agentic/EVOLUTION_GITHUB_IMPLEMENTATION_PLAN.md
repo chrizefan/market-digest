@@ -241,7 +241,7 @@ Each file should:
 
 ## 12. Related existing docs
 
-- Evolution JSON family: `evolution/README.md`, `templates/schemas/evolution-*.schema.json`
+- Evolution JSON family: publish per `skills/orchestrator/SKILL.md` Phase 9 + `templates/schemas/evolution-*.schema.json` (no top-level `evolution/` folder in the repo)
 - Orchestrator Phase 9: `skills/orchestrator/SKILL.md`
 - Optional post-run: `cowork/PROJECT.md`
 

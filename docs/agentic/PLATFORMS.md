@@ -83,7 +83,7 @@ Cursor reads these automatically — no setup needed.
 
 **Usage patterns in Cursor:**
 - Open Composer (Cmd+I) with `@codebase` for full context
-- Reference skill files directly: "Using @skills/SKILL-macro.md, run today's analysis"
+- Reference skill files directly: e.g. `@skills/macro/SKILL.md` for macro phase
 - Use Agent mode for multi-step pipeline phases
 
 ---
@@ -98,7 +98,7 @@ Windsurf reads `.windsurfrules` from the project root automatically.
 
 **Usage patterns:**
 - Use Cascade (agent mode) for multi-step workflow execution
-- Reference skill files in prompts: "Follow skills/SKILL-equity.md"
+- Reference skill files in prompts: e.g. `skills/equity/SKILL.md`
 
 ---
 
@@ -113,7 +113,7 @@ Aider works well with this repo via `--read` flags to load context files:
 aider --read AGENTS.md --read config/watchlist.md --read config/preferences.md
 
 # Run a specific skill
-aider --read skills/SKILL-macro.md --message "Run the macro analysis for today"
+aider --read skills/macro/SKILL.md --message "Run the macro analysis for today"
 ```
 
 **Optional config** `.aider.conf.yml`:

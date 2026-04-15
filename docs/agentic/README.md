@@ -2,11 +2,13 @@
 
 Central reference for running the digiquant-atlas pipeline on any AI platform.
 
+**How production runs are driven:** scheduled **Claude Cowork** jobs should attach one task file from [`cowork/tasks/README.md`](../cowork/tasks/README.md) (research → portfolio → postmortem/GitHub). That is the primary operational loop; the docs below describe behavior those tasks invoke.
+
 ## Canonical model (read this first)
 
 - **Supabase + JSON** are the source of truth; markdown in the app is **derived**.
 - **Operator steps:** [`RUNBOOK.md`](../../RUNBOOK.md) — env, publish, validation, GitHub vs Co-work, Track A/B.
-- **One CLI entrypoint:** `python3 scripts/run_db_first.py` (after JSON artifacts exist under `data/agent-cache/daily/{DATE}/` when applicable).
+- **One CLI entrypoint:** `python3 scripts/run_db_first.py` (after segment JSON is published to Supabase). No local agent-cache required — see [`data/README.md`](../../data/README.md).
 
 ## What is digiquant-atlas?
 
@@ -54,7 +56,7 @@ See [`PLATFORMS.md`](PLATFORMS.md) for details.
 | File | Contents |
 |------|----------|
 | `README.md` | This file |
-| [`ARCHITECTURE.md`](ARCHITECTURE.md) | System design and data flow |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | System design and data flow (**canonical**; [`../ARCHITECTURE-REVIEW.md`](../ARCHITECTURE-REVIEW.md) redirects here) |
 | [`WORKFLOWS.md`](WORKFLOWS.md) | Step workflows (includes GitHub Actions) |
 | [`PLATFORMS.md`](PLATFORMS.md) | IDE / platform setup |
 | [`AGENTS.md`](AGENTS.md) | Stub → root [`AGENTS.md`](../../AGENTS.md) |

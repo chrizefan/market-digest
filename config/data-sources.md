@@ -152,9 +152,7 @@ Use https://tradingeconomics.com/calendar or https://forexfactory.com for the ca
 
 ## Programmatic Data Sources (Auto-Fetched — No API Keys)
 
-These sources are pulled automatically via `./scripts/fetch-market-data.sh` before every daily pipeline run.
-The scripts write structured JSON + human-readable Markdown to `data/agent-cache/daily/YYYY-MM-DD/data/`.
-Downstream skills read these files **first**; web browsing is reserved for narrative/qualitative context only.
+These sources are pulled automatically via `./scripts/fetch-market-data.sh` when you run a **local** fetch (optional). Scripts may write transient JSON + Markdown under `data/agent-cache/daily/YYYY-MM-DD/data/` (gitignored; see repo `data/README.md`). **DB-first runs** should use **Supabase** (`price_technicals`, etc.) and published documents first; on-disk fetch output is a fallback when present. Web browsing remains for narrative/qualitative context.
 
 ### Quotes & Technicals
 | Source | Library | Data | Output |

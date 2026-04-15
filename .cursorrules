@@ -6,7 +6,7 @@ Daily market intelligence repo using a **9-phase** AI-orchestrated pipeline. Ski
 ## Core Architecture
 - `skills/orchestrator/SKILL.md` — master pipeline (read this first for context)
 - `config/watchlist.md` + `config/preferences.md` — user configuration
-- `data/agent-cache/daily/YYYY-MM-DD/` — optional gitignored scratch; Supabase is canonical
+- No repo-local cache for canonical state — Supabase only. `data/agent-cache/` is legacy/migration/fetch-temp only (see `data/README.md`).
 - `python3 scripts/run_db_first.py` — post-publish metrics + validate entry
 
 ## Web Fetch Protocol
@@ -45,7 +45,7 @@ When editing `skills/<slug>/SKILL.md` files:
 
 ## Output Rules
 - DB-first: Supabase is canonical; publish via `publish_document.py --payload -`
-- `data/agent-cache/` is optional gitignored scratch — never source of truth
+- Do not treat `data/agent-cache/` as task output — migration/fetch tooling only (`data/README.md`)
 
 ## Markdown Standards
 - Headings: `#` then `##` then `###` — never skip levels

@@ -1,89 +1,50 @@
 # Orchestrator Agent
 
 ## Role
-Master pipeline driver for the complete 7-phase digiquant-atlas daily analysis. Coordinates all sub-agents and synthesizes their outputs into a single daily digest.
 
-## Trigger Phrases
+Master pipeline driver for the digiquant-atlas research + digest flow. Coordinates segment skills and materializes outputs into Supabase (`daily_snapshots`, `documents`). **Authoritative instructions:** [`skills/orchestrator/SKILL.md`](../skills/orchestrator/SKILL.md).
+
+## How runs are scheduled (preferred)
+
+Use **Claude Cowork** tasks under [`cowork/tasks/README.md`](../cowork/tasks/README.md) — e.g. [`research-daily-delta.md`](../cowork/tasks/research-daily-delta.md), [`research-weekly-baseline.md`](../cowork/tasks/research-weekly-baseline.md), [`portfolio-pm-rebalance.md`](../cowork/tasks/portfolio-pm-rebalance.md). Then [`RUNBOOK.md`](../RUNBOOK.md) for publish + `run_db_first.py`.
+
+## Trigger phrases
+
 - "Run today's digest"
 - "Full daily analysis"
-- "Run the 7-phase pipeline"
-- "Run everything for {DATE}"
-- "Start the morning analysis"
-- "Run SKILL-orchestrator"
+- "Run the orchestrator pipeline for {DATE}"
+- "Follow skills/orchestrator"
 
-## Inputs (Read at Session Start)
-```
-skills/SKILL-orchestrator.md         ← Primary instruction set
-config/watchlist.md                  ← Tracked assets
-config/investment-profile.md         ← Trading style, risk, preferences
-config/hedge-funds.md                ← Tracked institutions
-data/agent-cache/daily/[prior-date]/DIGEST.md ← Prior day for continuity (if available)
-```
+## Inputs (session start)
 
-## Workflow
+- [`skills/orchestrator/SKILL.md`](../skills/orchestrator/SKILL.md) — phase order and publish rules  
+- `config/watchlist.md`, `config/preferences.md`, `config/investment-profile.md` (Track B)  
+- Prior state from **Supabase** (`daily_snapshots`, `documents`) — not legacy flat-file memory  
 
-### Phase 1: Alternative Data
-Delegate to alt-data sub-skills:
-- `skills/alternative-data/sentiment.md`
-- `skills/alternative-data/cta-positioning.md`
-- `skills/alternative-data/options-flow.md`
-- `skills/alternative-data/politician-tracker.md`
+## Segment skills (canonical paths)
 
-Output: `data/agent-cache/daily/{{DATE}}/alt-data.md`
+Packages are always `skills/<slug>/SKILL.md`. Examples:
 
-### Phase 2: Institutional Intel
-Delegate to institutional sub-skills:
-- `skills/institutional/flows.md`
-- `skills/institutional/hedge-fund-intel.md`
+| Area | Slugs |
+|------|--------|
+| Alt data | `alt-sentiment-news`, `alt-cta-positioning`, `alt-options-derivatives`, `alt-politician-signals` |
+| Institutional | `inst-institutional-flows`, `inst-hedge-fund-intel` |
+| Macro | `macro` |
+| Asset classes | `bonds`, `commodities`, `forex`, `crypto`, `international` |
+| Equities | `equity` |
+| Sectors | `sector-technology` … `sector-comms` (11 GICS) |
+| PM / Track B | `market-thesis-exploration`, `thesis-vehicle-map`, `opportunity-screener`, `asset-analyst`, `deliberation`, `pm-allocation-memo`, `portfolio-manager` |
 
-Output: `data/agent-cache/daily/{{DATE}}/institutional.md`
-
-### Phase 3: Macro Regime
-Execute `skills/SKILL-macro.md`
-Reads Phase 1 + 2 outputs for positioning context.
-Output: `data/agent-cache/daily/{{DATE}}/macro.md`
-
-### Phase 4: Asset Classes (Parallel)
-Execute in parallel:
-- 4A: `skills/SKILL-bonds.md` → `bonds.md`
-- 4B: `skills/SKILL-commodities.md` → `commodities.md`
-- 4C: `skills/SKILL-forex.md` → `forex.md`
-- 4D: `skills/SKILL-crypto.md` → `crypto.md`
-- 4E: `skills/SKILL-international.md` → `international.md`
-
-All read Phase 3 macro.md for regime context.
-
-### Phase 5: Equities + Sectors
-Execute:
-- 5A: `skills/SKILL-equity.md` → `equities.md`
-- 5B–5L: All 11 `skills/sectors/*.md` → `sectors/*.md`
-
-Reads Phases 3-4 outputs for macro + asset class context.
-
-### Phase 6: Earnings & Events
-Execute `skills/SKILL-earnings.md`
-Reads Phases 3-5 outputs.
-Output: `data/agent-cache/daily/{{DATE}}/earnings.md`
-
-### Phase 7: Synthesis
-Execute `skills/SKILL-digest.md`
-Reads ALL prior phase outputs.
-Reads `templates/master-digest.md` for structure.
-Output: `data/agent-cache/daily/{{DATE}}/DIGEST.md`
+See [`docs/agentic/SKILLS-CATALOG.md`](../docs/agentic/SKILLS-CATALOG.md) for the full list.
 
 ## Outputs
-All 22 files in `data/agent-cache/daily/{{DATE}}/`:
-- `DIGEST.md` (master synthesis)
-- `alt-data.md`, `institutional.md`, `macro.md`
-- `bonds.md`, `commodities.md`, `forex.md`, `crypto.md`, `international.md`
-- `equities.md`, `earnings.md`
-- `sectors/` (11 files)
 
-## Example Invocation
+Structured **JSON** published to Supabase per RUNBOOK; optional scratch under `data/agent-cache/` is gitignored.
+
+## Example invocation
+
 ```
-Today is 2026-04-05.
-Read agents/orchestrator.agent.md for my role definition.
-Read skills/SKILL-orchestrator.md for detailed pipeline instructions.
-Run the complete 7-phase pipeline.
-Output to data/agent-cache/daily/2026-04-05/
+Read agents/orchestrator.agent.md for role.
+Read skills/orchestrator/SKILL.md for phase order.
+Execute today's Cowork task file (cowork/tasks/…) then RUNBOOK publish + validate steps.
 ```

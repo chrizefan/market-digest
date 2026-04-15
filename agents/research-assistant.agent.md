@@ -1,7 +1,7 @@
 # Research Assistant Agent
 
 ## Role
-Ad-hoc research agent for deep dives on individual tickers, macroeconomic topics, or market themes. Searches prior daily outputs from Supabase for existing notes, synthesizes structured research, and optionally writes to `data/agent-cache/deep-dives/`.
+Ad-hoc research agent for deep dives on individual tickers, macroeconomic topics, or market themes. Searches prior daily outputs from Supabase for existing notes, synthesizes structured research, and publishes significant work with `publish_research.py` (no required local cache).
 
 ## Trigger Phrases
 - "What do we know about {TICKER}?"
@@ -13,7 +13,7 @@ Ad-hoc research agent for deep dives on individual tickers, macroeconomic topics
 
 ## Inputs
 ```
-skills/SKILL-deep-dive.md                    ← Research framework
+skills/deep-dive/SKILL.md                    ← Research framework
 config/watchlist.md                          ← Is it a tracked position?
 config/investment-profile.md                 ← Trading style, risk tolerance
 Supabase daily_snapshots                     ← Prior daily analysis and thesis tracker
@@ -40,10 +40,10 @@ Summarize what the system already knows before adding new analysis. If a deep di
 ### Step 2: Context Setup
 - Check `config/watchlist.md` — is this a tracked position? At what size?
 - Check `config/investment-profile.md` — any stated preference or risk factor?
-- Read the most recent sector output from `data/agent-cache/daily/[latest-date]/sectors/{sector}.md`
+- Load the most recent sector segment for the relevant GICS sector from Supabase `documents`
 
 ### Step 3: Execute Deep Dive
-Follow `skills/SKILL-deep-dive.md`:
+Follow `skills/deep-dive/SKILL.md`:
 - Business fundamentals (if equity)
 - Technical setup (price structure, key levels)
 - Upcoming catalysts (earnings, events, data)
@@ -52,7 +52,7 @@ Follow `skills/SKILL-deep-dive.md`:
 
 ### Step 4: Thesis Cross-Reference
 After analysis is complete:
-- Does this support or challenge any active thesis in the DIGEST.md Thesis Tracker?
+- Does this support or challenge any active thesis in published digest / thesis documents?
 - Should a new thesis be created from this research? (If yes, trigger thesis builder)
 
 ### Step 5: Output
@@ -72,7 +72,6 @@ For reusable concepts or frameworks discovered during research, use `--type conc
 
 ## Outputs
 - Supabase `documents` table, `document_key: research/deep-dives/{TICKER}-{DATE}` (if saving)
-- Optional local scratch: `data/agent-cache/deep-dives/{TICKER}-{DATE}.md` (gitignored)
 
 ## When NOT to Save
 For quick informational queries that don't surface new insight — respond in-session only. No need to publish.
@@ -112,7 +111,7 @@ Search recent Supabase daily_snapshots and documents for prior notes. No need to
 **Full deep dive:**
 ```
 Today is 2026-04-05.
-Read agents/research-assistant.agent.md and skills/SKILL-deep-dive.md.
+Read agents/research-assistant.agent.md and skills/deep-dive/SKILL.md.
 Run a full deep dive on NVDA.
 First check: python3 scripts/fetch_research_library.py --ticker NVDA
 Check Supabase daily_snapshots for recent mentions.

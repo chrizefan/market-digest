@@ -2,8 +2,8 @@
 
 > Curated summaries of peer-reviewed academic research on portfolio management, factor investing,
 > tactical asset allocation, and risk management. This file is the primary reference for the
-> Asset Analyst (SKILL-asset-analyst.md) and Portfolio Manager (SKILL-portfolio-manager.md)
-> agents. **Load this file at the start of any portfolio analysis session.**
+> Asset Analyst (`skills/asset-analyst/SKILL.md`) and Portfolio Manager (`skills/portfolio-manager/SKILL.md`).
+> **Load this file at the start of any portfolio analysis session.**
 >
 > For detailed per-paper notes, fetch from Supabase: `python3 scripts/fetch_research_library.py --type paper`
 
@@ -11,7 +11,7 @@
 
 ## Agent Loading Instructions
 
-### Asset Analyst (SKILL-asset-analyst.md)
+### Asset Analyst (`skills/asset-analyst/SKILL.md`)
 Treat this library as **Input #5** in every analyst session:
 1. Load `docs/research/LIBRARY.md` after loading the session segment files and before forming bull/bear arguments
 2. Ground each bull and bear argument in at least one paper from this library (cite author + section)
@@ -20,7 +20,7 @@ Treat this library as **Input #5** in every analyst session:
 5. For macro regime framing: cite Section 5.4 (Ilmanen 4-quadrant model)
 6. For behavioral guardrails: cite Section 6 (Kahneman, Shefrin) to justify anti-anchoring discipline
 
-### Portfolio Manager (SKILL-portfolio-manager.md)
+### Portfolio Manager (`skills/portfolio-manager/SKILL.md`)
 Treat this library as **Pre-Flight Input #5**:
 1. Load `docs/research/LIBRARY.md` before Phase B (clean-slate construction)
 2. Apply the **Black-Litterman conviction-weight mapping** (Section 4.2, Table) for position sizing
@@ -28,7 +28,7 @@ Treat this library as **Pre-Flight Input #5**:
 4. Use the **Kelly criterion** (Section 4.3) as a ceiling check: no position should exceed the conservative Kelly fraction given estimated Sharpe
 5. Use the **drawdown budget** principle (Section 5 risk table) to ensure combined energy risk contribution doesn't exceed thesis support
 
-### Orchestrator (SKILL-orchestrator.md)
+### Orchestrator (`skills/orchestrator/SKILL.md`)
 - LIBRARY.md is pre-loaded in Phase 6B (context load) — no additional action needed
 - The research library informs regime classification and position sizing across all Phase 7 outputs
 

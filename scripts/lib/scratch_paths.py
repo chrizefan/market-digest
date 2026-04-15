@@ -1,6 +1,6 @@
-"""Gitignored local scratch for optional session files (quotes/macro JSON, etc.).
+"""Paths under gitignored `data/agent-cache/` used only by migration/recovery and some fetch scripts.
 
-Canonical state is Supabase — this tree is never required for production reads.
+Database-only workflows do not require this tree; see `data/README.md`. Canonical state is Supabase.
 """
 from __future__ import annotations
 

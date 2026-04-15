@@ -33,7 +33,7 @@ Step-by-step procedures for every recurring workflow.
 ```bash
 # 2. Agent: follow skills/orchestrator/SKILL.md (baseline) or skills/daily-delta/SKILL.md (weekday).
 #    Publish JSON only: materialize_snapshot.py + publish_document.py (stdin).
-#    Optional scratch files under data/agent-cache/ are gitignored — not canonical.
+#    No repo-local cache required for DB-only runs (see data/README.md).
 python3 scripts/run_db_first.py
 #    Flags: --skip-execute / --validate-mode research|pm|full / --legacy-markdown-tearsheet — RUNBOOK.md
 ```
@@ -97,12 +97,11 @@ Synthesize into snapshot JSON and publish via `scripts/materialize_snapshot.py` 
 
 **Manual prompt:**
 ```
-Read this week's research from Supabase (documents / daily_snapshots) or from
-local `data/agent-cache/daily/{DATE}/` JSON when you intentionally mirror artifacts to disk.
+Read this week's research from Supabase (`documents`, `daily_snapshots`).
+Prefer Supabase only; local JSON mirrors are migration/legacy only (`data/README.md`).
 Load bias rows for this week from Supabase daily_snapshots.
 Write a weekly JSON artifact (schema: templates/schemas/weekly-digest.schema.json).
-Synthesize into data/agent-cache/weekly/{YYYY}-W{WW}.json
-Do NOT publish new Supabase rows — read-only synthesis.
+If your operator workflow commits weekly rollups, publish per RUNBOOK; otherwise keep as read-only synthesis.
 ```
 
 ---
@@ -119,11 +118,11 @@ Do NOT publish new Supabase rows — read-only synthesis.
 
 **Manual prompt:**
 ```
-Read all data/agent-cache/weekly/ files from this month.
 Query Supabase daily_snapshots for the month's bias rows.
-Query Supabase daily_snapshots and documents for this month's key observations per domain.
+Query Supabase documents for this month's key observations per domain.
+(Do not depend on `data/agent-cache/weekly/` — use Supabase documents.)
 Write a monthly JSON artifact (schema: `templates/schemas/monthly-digest.schema.json`).
-Write to `data/agent-cache/monthly/{YYYY-MM}.json`
+Publish monthly synthesis via RUNBOOK; avoid relying on `data/agent-cache/monthly/` except during migration.
 ```
 
 ---
@@ -155,7 +154,7 @@ Publish the completed thesis to Supabase documents with today's date.
 ```
 Read skills/thesis-tracker/SKILL.md.
 Query thesis data in Supabase documents for all active theses.
-Read today's digest from Supabase or data/agent-cache/daily/{DATE}/ snapshot JSON — not legacy DIGEST.md unless from archive.
+Read today's digest context from Supabase (`daily_snapshots`, digest `documents`).
 Score each thesis: [Building | Confirmed | Extended | At Risk | Exited]
 Publish your review to Supabase documents under today's date.
 ```
@@ -172,7 +171,7 @@ Read skills/deep-dive/SKILL.md.
 Run a deep dive on: {TICKER or TOPIC}
 Query Supabase daily_snapshots and documents for prior equity and sector research notes.
 Read config/watchlist.md to see if it's a tracked position.
-Output: prefer data/agent-cache/deep-dives/{slug}.json (schema: templates/schemas/deep-dive.schema.json); markdown is derived.
+Publish via `scripts/publish_research.py` per RUNBOOK (Supabase research library). Markdown is derived in-app.
 ```
 
 ---
@@ -226,7 +225,7 @@ Shows:
 # After any session with outputs
 ./scripts/git-commit.sh
 
-# Manual commit (config only — digest data lives in Supabase; scratch under data/agent-cache/ is gitignored)
+# Manual commit (config only — digest data lives in Supabase; see data/README.md)
 git add config/
 git commit -m "$(date +%Y-%m-%d): config update"
 git push
@@ -238,7 +237,7 @@ CI/CD in `.github/workflows/deploy.yml` publishes the tearsheet on push to maste
 
 ## Disk migration (rare)
 
-One-off backfills from disk exports: see [`RUNBOOK.md`](../../RUNBOOK.md) (`backfill-historical-daily-to-supabase.sh`, **`LEGACY_ROOT`** or **`SKIP_COPY=1`**). Retired shell helpers live under `archive/legacy-scripts/` for reference only.
+One-off backfills from disk exports: see [`RUNBOOK.md`](../../RUNBOOK.md) (`backfill-historical-daily-to-supabase.sh`, **`LEGACY_ROOT`** or **`SKIP_COPY=1`**).
 
 ---
 

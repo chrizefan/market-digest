@@ -9,7 +9,7 @@ skills/<slug>/        ← Skill packages (SKILL.md per folder)
 config/               ← watchlist.md, preferences.md, hedge-funds.md
 docs/research/        ← Static doctrine papers (Tier 1 research library)
 templates/            ← JSON schemas + templates
-data/agent-cache/     ← Optional gitignored scratch (never source of truth)
+data/README.md        ← Explains gitignored tree; no local cache required for DB-only runs
 scripts/              ← Bash + Python (run_db_first.py, publish_research.py, etc.)
 docs/agentic/         ← Architecture, workflows
 agents/               ← Named agent role definitions
@@ -59,10 +59,10 @@ python3 scripts/publish_research.py \
 - macOS sed: MUST use `sed -i ""` not `sed -i` (GNU vs BSD incompatibility)
 - All paths relative to repo root
 
-### Artifacts (Supabase + optional scratch)
+### Artifacts (Supabase)
 - Canonical rows live in Supabase (`daily_snapshots`, `documents`, …)
 - Publish via `publish_document.py --payload -` or `materialize_snapshot.py`
-- Optional local JSON under `data/agent-cache/daily/{{DATE}}/` is gitignored
+- Cowork tasks do not rely on `data/agent-cache/` — only migration/backfill or fetch scripts may write there (`data/README.md`)
 
 ### Markdown Standards
 - Never skip heading levels (# → ## → ### only)
@@ -81,7 +81,7 @@ python3 scripts/publish_research.py \
 9. Evolution (post-mortem + proposals)
 
 ## What NOT To Do
-- Do NOT treat `data/agent-cache/` scratch as source of truth — Supabase is canonical
+- Do NOT use `data/agent-cache/` as the system of record — Supabase is canonical (`data/README.md`)
 - Do NOT hand-edit Supabase rows directly — use `publish_document.py`
 - Do NOT change skill frontmatter `name:` without updating all references
 - Do NOT modify `.github/workflows/deploy.yml` without understanding CI/CD

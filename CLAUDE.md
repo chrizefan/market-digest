@@ -21,8 +21,6 @@ python3 scripts/fetch_research_library.py    # List/fetch research notes from Su
 python3 scripts/publish_research.py          # Publish deep dive or concept note to Supabase research library
 ```
 
-Legacy markdown-era helpers live under `archive/legacy-scripts/` (reference only).
-
 ---
 
 ## Repository Layout

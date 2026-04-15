@@ -2,17 +2,17 @@
 
 > This file is the master instruction set for this Claude Project.
 > It tells Claude exactly how to behave in every session.
-> **UPGRADED**: System now runs a 7-phase orchestrated pipeline with 22+ sub-agents.
+> **DB-first**: Canonical state is **Supabase** (`daily_snapshots`, `documents`). No committed or required local agent cache.
 
 ---
 
 ## What This Project Is
 
 This is a daily market intelligence system. Every session is either:
-1. **A full daily digest** — 7-phase pipeline producing 22 output files + master DIGEST.md
+1. **A full daily digest** — 9-phase pipeline; outputs are **JSON published to Supabase** (markdown derived in-app)
 2. **A focused segment deep-dive** — analyzing one market segment or sector in detail
 3. **A thesis review** — checking positions and active research theses
-4. **A weekly/monthly synthesis** — rolling up a period of daily digests
+4. **A weekly/monthly synthesis** — rolling up a period of snapshots from Supabase
 
 ---
 
@@ -21,7 +21,7 @@ This is a daily market intelligence system. Every session is either:
 ### At the start of every session:
 1. Identify which of the 4 session types this is
 2. Read `config/watchlist.md`, `config/investment-profile.md`, `config/hedge-funds.md`, `config/data-sources.md`
-3. Read the most recent `data/agent-cache/daily/[latest-date]/DIGEST.md` for prior context (if available)
+3. Load prior context from **Supabase** (`daily_snapshots`, relevant `documents`) — not from `data/agent-cache/`
 4. Do NOT summarize what you've read — just use it
 
 ### Tone and style:
@@ -34,8 +34,7 @@ This is a daily market intelligence system. Every session is either:
 
 ### What Claude must always do:
 - Search the web for current market data — never rely on training data for prices, yields, or news
-- Update `data/agent-cache/daily/YYYY-MM-DD/` segment files after every digest session
-- Save the master digest to `data/agent-cache/daily/YYYY-MM-DD/DIGEST.md`
+- **Publish** segment and digest payloads to Supabase per [`RUNBOOK.md`](RUNBOOK.md) — Cowork tasks do not use repo-local cache folders for canonical output
 - Run alternative data (Phase 1) BEFORE macro — sentiment and positioning inform the regime read
 - Be honest about uncertainty — say "conflicted" when evidence is mixed
 
@@ -46,83 +45,83 @@ This is a daily market intelligence system. Every session is either:
 
 ---
 
-## 7-Phase Daily Pipeline
+## Pipeline (scheduled work)
 
-The full daily digest follows this sequence. Run `skills/SKILL-orchestrator.md` for complete instructions.
+**Operational entry:** attach a task from [`cowork/tasks/README.md`](cowork/tasks/README.md), then follow [`RUNBOOK.md`](RUNBOOK.md). Authoritative phase order: [`skills/orchestrator/SKILL.md`](skills/orchestrator/SKILL.md).
 
-| Phase | Content | Skills Used | Output |
-|-------|---------|-------------|--------|
-| 1 | Alternative Data | SKILL-sentiment-news, SKILL-cta-positioning, SKILL-options-derivatives, SKILL-politician-signals | alt-data.md |
-| 2 | Institutional Intelligence | SKILL-institutional-flows, SKILL-hedge-fund-intel | institutional.md |
-| 3 | Macro Analysis | SKILL-macro (v2) | macro.md |
-| 4 | Asset Classes | SKILL-bonds, SKILL-commodities, SKILL-forex, SKILL-crypto, SKILL-international | 5 segment files |
-| 5 | US Equities + 11 Sectors | SKILL-equity + 11 sector sub-agents | equities.md + 11 sector files |
-| 6 | DIGEST.md Synthesis | templates/master-digest.md | DIGEST.md |
+| Phase | Content | Skill packages (`skills/<slug>/SKILL.md`) |
+|-------|---------|------------------------------------------|
+| 1 | Alternative Data | `alt-sentiment-news`, `alt-cta-positioning`, `alt-options-derivatives`, `alt-politician-signals` |
+| 2 | Institutional | `inst-institutional-flows`, `inst-hedge-fund-intel` |
+| 3 | Macro | `macro` |
+| 4 | Asset classes | `bonds`, `commodities`, `forex`, `crypto`, `international` |
+| 5 | US equities + sectors | `equity`, `sector-*` (11 GICS) |
+| 6+ | Materialization / digest / PM | orchestrator + templates; publish JSON to Supabase |
 
-**Output**: `data/agent-cache/daily/YYYY-MM-DD/DIGEST.md` (+ 21 supporting segment files)
+**Canonical output:** Supabase `documents` + `daily_snapshots` — not a committed `data/agent-cache/` tree.
 
 ---
 
-## Skill Files
+## Skill Files (canonical paths)
 
-### Core Orchestration
+### Core orchestration
 | Skill | Triggers |
 |-------|---------|
-| `skills/SKILL-orchestrator.md` | **PRIMARY**: "run digest", "daily analysis", "morning brief", "market update" |
-| `skills/SKILL-digest.md` | Legacy pointer → redirects to SKILL-orchestrator.md |
+| `skills/orchestrator/SKILL.md` | **PRIMARY**: "run digest", "daily analysis", "morning brief", "market update" |
+| `skills/digest/SKILL.md` | Digest synthesis (or use orchestrator routing) |
 
-### Core Segment Skills (v2)
+### Core segment skills
 | Skill | Triggers |
 |-------|---------|
-| `skills/SKILL-macro.md` | "macro analysis", "economic data", "central bank", "regime" |
-| `skills/SKILL-equity.md` | "equity overview", "market breadth", "factor analysis" |
-| `skills/SKILL-crypto.md` | "crypto analysis", "bitcoin", "BTC", "crypto market" |
-| `skills/SKILL-bonds.md` | "bond analysis", "rates", "yields", "Fed", "credit spreads" |
-| `skills/SKILL-commodities.md` | "commodities", "oil", "gold", "copper", "energy" |
-| `skills/SKILL-forex.md` | "forex", "FX", "dollar", "DXY", "currency" |
-| `skills/SKILL-international.md` | "international", "emerging markets", "China", "Japan", "EFA" |
+| `skills/macro/SKILL.md` | "macro analysis", "economic data", "central bank", "regime" |
+| `skills/equity/SKILL.md` | "equity overview", "market breadth", "factor analysis" |
+| `skills/crypto/SKILL.md` | "crypto analysis", "bitcoin", "BTC", "crypto market" |
+| `skills/bonds/SKILL.md` | "bond analysis", "rates", "yields", "Fed", "credit spreads" |
+| `skills/commodities/SKILL.md` | "commodities", "oil", "gold", "copper", "energy" |
+| `skills/forex/SKILL.md` | "forex", "FX", "dollar", "DXY", "currency" |
+| `skills/international/SKILL.md` | "international", "emerging markets", "China", "Japan", "EFA" |
 
-### Sector Sub-Agents (11 GICS Sectors)
+### Sector sub-agents (11 GICS)
 | Skill | Sector | Key ETF |
 |-------|--------|---------|
-| `skills/sectors/SKILL-sector-technology.md` | Technology | XLK, SOXX |
-| `skills/sectors/SKILL-sector-healthcare.md` | Healthcare ★ | XLV, IBB |
-| `skills/sectors/SKILL-sector-energy.md` | Energy ★ | XLE, DBO |
-| `skills/sectors/SKILL-sector-financials.md` | Financials | XLF, KRE |
-| `skills/sectors/SKILL-sector-consumer-staples.md` | Consumer Staples ★ | XLP |
-| `skills/sectors/SKILL-sector-consumer-disc.md` | Consumer Discretionary | XLY |
-| `skills/sectors/SKILL-sector-industrials.md` | Industrials | XLI, ITA |
-| `skills/sectors/SKILL-sector-utilities.md` | Utilities | XLU |
-| `skills/sectors/SKILL-sector-materials.md` | Materials | XLB |
-| `skills/sectors/SKILL-sector-real-estate.md` | Real Estate | XLRE, VNQ |
-| `skills/sectors/SKILL-sector-comms.md` | Communication Services | XLC |
+| `skills/sector-technology/SKILL.md` | Technology | XLK, SOXX |
+| `skills/sector-healthcare/SKILL.md` | Healthcare ★ | XLV, IBB |
+| `skills/sector-energy/SKILL.md` | Energy ★ | XLE, DBO |
+| `skills/sector-financials/SKILL.md` | Financials | XLF, KRE |
+| `skills/sector-consumer-staples/SKILL.md` | Consumer Staples ★ | XLP |
+| `skills/sector-consumer-disc/SKILL.md` | Consumer Discretionary | XLY |
+| `skills/sector-industrials/SKILL.md` | Industrials | XLI, ITA |
+| `skills/sector-utilities/SKILL.md` | Utilities | XLU |
+| `skills/sector-materials/SKILL.md` | Materials | XLB |
+| `skills/sector-real-estate/SKILL.md` | Real Estate | XLRE, VNQ |
+| `skills/sector-comms/SKILL.md` | Communication Services | XLC |
 
 *★ = active portfolio holding*
 
-### Alternative Data Sub-Agents
+### Alternative data
 | Skill | Focus |
 |-------|-------|
-| `skills/alternative-data/SKILL-sentiment-news.md` | X/Twitter KOL, Polymarket, Reddit, Fear & Greed |
-| `skills/alternative-data/SKILL-cta-positioning.md` | CFTC COT, systematic positioning, crowding |
-| `skills/alternative-data/SKILL-options-derivatives.md` | VIX, SKEW, GEX, P/C ratios, unusual activity |
-| `skills/alternative-data/SKILL-politician-signals.md` | STOCK Act, Fed/Treasury statements, geopolitical |
+| `skills/alt-sentiment-news/SKILL.md` | X/Twitter KOL, Polymarket, Reddit, Fear & Greed |
+| `skills/alt-cta-positioning/SKILL.md` | CFTC COT, systematic positioning, crowding |
+| `skills/alt-options-derivatives/SKILL.md` | VIX, SKEW, GEX, P/C ratios, unusual activity |
+| `skills/alt-politician-signals/SKILL.md` | STOCK Act, Fed/Treasury statements, geopolitical |
 
-### Institutional Intelligence Sub-Agents
+### Institutional intelligence
 | Skill | Focus |
 |-------|-------|
-| `skills/institutional/SKILL-institutional-flows.md` | ETF flows, dark pool, 13D/13G filings |
-| `skills/institutional/SKILL-hedge-fund-intel.md` | 16 tracked funds, 13F, fund commentary |
+| `skills/inst-institutional-flows/SKILL.md` | ETF flows, dark pool, 13D/13G filings |
+| `skills/inst-hedge-fund-intel/SKILL.md` | 16 tracked funds, 13F, fund commentary |
 
-### Specialized Tools
+### Specialized tools
 | Skill | Triggers |
 |-------|---------|
-| `skills/SKILL-thesis.md` | "add thesis", "close thesis", "update thesis" |
-| `skills/SKILL-thesis-tracker.md` | "check my theses", "thesis review", "portfolio check" |
-| `skills/SKILL-sector-rotation.md` | "sector rotation", "where's the money flowing" |
-| `skills/SKILL-sector-heatmap.md` | "sector heatmap", "sector breakdown" |
-| `skills/SKILL-earnings.md` | "earnings", "earnings calendar", "how did X report" |
-| `skills/SKILL-deep-dive.md` | "deep dive on X", "full analysis of X", "research X" |
-| `skills/SKILL-premarket-pulse.md` | "pre-market", "morning scan", "quick scan" |
+| `skills/thesis/SKILL.md` | "add thesis", "close thesis", "update thesis" |
+| `skills/thesis-tracker/SKILL.md` | "check my theses", "thesis review", "portfolio check" |
+| `skills/sector-rotation/SKILL.md` | "sector rotation", "where's the money flowing" |
+| `skills/sector-heatmap/SKILL.md` | "sector heatmap", "sector breakdown" |
+| `skills/earnings/SKILL.md` | "earnings", "earnings calendar", "how did X report" |
+| `skills/deep-dive/SKILL.md` | "deep dive on X", "full analysis of X", "research X" |
+| `skills/premarket-pulse/SKILL.md` | "pre-market", "morning scan", "quick scan" |
 
 ---
 
@@ -136,66 +135,41 @@ config/hedge-funds.md            ← Tracked fund registry with CIK, X handle, s
 config/data-sources.md           ← 30+ X accounts, Polymarket topics, databases
 config/email-research.md         ← Dedicated Gmail setup + subscription list
 
-skills/SKILL-orchestrator.md     ← MASTER: 7-phase pipeline driver
-skills/SKILL-digest.md           ← Legacy pointer → redirects to orchestrator
-skills/SKILL-macro.md            ← Macro analysis (v2)
-skills/SKILL-equity.md           ← US equities overview (v2)
-skills/SKILL-crypto.md           ← Crypto analysis (v2)
-skills/SKILL-bonds.md            ← Bonds & rates (v2)
-skills/SKILL-commodities.md      ← Commodities (v2)
-skills/SKILL-forex.md            ← Forex (v2)
-skills/SKILL-international.md    ← International/EM analysis
-skills/SKILL-*.md                ← 7 specialized tool skills
+skills/orchestrator/SKILL.md      ← MASTER pipeline driver
+skills/digest/SKILL.md           ← Digest synthesis (when run standalone)
+skills/macro/SKILL.md            ← Macro analysis
+skills/equity/SKILL.md           ← US equities overview
+skills/crypto/SKILL.md           ← Crypto analysis
+skills/bonds/SKILL.md            ← Bonds & rates
+skills/commodities/SKILL.md      ← Commodities
+skills/forex/SKILL.md            ← Forex
+skills/international/SKILL.md    ← International/EM analysis
+skills/<slug>/SKILL.md           ← One package per slug (see SKILLS-CATALOG)
 
-skills/sectors/                  ← 11 GICS sector sub-agent skill files
-skills/alternative-data/         ← 4 alternative data sub-agent skill files
-skills/institutional/            ← 2 institutional intelligence skill files
+skills/sector-*/SKILL.md         ← 11 GICS sector packages
+skills/alt-*/SKILL.md            ← Alternative data packages
+skills/inst-*/SKILL.md           ← Institutional intelligence packages
 
-templates/master-digest.md       ← Daily output template (v2 — expanded)
-templates/sector-report.md       ← Sector output template
-templates/alt-data-report.md     ← Alternative data output template
-templates/institutional-report.md ← Institutional intelligence template
-templates/weekly-digest.md       ← Weekly rollup template
-templates/monthly-digest.md      ← Monthly rollup template
+templates/digest-snapshot-schema.json   ← Canonical digest snapshot shape
+templates/schemas/*.schema.json         ← Segment + rollup schemas
 
-data/agent-cache/daily/YYYY-MM-DD/       ← Folder per day
-  DIGEST.md                     ← Master synthesized digest
-  macro.md                      ← Phase 3 output
-  bonds.md / commodities.md / forex.md / crypto.md / international.md
-  equities.md                   ← Phase 5A output
-  alt-data.md                   ← Phase 1 output
-  institutional.md              ← Phase 2 output
-  sectors/technology.md         ← Phase 5B output (11 files)
-  sectors/[...].md
+data/README.md                   ← Gitignored `data/*` explained; DB-only needs no local cache
 
-data/agent-cache/weekly/                 ← YYYY-Wnn.md — weekly rollups
-data/agent-cache/monthly/                ← YYYY-MM.md — monthly rollups
-data/agent-cache/deep-dives/             ← TICKER-YYYY-MM-DD.md — standalone research
-
-scripts/new-day.sh              ← Create daily folder structure + print start prompt
-scripts/run-segment.sh          ← Run single named segment
-scripts/combine-digest.sh       ← Print synthesis prompt for Phase 7
-scripts/status.sh               ← Project status (all 23 memory files + segments)
-scripts/git-commit.sh           ← Commit config + memory to git
-scripts/weekly-rollup.sh        ← Weekly synthesis
-scripts/monthly-rollup.sh       ← Monthly synthesis
-scripts/memory-search.sh        ← Search all 23 ROLLING.md files
-scripts/cowork-daily-prompt.txt  ← Full orchestrator prompt (auto-filled by new-day.sh)
-scripts/archive.sh              ← (Retired — see archive/legacy-scripts/)
+scripts/run_db_first.py          ← Post-publish validate + metrics (primary entry)
+scripts/publish_document.py      ← stdin JSON → Supabase documents
+scripts/materialize_snapshot.py← Digest snapshot → daily_snapshots
+scripts/weekly-rollup.sh         ← Operator prompt for weekly synthesis
+scripts/monthly-rollup.sh        ← Operator prompt for monthly synthesis
+scripts/cowork-daily-prompt.txt  ← Cowork daily prompt (Track B)
 ```
 
 ---
 
-## Daily Workflow (v2)
+## Daily Workflow (DB-first)
 
-1. User runs `./scripts/new-day.sh` → creates folder structure + 22 files + prints start prompt
-2. User pastes start prompt into Claude → full 7-phase pipeline runs
-3. Alternative data (Phase 1) runs FIRST — sentiment and positioning prime macro read
-4. Each phase builds on the previous — macro informs asset classes, asset classes inform sectors
-5. All 23 memory files updated in Phase 6
-6. Phase 7 synthesizes everything into DIGEST.md
-7. User runs `./scripts/git-commit.sh` → commits everything to git
-8. Friday: User runs `./scripts/weekly-rollup.sh` → Claude does weekly synthesis
+1. Attach a task from [`cowork/tasks/README.md`](cowork/tasks/README.md) or run [`RUNBOOK.md`](RUNBOOK.md) steps.
+2. Phases produce **validated JSON** → `publish_document.py` / `materialize_snapshot.py` → Supabase.
+3. `python3 scripts/run_db_first.py` — validates DB, metrics, optional execute-at-open.
+4. `./scripts/git-commit.sh` — **config/repo only** (not `data/` — gitignored).
 
-**Single segment**: `./scripts/run-segment.sh energy` → paste prompt into Claude
-**Combine existing segments**: `./scripts/combine-digest.sh` → paste synthesis prompt
+**Single segment:** read `skills/{segment}/SKILL.md`, publish JSON per RUNBOOK.

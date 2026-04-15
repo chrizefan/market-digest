@@ -55,6 +55,7 @@ elif [[ -x "${REPO_ROOT}/.venv/bin/python3" ]] \
 fi
 
 for script in \
+  scripts/audit_config_references.py \
   scripts/backfill_execution_prices.py \
   scripts/backfill-supabase.py \
   scripts/compute-technicals.py \

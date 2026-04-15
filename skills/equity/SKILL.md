@@ -1,6 +1,6 @@
 ---
 name: market-equity
-description: Run US equity market overview analysis. In the orchestrator pipeline, run as Phase 5A — establishes the market-wide read (breadth, indices, factors). Sector deep-dives are handled separately by 11 sector sub-agent skills. International equities are handled by SKILL-international.md.
+description: Run US equity market overview analysis. In the orchestrator pipeline, run as Phase 5A — establishes the market-wide read (breadth, indices, factors). Sector deep-dives are handled separately by 11 sector sub-agent skills. International equities are handled by `skills/international/SKILL.md`.
 ---
 
 # US Equities Overview Skill — v2

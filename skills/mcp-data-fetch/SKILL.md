@@ -68,7 +68,7 @@ calling Alpha Vantage for RSI/MACD/SMA/EMA. See `skills/data-fetch/SKILL.md` for
 
 ## Step-by-Step Procedure (high level)
 
-1. Create `data/agent-cache/daily/{DATE}/data/` if needed.
+1. If you need on-disk JSON for validation, use a temp directory or (legacy) `data/agent-cache/daily/{DATE}/data/` — not required when publishing straight to Supabase (`data/README.md`).
 2. Fetch yield curve + spreads + VIX via FRED.
 3. Fetch FX via Frankfurter.
 4. Fetch BTC/ETH via CoinGecko.

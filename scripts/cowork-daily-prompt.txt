@@ -4,9 +4,7 @@ Step 0: Data layer
   - Prefer Supabase: `price_technicals`, `price_history`, `macro_series_observations`
   - SEC issuer filings: ad hoc only (major stocks / sector read-through); use EDGAR or `sec-edgar` MCP when research calls for it — not a daily table
     (GitHub Daily Price Update loads most of this automatically).
-  - Optional local cache for the agent session only:
-      ./scripts/fetch-market-data.sh
-    (writes under data/agent-cache/daily/$(date +%Y-%m-%d)/data/ — gitignored scratch, not canonical).
+  - Optional: ./scripts/fetch-market-data.sh for local yfinance/macro JSON when Supabase is stale (may write under data/agent-cache/… — transient only; see data/README.md). Not required for DB-only runs.
   - If scripts fail: `skills/mcp-data-fetch/SKILL.md` (MCP tools).
 
 Step 1: Run mode
@@ -28,7 +26,7 @@ Step 3: Portfolio layer (JSON documents in Supabase)
 
 Step 4: Operator close-out
   - `python3 scripts/run_db_first.py`  (sync `positions` from rebalance when present, then metrics refresh, execute_at_open, validate_db_first)
-  - Optional: `./scripts/git-commit.sh` for config/memory/repo-only commits (not data/agent-cache/).
+  - Optional: `./scripts/git-commit.sh` for config/memory/repo-only commits (not gitignored data/).
 
 Step 5: Phase 9 / evolution
   - Publish evolution JSON to `documents` (schemas under templates/schemas/evolution-*.schema.json)

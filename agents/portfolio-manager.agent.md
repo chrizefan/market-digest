@@ -31,7 +31,7 @@ looking at what's already owned.**
 Triggered automatically after Phase 7 of the daily digest. Fresh session data is available.
 
 ```
-Read: skills/SKILL-portfolio-manager.md
+Read: skills/portfolio-manager/SKILL.md
 Run: All phases (A, B, C)
 ```
 
@@ -39,7 +39,7 @@ Run: All phases (A, B, C)
 Triggered by: "review my portfolio", "rebalance check", "what should I own", "portfolio review"
 
 ```
-Read: skills/SKILL-portfolio-manager.md § Standalone Mode
+Read: skills/portfolio-manager/SKILL.md § Standalone Mode
 Source: Latest DIGEST.md from this week's baseline
 Run: All phases (A, B, C)
 ```
@@ -48,7 +48,7 @@ Run: All phases (A, B, C)
 Triggered by: "analyze IAU", "bull/bear on XLE", "should I hold BIL"
 
 ```
-Read: skills/SKILL-asset-analyst.md
+Read: skills/asset-analyst/SKILL.md
 Scope: Single asset only
 Output: data/agent-cache/daily/{{DATE}}/positions/{{TICKER}}.md
 Note: No PM portfolio construction needed — analyst report only

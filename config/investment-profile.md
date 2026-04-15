@@ -287,10 +287,9 @@ Every digest must:
 
 ## 9. Active Theses
 
-The active thesis register is maintained in the **Thesis Tracker** table in each day's `DIGEST.md`
-and tracked via `thesis_ids` on positions in `config/portfolio.json`.
+The active thesis register is maintained in **Supabase** (`documents` / digest payloads) and tracked via `thesis_ids` on positions in `config/portfolio.json`.
 
-See: `data/agent-cache/daily/[latest-date]/DIGEST.md` → Thesis Tracker section
+See: latest digest and thesis-related documents in Supabase for the current date — not a local `DIGEST.md` file.
 
 ---
 
