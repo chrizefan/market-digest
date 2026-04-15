@@ -402,6 +402,7 @@ function ResearchPageInner({
               {activeFileHidden && activeFile ? (
                 <div className="glass-card p-0 overflow-hidden">
                   <DocumentExpandInline
+                    hideTitleBar={(activeFile.path || '').toLowerCase() === 'digest'}
                     title={canonicalResearchTitle(activeFile)}
                     subtitle={activeFile.date ?? null}
                     badge={
@@ -415,13 +416,6 @@ function ResearchPageInner({
                     }
                     loading={activeLoading}
                     libraryDoc={libraryDoc}
-                    onCollapse={() => {
-                      setActiveFile(null);
-                      setLibraryDoc(null);
-                      replaceQuery((p) => {
-                        p.delete('docKey');
-                      });
-                    }}
                   />
                 </div>
               ) : null}
@@ -493,17 +487,11 @@ function ResearchPageInner({
                             </button>
                             {expanded ? (
                               <DocumentExpandInline
+                                hideTitleBar
                                 title={canonicalResearchTitle(f)}
                                 subtitle={f.date ?? null}
                                 loading={activeLoading}
                                 libraryDoc={libraryDoc}
-                                onCollapse={() => {
-                                  setActiveFile(null);
-                                  setLibraryDoc(null);
-                                  replaceQuery((p) => {
-                                    p.delete('docKey');
-                                  });
-                                }}
                               />
                             ) : null}
                           </div>

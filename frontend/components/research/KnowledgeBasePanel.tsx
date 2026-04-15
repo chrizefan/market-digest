@@ -140,14 +140,11 @@ export default function KnowledgeBasePanel({ docs }: { docs: Doc[] }) {
       {activeHidden && activeFile ? (
         <div className="glass-card p-0 overflow-hidden">
           <DocumentExpandInline
+            hideTitleBar={(activeFile.path || '').toLowerCase() === 'digest'}
             title={canonicalResearchTitle(activeFile)}
             subtitle={activeFile.date ?? null}
             loading={activeLoading}
             libraryDoc={libraryDoc}
-            onCollapse={() => {
-              setActiveFile(null);
-              setLibraryDoc(null);
-            }}
           />
         </div>
       ) : null}
@@ -184,14 +181,11 @@ export default function KnowledgeBasePanel({ docs }: { docs: Doc[] }) {
                     </button>
                     {expanded ? (
                       <DocumentExpandInline
+                        hideTitleBar
                         title={canonicalResearchTitle(f)}
                         subtitle={f.date ?? null}
                         loading={activeLoading}
                         libraryDoc={libraryDoc}
-                        onCollapse={() => {
-                          setActiveFile(null);
-                          setLibraryDoc(null);
-                        }}
                       />
                     ) : null}
                   </div>

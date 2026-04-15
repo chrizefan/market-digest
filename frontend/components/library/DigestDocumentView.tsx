@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Change } from 'diff';
 import { diffLines, diffWords } from 'diff';
+import { ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -12,7 +13,8 @@ import {
   type DigestDiffContext,
 } from '@/lib/queries';
 
-type ViewMode = 'compiled' | 'inline' | 'split';
+type ViewScope = 'current' | 'difference';
+type DiffLayout = 'inline' | 'split';
 
 function isTableLine(s: string): boolean {
   const t = s.trimStart();
@@ -86,8 +88,144 @@ function WordSwapBlock({ oldText, newText }: { oldText: string; newText: string 
 
 function comparePresetLabel(kind: DigestCompareKind, ctx: DigestDiffContext | null): string {
   if (kind === 'delta_baseline') return ctx?.deltaBaselineDate ? `Delta baseline (${ctx.deltaBaselineDate})` : 'Delta baseline';
-  if (kind === 'custom_date') return 'Custom snapshot date';
+  if (kind === 'custom_date') return 'Custom snapshot date…';
   return ctx?.previousDigestDate ? `Previous digest (${ctx.previousDigestDate})` : 'Previous digest';
+}
+
+function segmentOuterClass() {
+  return 'inline-flex rounded-lg border border-border-subtle p-0.5 bg-bg-secondary/80 gap-0.5';
+}
+
+function segmentBtnClass(active: boolean) {
+  return `rounded-md px-3 py-1.5 text-xs font-medium border transition-colors ${
+    active
+      ? 'border-fin-blue/40 bg-fin-blue/15 text-fin-blue'
+      : 'border-transparent text-text-muted hover:text-text-primary hover:bg-white/[0.06]'
+  }`;
+}
+
+function DigestCompareDropdown({
+  context,
+  compareKind,
+  customCompareDate,
+  canComparePrevious,
+  canCompareBaseline,
+  onSelectKind,
+  onCustomDateChange,
+}: {
+  context: DigestDiffContext;
+  compareKind: DigestCompareKind;
+  customCompareDate: string;
+  canComparePrevious: boolean;
+  canCompareBaseline: boolean;
+  onSelectKind: (k: DigestCompareKind) => void;
+  onCustomDateChange: (iso: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  const summaryLabel = comparePresetLabel(compareKind, context);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border border-border-subtle bg-bg-secondary text-text-secondary hover:border-fin-blue/40 hover:text-text-primary transition-colors"
+        aria-expanded={open ? 'true' : 'false'}
+        aria-haspopup="listbox"
+      >
+        <span className="max-w-[min(100vw-8rem,14rem)] truncate">{summaryLabel}</span>
+        <ChevronDown size={14} className={`opacity-70 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-[60] mt-1 w-[min(100vw-2rem,20rem)] rounded-lg border border-border-subtle bg-[#141414] shadow-xl overflow-hidden">
+          <div role="listbox" aria-label="Compare digest to" className="max-h-52 overflow-y-auto py-1">
+            <button
+              type="button"
+              role="option"
+              aria-selected={compareKind === 'previous_digest' ? 'true' : 'false'}
+              disabled={!canComparePrevious}
+              onClick={() => {
+                if (!canComparePrevious) return;
+                onSelectKind('previous_digest');
+                setOpen(false);
+              }}
+              className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                !canComparePrevious
+                  ? 'text-text-muted opacity-40 cursor-not-allowed'
+                  : compareKind === 'previous_digest'
+                    ? 'bg-fin-blue/15 text-fin-blue'
+                    : 'text-text-secondary hover:bg-white/[0.06] hover:text-text-primary'
+              }`}
+            >
+              {comparePresetLabel('previous_digest', context)}
+            </button>
+            <button
+              type="button"
+              role="option"
+              aria-selected={compareKind === 'delta_baseline' ? 'true' : 'false'}
+              disabled={!canCompareBaseline}
+              onClick={() => {
+                if (!canCompareBaseline) return;
+                onSelectKind('delta_baseline');
+                setOpen(false);
+              }}
+              className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                !canCompareBaseline
+                  ? 'text-text-muted opacity-40 cursor-not-allowed'
+                  : compareKind === 'delta_baseline'
+                    ? 'bg-fin-blue/15 text-fin-blue'
+                    : 'text-text-secondary hover:bg-white/[0.06] hover:text-text-primary'
+              }`}
+            >
+              {comparePresetLabel('delta_baseline', context)}
+            </button>
+            <button
+              type="button"
+              role="option"
+              aria-selected={compareKind === 'custom_date' ? 'true' : 'false'}
+              onClick={() => {
+                onSelectKind('custom_date');
+              }}
+              className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                compareKind === 'custom_date'
+                  ? 'bg-fin-blue/15 text-fin-blue'
+                  : 'text-text-secondary hover:bg-white/[0.06] hover:text-text-primary'
+              }`}
+            >
+              {comparePresetLabel('custom_date', context)}
+            </button>
+          </div>
+          {compareKind === 'custom_date' ? (
+            <div className="border-t border-border-subtle px-2.5 py-2 bg-bg-secondary/80">
+              <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Snapshot date</label>
+              <input
+                type="date"
+                value={customCompareDate}
+                onChange={(e) => onCustomDateChange(e.target.value)}
+                className="w-full rounded-md border border-border-subtle bg-bg-secondary px-2 py-1.5 text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-inset focus:ring-fin-blue/30"
+              />
+            </div>
+          ) : null}
+          <p className="text-[10px] text-text-muted px-2.5 py-1.5 border-t border-border-subtle bg-bg-secondary/80">
+            Choose which snapshot to diff against
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function DigestDocumentView({
@@ -97,7 +235,8 @@ export default function DigestDocumentView({
   docDate: string;
   fallbackMarkdown: string;
 }) {
-  const [viewMode, setViewMode] = useState<ViewMode>('compiled');
+  const [viewScope, setViewScope] = useState<ViewScope>('current');
+  const [diffLayout, setDiffLayout] = useState<DiffLayout>('inline');
   const [compareKind, setCompareKind] = useState<DigestCompareKind>('previous_digest');
   const [customCompareDate, setCustomCompareDate] = useState('');
   const [contextLoading, setContextLoading] = useState(true);
@@ -131,7 +270,7 @@ export default function DigestDocumentView({
   }, [docDate]);
 
   useEffect(() => {
-    if (viewMode === 'compiled') return;
+    if (viewScope === 'current') return;
     let cancelled = false;
     /* eslint-disable react-hooks/set-state-in-effect -- fetch lifecycle for diff pair */
     setPairLoading(true);
@@ -154,7 +293,7 @@ export default function DigestDocumentView({
     return () => {
       cancelled = true;
     };
-  }, [docDate, compareKind, customCompareDate, viewMode]);
+  }, [docDate, compareKind, customCompareDate, viewScope]);
 
   const lineItems = useMemo(() => {
     if (!pair) return [];
@@ -166,6 +305,59 @@ export default function DigestDocumentView({
   const canComparePrevious = !!context?.previousDigestDate;
   const canCompareBaseline = !!context?.deltaBaselineDate;
   const customReady = compareKind !== 'custom_date' || /^\d{4}-\d{2}-\d{2}$/.test(customCompareDate.trim());
+
+  const toolbar = context ? (
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className={segmentOuterClass()}>
+        <button
+          type="button"
+          className={segmentBtnClass(viewScope === 'current')}
+          onClick={() => {
+            setViewScope('current');
+            setPair(null);
+            setError(null);
+          }}
+        >
+          Current
+        </button>
+        <button type="button" className={segmentBtnClass(viewScope === 'difference')} onClick={() => setViewScope('difference')}>
+          Difference
+        </button>
+      </div>
+
+      {viewScope === 'difference' ? (
+        <>
+          <div className={segmentOuterClass()}>
+            <button type="button" className={segmentBtnClass(diffLayout === 'inline')} onClick={() => setDiffLayout('inline')}>
+              Inline
+            </button>
+            <button
+              type="button"
+              className={segmentBtnClass(diffLayout === 'split')}
+              onClick={() => setDiffLayout('split')}
+            >
+              Side by side
+            </button>
+          </div>
+          <DigestCompareDropdown
+            context={context}
+            compareKind={compareKind}
+            customCompareDate={customCompareDate}
+            canComparePrevious={canComparePrevious}
+            canCompareBaseline={canCompareBaseline}
+            onSelectKind={(k) => setCompareKind(k)}
+            onCustomDateChange={setCustomCompareDate}
+          />
+        </>
+      ) : null}
+
+      {context.changeCount > 0 ? (
+        <span className="text-text-muted text-xs sm:ml-auto">
+          {context.changeCount} path{context.changeCount !== 1 ? 's' : ''} in delta-request
+        </span>
+      ) : null}
+    </div>
+  ) : null;
 
   if (contextLoading) {
     return <p className="text-text-muted text-sm">Loading digest…</p>;
@@ -182,64 +374,7 @@ export default function DigestDocumentView({
     );
   }
 
-  const toolbar = context ? (
-    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end text-xs">
-      <label className="flex flex-col gap-1 min-w-[200px]">
-        <span className="text-text-muted">Compare to</span>
-        <select
-          value={compareKind}
-          onChange={(e) => setCompareKind(e.target.value as DigestCompareKind)}
-          className="rounded-md border border-border-subtle bg-bg-secondary px-2 py-1.5 text-xs text-text-primary"
-        >
-          <option value="previous_digest" disabled={!canComparePrevious}>
-            {comparePresetLabel('previous_digest', context)}
-          </option>
-          <option value="delta_baseline" disabled={!canCompareBaseline}>
-            {comparePresetLabel('delta_baseline', context)}
-          </option>
-          <option value="custom_date">Custom snapshot date…</option>
-        </select>
-      </label>
-      {compareKind === 'custom_date' ? (
-        <label className="flex flex-col gap-1 min-w-[160px]">
-          <span className="text-text-muted">Snapshot date</span>
-          <input
-            type="date"
-            value={customCompareDate}
-            onChange={(e) => setCustomCompareDate(e.target.value)}
-            className="rounded-md border border-border-subtle bg-bg-secondary px-2 py-1.5 text-xs text-text-primary font-mono"
-          />
-        </label>
-      ) : null}
-      <label className="flex flex-col gap-1 min-w-[180px]">
-        <span className="text-text-muted">View</span>
-        <select
-          value={viewMode}
-          onChange={(e) => {
-            const v = e.target.value as ViewMode;
-            setViewMode(v);
-            if (v === 'compiled') {
-              setPair(null);
-              setPairLoading(false);
-              setError(null);
-            }
-          }}
-          className="rounded-md border border-border-subtle bg-bg-secondary px-2 py-1.5 text-xs text-text-primary"
-        >
-          <option value="compiled">Current (compiled)</option>
-          <option value="inline">Inline diff</option>
-          <option value="split">Side-by-side</option>
-        </select>
-      </label>
-      {context.changeCount > 0 ? (
-        <span className="text-text-muted sm:ml-auto sm:self-center">
-          {context.changeCount} path{context.changeCount !== 1 ? 's' : ''} in delta-request
-        </span>
-      ) : null}
-    </div>
-  ) : null;
-
-  if (viewMode === 'compiled') {
+  if (viewScope === 'current') {
     return (
       <div className="space-y-4">
         {toolbar}
@@ -313,7 +448,7 @@ export default function DigestDocumentView({
         ) : null}
       </p>
 
-      {viewMode === 'inline' ? (
+      {diffLayout === 'inline' ? (
         <div>
           {!hasDiff ? (
             <p className="text-text-muted text-sm mb-3">No text changes vs comparison snapshot.</p>

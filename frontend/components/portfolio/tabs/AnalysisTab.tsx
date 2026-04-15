@@ -394,11 +394,11 @@ export default function AnalysisTab(props: {
                       {active && pmActiveFile ? (
                         <DocumentExpandInline
                           accent="amber"
+                          hideTitleBar
                           title={pmActiveFile.title || pmActiveFile.filename || pmActiveFile.path}
                           subtitle={pmActiveFile.date ?? null}
                           loading={pmLoading}
                           libraryDoc={pmLibraryDoc}
-                          onCollapse={onClosePmDocument}
                         />
                       ) : null}
                     </div>
