@@ -381,11 +381,11 @@ export default function OverviewPage() {
           enterStaggerIndex={1}
         />
         <StatCardEnhanced
-          label="Invested capital"
-          value={`${metrics.total_invested?.toFixed(1) ?? '—'}%`}
+          label="Sharpe"
+          value={metrics.sharpe != null ? metrics.sharpe.toFixed(2) : '—'}
           icon={PieChart}
           iconColor="text-fin-amber"
-          subtitle="deployed"
+          subtitle="risk-adjusted"
           enterStaggerIndex={2}
         />
         <StatCardEnhanced
