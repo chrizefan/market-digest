@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import MiniCalendar, { type MiniCalendarRunKind } from '@/components/library/MiniCalendar';
@@ -55,10 +55,9 @@ export default function ThesesTab(props: {
   const [expandedThesisId, setExpandedThesisId] = useState<string | null>(null);
   const [historyByThesis, setHistoryByThesis] = useState<Map<string, ThesisHistoryPoint[]>>(new Map());
 
-  const pipelineCacheRef = useRef<
+  const [pipelineCacheByDate, setPipelineCacheByDate] = useState<
     Map<string, { mte: Record<string, unknown> | null; tvm: Record<string, unknown> | null }>
-  >(new Map());
-  const [pipelineVersion, setPipelineVersion] = useState(0);
+  >(() => new Map());
   const [pipelineLoading, setPipelineLoading] = useState(false);
 
   useEffect(() => {
@@ -80,31 +79,27 @@ export default function ThesesTab(props: {
     }
 
     const key = effHistoryDate;
-    const c = pipelineCacheRef.current;
 
-    if (effHistoryDate === lastUpdated && pipelineObservability != null) {
-      if (!c.has(key)) {
-        c.set(key, {
-          mte: pipelineObservability.market_thesis_exploration,
-          tvm: pipelineObservability.thesis_vehicle_map,
-        });
-        setPipelineVersion((v) => v + 1);
-      }
-      return;
-    }
+    /* Latest digest day: MTE/TVM come from props in useMemo — no network. */
+    if (key === lastUpdated && pipelineObservability != null) return;
 
-    if (c.has(key)) return;
+    if (pipelineCacheByDate.has(key)) return;
 
     let cancelled = false;
-    setPipelineLoading(true);
+    queueMicrotask(() => {
+      if (!cancelled) setPipelineLoading(true);
+    });
     fetchThesisPipelinePayloadsForDate(key)
       .then((res) => {
         if (cancelled) return;
-        c.set(key, {
-          mte: res.market_thesis_exploration,
-          tvm: res.thesis_vehicle_map,
+        setPipelineCacheByDate((prev) => {
+          const next = new Map(prev);
+          next.set(key, {
+            mte: res.market_thesis_exploration,
+            tvm: res.thesis_vehicle_map,
+          });
+          return next;
         });
-        setPipelineVersion((v) => v + 1);
       })
       .finally(() => {
         if (!cancelled) setPipelineLoading(false);
@@ -113,14 +108,13 @@ export default function ThesesTab(props: {
     return () => {
       cancelled = true;
     };
-  }, [effHistoryDate, expandedThesisId, lastUpdated, pipelineObservability]);
+  }, [effHistoryDate, expandedThesisId, lastUpdated, pipelineObservability, pipelineCacheByDate]);
 
   const payloadsForSelectedDate = useMemo(() => {
-    void pipelineVersion;
     if (!effHistoryDate) {
       return { mte: null as Record<string, unknown> | null, tvm: null as Record<string, unknown> | null };
     }
-    const hit = pipelineCacheRef.current.get(effHistoryDate);
+    const hit = pipelineCacheByDate.get(effHistoryDate);
     if (hit) return hit;
     if (effHistoryDate === lastUpdated && pipelineObservability) {
       return {
@@ -129,7 +123,7 @@ export default function ThesesTab(props: {
       };
     }
     return { mte: null, tvm: null };
-  }, [effHistoryDate, lastUpdated, pipelineObservability, pipelineVersion]);
+  }, [effHistoryDate, lastUpdated, pipelineObservability, pipelineCacheByDate]);
 
   const colCount = 6;
 
@@ -360,7 +354,7 @@ export default function ThesesTab(props: {
                                     {isOpen &&
                                     pipelineLoading &&
                                     effHistoryDate &&
-                                    !pipelineCacheRef.current.has(effHistoryDate) &&
+                                    !pipelineCacheByDate.has(effHistoryDate) &&
                                     !(effHistoryDate === lastUpdated && pipelineObservability != null) ? (
                                       <p className="text-xs text-text-muted animate-pulse">
                                         Loading thesis exploration & vehicle map for{' '}
