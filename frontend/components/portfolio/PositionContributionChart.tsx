@@ -64,12 +64,15 @@ type ScatterRow = PositionContributionPoint & {
 function ContribTooltip({
   active,
   payload,
+  closeByDate,
 }: {
   active?: boolean;
   payload?: Array<{ payload: PositionContributionPoint & Partial<ScatterRow> }>;
+  closeByDate?: Map<string, number>;
 }) {
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
+  const px = closeByDate?.get(p.date);
   if ('event' in p && p.event) {
     return (
       <div className="rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-[0.82rem] shadow-lg max-w-xs">
@@ -78,6 +81,9 @@ function ContribTooltip({
         </p>
         <p className="text-text-secondary mt-1 font-mono">{p.date}</p>
         <p className="text-text-primary tabular-nums mt-0.5">Cumulative: {p.cumPp.toFixed(2)} pp</p>
+        {px != null ? (
+          <p className="text-text-muted tabular-nums text-[11px] mt-1">Close (proxy day): ${px.toFixed(2)}</p>
+        ) : null}
         {p.weight_pct != null ? (
           <p className="text-text-muted mt-1 tabular-nums">Weight after: {p.weight_pct.toFixed(2)}%</p>
         ) : null}
@@ -90,6 +96,9 @@ function ContribTooltip({
       <p className="font-mono text-text-secondary">{p.date}</p>
       <p className="text-text-primary tabular-nums mt-0.5">Cumulative: {p.cumPp.toFixed(2)} pp</p>
       <p className="text-text-muted tabular-nums text-[11px] mt-1">Step: {p.dailyPp.toFixed(3)} pp</p>
+      {px != null ? (
+        <p className="text-text-muted tabular-nums text-[11px] mt-1">Close: ${px.toFixed(2)}</p>
+      ) : null}
     </div>
   );
 }
@@ -102,6 +111,7 @@ function ChartBody({
   navSnaps,
   positionHistory,
   anchorDate,
+  navWindowStart,
 }: {
   ticker: string;
   rangeStart: string;
@@ -110,6 +120,8 @@ function ChartBody({
   navSnaps: NavChartPoint[];
   positionHistory: PositionHistoryRow[];
   anchorDate: string;
+  /** When set (Performance tab range), NAV contribution starts here instead of entry−pad. */
+  navWindowStart?: string | null;
 }) {
   const [data, setData] = useState<PositionPriceChartData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -121,7 +133,8 @@ function ChartBody({
 
   useEffect(() => {
     let cancelled = false;
-    fetchPositionPriceChart(ticker, rangeStart)
+    /* Cap at anchor so price/events match the performance as-of window (not wall-clock today). */
+    fetchPositionPriceChart(ticker, rangeStart, anchorDate)
       .then((d) => {
         if (!cancelled) setData(d);
       })
@@ -137,12 +150,18 @@ function ChartBody({
     return () => {
       cancelled = true;
     };
-  }, [ticker, rangeStart]);
+  }, [ticker, rangeStart, anchorDate]);
+
+  /** Align NAV steps with the Performance date-range picker (1M / 3M / YTD / ITD). */
+  const effectiveNavStart = useMemo(() => {
+    if (navWindowStart && navWindowStart > rangeStart) return navWindowStart;
+    return rangeStart;
+  }, [navWindowStart, rangeStart]);
 
   const chartRows = useMemo<PositionContributionPoint[]>(() => {
     if (!data?.priceHistory?.length) return [];
     const navFiltered = navSnaps
-      .filter((s) => s.date >= rangeStart && s.date <= anchorDate)
+      .filter((s) => s.date >= effectiveNavStart && s.date <= anchorDate)
       .sort((a, b) => a.date.localeCompare(b.date));
     return buildPositionContributionToNavSeries(
       navFiltered,
@@ -150,7 +169,15 @@ function ChartBody({
       ticker,
       data.priceHistory.map((p) => ({ date: p.date, close: p.close }))
     );
-  }, [data, navSnaps, positionHistory, ticker, rangeStart, anchorDate]);
+  }, [data, navSnaps, positionHistory, ticker, effectiveNavStart, anchorDate]);
+
+  const closeByDate = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const row of data?.priceHistory ?? []) {
+      m.set(row.date, row.close);
+    }
+    return m;
+  }, [data?.priceHistory]);
 
   useEffect(() => {
     if (!chartRows.length) return;
@@ -353,7 +380,18 @@ function ChartBody({
                 fontSize: 10,
               }}
             />
-            <Tooltip content={<ContribTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.12)' }} />
+            <Tooltip
+              content={(tipProps) => (
+                <ContribTooltip
+                  active={tipProps.active}
+                  payload={
+                    tipProps.payload as Array<{ payload: PositionContributionPoint & Partial<ScatterRow> }> | undefined
+                  }
+                  closeByDate={closeByDate}
+                />
+              )}
+              cursor={{ stroke: 'rgba(255,255,255,0.12)' }}
+            />
             <ReferenceLine y={0} stroke="rgba(255,255,255,0.12)" strokeDasharray="3 3" />
             {entryLineDate ? (
               <ReferenceLine
@@ -442,12 +480,14 @@ export default function PositionContributionChart({
   firstEntryDate,
   navSnaps,
   positionHistory,
+  navWindowStart,
 }: {
   ticker: string;
   anchorDate: string;
   firstEntryDate?: string | null;
   navSnaps: NavChartPoint[];
   positionHistory: PositionHistoryRow[];
+  navWindowStart?: string | null;
 }) {
   const rangeStart = useMemo(() => {
     if (firstEntryDate) return subtractIsoDays(firstEntryDate, ENTRY_PADDING_DAYS);
@@ -455,13 +495,16 @@ export default function PositionContributionChart({
   }, [firstEntryDate, anchorDate]);
 
   const rangeLabel = useMemo(() => {
-    if (firstEntryDate) return `Since first activity (−${ENTRY_PADDING_DAYS}d pad)`;
-    return `${FALLBACK_LOOKBACK_DAYS}d lookback`;
-  }, [firstEntryDate]);
+    const base = firstEntryDate
+      ? `Since first activity (−${ENTRY_PADDING_DAYS}d pad)`
+      : `${FALLBACK_LOOKBACK_DAYS}d lookback`;
+    if (navWindowStart && navWindowStart > rangeStart) return `${base} · NAV from range start`;
+    return base;
+  }, [firstEntryDate, navWindowStart, rangeStart]);
 
   return (
     <ChartBody
-      key={`${ticker}|${rangeStart}|contrib`}
+      key={`${ticker}|${rangeStart}|${anchorDate}|${navWindowStart ?? ''}|contrib`}
       ticker={ticker}
       rangeStart={rangeStart}
       rangeLabel={rangeLabel}
@@ -469,6 +512,7 @@ export default function PositionContributionChart({
       navSnaps={navSnaps}
       positionHistory={positionHistory}
       anchorDate={anchorDate}
+      navWindowStart={navWindowStart ?? null}
     />
   );
 }

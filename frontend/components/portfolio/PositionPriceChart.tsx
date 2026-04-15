@@ -15,7 +15,7 @@ import {
   YAxis,
 } from 'recharts';
 import { fetchPositionPriceChart } from '@/lib/queries';
-import type { PositionPriceChartData, PositionPriceChartEvent } from '@/lib/types';
+import type { PositionHistoryRow, PositionPriceChartData, PositionPriceChartEvent } from '@/lib/types';
 
 function eventDotColor(ev: PositionPriceChartEvent['event']): string {
   if (ev === 'OPEN') return '#22c55e';
@@ -59,9 +59,12 @@ type ScatterRow = Row & {
 function ChartTooltip({
   active,
   payload,
+  weightByDate,
 }: {
   active?: boolean;
   payload?: Array<{ payload: Row & Partial<ScatterRow> }>;
+  /** Last known portfolio weight % for each trading day (forward-filled from position_history). */
+  weightByDate?: Map<string, number>;
 }) {
   if (!active || !payload?.length) return null;
   const p = payload[0].payload as ScatterRow;
@@ -89,10 +92,14 @@ function ChartTooltip({
       </div>
     );
   }
+  const w = weightByDate?.get(p.date);
   return (
     <div className="rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-[0.82rem] shadow-lg">
       <p className="font-mono text-text-secondary">{p.date}</p>
       <p className="text-text-primary tabular-nums mt-0.5">${Number(p.close).toFixed(2)}</p>
+      {typeof w === 'number' ? (
+        <p className="text-text-muted tabular-nums mt-1 text-[11px]">Weight (portfolio): {w.toFixed(2)}%</p>
+      ) : null}
     </div>
   );
 }
@@ -102,11 +109,13 @@ function ChartBody({
   rangeStart,
   rangeLabel,
   firstEntryDate,
+  positionHistory,
 }: {
   ticker: string;
   rangeStart: string;
   rangeLabel: string;
   firstEntryDate: string | null;
+  positionHistory?: PositionHistoryRow[] | null;
 }) {
   const [data, setData] = useState<PositionPriceChartData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -140,6 +149,27 @@ function ChartBody({
     if (!data?.priceHistory?.length) return [];
     return data.priceHistory.map((p) => ({ date: p.date, close: p.close }));
   }, [data]);
+
+  /** Forward-filled weight % for each price row (from rebalance snapshots in position_history). */
+  const weightByDate = useMemo(() => {
+    const m = new Map<string, number>();
+    if (!positionHistory?.length || !chartRows.length) return m;
+    const t = ticker.toUpperCase();
+    const rows = positionHistory
+      .filter((r) => String(r.ticker || '').toUpperCase() === t)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    if (!rows.length) return m;
+    let i = 0;
+    let last = rows[0].weight_pct;
+    for (const row of chartRows) {
+      while (i < rows.length && rows[i].date <= row.date) {
+        last = rows[i].weight_pct;
+        i++;
+      }
+      m.set(row.date, last);
+    }
+    return m;
+  }, [positionHistory, ticker, chartRows]);
 
   useEffect(() => {
     if (!chartRows.length) return;
@@ -336,7 +366,16 @@ function ChartBody({
               width={52}
               tickFormatter={(v) => (typeof v === 'number' ? v.toFixed(0) : String(v))}
             />
-            <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.12)' }} />
+            <Tooltip
+              content={(tipProps) => (
+                <ChartTooltip
+                  active={tipProps.active}
+                  payload={tipProps.payload as Array<{ payload: Row & Partial<ScatterRow> }> | undefined}
+                  weightByDate={weightByDate}
+                />
+              )}
+              cursor={{ stroke: 'rgba(255,255,255,0.12)' }}
+            />
             {entryLineDate ? (
               <ReferenceLine
                 x={entryLineDate}
@@ -415,11 +454,14 @@ export default function PositionPriceChart({
   ticker,
   anchorDate,
   firstEntryDate,
+  positionHistory,
 }: {
   ticker: string;
   anchorDate: string;
   /** When set, fetch starts before this date (padding) so the window centers on position life. */
   firstEntryDate?: string | null;
+  /** Optional: forward-filled weights on the daily price tooltip. */
+  positionHistory?: PositionHistoryRow[] | null;
 }) {
   const rangeStart = useMemo(() => {
     if (firstEntryDate) return subtractIsoDays(firstEntryDate, ENTRY_PADDING_DAYS);
@@ -438,6 +480,7 @@ export default function PositionPriceChart({
       rangeStart={rangeStart}
       rangeLabel={rangeLabel}
       firstEntryDate={firstEntryDate ?? null}
+      positionHistory={positionHistory}
     />
   );
 }

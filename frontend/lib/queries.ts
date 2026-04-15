@@ -926,21 +926,28 @@ export async function fetchComparablePriceHistory(
   return out;
 }
 
-const POSITION_CHART_PAGE = 2000;
+/** Page size for position chart queries (PostgREST caps single responses). */
+const POSITION_CHART_PAGE = 1000;
+/** Safety cap so a pathological range cannot fetch unbounded rows. */
+const POSITION_CHART_MAX_PRICE_ROWS = 25000;
 
 const positionPriceChartCache = new Map<string, PositionPriceChartData>();
 
 /**
- * Load daily closes for one ticker from `fromDate` through today plus all
- * `position_events` rows for that ticker (for chart markers). On-demand only.
+ * Load daily closes for one ticker from `fromDate` through `maxDate` (inclusive)
+ * plus `position_events` in that window (for chart markers). Paginates so the
+ * full window is returned — a plain `.limit(2000)` previously kept only the
+ * oldest slice and cut off recent prices.
  * Results are memoized in-memory for the session (price + contribution charts).
  */
 export async function fetchPositionPriceChart(
   ticker: string,
-  fromDate: string
+  fromDate: string,
+  maxDate?: string
 ): Promise<PositionPriceChartData> {
   const t = String(ticker).toUpperCase().trim();
-  const cacheKey = `${t}|${fromDate}`;
+  const end = (maxDate && maxDate.trim()) || new Date().toISOString().slice(0, 10);
+  const cacheKey = `${t}|${fromDate}|${end}`;
   const hit = positionPriceChartCache.get(cacheKey);
   if (hit) return hit;
 
@@ -954,7 +961,6 @@ export async function fetchPositionPriceChart(
     positionPriceChartCache.set(cacheKey, empty);
     return empty;
   }
-  const today = new Date().toISOString().slice(0, 10);
 
   type EvPick = Pick<
     TableRow<'position_events'>,
@@ -962,37 +968,56 @@ export async function fetchPositionPriceChart(
   >;
   type PhPick = Pick<TableRow<'price_history'>, 'date' | 'close'>;
 
-  const [phRes, evRes] = await Promise.all([
-    supabase
+  const priceRows: PhPick[] = [];
+  let phOffset = 0;
+  while (phOffset < POSITION_CHART_MAX_PRICE_ROWS) {
+    const { data, error } = await supabase
       .from('price_history')
       .select('date, close')
       .eq('ticker', t)
       .gte('date', fromDate)
-      .lte('date', today)
+      .lte('date', end)
       .order('date', { ascending: true })
-      .limit(POSITION_CHART_PAGE),
-    supabase
+      .range(phOffset, phOffset + POSITION_CHART_PAGE - 1);
+
+    if (error) {
+      console.error('fetchPositionPriceChart price_history:', error);
+      break;
+    }
+    const chunk = (data ?? []) as PhPick[];
+    priceRows.push(...chunk);
+    if (chunk.length < POSITION_CHART_PAGE) break;
+    phOffset += POSITION_CHART_PAGE;
+  }
+
+  const evRows: EvPick[] = [];
+  let evOffset = 0;
+  const EVENT_MAX = 8000;
+  while (evOffset < EVENT_MAX) {
+    const { data, error } = await supabase
       .from('position_events')
       .select('date, event, price, reason, weight_pct, prev_weight_pct, weight_change_pct')
       .eq('ticker', t)
+      .gte('date', fromDate)
+      .lte('date', end)
       .order('date', { ascending: true })
-      .limit(POSITION_CHART_PAGE),
-  ]);
+      .range(evOffset, evOffset + POSITION_CHART_PAGE - 1);
 
-  if (phRes.error) {
-    console.error('fetchPositionPriceChart price_history:', phRes.error);
-  }
-  if (evRes.error) {
-    console.error('fetchPositionPriceChart position_events:', evRes.error);
+    if (error) {
+      console.error('fetchPositionPriceChart position_events:', error);
+      break;
+    }
+    const chunk = (data ?? []) as EvPick[];
+    evRows.push(...chunk);
+    if (chunk.length < POSITION_CHART_PAGE) break;
+    evOffset += POSITION_CHART_PAGE;
   }
 
-  const priceRows = (phRes.data ?? []) as PhPick[];
   const priceHistory = priceRows.map((row) => ({
     date: row.date,
     close: Number(row.close),
   }));
 
-  const evRows = (evRes.data ?? []) as EvPick[];
   const events = evRows.map((row) => ({
     date: row.date,
     event: row.event,

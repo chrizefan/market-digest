@@ -102,7 +102,9 @@ export default function AllocationsPositionsTable(props: {
           <tbody className="divide-y divide-border-subtle">
             {allRows.map((p: Position) => {
               const isExpanded = expandedTicker === p.ticker;
-              const anchorDate = p.entry_date || lastUpdated || new Date().toISOString().slice(0, 10);
+              /** As-of date for chart window (snapshot), not first entry — avoids truncating recent prices. */
+              const anchorDate =
+                lastUpdated || p.entry_date || new Date().toISOString().slice(0, 10);
               const firstEntryDate = resolveFirstEntryDate(p.ticker, p, positionEvents, positionHistory);
               const w = p.weight_actual ?? 0;
               const pctOfMax = maxWeight > 0 ? (w / maxWeight) * 100 : 0;
@@ -154,6 +156,7 @@ export default function AllocationsPositionsTable(props: {
                               ticker={p.ticker}
                               anchorDate={anchorDate}
                               firstEntryDate={firstEntryDate}
+                              positionHistory={positionHistory}
                             />
                           </td>
                         </tr>

@@ -12,6 +12,7 @@ export function PositionPnlTable({
   navSnaps,
   positionHistory,
   positionEvents,
+  navWindowStart,
 }: {
   positions: Position[];
   /** When set, rows expand to show contribution + events through this as-of date. */
@@ -19,6 +20,8 @@ export function PositionPnlTable({
   navSnaps: NavChartPoint[];
   positionHistory: PositionHistoryRow[];
   positionEvents: DashboardPositionEvent[];
+  /** First date of the Performance range (e.g. 1M / YTD); NAV contribution aligns to this window. */
+  navWindowStart?: string | null;
 }) {
   const showCharts = Boolean(priceChartAnchorDate);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
@@ -115,6 +118,7 @@ export function PositionPnlTable({
                           firstEntryDate={firstEntryDate}
                           navSnaps={navSnaps}
                           positionHistory={positionHistory}
+                          navWindowStart={navWindowStart ?? undefined}
                         />
                       </td>
                     </tr>

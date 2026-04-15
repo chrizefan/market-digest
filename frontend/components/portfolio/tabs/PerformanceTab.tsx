@@ -351,12 +351,13 @@ export default function PerformanceTab() {
       <section className="space-y-3">
         <p className="text-[11px] font-semibold text-text-muted tracking-wide">Positions</p>
         <PositionPnlTable
-          key={priceChartAnchorDate ?? 'no-anchor'}
+          key={`${priceChartAnchorDate ?? 'no-anchor'}|${snaps[0]?.date ?? ''}`}
           positions={positions}
           priceChartAnchorDate={priceChartAnchorDate}
           navSnaps={allSnaps}
           positionHistory={positionHistory}
           positionEvents={position_events}
+          navWindowStart={snaps.length ? snaps[0].date : null}
         />
       </section>
 
