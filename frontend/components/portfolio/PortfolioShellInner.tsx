@@ -172,17 +172,6 @@ export default function PortfolioShellInner() {
     return rows.sort((a, b) => b.weight - a.weight);
   }, [theses, byThesisWeightForHistoryDate]);
 
-  const thesisBarForChartForHistoryDate = useMemo(
-    () =>
-      thesisBookRowsForHistoryDate
-        .filter((r) => r.weight > 0)
-        .map((r) => ({
-          name: r.id === '_unlinked' ? 'Unlinked' : r.thesis?.name ?? r.id,
-          value: r.weight,
-        })),
-    [thesisBookRowsForHistoryDate]
-  );
-
   const researchDocKeysOnHistoryDate = useMemo(() => {
     const m = new Map<string, boolean>();
     const docs = data?.docs;
@@ -405,26 +394,6 @@ export default function PortfolioShellInner() {
     router.replace(`${pathname}?${p.toString()}`, { scroll: false });
   }
 
-  const thesisHref = useCallback(
-    (thesisId: string) => {
-      const p = new URLSearchParams(searchParams.toString());
-      p.set('tab', 'analysis');
-      p.set('thesis', thesisId);
-      if (!p.get('date') && defaultHistoryDate) p.set('date', defaultHistoryDate);
-      return `${pathname}?${p.toString()}`;
-    },
-    [searchParams, pathname, defaultHistoryDate]
-  );
-
-  const clearThesisHref = useMemo(() => {
-    const p = new URLSearchParams(searchParams.toString());
-    p.delete('thesis');
-    const s = p.toString();
-    return s ? `${pathname}?${s}` : pathname;
-  }, [searchParams, pathname]);
-
-  const highlightThesisParam = searchParams.get('thesis');
-
   const tabs: { id: TabId; label: string; icon: typeof Layers }[] = [
     { id: 'allocations', label: 'Allocations', icon: Layers },
     { id: 'activity', label: 'Activity', icon: Activity },
@@ -476,9 +445,6 @@ export default function PortfolioShellInner() {
             onSelectHistoryDate={selectAnalysisDate}
             historyLatestDate={historyLatestDate}
             onClearHistoryDate={clearHistoryDateParam}
-            highlightThesisParam={highlightThesisParam}
-            thesisHref={thesisHref}
-            clearThesisHref={clearThesisHref}
             historyMode={historyMode}
             setHistoryMode={setHistoryMode}
             sleeveData={sleeveData}
@@ -486,7 +452,6 @@ export default function PortfolioShellInner() {
             formatSleeveKey={formatSleeveKey}
             showHistoryDateBanner={showHistoryDateBanner}
             dateParam={dateParam}
-            thesisBarForChartForHistoryDate={thesisBarForChartForHistoryDate}
             thesisBookRowsForHistoryDate={thesisBookRowsForHistoryDate}
             researchStripLinksForHistoryDate={researchStripLinksForHistoryDate}
             lastUpdated={lastUpdated}

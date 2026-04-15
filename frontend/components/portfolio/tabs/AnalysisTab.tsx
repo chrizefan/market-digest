@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useCallback, useState } from 'react';
 import Link from 'next/link';
 import { Calendar, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { SectionTitle } from '@/components/ui';
@@ -67,9 +67,18 @@ export default function AnalysisTab(props: {
 
   const [expandedThesisId, setExpandedThesisId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const selectHistoryDate = useCallback(
+    (iso: string) => {
+      setExpandedThesisId(null);
+      onSelectHistoryDate(iso);
+    },
+    [onSelectHistoryDate]
+  );
+
+  const clearHistoryDate = useCallback(() => {
     setExpandedThesisId(null);
-  }, [effHistoryDate]);
+    onClearHistoryDate();
+  }, [onClearHistoryDate]);
 
   return (
     <div className="flex gap-6 max-lg:flex-col">
@@ -83,7 +92,7 @@ export default function AnalysisTab(props: {
               dates={historyTimelineDates}
               runKindByDate={portfolioHistoryRunKindByDate}
               selected={effHistoryDate}
-              onSelect={onSelectHistoryDate}
+              onSelect={selectHistoryDate}
             />
           ) : (
             <div className="glass-card p-4 text-xs text-text-muted">No dated history yet.</div>
@@ -92,7 +101,7 @@ export default function AnalysisTab(props: {
         {historyLatestDate && effHistoryDate && effHistoryDate !== historyLatestDate ? (
           <button
             type="button"
-            onClick={onClearHistoryDate}
+            onClick={clearHistoryDate}
             className="w-full text-xs py-2 rounded-lg border border-border-subtle text-text-secondary hover:text-white hover:bg-white/[0.04] transition-colors"
           >
             Jump to latest ({historyLatestDate})
@@ -374,7 +383,7 @@ export default function AnalysisTab(props: {
                 formatKey={formatSleeveKey}
                 aggregateOtherNote={historyMode === 'ticker'}
                 selectedDate={effHistoryDate}
-                onChartDateSelect={onSelectHistoryDate}
+                onChartDateSelect={selectHistoryDate}
               />
             </div>
           </div>
