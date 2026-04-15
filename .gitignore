@@ -20,6 +20,7 @@ knowledge/
 *.key
 secrets/
 config/supabase.env
+config/local.env
 config/mcp.secrets.env
 frontend/.env
 frontend/.env.local

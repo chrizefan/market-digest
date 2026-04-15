@@ -22,6 +22,8 @@ Operator truth for **when to run what** remains [`RUNBOOK.md`](../../RUNBOOK.md)
 | [`scripts/ensure_position_activity_through_today.py`](../../scripts/ensure_position_activity_through_today.py) | **One-shot repair:** `refresh_performance_metrics --fill-calendar-through` (carry `positions` forward) → `backfill_position_events` → `reconcile_position_events_from_positions` through `--through` (default UTC today) |
 | [`scripts/backfill_execution_prices.py`](../../scripts/backfill_execution_prices.py) | Fill null execution prices after opens exist |
 | [`scripts/backfill_position_event_reasons.py`](../../scripts/backfill_position_event_reasons.py) | Fill `position_events.reason`: prefers **`asset-rec/{TICKER}.json`** and **`deliberation-transcript/{DATE}/{TICKER}.json`**, then **`rebalance-decision.json`**. Flags: **`--repair-placeholders`**, **`--enrich-existing`**, **`--no-enrich`**, **`--force`** |
+| [`scripts/pipeline_review_to_github.py`](../../scripts/pipeline_review_to_github.py) | After publishing **`pipeline_review`** to `documents`, create **GitHub Issues** for findings with **`github_issue_candidate: true`** (requires **`gh`** CLI; **`--dry-run`**, **`--severity-min`**, **`--max-issues`**, **`--stdin`** for local JSON) |
+| [`scripts/pipeline_meta_review.py`](../../scripts/pipeline_meta_review.py) | Operator stub: list recent **`pipeline_review`** rows in **`documents`** (`--days`). Optional weekly hook via [`.github/workflows/pipeline-meta-review.yml`](../../.github/workflows/pipeline-meta-review.yml) |
 
 ## Market data and metrics
 

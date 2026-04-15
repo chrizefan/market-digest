@@ -28,6 +28,8 @@ In **Cloud desktop**, with **Supabase MCP** connected, use the DB for prices/tec
 | [`manual-run.md`](manual-run.md) | Ad-hoc operator run; minimal steps. |
 | [`backfill-historical-day.md`](backfill-historical-day.md) | **Backfill** — historical simulation for one date with as-of constraints. Use with `scripts/backfill_context.py --date D --print-prompt`. |
 | [`deep-dive.md`](deep-dive.md) | **Research Library** — produce and publish a long-form deep dive or doctrine paper to Supabase (`research/deep-dives/`, `research/papers/`). Surfaces in Library under Deep Dives / Research Papers. |
+| [`post-mortem-research-github.md`](post-mortem-research-github.md) | **After Track A** — `pipeline_review` JSON for research → publish → optional [`scripts/pipeline_review_to_github.py`](../../scripts/pipeline_review_to_github.py). |
+| [`post-mortem-portfolio-github.md`](post-mortem-portfolio-github.md) | **After Track B** — `pipeline_review` JSON for portfolio → publish → optional GitHub Issues sync (same script). |
 
 **Project-level prompt:** paste contents of [`../PROJECT-PROMPT.md`](../PROJECT-PROMPT.md) into Cowork **project** settings so every task inherits the same ground rules.
 

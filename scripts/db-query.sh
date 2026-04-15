@@ -9,10 +9,20 @@
 #   npx supabase link --project-ref YOUR_REF -p YOUR_DB_PASSWORD --yes
 #   ./scripts/db-query.sh scripts/sql/audit_activity_coverage.sql
 #
+#   # Option C — local CLI database (no link): cp config/local.env.example config/local.env
+#   ./scripts/db-query.sh scripts/sql/audit_activity_coverage.sql
+#
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 SQL_FILE="${1:?Usage: $0 path/to/file.sql}"
+
+if [[ -z "${DATABASE_URL:-}" && -f "$ROOT/config/local.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$ROOT/config/local.env"
+  set +a
+fi
 
 if [[ -n "${DATABASE_URL:-}" ]]; then
   exec npx --yes supabase@latest db query --db-url "$DATABASE_URL" -f "$SQL_FILE" -o table --agent=no

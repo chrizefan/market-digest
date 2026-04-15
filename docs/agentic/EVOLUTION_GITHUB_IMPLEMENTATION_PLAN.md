@@ -83,13 +83,13 @@ flowchart LR
 
 Introduce a small, versioned JSON payload (new `doc_type` or reuse evolution family) so reviews are queryable and replayable:
 
-**Suggested `doc_type`:** `pipeline_review`  
-**Suggested `document_key` patterns:**
+**`doc_type`:** `pipeline_review` — schema: [`templates/schemas/pipeline-review.schema.json`](../../templates/schemas/pipeline-review.schema.json).  
+**`document_key` patterns:**
 
 - `pipeline-review/research/{DATE}.json`
 - `pipeline-review/portfolio/{DATE}.json`
 
-**Body sketch** (align with `templates/schemas/` — add `pipeline-review.schema.json` in a later PR):
+**Body shape** (see schema for required fields):
 
 ```json
 {
@@ -123,18 +123,22 @@ Publish with existing **`publish_document.py`** so the Library and agents can lo
 
 ## 5. Script: review → GitHub Issues (Phase 1)
 
-**New script:** `scripts/pipeline_review_to_github.py`
+**Script:** [`scripts/pipeline_review_to_github.py`](../../scripts/pipeline_review_to_github.py)
 
-**Inputs:**
+**CLI:**
 
-- `--date YYYY-MM-DD`
-- `--track research|portfolio`
-- `--dry-run`
-- `--max-issues N` (default 10 per run to avoid spam)
+| Flag | Purpose |
+|------|---------|
+| `--date YYYY-MM-DD` | Matches `documents.date` |
+| `--track research\|portfolio` | Selects `pipeline-review/{track}/{date}.json` |
+| `--dry-run` | Print would-create; if `gh issue list` fails, dedupe check is skipped with a warning |
+| `--severity-min info\|warn\|error` | Only file findings at or above this level (default `info`) |
+| `--max-issues N` | Cap new issues per run (default 10) |
+| `--stdin` | Read `pipeline_review` JSON from stdin instead of Supabase |
 
 **Behavior:**
 
-1. Load `documents` row for `pipeline-review/{track}/{DATE}.json` (or stdin JSON).
+1. Load `documents` row for `pipeline-review/{track}/{DATE}.json` unless `--stdin`.
 2. For each `finding` with `github_issue_candidate: true` and severity ≥ configurable threshold:
    - Compute **title**: `[track] {short title} ({date})`
    - Compute **dedupe_key** from `finding.dedupe_key` or hash of `(date, track, title)`
@@ -145,10 +149,12 @@ Publish with existing **`publish_document.py`** so the Library and agents can lo
      dedupe_key: pr-20260416-research-001
      date: 2026-04-16
      track: research
+     finding_id: ...
+     document_key: pipeline-review/research/2026-04-16.json
      -->
      ```
 
-3. If no matching open issue, create issue with labels + body (link to Supabase doc or paste summary).
+3. If no matching **open** issue contains that `dedupe_key`, create the issue (closed issues do not block — a new issue may be opened again).
 4. Exit 0; log counts.
 
 **Dependencies:** `gh` CLI preferred (`gh issue create`, `gh issue list --search`) or `PyGithub` if you need richer API in pure Python.
@@ -180,38 +186,28 @@ Each file should:
 
 ---
 
-## 7. Scheduled daily meta-review (Phase 3 — optional)
+## 7. Scheduled meta-review (Phase 3 — optional)
 
-**GitHub Action** `.github/workflows/pipeline-meta-review.yml` (cron: `0 12 * * *` UTC or after your price job):
+**Workflow:** [`.github/workflows/pipeline-meta-review.yml`](../../.github/workflows/pipeline-meta-review.yml) — `workflow_dispatch` + weekly cron (`0 8 * * 1` UTC). Runs [`scripts/pipeline_meta_review.py`](../../scripts/pipeline_meta_review.py) (`--days 21`) to **list** recent `pipeline_review` rows; does not open Issues yet (extend for weekly digest).
 
-- Check out repo
-- `pip install -r requirements.txt`
-- Script `scripts/pipeline_meta_review.py` that:
-  - Reads last N days of `pipeline_review` from Supabase (or REST)
-  - Optionally calls an LLM to **cluster** findings and open **one** summary issue weekly (`type/meta-digest`) — or skip LLM in v1
-
-Keep secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` (read-only role preferred for this job if you add RLS later).
+**Secrets (same pattern as daily price job):** `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_KEY` or equivalent repo secrets.
 
 ---
 
-## 8. Agent: evolution-fix (Phase 4)
+## 8. Agent: pipeline evolution (Phase 4)
 
-**New file:** `agents/pipeline-evolution.agent.md`
+**File:** [`agents/pipeline-evolution.agent.md`](../../agents/pipeline-evolution.agent.md)
 
-**Role:** Given a GitHub Issue labeled `evolution` + `type/script` or `type/prompt-task`:
+**Role:** Given a GitHub Issue labeled `evolution` (often `type/script` or `type/prompt-task`):
 
 1. Read issue body, `Dedupe-Id`, links to `cowork/tasks/*.md` or `skills/**/*.md`.
 2. Create branch: `fix/evolution-<issue-number>-<short-slug>`
 3. Implement minimal change; run `pytest` / `ruff` / relevant `validate_artifact.py` as applicable.
 4. Open PR with template referencing the issue (`Closes #123`).
 
-**Skills:** Reuse existing repo patterns; add **`skills/github-workflow/SKILL.md`** (thin) documenting:
+**Skill:** [`skills/github-workflow/SKILL.md`](../../skills/github-workflow/SKILL.md) — `gh issue view`, `gh issue list --label evolution`, `gh pr create`.
 
-- `gh issue view`
-- `gh issue list --label evolution`
-- `gh pr create`
-
-**AGENTS.md:** Add a row to the Named Agents table pointing to this file.
+**AGENTS.md:** Named agent **Pipeline Evolution** points to `agents/pipeline-evolution.agent.md`.
 
 ---
 

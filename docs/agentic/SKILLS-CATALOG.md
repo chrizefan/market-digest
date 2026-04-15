@@ -70,6 +70,7 @@
 | `research-library` | Doctrine / citations |
 | `research-daily` | **Track A** — blind research → publish `research_delta` with unique `research-delta/…` key |
 | `deep-dive` | Ad-hoc ticker/topic |
+| `github-workflow` | `gh` issues/PRs for pipeline evolution backlog |
 | `sector-rotation` | Rotation themes |
 | `sector-heatmap` | Heatmap |
 
@@ -86,7 +87,7 @@
 
 ## Package count
 
-There are **45** skill directories on disk (`ls skills | wc -l`). The tables above group them by role; `sector-*` includes both GICS analysts and rotation/heatmap utilities.
+There are **46** skill directories on disk (`ls skills | wc -l`). The tables above group them by role; `sector-*` includes both GICS analysts and rotation/heatmap utilities.
 
 ---
 

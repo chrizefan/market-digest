@@ -113,3 +113,5 @@ Each modular task file stays short; the router delegates to them.
 ```
 
 Produce evolution JSON (`evolution_sources`, `evolution_quality_log`, `evolution_proposals`), validate with `validate_artifact.py -`, publish each with `publish_document.py --payload -` and the correct `document_key` per `RUNBOOK.md` (optional `update_tearsheet.py` for local mirror).
+
+**Per-track pipeline review + GitHub backlog:** after Track A and/or Track B, follow [`cowork/tasks/post-mortem-research-github.md`](cowork/tasks/post-mortem-research-github.md) and [`cowork/tasks/post-mortem-portfolio-github.md`](cowork/tasks/post-mortem-portfolio-github.md). Publish `doc_type: pipeline_review` to keys `pipeline-review/research/{DATE}.json` and `pipeline-review/portfolio/{DATE}.json`, then run `scripts/pipeline_review_to_github.py` with authenticated [`gh`](https://cli.github.com/). Labels: [`docs/ops/GITHUB_PIPELINE_LABELS.md`](docs/ops/GITHUB_PIPELINE_LABELS.md). Roadmap: [`docs/agentic/EVOLUTION_GITHUB_IMPLEMENTATION_PLAN.md`](docs/agentic/EVOLUTION_GITHUB_IMPLEMENTATION_PLAN.md).

@@ -26,6 +26,12 @@ If this session is your **month-end** run for the **month that just ended** (def
 **Month-end + weekday example:** do **1a** then **1b** (monthly rollup + same-day delta research).  
 **Month-end + Sunday:** do **1a** then **1b** (monthly for prior month + Sunday baseline research for `RUN_DATE`).
 
+### 1c — Post-mortem (research) + GitHub backlog (optional)
+
+After section **1b** (and **1a** if run) has published **`digest`** for `RUN_DATE`:
+
+- Execute every step in [`post-mortem-research-github.md`](post-mortem-research-github.md) for `RUN_DATE`.
+
 ---
 
 ## 2) Portfolio (Track B)
@@ -34,6 +40,12 @@ After section **1** has published **`digest`** for `RUN_DATE` (and related resea
 
 - Optional gate: `python3 scripts/validate_pipeline_step.py --date RUN_DATE --step track_b_precheck`
 - Execute **every step** in [`portfolio-pm-rebalance.md`](portfolio-pm-rebalance.md) for `RUN_DATE`.
+
+### 2b — Post-mortem (portfolio) + GitHub backlog (optional)
+
+After section **2** Track B steps are complete for `RUN_DATE`:
+
+- Execute every step in [`post-mortem-portfolio-github.md`](post-mortem-portfolio-github.md) for `RUN_DATE`.
 
 ---
 

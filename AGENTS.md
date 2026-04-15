@@ -65,6 +65,7 @@ python3 scripts/publish_research.py --key research/deep-dives/NVDA-DATE --title 
 | Institutional Analyst | `agents/institutional-analyst.agent.md` | Phase 2 smart money |
 | Research Assistant | `agents/research-assistant.agent.md` | Ad-hoc research |
 | Thesis Tracker | `agents/thesis-tracker.agent.md` | Portfolio thesis mgmt |
+| Pipeline Evolution | `agents/pipeline-evolution.agent.md` | Fix backlog issues from `pipeline_review` → GitHub Issues → PR |
 
 ---
 
