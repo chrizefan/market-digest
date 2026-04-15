@@ -124,11 +124,10 @@ export interface PositionHistoryRow {
 export interface DashboardPositionEvent {
   date: string;
   ticker: string;
-  event: 'OPEN' | 'EXIT' | 'REBALANCE' | 'HOLD';
+  event: 'OPEN' | 'EXIT' | 'TRIM' | 'ADD' | 'HOLD';
   weight_pct: number | null;
   prev_weight_pct: number | null;
   weight_change_pct: number | null;
-  cumulative_return_since_event_pct: number | null;
   price: number | null;
   thesis_id: string | null;
   reason: string | null;
@@ -137,7 +136,7 @@ export interface DashboardPositionEvent {
 /** On-demand price + events for an expanded position row chart. */
 export interface PositionPriceChartEvent {
   date: string;
-  event: 'OPEN' | 'EXIT' | 'REBALANCE' | 'HOLD';
+  event: 'OPEN' | 'EXIT' | 'TRIM' | 'ADD' | 'HOLD';
   price: number | null;
   reason: string | null;
   weight_pct: number | null;
@@ -294,7 +293,7 @@ export interface DashboardData {
   portfolio_management: PortfolioManagement;
   /** Position weights over time (includes category / thesis for sleeve charts). */
   position_history: PositionHistoryRow[];
-  /** Recent execution events (OPEN / EXIT / REBALANCE / HOLD). */
+  /** Recent execution events (OPEN / EXIT / TRIM / ADD / HOLD). */
   position_events: DashboardPositionEvent[];
   ratios: Array<{ long_ticker: string; short_ticker: string; net_weight: number }>;
   docs: Doc[];

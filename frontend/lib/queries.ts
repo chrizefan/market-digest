@@ -307,7 +307,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     supabase
       .from('position_events')
       .select(
-        'date,ticker,event,weight_pct,prev_weight_pct,weight_change_pct,cumulative_return_since_event_pct,price,thesis_id,reason'
+        'date,ticker,event,weight_pct,prev_weight_pct,weight_change_pct,price,thesis_id,reason'
       )
       .order('date', { ascending: false })
       .limit(10000),
@@ -387,8 +387,6 @@ export async function getFullDashboardData(): Promise<DashboardData> {
       weight_pct: e.weight_pct != null ? Number(e.weight_pct) : null,
       prev_weight_pct: e.prev_weight_pct != null ? Number(e.prev_weight_pct) : null,
       weight_change_pct: e.weight_change_pct != null ? Number(e.weight_change_pct) : null,
-      cumulative_return_since_event_pct:
-        e.cumulative_return_since_event_pct != null ? Number(e.cumulative_return_since_event_pct) : null,
       price: e.price != null ? Number(e.price) : null,
       thesis_id: e.thesis_id ?? null,
       reason: e.reason ?? null,
@@ -676,7 +674,7 @@ export async function getFullDashboardData(): Promise<DashboardData> {
     const action =
       rec === 0 && curr > 0 ? 'EXIT' :
       rec > 0 && curr === 0 ? 'OPEN' :
-      Math.abs(rec - curr) >= 0.01 ? 'REBALANCE' :
+      Math.abs(rec - curr) >= 0.01 ? (rec < curr ? 'TRIM' : 'ADD') :
       'HOLD';
     return { ticker: p.ticker, current_pct: curr, recommended_pct: rec, action };
   });

@@ -357,7 +357,6 @@ export default function AnalysisTab(props: {
                 data={sleeveData}
                 keys={sleeveKeys}
                 formatKey={formatSleeveKey}
-                aggregateOtherNote={historyMode === 'ticker'}
                 selectedDate={effHistoryDate}
                 onChartDateSelect={selectHistoryDate}
               />

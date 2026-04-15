@@ -31,14 +31,12 @@ function SleeveTooltipBody({
   label,
   seriesKeys,
   formatKey,
-  aggregateOtherNote,
 }: {
   active?: boolean;
   payload?: Array<{ payload?: Record<string, unknown> }>;
   label?: string | number;
   seriesKeys: string[];
   formatKey: (key: string) => string;
-  aggregateOtherNote?: boolean;
 }) {
   if (!active || !payload?.length) return null;
   const row = payload[0]?.payload;
@@ -61,11 +59,6 @@ function SleeveTooltipBody({
           </li>
         ))}
       </ul>
-      {aggregateOtherNote && seriesKeys.includes('_other') && (
-        <p className="text-[10px] text-text-muted mt-2 leading-snug border-t border-border-subtle pt-1.5">
-          &quot;Other&quot; combines smaller positions by peak weight.
-        </p>
-      )}
     </div>
   );
 }
@@ -74,8 +67,6 @@ interface SleeveStackedChartProps {
   data: Array<Record<string, number | string>>;
   keys: string[];
   formatKey: (key: string) => string;
-  /** Explain merged ticker bucket in tooltip footer */
-  aggregateOtherNote?: boolean;
   /** Highlight the selected snapshot date (synced with PM artifacts / URL). */
   selectedDate?: string | null;
   /** Fired when the user clicks the chart at a date (locks selection). */
@@ -91,7 +82,6 @@ export function SleeveStackedChart({
   data,
   keys,
   formatKey,
-  aggregateOtherNote,
   selectedDate,
   onChartDateSelect,
 }: SleeveStackedChartProps) {
@@ -137,12 +127,7 @@ export function SleeveStackedChart({
         <YAxis tick={{ fill: '#71717a', fontSize: 11 }} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
         <Tooltip
           content={(props) => (
-            <SleeveTooltipBody
-              {...props}
-              seriesKeys={keys}
-              formatKey={formatKey}
-              aggregateOtherNote={aggregateOtherNote}
-            />
+            <SleeveTooltipBody {...props} seriesKeys={keys} formatKey={formatKey} />
           )}
         />
         <Legend formatter={(value: string) => <span className="text-text-secondary text-xs">{value}</span>} />

@@ -1065,8 +1065,8 @@ def push_to_supabase(parsed_digests, docs, history, metrics, pj_positions):
                 event = "OPEN"
             elif prev_wt > 0 and wt == 0:
                 event = "EXIT"
-            elif abs(wt - prev_wt) >= 2:  # 2% threshold for rebalance event
-                event = "REBALANCE"
+            elif abs(wt - prev_wt) >= 2:  # 2% threshold — classify as TRIM vs ADD
+                event = "TRIM" if wt < prev_wt else "ADD"
             else:
                 event = "HOLD"
 

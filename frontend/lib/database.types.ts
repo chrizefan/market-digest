@@ -69,7 +69,7 @@ export interface Database {
           id: string;
           date: string;
           ticker: string;
-          event: 'OPEN' | 'EXIT' | 'REBALANCE' | 'HOLD';
+          event: 'OPEN' | 'EXIT' | 'TRIM' | 'ADD' | 'HOLD';
           weight_pct: number | null;
           prev_weight_pct: number | null;
           weight_change_pct?: number | null;

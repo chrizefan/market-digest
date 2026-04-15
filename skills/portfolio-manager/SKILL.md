@@ -144,7 +144,7 @@ Note: BIL/SHY (USD T-bill ETFs) accumulate USD yield; a weaker USD vs CAD erodes
 Produce the rebalance output as **JSON** (schema: `templates/schemas/rebalance-decision.schema.json`).
 
 Include:
-1. Rebalance table with all tickers, current%, recommended%, delta, action, urgency
+1. Rebalance table with all tickers, current%, recommended%, delta, action, urgency — per-ticker **`action`** must use the schema enum **`HOLD`**, **`NEW`**, **`EXIT`**, **`ADD`**, or **`TRIM`** only (never a generic “REBALANCE”). [`execute_at_open.py`](../../scripts/execute_at_open.py) maps these to `position_events` as **`OPEN`** (for `NEW`), **`EXIT`**, **`TRIM`**, **`ADD`**, or **`HOLD`**.
 2. PM Decision Notes — the key reasoning behind this session's positioning
 3. Proposed portfolio (post-rebalance target weights)
 4. Invalidation Watch table — any positions within 10% of their exit trigger

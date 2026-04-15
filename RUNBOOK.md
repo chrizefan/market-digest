@@ -79,7 +79,7 @@ python3 scripts/backfill_simulated_runs.py --validate-all
 
 ### Activity tab / `position_events` stops at an old date
 
-**New ledger rows are not created by the weekday GitHub “Daily Price Update” job.** That workflow runs [`refresh_performance_metrics.py`](scripts/refresh_performance_metrics.py), which can update **`cumulative_return_since_event_pct`** on existing `position_events` but does **not** insert OPEN/EXIT/REBALANCE rows. Those come from [`execute_at_open.py`](scripts/execute_at_open.py), normally after a `rebalance_decision` publish via [`run_db_first.py`](scripts/run_db_first.py).
+**New ledger rows are not created by the weekday GitHub “Daily Price Update” job.** That workflow runs [`refresh_performance_metrics.py`](scripts/refresh_performance_metrics.py), which can update **`cumulative_return_since_event_pct`** on existing `position_events` but does **not** insert ledger rows. Rows come from [`execute_at_open.py`](scripts/execute_at_open.py), normally after a `rebalance_decision` publish via [`run_db_first.py`](scripts/run_db_first.py). That script records **HOLD** as well as OPEN/EXIT/**TRIM**/**ADD** so no-trade days still appear in the Activity ledger. The `position_events.event` vocabulary is **TRIM** / **ADD** (sizing changes), not a generic “REBALANCE”.
 
 If the Activity table in the app ends on e.g. **April 6**, run execution for each **missing trading day** (after `rebalance_decision` + `price_history.open` exist for that story):
 
@@ -109,6 +109,15 @@ python3 scripts/execute_at_open.py --date YYYY-MM-DD --prior-trading-day-rebalan
 python3 scripts/backfill_position_events.py --through YYYY-MM-DD
 ```
 Use `--from YYYY-MM-DD` when there is no prior ledger row or you need an explicit range. `--dry-run` prints the planned commands.
+
+**Reason text** on existing `position_events` rows (from `rebalance_decision` → `rebalance_table[].rationale`):
+
+```bash
+python3 scripts/backfill_position_event_reasons.py --dry-run
+python3 scripts/backfill_position_event_reasons.py
+```
+
+Use `--force` only if you intend to overwrite non-empty `reason` values.
 
 ## Compiled daily view (no extra permanent storage)
 

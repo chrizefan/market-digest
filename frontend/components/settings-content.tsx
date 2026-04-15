@@ -11,7 +11,7 @@ function architectureActive(pathname: string): boolean {
 
 export function SettingsContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { theme, setTheme, effectiveTheme } = useAtlasTheme();
+  const { theme, setTheme } = useAtlasTheme();
   const arch = architectureActive(pathname);
 
   return (
@@ -73,11 +73,6 @@ export function SettingsContent({ onNavigate }: { onNavigate?: () => void }) {
               Light
             </button>
           </div>
-          {theme === 'auto' ? (
-            <p className="text-[10px] text-text-muted">
-              Using {effectiveTheme === 'dark' ? 'dark' : 'light'} (system)
-            </p>
-          ) : null}
         </div>
       </div>
 
@@ -88,7 +83,6 @@ export function SettingsContent({ onNavigate }: { onNavigate?: () => void }) {
           <kbd className="font-mono px-1.5 py-0.5 rounded border border-border-subtle bg-bg-primary text-text-primary">
             ⌘K
           </kbd>
-          <span>Open search</span>
         </div>
       </div>
     </div>

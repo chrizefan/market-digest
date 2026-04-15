@@ -55,6 +55,15 @@ def _prior_trading_date(execution_date: str) -> Optional[str]:
     return None
 
 
+def _parse_pct(value: Any) -> Optional[float]:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _fetch_open(sb, ticker: str, d: str) -> Optional[float]:
     res = (
         sb.table("price_history")
@@ -103,8 +112,9 @@ def _rebalance_payload_for_date(sb, rebalance_date: str) -> Optional[Dict[str, A
 
 def main() -> int:
     ap = argparse.ArgumentParser(
-        description="Record market-open execution events into position_events. "
-        "Execution prices use price_history.open for --date (execution day)."
+        description="Record market-open execution events into position_events (OPEN/EXIT/TRIM/ADD/HOLD). "
+        "Execution prices use price_history.open for --date (execution day). "
+        "HOLD rows keep the ledger continuous on no-trade days."
     )
     ap.add_argument("--date", default=dt_date.today().isoformat(), help="Execution session date YYYY-MM-DD (opens from this day)")
     ap.add_argument(
@@ -152,7 +162,7 @@ def main() -> int:
         print("rebalance_decision has no rebalance_table; nothing to execute.")
         return 0
 
-    # Build events for non-HOLD actions (best-effort).
+    # Build events for every rebalance row (including HOLD) so quiet days still have ledger rows.
     events: List[Dict[str, Any]] = []
     for row in table:
         if not isinstance(row, dict):
@@ -161,37 +171,62 @@ def main() -> int:
         action = row.get("action")
         if not ticker or not isinstance(ticker, str):
             continue
-        if str(action).upper() in ("HOLD", ""):
-            continue
 
-        wt = row.get("recommended_pct")
-        try:
-            weight_pct = float(wt) if wt is not None else None
-        except (TypeError, ValueError):
-            weight_pct = None
+        action_u = str(action or "").upper()
+        is_hold = action_u in ("HOLD", "")
+
+        weight_pct = _parse_pct(row.get("recommended_pct"))
+        prev_weight_pct = _parse_pct(row.get("current_pct"))
+        weight_change_pct = _parse_pct(row.get("change_pct"))
 
         price = _fetch_open(sb, ticker, d)
-        if str(action).upper() in ("EXIT",):
-            event = "EXIT"
-        elif str(action).upper() in ("NEW", "ADD"):
-            event = "OPEN"
-        else:
-            event = "REBALANCE"
 
-        events.append(
-            {
-                "date": d,
-                "ticker": ticker,
-                "event": event,
-                "weight_pct": weight_pct,
-                "price": price,
-                "reason": row.get("rationale"),
-                "thesis_id": None,
-            }
-        )
+        if is_hold:
+            event = "HOLD"
+        elif action_u in ("EXIT",):
+            event = "EXIT"
+        elif action_u in ("NEW",):
+            event = "OPEN"
+        elif action_u == "ADD":
+            event = "ADD"
+        elif action_u == "TRIM":
+            event = "TRIM"
+        else:
+            # Legacy rows or unknown action: infer direction from weights (never emit REBALANCE).
+            if weight_change_pct is not None and weight_change_pct < 0:
+                event = "TRIM"
+            elif weight_change_pct is not None and weight_change_pct > 0:
+                event = "ADD"
+            elif (
+                prev_weight_pct is not None
+                and weight_pct is not None
+                and weight_pct < prev_weight_pct
+            ):
+                event = "TRIM"
+            elif (
+                prev_weight_pct is not None
+                and weight_pct is not None
+                and weight_pct > prev_weight_pct
+            ):
+                event = "ADD"
+            else:
+                event = "TRIM"
+
+        rec: Dict[str, Any] = {
+            "date": d,
+            "ticker": ticker,
+            "event": event,
+            "weight_pct": weight_pct,
+            "prev_weight_pct": prev_weight_pct,
+            "weight_change_pct": weight_change_pct,
+            "price": price,
+            "reason": row.get("rationale"),
+            "thesis_id": None,
+        }
+        events.append(rec)
 
     if not events:
-        print("No executable actions found (only HOLD).")
+        print("rebalance_table produced no rows after filtering.")
         return 0
 
     # Upsert by date,ticker (current schema)
@@ -205,7 +240,12 @@ def main() -> int:
             f"After opens sync: python3 scripts/backfill_execution_prices.py --date {d}"
         )
 
-    print(f"✅ recorded {len(events)} execution event(s) at market open for {d}")
+    hold_n = sum(1 for e in events if e.get("event") == "HOLD")
+    trade_n = len(events) - hold_n
+    print(
+        f"✅ recorded {len(events)} execution event(s) at market open for {d} "
+        f"({trade_n} trade-related, {hold_n} HOLD)"
+    )
     return 0
 
 

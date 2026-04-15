@@ -20,7 +20,8 @@ import type { PositionPriceChartData, PositionPriceChartEvent } from '@/lib/type
 function eventDotColor(ev: PositionPriceChartEvent['event']): string {
   if (ev === 'OPEN') return '#22c55e';
   if (ev === 'EXIT') return '#ef4444';
-  if (ev === 'REBALANCE') return '#60a5fa';
+  if (ev === 'ADD') return '#38bdf8';
+  if (ev === 'TRIM') return '#f59e0b';
   return '#71717a';
 }
 
@@ -310,9 +311,6 @@ function ChartBody({
           >
             Fit all
           </button>
-          <p className="text-[10px] text-text-muted text-right max-w-[220px] leading-snug">
-            Drag range below to pan/zoom · Scroll wheel zoom · Horizontal scroll pans
-          </p>
         </div>
       </div>
 
@@ -372,7 +370,7 @@ function ChartBody({
                 const props = raw as { cx?: number; cy?: number; payload?: ScatterRow };
                 const { cx, cy, payload } = props;
                 if (cx == null || cy == null || !payload?.event) return <g />;
-                const r = payload.event === 'REBALANCE' ? 4 : 5;
+                const r = payload.event === 'TRIM' || payload.event === 'ADD' ? 4 : 5;
                 return (
                   <circle
                     cx={cx}

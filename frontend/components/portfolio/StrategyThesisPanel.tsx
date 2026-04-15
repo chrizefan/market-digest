@@ -41,7 +41,9 @@ function statusColor(status: string | null | undefined): string {
 function actionColor(action: string | null | undefined): string {
   const a = (action || '').toLowerCase();
   if (a.includes('exit')) return 'text-fin-red';
-  if (a.includes('add') || a.includes('new')) return 'text-fin-green';
+  if (a.includes('new')) return 'text-fin-green';
+  if (a.includes('add')) return 'text-fin-blue';
+  if (a.includes('trim')) return 'text-fin-amber';
   if (a === 'hold') return 'text-text-muted';
   return 'text-fin-amber';
 }

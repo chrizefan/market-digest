@@ -76,6 +76,8 @@ Follow [`skills/pm-allocation-memo/SKILL.md`](../../skills/pm-allocation-memo/SK
 
 Follow [`skills/portfolio-manager/SKILL.md`](../../skills/portfolio-manager/SKILL.md): aggregate deliberation outcomes + PM memo → Phase B clean-slate → Phase C vs **`config/portfolio.json`** (respect quantized weights, max change / thesis override rules). Publish **`portfolio_recommendation`** and **`rebalance_decision`**; update `proposed_positions` as today.
 
+**`rebalance_decision.body.rebalance_table[].action`** must use the JSON schema enum only — **`HOLD`**, **`NEW`**, **`EXIT`**, **`ADD`**, **`TRIM`** — not a legacy “REBALANCE” label. [`execute_at_open.py`](../../scripts/execute_at_open.py) records **`position_events.event`** as **`OPEN`** (for `NEW`), **`EXIT`**, **`TRIM`**, **`ADD`**, or **`HOLD`**.
+
 ### Step validation (optional but recommended)
 
 After publishing to Supabase, confirm rows and JSON shapes with [`scripts/validate_pipeline_step.py`](../../scripts/validate_pipeline_step.py) (`pip install jsonschema` if needed):

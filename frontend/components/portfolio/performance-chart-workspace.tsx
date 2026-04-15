@@ -69,7 +69,7 @@ function NavComparableChart({
   data: PerfChartPoint[];
   comparableKeys: string[];
   onLegendRemoveComparable: (ticker: string) => void;
-  /** Dates in range with OPEN/EXIT/REBALANCE — vertical guides on the NAV chart. */
+  /** Dates in range with OPEN/EXIT/TRIM/ADD — vertical guides on the NAV chart. */
   activityMarkerDates?: string[];
   /** Pre-aggregated events per date for tooltip enrichment. */
   activityEventsByDate?: Record<string, { ticker: string; event: string }[]>;
@@ -173,7 +173,20 @@ function NavComparableChart({
                   <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid #2a2a2a' }}>
                     {events.map((ev, i) => (
                       <div key={i} style={{ color: '#a1a1aa', fontSize: '0.72rem', display: 'flex', gap: 6 }}>
-                        <span style={{ color: ev.event === 'OPEN' ? '#22c55e' : ev.event === 'EXIT' ? '#ef4444' : '#f59e0b' }}>
+                        <span
+                          style={{
+                            color:
+                              ev.event === 'OPEN'
+                                ? '#22c55e'
+                                : ev.event === 'EXIT'
+                                  ? '#ef4444'
+                                  : ev.event === 'ADD'
+                                    ? '#38bdf8'
+                                    : ev.event === 'TRIM'
+                                      ? '#f59e0b'
+                                      : '#a1a1aa',
+                          }}
+                        >
                           {ev.event}
                         </span>
                         <span style={{ fontFamily: 'monospace' }}>{ev.ticker}</span>
@@ -369,9 +382,6 @@ function ComparableDropdown({
                 })}
               </div>
             )}
-            <p className="text-[10px] text-text-muted px-2.5 py-1.5 border-t border-border-subtle bg-bg-secondary/80">
-              Up to {maxComparables} overlays
-            </p>
           </div>
         )}
       </div>
@@ -543,11 +553,6 @@ export function PerformanceChartWorkspace({
                 activityEventsByDate={activityEventsByDate}
               />
             </div>
-            {(activityMarkerDates?.length ?? 0) > 0 ? (
-              <p className="text-[10px] text-text-muted leading-snug">
-                Vertical guides: days with position activity (open, exit, rebalance) in this range.
-              </p>
-            ) : null}
           </div>
         )}
 

@@ -399,7 +399,6 @@ export default function OverviewPage() {
           }
           icon={PieChart}
           iconColor="text-fin-amber"
-          subtitle={overviewSharpeFromNav != null ? 'from NAV (Rf = 0)' : 'risk-adjusted'}
           enterStaggerIndex={2}
         />
         <StatCardEnhanced

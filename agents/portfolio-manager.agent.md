@@ -65,6 +65,7 @@ Note: No PM portfolio construction needed — analyst report only
 5. **Weekly cadence for repositioning** — consistent with trading style in config/preferences.md. On Monday–Saturday, lower bar for "Monitor" but higher bar for "Act".
 6. **Always justify exits explicitly** — "thesis broken because X" not just "reducing risk".
 7. **Cash is a position** — BIL/SHV allocation is a deliberate decision, not a residual.
+8. **`rebalance_decision` actions** — In JSON, each row’s `action` must be one of **`HOLD`**, **`NEW`**, **`EXIT`**, **`ADD`**, or **`TRIM`** (see `rebalance-decision.schema.json`). Do not use **`REBALANCE`** as an action; size increases are **`ADD`**, decreases **`TRIM`**, net-new lines **`NEW`**.
 
 ---
 

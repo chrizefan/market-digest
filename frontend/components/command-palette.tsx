@@ -263,11 +263,6 @@ export default function CommandPalette() {
             <X size={16} />
           </button>
         </div>
-        <p className="text-[10px] text-text-muted px-3 py-1.5 border-b border-border-subtle/60 bg-bg-secondary/40">
-          <kbd className="font-mono text-[10px] px-1 py-0.5 rounded border border-border-subtle">⌘</kbd>
-          <kbd className="font-mono text-[10px] px-1 py-0.5 rounded border border-border-subtle ml-0.5">K</kbd>
-          <span className="ml-2">Toggle · ↑↓ move · Enter open · Esc close</span>
-        </p>
         <ul
           ref={listRef}
           className="max-h-[min(52vh,420px)] overflow-y-auto py-1"

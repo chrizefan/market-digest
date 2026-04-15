@@ -33,14 +33,16 @@ const FALLBACK_LOOKBACK_DAYS = 730;
 function eventDotColor(ev: PositionPriceChartEvent['event']): string {
   if (ev === 'OPEN') return '#22c55e';
   if (ev === 'EXIT') return '#ef4444';
-  if (ev === 'REBALANCE') return '#60a5fa';
+  if (ev === 'ADD') return '#38bdf8';
+  if (ev === 'TRIM') return '#f59e0b';
   return '#71717a';
 }
 
 function eventLabelClass(ev: PositionPriceChartEvent['event']): string {
   if (ev === 'OPEN') return 'text-fin-green';
   if (ev === 'EXIT') return 'text-fin-red';
-  if (ev === 'REBALANCE') return 'text-fin-blue';
+  if (ev === 'ADD') return 'text-fin-blue';
+  if (ev === 'TRIM') return 'text-fin-amber';
   return 'text-text-muted';
 }
 
@@ -310,10 +312,6 @@ function ChartBody({
               {chartRows[0].date} → {chartEnd}
             </p>
           ) : null}
-          <p className="text-[10px] text-text-muted mt-1 max-w-xl leading-snug">
-            Cumulative attributed return (pp) from this holding (weight × asset return between NAV snapshots). Events
-            align to the contribution path.
-          </p>
         </div>
         <div className="flex flex-col items-end gap-1">
           <button
@@ -323,9 +321,6 @@ function ChartBody({
           >
             Fit all
           </button>
-          <p className="text-[10px] text-text-muted text-right max-w-[220px] leading-snug">
-            Drag range below · Scroll zoom · Horizontal pan
-          </p>
         </div>
       </div>
 
@@ -393,7 +388,7 @@ function ChartBody({
                 const props = raw as { cx?: number; cy?: number; payload?: ScatterRow };
                 const { cx, cy, payload } = props;
                 if (cx == null || cy == null || !payload?.event) return <g />;
-                const r = payload.event === 'REBALANCE' ? 4 : 5;
+                const r = payload.event === 'TRIM' || payload.event === 'ADD' ? 4 : 5;
                 return (
                   <circle
                     cx={cx}

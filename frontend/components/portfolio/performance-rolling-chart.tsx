@@ -140,9 +140,8 @@ export function PerformanceRollingChart({
           </div>
         </div>
       ) : period ? (
-        <p className="text-[12px] text-text-muted leading-relaxed rounded-lg border border-dashed border-border-subtle px-4 py-3">
-          Not enough overlapping trading days in this range for a rolling window chart. Use the summary above
-          for period risk-adjusted metrics, or widen the date range.
+        <p className="text-[12px] text-text-muted rounded-lg border border-dashed border-border-subtle px-4 py-3">
+          Not enough overlapping days in this range for rolling metrics.
         </p>
       ) : null}
     </div>
